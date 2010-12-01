@@ -1,0 +1,16 @@
+.video {
+	/* this is for the fallback below */
+	overflow: hidden;
+}
+
+.video-fallback {
+	/* displayed when the browser can't interpret the video tag */
+	height: 100%;
+	margin-top: -25px;
+	min-height: 50px;
+	overflow: hidden;
+	position: absolute;
+	text-align: center;
+	top: 50%;
+	width: 100%;
+}

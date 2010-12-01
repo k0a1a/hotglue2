@@ -1,0 +1,277 @@
+\hypertarget{common_8inc_8php}{
+\section{/srv/www/sukzessiv.net/h/common.inc.php File Reference}
+\label{common_8inc_8php}\index{/srv/www/sukzessiv.net/h/common.inc.php@{/srv/www/sukzessiv.net/h/common.inc.php}}
+}
+\subsection*{Functions}
+\begin{CompactItemize}
+\item 
+\hyperlink{common_8inc_8php_6cceb5c6a3c421c18e925515c78f6dfd}{cache\_\-output} (\$category, \$name, \$out)
+\item 
+\hyperlink{common_8inc_8php_8916cb6ec34ceeb3f48c86655c305974}{default\_\-html} (\$add\_\-glue)
+\item 
+\hyperlink{common_8inc_8php_7ca47f8aab349971cde2d4b02441cf41}{drop\_\-cache} (\$category, \$name)
+\item 
+\hyperlink{common_8inc_8php_0d6d0da45f4adf6283bcccec9fd107e3}{glue\_\-version} ()
+\item 
+\hyperlink{common_8inc_8php_6fb34b9210b43349ca3eb16b2738a28b}{is\_\-cached} (\$category, \$name, \$max\_\-age)
+\item 
+\hyperlink{common_8inc_8php_78992fdfae6cd9d7d4e8053d004d1709}{resolve\_\-aliases} (\$s, \$name= '')
+\item 
+\hyperlink{common_8inc_8php_81eb70073067db81ab43829870f15e6d}{resolve\_\-relative\_\-urls} (\$s)
+\item 
+\hyperlink{common_8inc_8php_ac90387dcab722e243df2d083f8d6a00}{serve\_\-cached} (\$category, \$name)
+\item 
+\hyperlink{common_8inc_8php_0a3ee1e9beca572266648f17b9c4c75f}{startpage} ()
+\item 
+\hyperlink{common_8inc_8php_b3abbb2cd13e01231533e7cdc93da6db}{is\_\-auth} ()
+\item 
+\hyperlink{common_8inc_8php_3d71a269e01b98748fb57719feef27be}{object\_\-exists} (\$s)
+\item 
+\hyperlink{common_8inc_8php_31ed04b0c90ac3077e71743c307d45f8}{page\_\-canonical} (\&\$s)
+\item 
+\hyperlink{common_8inc_8php_a71868111dd5b8af98df9cc9c968e523}{page\_\-exists} (\$s)
+\item 
+\hyperlink{common_8inc_8php_da968adfb989aa09adaf29867208f1ab}{page\_\-short} (\$s)
+\item 
+\hyperlink{common_8inc_8php_80c23c9d8ac02159151d6368506b1b54}{prompt\_\-auth} (\$header\_\-only=false)
+\item 
+\hyperlink{common_8inc_8php_4659077c34b709eec75f9897ea07e55a}{upload\_\-file} (\$fn, \$page, \$orig\_\-fn= '', \&\$existed=false)
+\item 
+\hyperlink{common_8inc_8php_0ef613d233a6e62f7e631b8dfcd710bf}{valid\_\-pagename} (\$s)
+\end{CompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{common_8inc_8php_6cceb5c6a3c421c18e925515c78f6dfd}{
+\index{common.inc.php@{common.inc.php}!cache\_\-output@{cache\_\-output}}
+\index{cache\_\-output@{cache\_\-output}!common.inc.php@{common.inc.php}}
+\subsubsection[{cache\_\-output}]{\setlength{\rightskip}{0pt plus 5cm}cache\_\-output (\$ {\em category}, \/  \$ {\em name}, \/  \$ {\em out})}}
+\label{common_8inc_8php_6cceb5c6a3c421c18e925515c78f6dfd}
+
+
+\hyperlink{common_8inc_8php}{common.inc.php} Common hotglue infrastructure
+
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. save a page in the cache
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$category cache category (e.g. 'page') \item[{\em string}]\$name item name \item[{\em string}]\$out content \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]true if successful, false if not \end{Desc}
+\hypertarget{common_8inc_8php_8916cb6ec34ceeb3f48c86655c305974}{
+\index{common.inc.php@{common.inc.php}!default\_\-html@{default\_\-html}}
+\index{default\_\-html@{default\_\-html}!common.inc.php@{common.inc.php}}
+\subsubsection[{default\_\-html}]{\setlength{\rightskip}{0pt plus 5cm}default\_\-html (\$ {\em add\_\-glue})}}
+\label{common_8inc_8php_8916cb6ec34ceeb3f48c86655c305974}
+
+
+setup a default html page
+
+see \hyperlink{html_8inc_8php}{html.inc.php}. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em bool}]\$add\_\-glue true for adding the glue code \end{description}
+\end{Desc}
+\hypertarget{common_8inc_8php_7ca47f8aab349971cde2d4b02441cf41}{
+\index{common.inc.php@{common.inc.php}!drop\_\-cache@{drop\_\-cache}}
+\index{drop\_\-cache@{drop\_\-cache}!common.inc.php@{common.inc.php}}
+\subsubsection[{drop\_\-cache}]{\setlength{\rightskip}{0pt plus 5cm}drop\_\-cache (\$ {\em category}, \/  \$ {\em name})}}
+\label{common_8inc_8php_7ca47f8aab349971cde2d4b02441cf41}
+
+
+remove a page from the cache
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$category cache category (e.g. 'page') \item[{\em string}]\$name item name \end{description}
+\end{Desc}
+\hypertarget{common_8inc_8php_0d6d0da45f4adf6283bcccec9fd107e3}{
+\index{common.inc.php@{common.inc.php}!glue\_\-version@{glue\_\-version}}
+\index{glue\_\-version@{glue\_\-version}!common.inc.php@{common.inc.php}}
+\subsubsection[{glue\_\-version}]{\setlength{\rightskip}{0pt plus 5cm}glue\_\-version ()}}
+\label{common_8inc_8php_0d6d0da45f4adf6283bcccec9fd107e3}
+
+
+return the glue version with api.version.patchlevel
+
+\begin{Desc}
+\item[Returns:]array (with length three) \end{Desc}
+\hypertarget{common_8inc_8php_b3abbb2cd13e01231533e7cdc93da6db}{
+\index{common.inc.php@{common.inc.php}!is\_\-auth@{is\_\-auth}}
+\index{is\_\-auth@{is\_\-auth}!common.inc.php@{common.inc.php}}
+\subsubsection[{is\_\-auth}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-auth ()}}
+\label{common_8inc_8php_b3abbb2cd13e01231533e7cdc93da6db}
+
+
+check if the user is authenticated or not
+
+\begin{Desc}
+\item[Returns:]true if authenticated, false if not \end{Desc}
+\hypertarget{common_8inc_8php_6fb34b9210b43349ca3eb16b2738a28b}{
+\index{common.inc.php@{common.inc.php}!is\_\-cached@{is\_\-cached}}
+\index{is\_\-cached@{is\_\-cached}!common.inc.php@{common.inc.php}}
+\subsubsection[{is\_\-cached}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-cached (\$ {\em category}, \/  \$ {\em name}, \/  \$ {\em max\_\-age})}}
+\label{common_8inc_8php_6fb34b9210b43349ca3eb16b2738a28b}
+
+
+check if a page can be served from the cache
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$category cache category (e.g. 'page') \item[{\em string}]\$name item name \item[{\em int}]\$max\_\-age serve from cache when younger than \$max\_\-age seconds \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]bool true if the page can be served from cache, false if not \end{Desc}
+\hypertarget{common_8inc_8php_3d71a269e01b98748fb57719feef27be}{
+\index{common.inc.php@{common.inc.php}!object\_\-exists@{object\_\-exists}}
+\index{object\_\-exists@{object\_\-exists}!common.inc.php@{common.inc.php}}
+\subsubsection[{object\_\-exists}]{\setlength{\rightskip}{0pt plus 5cm}object\_\-exists (\$ {\em s})}}
+\label{common_8inc_8php_3d71a269e01b98748fb57719feef27be}
+
+
+check if an object exists
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em \$s}]object (e.g. page.rev.obj) \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]bool \end{Desc}
+\hypertarget{common_8inc_8php_31ed04b0c90ac3077e71743c307d45f8}{
+\index{common.inc.php@{common.inc.php}!page\_\-canonical@{page\_\-canonical}}
+\index{page\_\-canonical@{page\_\-canonical}!common.inc.php@{common.inc.php}}
+\subsubsection[{page\_\-canonical}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-canonical (\&\$ {\em s})}}
+\label{common_8inc_8php_31ed04b0c90ac3077e71743c307d45f8}
+
+
+turn short page names into canonical ones
+
+if \$s is not a page, the string is not altered. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\&\$s reference to the page name \end{description}
+\end{Desc}
+\hypertarget{common_8inc_8php_a71868111dd5b8af98df9cc9c968e523}{
+\index{common.inc.php@{common.inc.php}!page\_\-exists@{page\_\-exists}}
+\index{page\_\-exists@{page\_\-exists}!common.inc.php@{common.inc.php}}
+\subsubsection[{page\_\-exists}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-exists (\$ {\em s})}}
+\label{common_8inc_8php_a71868111dd5b8af98df9cc9c968e523}
+
+
+check if a page exists
+
+this function can also be used with object names (e.g. page.rev.obj). \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em \$s}]page \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]bool \end{Desc}
+\hypertarget{common_8inc_8php_da968adfb989aa09adaf29867208f1ab}{
+\index{common.inc.php@{common.inc.php}!page\_\-short@{page\_\-short}}
+\index{page\_\-short@{page\_\-short}!common.inc.php@{common.inc.php}}
+\subsubsection[{page\_\-short}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-short (\$ {\em s})}}
+\label{common_8inc_8php_da968adfb989aa09adaf29867208f1ab}
+
+
+return the short pagename if possible, otherwise the long one
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em \$s}]page \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]string \end{Desc}
+\hypertarget{common_8inc_8php_80c23c9d8ac02159151d6368506b1b54}{
+\index{common.inc.php@{common.inc.php}!prompt\_\-auth@{prompt\_\-auth}}
+\index{prompt\_\-auth@{prompt\_\-auth}!common.inc.php@{common.inc.php}}
+\subsubsection[{prompt\_\-auth}]{\setlength{\rightskip}{0pt plus 5cm}prompt\_\-auth (\$ {\em header\_\-only} = {\tt false})}}
+\label{common_8inc_8php_80c23c9d8ac02159151d6368506b1b54}
+
+
+prompt user for authentication
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em bool}]\$header\_\-only only send header information this function does not return. \end{description}
+\end{Desc}
+\hypertarget{common_8inc_8php_78992fdfae6cd9d7d4e8053d004d1709}{
+\index{common.inc.php@{common.inc.php}!resolve\_\-aliases@{resolve\_\-aliases}}
+\index{resolve\_\-aliases@{resolve\_\-aliases}!common.inc.php@{common.inc.php}}
+\subsubsection[{resolve\_\-aliases}]{\setlength{\rightskip}{0pt plus 5cm}resolve\_\-aliases (\$ {\em s}, \/  \$ {\em name} = {\tt ''})}}
+\label{common_8inc_8php_78992fdfae6cd9d7d4e8053d004d1709}
+
+
+\hypertarget{common_8inc_8php_81eb70073067db81ab43829870f15e6d}{
+\index{common.inc.php@{common.inc.php}!resolve\_\-relative\_\-urls@{resolve\_\-relative\_\-urls}}
+\index{resolve\_\-relative\_\-urls@{resolve\_\-relative\_\-urls}!common.inc.php@{common.inc.php}}
+\subsubsection[{resolve\_\-relative\_\-urls}]{\setlength{\rightskip}{0pt plus 5cm}resolve\_\-relative\_\-urls (\$ {\em s})}}
+\label{common_8inc_8php_81eb70073067db81ab43829870f15e6d}
+
+
+\hypertarget{common_8inc_8php_ac90387dcab722e243df2d083f8d6a00}{
+\index{common.inc.php@{common.inc.php}!serve\_\-cached@{serve\_\-cached}}
+\index{serve\_\-cached@{serve\_\-cached}!common.inc.php@{common.inc.php}}
+\subsubsection[{serve\_\-cached}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-cached (\$ {\em category}, \/  \$ {\em name})}}
+\label{common_8inc_8php_ac90387dcab722e243df2d083f8d6a00}
+
+
+output a cached page to the client
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$category cache category (e.g. 'page') \item[{\em string}]\$name item name \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]true if successful, false if not \end{Desc}
+\hypertarget{common_8inc_8php_0a3ee1e9beca572266648f17b9c4c75f}{
+\index{common.inc.php@{common.inc.php}!startpage@{startpage}}
+\index{startpage@{startpage}!common.inc.php@{common.inc.php}}
+\subsubsection[{startpage}]{\setlength{\rightskip}{0pt plus 5cm}startpage ()}}
+\label{common_8inc_8php_0a3ee1e9beca572266648f17b9c4c75f}
+
+
+return the starting page
+
+\begin{Desc}
+\item[Returns:]string \end{Desc}
+\hypertarget{common_8inc_8php_4659077c34b709eec75f9897ea07e55a}{
+\index{common.inc.php@{common.inc.php}!upload\_\-file@{upload\_\-file}}
+\index{upload\_\-file@{upload\_\-file}!common.inc.php@{common.inc.php}}
+\subsubsection[{upload\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}upload\_\-file (\$ {\em fn}, \/  \$ {\em page}, \/  \$ {\em orig\_\-fn} = {\tt ''}, \/  \&\$ {\em existed} = {\tt false})}}
+\label{common_8inc_8php_4659077c34b709eec75f9897ea07e55a}
+
+
+move an uploaded file to the shared directory of a page
+
+this function reuses existing files when possible. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$fn filename of newly uploaded file (most likely in /tmp) \item[{\em string}]\$page page or pagename \item[{\em string}]\$orig\_\-fn the original filename on the client machine (optional) \item[{\em bool}]\&\$existed set to true if the filename returned did already exist before \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]filename inside the shared directory or false in case of error \end{Desc}
+\hypertarget{common_8inc_8php_0ef613d233a6e62f7e631b8dfcd710bf}{
+\index{common.inc.php@{common.inc.php}!valid\_\-pagename@{valid\_\-pagename}}
+\index{valid\_\-pagename@{valid\_\-pagename}!common.inc.php@{common.inc.php}}
+\subsubsection[{valid\_\-pagename}]{\setlength{\rightskip}{0pt plus 5cm}valid\_\-pagename (\$ {\em s})}}
+\label{common_8inc_8php_0ef613d233a6e62f7e631b8dfcd710bf}
+
+
+check whether the string is a valid, canonical page name
+
+the function does not check if the page exists or not. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$s string to check \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]bool \end{Desc}

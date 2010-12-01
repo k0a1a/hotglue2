@@ -1,0 +1,13 @@
+/* this file is being included for all editing modes */
+
+h1, h2, h3, h4, h5, h6 {
+	/* defaults for headings */
+	font-size: 25.5px;
+	line-height: 37.74px;
+}
+
+p {
+	/* and paragraphs */
+	margin-bottom: 8.5px;
+	margin-top: 6px;
+}

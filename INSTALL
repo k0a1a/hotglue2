@@ -1,0 +1,55 @@
+SERVER REQUIREMENTS
+
+  * Apache 2.x
+  * PHP 5.x
+  * (optional) mod_rewrite (for short URLs)
+  * (optional) php5-gd (for server-side image resizing)
+  
+  The current version of Hotglue was only extensively tested on Linux hosts.
+
+
+CLIENT REQUIREMENTS
+
+  * for editing: Mozilla Firefox (>= 3.6) or Google Chrome (>= 8.0)
+  
+  While we haven't tested it, editing could also work on any recent Safari version.
+  
+  * for viewing: the above plus Internet Explorer 8 (but keep IE8_COMPAT in the 
+    config set to true)
+
+
+INSTALLING HOTGLUE
+
+  * copy the directory of the tarball to a directory that is accessible to the 
+    server
+  * make sure the webserver can write to the content directory (e.g. by running 
+    "chmod 0777 content" in the directory that you just copied the files to)
+  * it is recommended that you create a user-config.inc.php file where you 
+    can overwrite the settings defined in config.inc.php. the former file won't 
+    get overwritten by future updates.
+  * make sure that you at least set AUTH_PASSWORD to a non-default value.
+  * (optional) if your hosting environment allows you to use mod_rewrite and 
+    you want to use short URLs for your pages, you can rename the htaccess-dist 
+    file to .htaccess (e.g. by running "move htaccess-dist .htaccess")
+  
+  and finally
+  
+  * launch the directory's URL from a browser and add "?edit" to the address 
+    (e.g. http://myserver.com/hotglue/?edit) to start editing
+    
+  If you are using the optional .htaccess file you can also start editing by 
+  just adding "edit" (e.g. http://myserver.com/hotglue/edit).
+
+
+DEBUGGING HOTGLUE
+
+  If something breaks and you want to troubleshoot the problem it is helpful to 
+  turn on PHP error reporting by setting or adding "error_reporting(E_ALL);" to 
+  your user-config.inc.php file.
+  You can also set the LOG_LEVEL (see config.inc.php) to 'debug' in order to get 
+  an overwhelming amount of logging information written to your log file, which 
+  by default is in the content directory.
+  Requests from the client start in the log file with "--- request ---" and AJAX 
+  requests with "--- json request ---". If you report a problem, make sure you 
+  send with it only the relevant pieces of logging information (like the request 
+  and all associated AJAX request that get written when the problem occurs).

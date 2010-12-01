@@ -1,0 +1,30 @@
+\hypertarget{log_8inc_8php}{
+\section{/srv/www/sukzessiv.net/h/log.inc.php File Reference}
+\label{log_8inc_8php}\index{/srv/www/sukzessiv.net/h/log.inc.php@{/srv/www/sukzessiv.net/h/log.inc.php}}
+}
+\subsection*{Functions}
+\begin{CompactItemize}
+\item 
+if(!isset(\$logfile)) if(!isset(\$loglevels)) if(!isset(\$request\_\-id)) \hyperlink{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}{log\_\-msg} (\$level, \$msg)
+\end{CompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}{
+\index{log.inc.php@{log.inc.php}!log\_\-msg@{log\_\-msg}}
+\index{log\_\-msg@{log\_\-msg}!log.inc.php@{log.inc.php}}
+\subsubsection[{log\_\-msg}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$logfile)) if (!isset(\$loglevels)) if (!isset(\$request\_\-id)) log\_\-msg (\$ {\em level}, \/  \$ {\em msg})}}
+\label{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}
+
+
+\hyperlink{log_8inc_8php}{log.inc.php} Generic logging infrastructure
+
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. log a message to file
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$level can be error, warn, info or debug \item[{\em string}]\$msg message \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]bool true if successful, false if not \end{Desc}

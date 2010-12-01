@@ -1,0 +1,13 @@
+/* this file is being included for viewing as well as editing modes */
+
+html, body {
+	/* default font */
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: 13px;
+	line-height: 19.25px;
+}
+
+a, a:link, a:visited, a:active, a:hover {
+	/* this removes the blue color from links on Chrome 7.0.517.41 */
+	color: inherit;
+}

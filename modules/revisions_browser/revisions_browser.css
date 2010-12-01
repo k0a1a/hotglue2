@@ -1,0 +1,34 @@
+.page {
+	/* always show scrollbars while browsing revisions */
+	overflow: scroll;
+}
+
+#revisions_browser_ctrl {
+	background-color: lightgrey;
+	border-radius: 3px;
+	bottom: 20px;
+	height: 80px;
+	opacity: 0.7;
+	position: fixed;
+	right: 20px;
+	width: 300px;
+	z-index: 200;
+}
+
+#revisions_browser_cur {
+	float: left;
+	height: 100%;
+	max-width: 50%;
+	min-width: 50%;
+	text-align: center;
+}
+
+#revisions_browser_prev, #revisions_browser_next {
+	float: left;
+	height: 100%;
+	max-width: 25%;
+	min-width: 25%;
+	text-align: center;
+	margin-top: auto;
+	margin-bottom: auto;
+}

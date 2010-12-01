@@ -1,0 +1,12 @@
+.page_browser_entry {
+	margin-bottom: 4.25px;
+	margin-top: 3px;
+}
+
+.page_browser_pagename > a {
+	text-decoration: none;
+}
+
+#page_browser_startpage {
+	color: darkgrey;
+}

@@ -1,0 +1,57 @@
+\hypertarget{html__parse_8inc_8php}{
+\section{/srv/www/sukzessiv.net/h/html\_\-parse.inc.php File Reference}
+\label{html__parse_8inc_8php}\index{/srv/www/sukzessiv.net/h/html\_\-parse.inc.php@{/srv/www/sukzessiv.net/h/html\_\-parse.inc.php}}
+}
+\subsection*{Functions}
+\begin{CompactItemize}
+\item 
+\hyperlink{html__parse_8inc_8php_7eda4037f4b2576b3bcd97408ff95bd5}{html\_\-encode\_\-str\_\-smart} (\$html)
+\item 
+\hyperlink{html__parse_8inc_8php_1003b146f08aef5a3a78d75a3538a4d7}{html\_\-parse} (\$html, \$recursive=false)
+\item 
+\hyperlink{html__parse_8inc_8php_6d9c21ee610953fb5b5b64fae3f74ed3}{html\_\-parse\_\-elem} (\$html, \$recursive=false)
+\end{CompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{html__parse_8inc_8php_7eda4037f4b2576b3bcd97408ff95bd5}{
+\index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-encode\_\-str\_\-smart@{html\_\-encode\_\-str\_\-smart}}
+\index{html\_\-encode\_\-str\_\-smart@{html\_\-encode\_\-str\_\-smart}!html_parse.inc.php@{html\_\-parse.inc.php}}
+\subsubsection[{html\_\-encode\_\-str\_\-smart}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-encode\_\-str\_\-smart (\$ {\em html})}}
+\label{html__parse_8inc_8php_7eda4037f4b2576b3bcd97408ff95bd5}
+
+
+\hyperlink{html__parse_8inc_8php}{html\_\-parse.inc.php} Generic html parsing functions
+
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. \hypertarget{html__parse_8inc_8php_1003b146f08aef5a3a78d75a3538a4d7}{
+\index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-parse@{html\_\-parse}}
+\index{html\_\-parse@{html\_\-parse}!html_parse.inc.php@{html\_\-parse.inc.php}}
+\subsubsection[{html\_\-parse}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse (\$ {\em html}, \/  \$ {\em recursive} = {\tt false})}}
+\label{html__parse_8inc_8php_1003b146f08aef5a3a78d75a3538a4d7}
+
+
+parse a string containing html elements
+
+this function decodes html's special characters except for the content (when it too is not being parsed). this function is more fragile than \hyperlink{html__parse_8inc_8php_6d9c21ee610953fb5b5b64fae3f74ed3}{html\_\-parse\_\-elem()} when it comes to malformatted input. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$html input string \item[{\em bool}]\$recursive also parse children elements \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array parsed representation \end{Desc}
+\hypertarget{html__parse_8inc_8php_6d9c21ee610953fb5b5b64fae3f74ed3}{
+\index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-parse\_\-elem@{html\_\-parse\_\-elem}}
+\index{html\_\-parse\_\-elem@{html\_\-parse\_\-elem}!html_parse.inc.php@{html\_\-parse.inc.php}}
+\subsubsection[{html\_\-parse\_\-elem}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse\_\-elem (\$ {\em html}, \/  \$ {\em recursive} = {\tt false})}}
+\label{html__parse_8inc_8php_6d9c21ee610953fb5b5b64fae3f74ed3}
+
+
+parse exactly one html element
+
+this function decodes html's special characters except for the content (when it too is not being parsed). this function is less fragile than \hyperlink{html__parse_8inc_8php_1003b146f08aef5a3a78d75a3538a4d7}{html\_\-parse()} when it comes to malformatted input. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$html input string (must start and end with the element's tag) \item[{\em bool}]\$recursive also parse children elements \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array parsed representation \end{Desc}

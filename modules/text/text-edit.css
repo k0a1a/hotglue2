@@ -1,0 +1,33 @@
+.text {
+	/* these are default widths and heights for new text objects */
+	height: 100px;
+	width: 100px;
+	
+	/* other default properties for text objects can be set here as well */
+	/*
+	background-color: ...;
+	color: ...;
+	font-size: ...;
+	font-style: ...;
+	font-weight: ...;
+	letter-spacing: ...;
+	line-height: ...;
+	text-align: ...;
+	word-spacing: ...;
+	*/
+}
+
+.glue-text-input {
+	/* this is the textarea for editing */
+	/* inherit as much as possible */
+	background-color: inherit;
+	border: 0px;
+	color: inherit;
+	font-size: inherit;
+	font-style: inherit;
+	font-weight: inherit;
+	letter-spacing: inherit;
+	line-height: inherit;
+	text-align: inherit;
+	word-spacing: inherit;
+}

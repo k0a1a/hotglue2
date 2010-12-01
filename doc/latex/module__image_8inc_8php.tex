@@ -1,0 +1,125 @@
+\hypertarget{module__image_8inc_8php}{
+\section{/srv/www/sukzessiv.net/h/module\_\-image.inc.php File Reference}
+\label{module__image_8inc_8php}\index{/srv/www/sukzessiv.net/h/module\_\-image.inc.php@{/srv/www/sukzessiv.net/h/module\_\-image.inc.php}}
+}
+\subsection*{Functions}
+\begin{CompactItemize}
+\item 
+\hyperlink{module__image_8inc_8php_574d6d760e50b88ffa815cab30a5e634}{\_\-gd\_\-available} ()
+\item 
+\hyperlink{module__image_8inc_8php_3c76028c34273e722c9691243377a208}{\_\-gd\_\-get\_\-imagesize} (\$f)
+\item 
+\hyperlink{module__image_8inc_8php_7cbcf6138ccff16a8b733cfd6f0f1666}{image\_\-delete\_\-object} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_0bef6164f5eafe368d251639cf6fe298}{image\_\-has\_\-reference} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_4fadded2a225d1b5ea73404a84597620}{image\_\-render\_\-object} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_8266a74a11a86a73e2aa3709388fd43f}{image\_\-render\_\-page\_\-early} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_9e03a71310133176236ae0bd4a0241e0}{image\_\-resize} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_c26ea1448f0b7ed835907cf7c22b60ca}{image\_\-save\_\-state} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_bb6646bfaa6a012e620cdaaa0bc3c807}{image\_\-serve\_\-resource} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_37dee9de60e2852c0631d8e60e58585c}{image\_\-upload} (\$args)
+\end{CompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{module__image_8inc_8php_574d6d760e50b88ffa815cab30a5e634}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!\_\-gd\_\-available@{\_\-gd\_\-available}}
+\index{\_\-gd\_\-available@{\_\-gd\_\-available}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{\_\-gd\_\-available}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-available ()}}
+\label{module__image_8inc_8php_574d6d760e50b88ffa815cab30a5e634}
+
+
+\hyperlink{module__image_8inc_8php}{module\_\-image.inc.php} Module for displaying images uploaded by the user
+
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. return if GD image functions are available
+
+\begin{Desc}
+\item[Returns:]bool \end{Desc}
+\hypertarget{module__image_8inc_8php_3c76028c34273e722c9691243377a208}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!\_\-gd\_\-get\_\-imagesize@{\_\-gd\_\-get\_\-imagesize}}
+\index{\_\-gd\_\-get\_\-imagesize@{\_\-gd\_\-get\_\-imagesize}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{\_\-gd\_\-get\_\-imagesize}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-get\_\-imagesize (\$ {\em f})}}
+\label{module__image_8inc_8php_3c76028c34273e722c9691243377a208}
+
+
+return the width and height of an image file
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$f filename\end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array with width and height in pixels \end{Desc}
+\hypertarget{module__image_8inc_8php_7cbcf6138ccff16a8b733cfd6f0f1666}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-delete\_\-object@{image\_\-delete\_\-object}}
+\index{image\_\-delete\_\-object@{image\_\-delete\_\-object}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-delete\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-delete\_\-object (\$ {\em args})}}
+\label{module__image_8inc_8php_7cbcf6138ccff16a8b733cfd6f0f1666}
+
+
+implements delete\_\-object \hypertarget{module__image_8inc_8php_0bef6164f5eafe368d251639cf6fe298}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-has\_\-reference@{image\_\-has\_\-reference}}
+\index{image\_\-has\_\-reference@{image\_\-has\_\-reference}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-has\_\-reference}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-has\_\-reference (\$ {\em args})}}
+\label{module__image_8inc_8php_0bef6164f5eafe368d251639cf6fe298}
+
+
+implements has\_\-reference \hypertarget{module__image_8inc_8php_4fadded2a225d1b5ea73404a84597620}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-render\_\-object@{image\_\-render\_\-object}}
+\index{image\_\-render\_\-object@{image\_\-render\_\-object}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-object (\$ {\em args})}}
+\label{module__image_8inc_8php_4fadded2a225d1b5ea73404a84597620}
+
+
+implements render\_\-object \hypertarget{module__image_8inc_8php_8266a74a11a86a73e2aa3709388fd43f}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-render\_\-page\_\-early@{image\_\-render\_\-page\_\-early}}
+\index{image\_\-render\_\-page\_\-early@{image\_\-render\_\-page\_\-early}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-page\_\-early (\$ {\em args})}}
+\label{module__image_8inc_8php_8266a74a11a86a73e2aa3709388fd43f}
+
+
+implements render\_\-page\_\-early \hypertarget{module__image_8inc_8php_9e03a71310133176236ae0bd4a0241e0}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-resize@{image\_\-resize}}
+\index{image\_\-resize@{image\_\-resize}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-resize}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-resize (\$ {\em args})}}
+\label{module__image_8inc_8php_9e03a71310133176236ae0bd4a0241e0}
+
+
+resize an image object
+
+this function drops the reference to any currently resized version, saves the resized image together with the original image in the page's shared folder and updates the object file to use the resized version. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em array}]\$args arguments key 'name' name of the objects key 'width' width in px key 'height' height in px \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array response true if the client is advised to reload the image, false if not \end{Desc}
+\hypertarget{module__image_8inc_8php_c26ea1448f0b7ed835907cf7c22b60ca}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-save\_\-state@{image\_\-save\_\-state}}
+\index{image\_\-save\_\-state@{image\_\-save\_\-state}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-save\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-save\_\-state (\$ {\em args})}}
+\label{module__image_8inc_8php_c26ea1448f0b7ed835907cf7c22b60ca}
+
+
+implements save\_\-state \hypertarget{module__image_8inc_8php_bb6646bfaa6a012e620cdaaa0bc3c807}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-serve\_\-resource@{image\_\-serve\_\-resource}}
+\index{image\_\-serve\_\-resource@{image\_\-serve\_\-resource}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-serve\_\-resource (\$ {\em args})}}
+\label{module__image_8inc_8php_bb6646bfaa6a012e620cdaaa0bc3c807}
+
+
+implements serve\_\-resource \hypertarget{module__image_8inc_8php_37dee9de60e2852c0631d8e60e58585c}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-upload@{image\_\-upload}}
+\index{image\_\-upload@{image\_\-upload}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{image\_\-upload}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-upload (\$ {\em args})}}
+\label{module__image_8inc_8php_37dee9de60e2852c0631d8e60e58585c}
+
+
+implements upload 

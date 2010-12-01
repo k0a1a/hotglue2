@@ -1,0 +1,25 @@
+Hotglue 1.0
+
+developed by Gottfried Haider and Danja Vasiliev
+and the people from WORM (wormweb.nl)
+with support from the Mondriaan Foundation
+made for you
+
+
+HOW TO INSTALL ADDITIONAL MODULES
+
+  ..
+
+
+BUNDLED THIRD-PARTY CODE
+
+  * jQuery (MIT, BSD and GPL licensed)
+  * jQuery UI (MIT, GPLv2 licensed)
+  * Farbtastic: JQuery color picker plug-in (GPL licensed)
+  * jQuery xcolor (MIT, GPLv2 licensed)
+  * the file icon has been taken from gnome-icon-theme (GPL licensed)
+
+
+KNOWN ISSUES
+
+  ..

@@ -1,0 +1,147 @@
+/* this file is being included for editing a page */
+
+#glue-colorpicker {
+	/* colorpicker used for page and objects alike */
+	bottom: 20px;
+	position: fixed;
+	right: 20px;
+}
+
+#glue-colorpicker-transparent {
+	/* icon for transparency inside the colorpicker element */
+	background-image: url(../img/colorpicker-transparent.png);
+	border-style: solid;
+	border-width: 1px;
+	bottom: 6px;
+	cursor: pointer;
+	height: 10px;
+	position: absolute;
+	right: 215px;
+	width: 10px;
+}
+
+.glue-colorpicker-transparent-set {
+	/* set when color is set to transparent */
+	border-color: red;
+}
+
+.glue-colorpicker-transparent-notset {
+	/* set when color is set to all other colors */
+	border-color: white;
+}
+
+.glue-file-upload {
+	/* a file upload button */
+	width: 32px;
+	height: 32px;
+	overflow: hidden;
+}
+
+.glue-contextmenu-left {
+	/* a context menu item to the object's left */
+	margin-bottom: 10px;
+	margin-right: 20px;
+}
+
+.glue-contextmenu-top {
+	/* a context menu item on top of the object */
+	margin-bottom: 20px;
+	margin-right: 10px;
+}
+
+.glue-grid {
+	/* a grid line */
+}
+
+.glue-grid-x {
+	/* a horizontal grid line */
+}
+
+.glue-grid-y {
+	/* a vertical grid line */
+}
+
+.glue-guide {
+	/* a guide line */
+}
+
+.glue-guide-x {
+	/* a vertical guide line (after n pixels) */
+}
+
+.glue-guide-y {
+	/* a horizontal guide line (after n pixels) */
+}
+
+.glue-menu {
+	/* a menu item */
+	margin-bottom: 5px;
+	margin-left: 5px;
+	margin-right: 5px;
+	margin-top: 5px;
+	opacity: 1.0;
+}
+
+.glue-menu-enabled {
+	/* menu items that have an enabled/disabled state should use these classes */
+	/* this only works with images that are a bit transparent at least */
+	background-color: rgba(0, 255, 0, 0.5);
+}
+
+.glue-menu-disabled {
+	/* menu items that have an enabled/disabled state should use these classes */
+	/* this only works with images that are a bit transparent at least */
+}
+
+.glue-menu-new {
+	/* a "new"-menu item (shown when clicking the background once) */
+}
+
+.glue-menu-page {
+	/* a "page"-menu item (shown when doubleclicking the background) */
+}
+
+.glue-selected {
+	/* class for selected objects */
+	border-color: red;
+	border-style: dashed;
+	border-width: 2px;
+}
+
+.glue-ui {
+	/* all ui elements should use this class */
+}
+
+.glue-upload-statusbar {
+	/* statusbar for uploading */
+	background-color: lightgrey;
+	border-radius: 2px;
+	height: 4px;
+	width: 100px;
+}
+
+.glue-upload-statusbar-done {
+	/* the "done" part of the statusbar for uploading */
+	background-color: green;
+	border-radius: inherit;
+	height: 100%;
+	width: 0%;
+}
+
+.ui-draggable-dragging {
+	/* class for object being dragged */
+}
+
+/* taken from jquery-ui-1.8.5.custom.css */
+
+.ui-resizable { position: relative;}
+.ui-resizable-handle { position: absolute;font-size: 0.1px;z-index: 99999; display: block;}
+.ui-resizable-disabled .ui-resizable-handle, .ui-resizable-autohide .ui-resizable-handle { display: none; }
+.ui-resizable-n { cursor: n-resize; height: 7px; width: 100%; top: -5px; left: 0; }
+.ui-resizable-s { cursor: s-resize; height: 7px; width: 100%; bottom: -5px; left: 0; }
+.ui-resizable-e { cursor: e-resize; width: 7px; right: -5px; top: 0; height: 100%; }
+.ui-resizable-w { cursor: w-resize; width: 7px; left: -5px; top: 0; height: 100%; }
+.ui-resizable-se { cursor: se-resize; width: 12px; height: 12px; right: 1px; bottom: 1px; }
+.ui-resizable-sw { cursor: sw-resize; width: 9px; height: 9px; left: -5px; bottom: -5px; }
+.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -5px; top: -5px; }
+.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -5px; top: -5px;}
