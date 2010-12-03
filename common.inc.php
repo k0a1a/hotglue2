@@ -11,6 +11,7 @@
 
 @require_once('config.inc.php');
 require_once('html.inc.php');
+require_once('modules.inc.php');
 
 
 /**
@@ -136,128 +137,35 @@ function glue_version()
 
 
 /**
- *	check if a page can be served from the cache
- *
- *	@param string $category cache category (e.g. 'page')
- *	@param string $name item name
- *	@param int $max_age serve from cache when younger than $max_age seconds
- *	@return bool true if the page can be served from cache, false if not
+ *	invoke a hook when an update was detected
  */
-function is_cached($category, $name, $max_age)
+function handle_updates()
 {
-	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
-	if (!is_file($f)) {
-		return false;
-	}
-	// check the file's age
-	if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
-		clearstatcache(true, realpath($f));
-	} else {
-		clearstatcache();
-	}
-	$age = filemtime($f);
-	if ($max_age < abs(time()-$age)) {
-		return false;
-	} else {
-		return true;
-	}
-}
-
-
-// TODO: document
-function resolve_aliases($s, $name = '')
-{
-	// base url
-	$s = str_replace('$BASEURL$', base_url(), $s);
-	$s = str_replace('$baseurl$', base_url(), $s);
-	// version number
-	$s = str_replace('$GLUE$', HOTGLUE_VERSION, $s);
-	$s = str_replace('$glue$', HOTGLUE_VERSION, $s);
-	if (!empty($name)) {
-		// current object
-		$s = str_replace('$OBJ$', $name, $s);
-		$s = str_replace('$obj$', $name, $s);
-		// current page
-		$s = str_replace('$PAGE$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
-		$s = str_replace('$page$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
-		// pagename
-		$s = str_replace('$PAGENAME$', array_shift(expl('.', $name)), $s);
-		$s = str_replace('$pagename$', array_shift(expl('.', $name)), $s);
-		// revision
-		$s = str_replace('$REV$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
-		$s = str_replace('$rev$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
-	}
-	return $s;
-}
-
-
-// TODO: document
-function resolve_relative_urls($s)
-{
-	$attrs = array('href', 'src');
+	$new = glue_version();
+	$write_file = false;
 	
-	foreach ($attrs as $attr) {
-		$start = 0;
-		while (($start = strpos($s, $attr.'="', $start)) !== false) {
-			if (($end = strpos($s, '"', $start+strlen($attr)+2)) !== false) {
-				$link = substr($s, $start+strlen($attr)+2, $end-$start-strlen($attr)-2);
-				if (!is_url($link) && substr($link, 0, 1) != '#') {
-					// add base url for relative links that are not directed towards anchors
-					log_msg('debug', 'common: resolving relative url '.quot($link));
-					if (SHORT_URLS) {
-						$link = base_url().$link;
-					} else {
-						$link = base_url().'?'.$link;
-					}
-				} else {
-					log_msg('debug', 'common: not resolving url '.quot($link));
-				}
-				$start = $end+1;
-			} else {
-				break;
-			}
+	if (($s = @file_get_contents(CONTENT_DIR.'/version')) !== false) {
+		// parse version
+		$a = expl('.', $s);
+		$old = array(0, 0, 0);
+		for ($i=0; $i < count($a); $i++) {
+			$old[$i] = $a[$i];
 		}
-	}
-	return $s;
-}
-
-
-/**
- *	output a cached page to the client
- *
- *	@param string $category cache category (e.g. 'page')
- *	@param string $name item name
- *	@return true if successful, false if not
- */
-function serve_cached($category, $name)
-{
-	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
-	if (@readfile($f)) {
-		log_msg('info', 'common: serving '.$category.' '.quot($name).' from cache');
-		return true;
+		// check if an update happened
+		if ($old != $new) {
+			log_msg('info', 'common: detected hotglue update from version '.implode('.', $old).' to '.implode('.', $new));
+			// hook
+			invoke_hook('glue_update', array('old'=>$old, 'new'=>$new));
+			$write_file = true;
+		}
 	} else {
-		log_msg('error', 'common: cannot serve '.$category.' '.quot($name).' from cache');
-		return false;
+		$write_file = true;
 	}
-}
-
-
-/**
- *	return the starting page
- *
- *	@return string
- */
-function startpage()
-{
-	// read the starting page information from the content dir
-	// or fall back to the one defined in the configuration
-	$s = @file_get_contents(CONTENT_DIR.'/startpage');
-	if ($s !== false && 0 < strlen($s)) {
-		return $s;
-	} else {
-		$s = DEFAULT_PAGE;
-		page_canonical($s);
-		return $s;
+	
+	if ($write_file) {
+		$m = umask(0111);
+		@file_put_contents(CONTENT_DIR.'/version', implode('.', $new));
+		umask($m);
 	}
 }
 
@@ -300,6 +208,35 @@ function is_auth()
 	} else {
 		log_msg('error', 'common: invalid or missing AUTH_METHOD config setting');
 		return false;
+	}
+}
+
+
+/**
+ *	check if a page can be served from the cache
+ *
+ *	@param string $category cache category (e.g. 'page')
+ *	@param string $name item name
+ *	@param int $max_age serve from cache when younger than $max_age seconds
+ *	@return bool true if the page can be served from cache, false if not
+ */
+function is_cached($category, $name, $max_age)
+{
+	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
+	if (!is_file($f)) {
+		return false;
+	}
+	// check the file's age
+	if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
+		clearstatcache(true, realpath($f));
+	} else {
+		clearstatcache();
+	}
+	$age = filemtime($f);
+	if ($max_age < abs(time()-$age)) {
+		return false;
+	} else {
+		return true;
 	}
 }
 
@@ -398,6 +335,104 @@ function prompt_auth($header_only = false)
 	}
 	// TODO (listed): we need hotglue theming here
 	die();
+}
+
+
+// TODO: document
+function resolve_aliases($s, $name = '')
+{
+	// base url
+	$s = str_replace('$BASEURL$', base_url(), $s);
+	$s = str_replace('$baseurl$', base_url(), $s);
+	// version number
+	$s = str_replace('$GLUE$', HOTGLUE_VERSION, $s);
+	$s = str_replace('$glue$', HOTGLUE_VERSION, $s);
+	if (!empty($name)) {
+		// current object
+		$s = str_replace('$OBJ$', $name, $s);
+		$s = str_replace('$obj$', $name, $s);
+		// current page
+		$s = str_replace('$PAGE$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
+		$s = str_replace('$page$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
+		// pagename
+		$s = str_replace('$PAGENAME$', array_shift(expl('.', $name)), $s);
+		$s = str_replace('$pagename$', array_shift(expl('.', $name)), $s);
+		// revision
+		$s = str_replace('$REV$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
+		$s = str_replace('$rev$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
+	}
+	return $s;
+}
+
+
+// TODO: document
+function resolve_relative_urls($s)
+{
+	$attrs = array('href', 'src');
+	
+	foreach ($attrs as $attr) {
+		$start = 0;
+		while (($start = strpos($s, $attr.'="', $start)) !== false) {
+			if (($end = strpos($s, '"', $start+strlen($attr)+2)) !== false) {
+				$link = substr($s, $start+strlen($attr)+2, $end-$start-strlen($attr)-2);
+				if (!is_url($link) && substr($link, 0, 1) != '#') {
+					// add base url for relative links that are not directed towards anchors
+					log_msg('debug', 'common: resolving relative url '.quot($link));
+					if (SHORT_URLS) {
+						$link = base_url().$link;
+					} else {
+						$link = base_url().'?'.$link;
+					}
+				} else {
+					log_msg('debug', 'common: not resolving url '.quot($link));
+				}
+				$start = $end+1;
+			} else {
+				break;
+			}
+		}
+	}
+	return $s;
+}
+
+
+/**
+ *	output a cached page to the client
+ *
+ *	@param string $category cache category (e.g. 'page')
+ *	@param string $name item name
+ *	@return true if successful, false if not
+ */
+function serve_cached($category, $name)
+{
+	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
+	if (@readfile($f)) {
+		log_msg('info', 'common: serving '.$category.' '.quot($name).' from cache');
+		return true;
+	} else {
+		log_msg('error', 'common: cannot serve '.$category.' '.quot($name).' from cache');
+		return false;
+	}
+}
+
+
+/**
+ *	return the starting page
+ *
+ *	@return string
+ */
+function startpage()
+{
+	// read the starting page information from the content dir
+	// or fall back to the one defined in the configuration
+	$s = @file_get_contents(CONTENT_DIR.'/startpage');
+	if ($s !== false && 0 < strlen($s)) {
+		return $s;
+	} else {
+		$s = DEFAULT_PAGE;
+		page_canonical($s);
+		return $s;
+	}
 }
 
 
@@ -510,10 +545,13 @@ function valid_pagename($s)
 		return false;
 	} elseif (empty($a[0]) || empty($a[1])) {
 		return false;
-	} elseif (in_array($a[0], array('cache', 'startpage'))) {
+	} elseif (in_array($a[0], array('cache', 'shared'))) {
 		// reserved page names
 		// TODO (later): we're missing the log file here
 		// TODO (later): we're also missing $arg0 of controllers here
+		// TODO (later): we're missing all the files directly in the 
+		// content directory here (this might not be an issue on all 
+		// os)
 		return false;
 	} elseif (in_array($a[1], array('shared'))) {
 		// reserved revision names

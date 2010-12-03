@@ -21,6 +21,55 @@ require_once('util.inc.php');
 // (they can be easier than that one though)
 
 
+function video_alter_save($args)
+{
+	$elem = $args['elem'];
+	$obj = &$args['obj'];
+	if (!elem_has_class($elem, 'video')) {
+		return false;
+	}
+	
+	// parse children elements to find video
+	$childs = html_parse(elem_val($elem));
+	$v = false;
+	foreach ($childs as $c) {
+		if (elem_tag($c) == 'video') {
+			$v = $c;
+			break;
+		}
+	}
+	if (!$v) {
+		log_msg('warn', 'video_alter_save: no video element found, inner html is '.var_dump_inl($childs));
+		return false;
+	}
+	
+	// autoplay
+	if (elem_attr($v, 'autoplay') !== NULL) {
+		$obj['video-autoplay'] = 'autoplay';
+	} else {
+		$obj['video-autoplay'] = '';
+	}
+	// loop
+	if (elem_attr($v, 'loop') !== NULL) {
+		$obj['video-loop'] = 'loop';
+	} else {
+		unset($obj['video-loop']);
+	}
+	// controls
+	if (elem_attr($v, 'controls') !== NULL) {
+		$obj['video-controls'] = 'controls';
+	} else {
+		unset($obj['video-controls']);
+	}
+	// volume
+	if (elem_attr($v, 'audio') == 'muted') {
+		$obj['video-volume'] = '0';
+	} else {
+		unset($obj['video-volume']);
+	}
+}
+
+
 function video_delete_object($args)
 {
 	$obj = $args['obj'];
@@ -56,21 +105,17 @@ function video_has_reference($args)
 }
 
 
-function video_render_object($args)
+function video_alter_render_early($args)
 {
+	$elem = &$args['elem'];
 	$obj = $args['obj'];
-	if (!isset($obj['type']) || $obj['type'] != 'video') {
+	if (!elem_has_class($elem, 'video')) {
 		return false;
 	}
 	
 	// add a css (for viewing as well as editing)
 	html_add_css(base_url().'modules/video/video.css');
 	
-	$e = elem('div');
-	elem_attr($e, 'id', $obj['name']);
-	elem_add_class($e, 'video');
-	elem_add_class($e, 'resizable');
-	elem_add_class($e, 'object');
 	$v = elem('video');
 	if (empty($obj['video-file'])) {
 		elem_attr($v, 'src', '');
@@ -112,12 +157,29 @@ function video_render_object($args)
 	if (isset($obj['video-volume']) && $obj['video-volume'] == '0') {
 		elem_attr($v, 'audio', 'muted');
 	}
-	elem_val($e, $v);
+	elem_append($elem, $v);
+	
+	return true;
+}
+
+
+function video_render_object($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'video') {
+		return false;
+	}
+	
+	$e = elem('div');
+	elem_attr($e, 'id', $obj['name']);
+	elem_add_class($e, 'video');
+	elem_add_class($e, 'resizable');
+	elem_add_class($e, 'object');
 	
 	// hooks
-	invoke_hook('alter_render_early', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'video', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
 	$html = elem_finalize($e);
-	invoke_hook('alter_render_late', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'video', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
 	
 	return $html;
 }
@@ -136,54 +198,17 @@ function video_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	
-	if (!elem_has_class($elem, 'video')) {
+	if (array_shift(elem_classes($elem)) != 'video') {
 		return false;
 	}
 	
-	// parse children elements to find video
-	$childs = html_parse(elem_val($elem));
-	$v = false;
-	foreach ($childs as $c) {
-		if (isset($c['tag']) && strtolower($c['tag']) == 'video') {
-			$v = $c;
-			break;
-		}
-	}
-	if (!$v) {
-		log_msg('warn', 'video_save_state: no video element found, inner html is '.var_dump_inl($childs));
-		return false;
-	}
-	
+	// make sure the type is set
 	$obj['type'] = 'video';
 	$obj['module'] = 'video';
-	// autoplay
-	if (elem_attr($v, 'autoplay') !== NULL) {
-		$obj['video-autoplay'] = 'autoplay';
-	} else {
-		$obj['video-autoplay'] = '';
-	}
-	// loop
-	if (elem_attr($v, 'loop') !== NULL) {
-		$obj['video-loop'] = 'loop';
-	} else {
-		unset($obj['video-loop']);
-	}
-	// controls
-	if (elem_attr($v, 'controls') !== NULL) {
-		$obj['video-controls'] = 'controls';
-	} else {
-		unset($obj['video-controls']);
-	}
-	// volume
-	if (elem_attr($v, 'audio') == 'muted') {
-		$obj['video-volume'] = '0';
-	} else {
-		unset($obj['video-volume']);
-	}
 	
 	// hook
 	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	
 	load_modules('glue');
 	$ret = save_object($obj);
 	if ($ret['#error']) {

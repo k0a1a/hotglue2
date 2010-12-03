@@ -59,6 +59,8 @@ register_controller('*', 'create_page', 'controller_create_page', array('auth'=>
  */
 function controller_edit($args)
 {
+	handle_updates();
+	
 	// most of these checks are only necessary if the client calls 
 	// page/edit directly
 	page_canonical($args[0][0]);
@@ -269,17 +271,20 @@ function invoke_controller($args)
 			if (!is_auth()) {
 				prompt_auth();
 			}
-		}
-		// check the referer to prevent against cross site request forgery (xsrf)
-		// this is not really optimal, since proxies can filter the referer 
-		// header, but as a first step..
-		if (!empty($_SERVER['HTTP_REFERER'])) {
-			$bu = base_url();
-			if (substr($_SERVER['HTTP_REFERER'], 0, strlen($bu)) != $bu) {
-				log_msg('warn', 'controller: possible xsrf detected, referer is '.quot($_SERVER['HTTP_REFERER']).', arguments '.var_dump_inl($args));
-				http_400();
+			
+			// also check the referer to prevent against cross site request 
+			// forgery (xsrf)
+			// this is not really optimal, since proxies can filter the referer 
+			// header, but as a first step..
+			if (!empty($_SERVER['HTTP_REFERER'])) {
+				$bu = base_url();
+				if (substr($_SERVER['HTTP_REFERER'], 0, strlen($bu)) != $bu) {
+					log_msg('warn', 'controller: possible xsrf detected, referer is '.quot($_SERVER['HTTP_REFERER']).', arguments '.var_dump_inl($args));
+					http_400();
+				}
 			}
 		}
+		
 		log_msg('info', 'controller: invoking controller '.quot($reason).' => '.$match['func']);
 		return $match['func']($args);
 	} else {

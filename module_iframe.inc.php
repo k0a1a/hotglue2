@@ -20,18 +20,54 @@ require_once('modules.inc.php');
 // (they can be easier than that one though)
 
 
-function iframe_render_object($args)
+function iframe_alter_save($args)
 {
-	$obj = $args['obj'];
-	if (!isset($obj['type']) || $obj['type'] != 'iframe') {
+	$elem = $args['elem'];
+	$obj = &$args['obj'];
+	if (!elem_has_class($elem, 'iframe')) {
 		return false;
 	}
 	
-	$e = elem('div');
-	elem_attr($e, 'id', $obj['name']);
-	elem_add_class($e, 'iframe');
-	elem_add_class($e, 'resizable');
-	elem_add_class($e, 'object');
+	// parse children elements to find iframe
+	$childs = html_parse(elem_val($elem));
+	$i = false;
+	foreach ($childs as $c) {
+		if (elem_tag($c) == 'iframe') {
+			$i = $c;
+			break;
+		}
+	}
+	if (!$i) {
+		log_msg('warn', 'iframe_alter_save: no iframe element found, inner html is '.var_dump_inl($childs));
+		return false;
+	}
+	
+	// url
+	if (elem_attr($i, 'src') !== NULL) {
+		$obj['iframe-url'] = elem_attr($i, 'src');
+	} else {
+		unset($obj['iframe-url']);
+	}
+	// scrolling
+	if (elem_css($i, 'overflow') == 'hidden' || (elem_css($i, 'overflow-x') == 'hidden' && elem_css($i, 'overflow-y') == 'hidden')) {
+		unset($obj['iframe-scroll']);
+	} else {
+		$obj['iframe-scroll'] = 'scroll';
+	}
+	
+	return true;
+}
+
+
+function iframe_alter_render_early($args)
+{
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'iframe')) {
+		return false;
+	}
+	
+	// add iframe
 	$i = elem('iframe');
 	if (!$args['edit'] && IE8_COMPAT) {
 		elem_attr($i, 'frameborder', '0');
@@ -58,7 +94,7 @@ function iframe_render_object($args)
 		elem_attr($i, 'scrolling', 'no');
 		elem_attr($i, 'seamless', 'seamless');
 	}
-	elem_append($e, $i);
+	elem_append($elem, $i);
 	if ($args['edit']) {
 		// add shield as well
 		$s = elem('div');
@@ -68,13 +104,30 @@ function iframe_render_object($args)
 		elem_css($s, 'position', 'absolute');
 		elem_css($s, 'width', '100%');
 		elem_attr($s, 'title', 'visitors will be able to interact with the webpage below');
-		elem_append($e, $s);
+		elem_append($elem, $s);
 	}
 	
+	return true;
+}
+
+
+function iframe_render_object($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'iframe') {
+		return false;
+	}
+	
+	$e = elem('div');
+	elem_attr($e, 'id', $obj['name']);
+	elem_add_class($e, 'iframe');
+	elem_add_class($e, 'resizable');
+	elem_add_class($e, 'object');
+	
 	// hooks
-	invoke_hook('alter_render_early', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'iframe', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
 	$html = elem_finalize($e);
-	invoke_hook('alter_render_late', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'iframe', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
 	
 	return $html;
 }
@@ -93,42 +146,17 @@ function iframe_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	
-	if (!elem_has_class($elem, 'iframe')) {
+	if (array_shift(elem_classes($elem)) != 'iframe') {
 		return false;
 	}
 	
-	// parse children elements to find iframe
-	$childs = html_parse(elem_val($elem));
-	$i = false;
-	foreach ($childs as $c) {
-		if (isset($c['tag']) && strtolower($c['tag']) == 'iframe') {
-			$i = $c;
-			break;
-		}
-	}
-	if (!$i) {
-		log_msg('warn', 'iframe_save_state: no iframe element found, inner html is '.var_dump_inl($childs));
-		return false;
-	}
-	
-	// the object file might currently empty, so make sure type and module 
-	// get set
+	// make sure the type is set
 	$obj['type'] = 'iframe';
 	$obj['module'] = 'iframe';
-	// url
-	if (elem_attr($i, 'src') !== NULL) {
-		$obj['iframe-url'] = elem_attr($i, 'src');
-	}
-	// scrolling
-	if (elem_css($i, 'overflow') == 'hidden' || (elem_css($i, 'overflow-x') == 'hidden' && elem_css($i, 'overflow-y') == 'hidden')) {
-		unset($obj['iframe-scroll']);
-	} else {
-		$obj['iframe-scroll'] = 'scroll';
-	}
 	
 	// hook
 	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	
 	load_modules('glue');
 	$ret = save_object($obj);
 	if ($ret['#error']) {

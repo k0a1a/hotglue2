@@ -46,6 +46,167 @@ function _gd_get_imagesize($f)
 
 
 /**
+ *	implements alter_render_early
+ *
+ *	see image_render_object()
+ */
+function image_alter_render_early($args)
+{
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'image')) {
+		return false;
+	}
+	
+	// try to calculate original-{width,height} if not already set
+	if (!empty($obj['image-file']) && (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0)) {
+		if (_gd_available()) {
+			$a = expl('.', $obj['name']);
+			$fn = CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file'];
+			// resolve symlinks
+			if (@is_link($fn)) {
+				$target = @readlink($fn);
+				if (substr($target, 0, 1) == '/') {
+					$fn = $target;
+				} else {
+					$fn = dirname($fn).'/'.$target;
+				}
+			}
+			$size = _gd_get_imagesize($fn);
+			$obj['image-file-width'] = $size[0];
+			// update regular with as well if not set
+			if (empty($obj['object-width']) || intval($obj['object-width']) == 0) {
+				$obj['object-width'] = $size[0].'px';
+			}
+			$obj['image-file-height'] = $size[1];
+			if (empty($obj['object-height']) || intval($obj['object-height']) == 0) {
+				$obj['object-height'] = $size[1].'px';
+			}
+		}
+		save_object($obj);
+	}
+	
+	// setup url
+	// note: the url points to the object name, not the 
+	// filename in the shared directory (the file eventually gets served 
+	// in image_serve_resource())
+	// TODO (later): support URLs as well
+	if (SHORT_URLS) {
+		$url = base_url().urlencode($obj['name']);
+	} else {
+		$url = base_url().'?'.urlencode($obj['name']);
+	}
+	
+	// render a div with background if we have original-{width,height}
+	// otherwise a div with an img inside
+	if (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0) {
+		// render a div with an img inside
+		$i = elem('img');
+		elem_attr($i, 'src', $url);
+		if (!empty($obj['image-title'])) {
+			elem_attr($i, 'alt', $obj['image-title']);
+		} else {
+			elem_attr($i, 'alt', '');
+		}
+		// make sure you only append to the element in alter_render_early 
+		// handlers, don't assume that nothing is in there yet
+		elem_append($elem, $i);
+	} else {
+		if (!$args['edit'] && IE8_COMPAT && (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat')) {
+			// background-size is not supported by IE8, so render a div with an img inside instead
+			$i = elem('img');
+			elem_attr($i, 'src', $url);
+			if (!empty($obj['image-title'])) {
+				elem_attr($i, 'alt', $obj['image-title']);
+			} else {
+				elem_attr($i, 'alt', '');
+			}
+			elem_css($i, 'width', '100%');
+			elem_css($i, 'height', '100%');
+			elem_css($i, 'padding', '0px');
+			elem_css($i, 'border', '0px');
+			if (!empty($obj['image-background-position']) && $obj['image-background-position'] != '0px 0px' && $obj['image-background-position'] != '0% 0%') {
+				elem_css($elem, 'max-width', $obj['object-width']);
+				elem_css($elem, 'max-height', $obj['object-height']);
+				elem_css($elem, 'overflow', 'hidden');
+				// assume px
+				$a = expl(' ', $obj['image-background-position']);
+				elem_css($i, 'margin-left', @intval($a[0]).'px');
+				elem_css($i, 'margin-top', @intval($a[1]).'px');
+				elem_css($i, 'margin-right', '0px');
+				elem_css($i, 'margin-bottom', '0px');
+			} else {
+				elem_css($i, 'margin', '0px');
+			}
+			elem_append($elem, $i);
+		} else {
+			// this is the regular case
+			// render a div with background
+			elem_css($elem, 'background-image', 'url('.$url.')');
+			// default to no tiling
+			if (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat') {
+				elem_css($elem, 'background-repeat', 'no-repeat');
+				// set hardcoded background-size as well
+				elem_css($elem, 'background-size', '100% 100%');
+				// this is for Firefox 3.6
+				elem_css($elem, '-moz-background-size', '100% 100%');
+			} else {
+				elem_css($elem, 'background-repeat', $obj['image-background-repeat']);
+			}
+			if (!empty($obj['image-background-position'])) {
+				elem_css($elem, 'background-position', $obj['image-background-position']);
+			}
+		}
+	}
+	
+	// additional properties for both
+	if (!empty($obj['image-title'])) {
+		elem_attr($elem, 'title', $obj['image-title']);
+	}
+	
+	return true;
+}
+
+
+/**
+ *	implements alter_save
+ *
+ *	see image_save_state()
+ */
+function image_alter_save($args)
+{
+	$elem = $args['elem'];
+	// make sure that obj is a reference to the other object here
+	$obj = &$args['obj'];
+	// only handle the element when we are one of its classes
+	// notice the difference to image_save_state()?
+	if (!elem_has_class($elem, 'image')) {
+		return false;
+	}
+	
+	// update the object based on the element's properties
+	if (elem_css($elem, 'background-repeat') !== NULL) {
+		$val = elem_css($elem, 'background-repeat');
+		// normalize
+		if ($val == 'no-repeat no-repeat') {
+			$val = 'no-repeat';
+		}
+		$obj['image-background-repeat'] = $val;
+	} else {
+		unset($obj['image-background-repeat']);
+	}
+	if (elem_css($elem, 'background-position') !== NULL) {
+		$obj['image-background-position'] = elem_css($elem, 'background-position');
+	} else {
+		unset($obj['image-background-position']);
+	}
+	
+	// this is more out of courtesy than anything else
+	return true;
+}
+
+
+/**
  *	implements delete_object
  */
 function image_delete_object($args)
@@ -107,39 +268,6 @@ function image_render_object($args)
 		return false;
 	}
 	
-	// handle the case when we have no file
-	if (empty($obj['image-file'])) {
-		return '';
-	}
-	
-	// try to calculate original-{width,height} if not already set
-	if (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0) {
-		if (_gd_available()) {
-			$a = expl('.', $obj['name']);
-			$fn = CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file'];
-			// resolve symlinks
-			if (@is_link($fn)) {
-				$target = @readlink($fn);
-				if (substr($target, 0, 1) == '/') {
-					$fn = $target;
-				} else {
-					$fn = dirname($fn).'/'.$target;
-				}
-			}
-			$size = _gd_get_imagesize($fn);
-			$obj['image-file-width'] = $size[0];
-			// update regular with as well if not set
-			if (empty($obj['object-width']) || intval($obj['object-width']) == 0) {
-				$obj['object-width'] = $size[0].'px';
-			}
-			$obj['image-file-height'] = $size[1];
-			if (empty($obj['object-height']) || intval($obj['object-height']) == 0) {
-				$obj['object-height'] = $size[1].'px';
-			}
-		}
-		save_object($obj);
-	}
-	
 	// the outer element must be a div or something else that can contain 
 	// other elements
 	$e = elem('div');
@@ -148,88 +276,12 @@ function image_render_object($args)
 	elem_add_class($e, 'resizable');
 	elem_add_class($e, 'object');
 	
-	// setup url
-	// note: the url points to the object name, not the 
-	// filename in the shared directory (the file eventually gets served 
-	// in image_serve_resource())
-	// TODO (later): support URLs as well
-	if (SHORT_URLS) {
-		$url = base_url().urlencode($obj['name']);
-	} else {
-		$url = base_url().'?'.urlencode($obj['name']);
-	}
-	
-	// render a div with background if we have original-{width,height}
-	// otherwise a div with an img inside
-	if (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0) {
-		// render a div with an img inside
-		$i = elem('img');
-		elem_attr($i, 'src', $url);
-		if (!empty($obj['image-title'])) {
-			elem_attr($i, 'alt', $obj['image-title']);
-		} else {
-			elem_attr($i, 'alt', '');
-		}
-		elem_val($e, $i);
-	} else {
-		if (!$args['edit'] && IE8_COMPAT && (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat')) {
-			// background-size is not supported by IE8, so render a div with an img inside instead
-			$i = elem('img');
-			elem_attr($i, 'src', $url);
-			if (!empty($obj['image-title'])) {
-				elem_attr($i, 'alt', $obj['image-title']);
-			} else {
-				elem_attr($i, 'alt', '');
-			}
-			elem_css($i, 'width', '100%');
-			elem_css($i, 'height', '100%');
-			elem_css($i, 'padding', '0px');
-			elem_css($i, 'border', '0px');
-			if (!empty($obj['image-background-position']) && $obj['image-background-position'] != '0px 0px' && $obj['image-background-position'] != '0% 0%') {
-				elem_css($e, 'max-width', $obj['object-width']);
-				elem_css($e, 'max-height', $obj['object-height']);
-				elem_css($e, 'overflow', 'hidden');
-				// assume px
-				$a = expl(' ', $obj['image-background-position']);
-				elem_css($i, 'margin-left', @intval($a[0]).'px');
-				elem_css($i, 'margin-top', @intval($a[1]).'px');
-				elem_css($i, 'margin-right', '0px');
-				elem_css($i, 'margin-bottom', '0px');
-			} else {
-				elem_css($i, 'margin', '0px');
-			}
-			elem_val($e, $i);
-		} else {
-			// this is the regular case
-			// render a div with background
-			elem_css($e, 'background-image', 'url('.$url.')');
-			// default to no tiling
-			if (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat') {
-				elem_css($e, 'background-repeat', 'no-repeat');
-				// set hardcoded background-size as well
-				elem_css($e, 'background-size', '100% 100%');
-				// this is for Firefox 3.6
-				elem_css($e, '-moz-background-size', '100% 100%');
-			} else {
-				elem_css($e, 'background-repeat', $obj['image-background-repeat']);
-			}
-			if (!empty($obj['image-background-position'])) {
-				elem_css($e, 'background-position', $obj['image-background-position']);
-			}
-		}
-	}
-	
-	// additional properties for both
-	if (!empty($obj['image-title'])) {
-		elem_attr($e, 'title', $obj['image-title']);
-	}
-	
+	// hook
 	// elem is passed as reference here
-	invoke_hook('alter_render_early', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
-	
+	invoke_hook_first('alter_render_early', 'image', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
 	$html = elem_finalize($e);
 	// html is passed as reference here
-	invoke_hook('alter_render_late', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'image', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
 	
 	return $html;
 }
@@ -317,7 +369,10 @@ function image_resize($args)
 		unset($obj['image-resized-width']);
 		unset($obj['image-resized-height']);
 		// update object file as well
-		object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('resized-file', 'resized-width', 'resized-height')));
+		$ret = object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('resized-file', 'resized-width', 'resized-height')));
+		if ($ret['#error']) {
+			return $ret;
+		}
 		$was_resized = true;
 	} else {
 		$was_resized = false;
@@ -408,9 +463,8 @@ function image_resize($args)
 	// save_object from the frontend after resize
 	$update['width'] = $width.'px';
 	$update['height'] = $height.'px';
-	update_object($update);
 	
-	return response(true);
+	return update_object($update);
 }
 
 register_service('image.resize', 'image_resize', array('auth'=>true));
@@ -423,40 +477,35 @@ function image_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
+	// only take responsibility for the element when we are its main class
+	if (array_shift(elem_classes($elem)) != 'image') {
+		return false;
+	}
 	
+	// make sure the type is set
+	$obj['type'] = 'image';
+	$obj['module'] = 'image';
+	
+	// by convention the main retrieving of the elements properties takes 
+	// place in alter_state
+	// this way other objects types may "derive" from this one
+	// it also allows other modules to chime in
+	// notice: obj is passed as reference here
 	// obj might be (almost) empty for newly created objects, so rely only 
 	// on $elem
-	if (elem_has_class($elem, 'image')) {
-		// save properties that we want to perserve
-		if (elem_css($elem, 'background-repeat') !== NULL) {
-			$val = elem_css($elem, 'background-repeat');
-			// normalize
-			if ($val == 'no-repeat no-repeat') {
-				$val = 'no-repeat';
-			}
-			$obj['image-background-repeat'] = $val;
-		} else {
-			unset($obj['image-background-repeat']);
-		}
-		if (elem_css($elem, 'background-position') !== NULL) {
-			$obj['image-background-position'] = elem_css($elem, 'background-position');
-		} else {
-			unset($obj['image-background-position']);
-		}
-		// we give other modules (like module_object) a chance to change 
-		// the object
-		// obj is passed as reference here
-		invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
-		load_modules('glue');
-		$ret = save_object($obj);
-		if ($ret['#error']) {
-			log_msg('error', 'image_save_state: save_object returned '.quot($ret['#data']));
-			return false;
-		} else {
-			return true;
-		}
-	} else {
+	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	// see image_alter_save() above
+	
+	// we could do some overriding here if we wanted to
+	
+	// finally save the object
+	load_modules('glue');
+	$ret = save_object($obj);
+	if ($ret['#error']) {
+		log_msg('error', 'image_save_state: save_object returned '.quot($ret['#data']));
 		return false;
+	} else {
+		return true;
 	}
 }
 

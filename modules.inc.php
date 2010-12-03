@@ -75,17 +75,26 @@ function get_service($service)
  *	@param array $args arguments-array (can include references)
  *	@return array of results (module=>result)
  */
-function invoke_hook($hook, $args = array())
+function invoke_hook($hook, $args = array(), $first_module = '', $last_module = '')
 {
 	global $modules;
 	
 	$ret = array();
 	// make sure all modules are loaded
 	load_modules();
-		
+	
+	// optionally call a module before the other ones
+	$func = $first_module.'_'.$hook;
+	if (!empty($first_module) && is_callable($func)) {
+		// DEBUG
+		log_msg('debug', 'modules: invoking hook '.$hook.', calling first '.$func);
+		$cur = $func($args);
+		$ret[$first_module] = $cur;
+	}
+	
 	foreach ($modules as $m) {
-		if (is_callable($m.'_'.$hook)) {
-			$func = $m.'_'.$hook;
+		$func = $m.'_'.$hook;
+		if ($m != $first_module && $m != $last_module && is_callable($func)) {
 			// DEBUG
 			log_msg('debug', 'modules: invoking hook '.$hook.', calling '.$func);
 			// we can't pass on references with func_get_arg() etc
@@ -96,8 +105,47 @@ function invoke_hook($hook, $args = array())
 		}
 	}
 	
+	// optionally call a module after the other ones
+	$func = $last_module.'_'.$hook;
+	if (!empty($last_module) && is_callable($func)) {
+		// DEBUG
+		log_msg('debug', 'modules: invoking hook '.$hook.', calling last '.$func);
+		$cur = $func($args);
+		$ret[$last_module] = $cur;
+	}
+	
 	log_msg('debug', 'modules: invoke_hook on '.$hook.' returned '.var_dump_inl($ret));
 	return $ret;
+}
+
+
+/**
+ *	invoke a hook with a specified module being called first
+ *
+ *	this function also takes care of loading all modules.
+ *	@param string $hook hook to invoke
+ *	@param string $first_module name of first module to call
+ *	@param array $args arguments-array (can include references)
+ *	@return array of results (module=>result)
+ */
+function invoke_hook_first($hook, $first_module, $args = array())
+{
+	return invoke_hook($hook, $args, $first_module, '');
+}
+
+
+/**
+ *	invoke a hook with a specified module being called last
+ *
+ *	this function also takes care of loading all modules.
+ *	@param string $hook hook to invoke
+ *	@param string $first_module name of last module to call
+ *	@param array $args arguments-array (can include references)
+ *	@return array of results (module=>result)
+ */
+function invoke_hook_last($hook, $last_module, $args = array())
+{
+	return invoke_hook($hook, $args, '', $last_module);
 }
 
 

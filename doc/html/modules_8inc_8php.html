@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<title>hotglue: /srv/www/sukzessiv.net/h/modules.inc.php File Reference</title>
+<title>hotglue: /srv/www/sukzessiv.net/hotglue3/modules.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css">
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -20,7 +20,7 @@
   </div>
 </div>
 <div class="contents">
-<h1>/srv/www/sukzessiv.net/h/modules.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
+<h1>/srv/www/sukzessiv.net/hotglue3/modules.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">if(!isset($hooks)) if(!isset($modules)) <br class="typebreak">
@@ -30,7 +30,11 @@ if(!isset($services))&nbsp;</td><td class="memItemRight" valign="bottom"><a clas
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#bf7633223c2fd4ecb199a8e0dc070802">get_service</a> ($service)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#3318fb85bac26e6fb2397c6ea9f02322">invoke_hook</a> ($hook, $args=array())</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#92ef7c094f294cfec43a3bb53227a21a">invoke_hook</a> ($hook, $args=array(), $first_module= '', $last_module= '')</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#cac937809bdb98ce29616134e43050ed">invoke_hook_first</a> ($hook, $first_module, $args=array())</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#e1ff036fae9d272fe1d58dff8a9caed2">invoke_hook_last</a> ($hook, $last_module, $args=array())</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="modules_8inc_8php.html#66473fc9f24153d85053f1f9c6ed83e4">invoke_hook_while</a> ($hook, $while, $args=array())</td></tr>
 
@@ -116,7 +120,7 @@ call <a class="el" href="modules_8inc_8php.html#23f8be02dc2148a3c860119a1d6ea276
 
 </div>
 </div><p>
-<a class="anchor" name="3318fb85bac26e6fb2397c6ea9f02322"></a><!-- doxytag: member="modules.inc.php::invoke_hook" ref="3318fb85bac26e6fb2397c6ea9f02322" args="($hook, $args=array())" -->
+<a class="anchor" name="92ef7c094f294cfec43a3bb53227a21a"></a><!-- doxytag: member="modules.inc.php::invoke_hook" ref="92ef7c094f294cfec43a3bb53227a21a" args="($hook, $args=array(), $first_module= '', $last_module= '')" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -125,6 +129,61 @@ call <a class="el" href="modules_8inc_8php.html#23f8be02dc2148a3c860119a1d6ea276
           <td>(</td>
           <td class="paramtype">$&nbsp;</td>
           <td class="paramname"> <em>hook</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>args</em> = <code>array()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>first_module</em> = <code>''</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>last_module</em> = <code>''</code></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+invoke a hook<p>
+this function also takes care of loading all modules. <dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$hook hook to invoke </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$args arguments-array (can include references) </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>array of results (module=&gt;result) </dd></dl>
+
+</div>
+</div><p>
+<a class="anchor" name="cac937809bdb98ce29616134e43050ed"></a><!-- doxytag: member="modules.inc.php::invoke_hook_first" ref="cac937809bdb98ce29616134e43050ed" args="($hook, $first_module, $args=array())" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">invoke_hook_first           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>hook</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>first_module</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -142,10 +201,55 @@ call <a class="el" href="modules_8inc_8php.html#23f8be02dc2148a3c860119a1d6ea276
 <div class="memdoc">
 
 <p>
-invoke a hook<p>
+invoke a hook with a specified module being called first<p>
 this function also takes care of loading all modules. <dl compact><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$hook hook to invoke </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$first_module name of first module to call </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$args arguments-array (can include references) </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>array of results (module=&gt;result) </dd></dl>
+
+</div>
+</div><p>
+<a class="anchor" name="e1ff036fae9d272fe1d58dff8a9caed2"></a><!-- doxytag: member="modules.inc.php::invoke_hook_last" ref="e1ff036fae9d272fe1d58dff8a9caed2" args="($hook, $last_module, $args=array())" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">invoke_hook_last           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>hook</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>last_module</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>args</em> = <code>array()</code></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+invoke a hook with a specified module being called last<p>
+this function also takes care of loading all modules. <dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$hook hook to invoke </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$first_module name of last module to call </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$args arguments-array (can include references) </td></tr>
   </table>
 </dl>
@@ -388,7 +492,7 @@ this function checks the arguments in $args against the (optional) declaration g
 </div>
 </div><p>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Wed Dec 1 14:07:05 2010 for hotglue by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu Dec 2 16:37:34 2010 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

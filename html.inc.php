@@ -152,6 +152,22 @@ function elem_attr(&$elem)
 
 
 /**
+ *	get the element's classes in an array
+ *
+ *	@param array $elem element
+ *	@return array
+ */
+function elem_classes($elem)
+{
+	if (@is_array($elem['class'])) {
+		return $elem['class'];
+	} else {
+		return array();
+	}
+}
+
+
+/**
  *	get or set a css property in an element
  *
  *	@param array &$elem reference to an element
@@ -315,6 +331,23 @@ function elem_remove_class(&$elem, $c)
 		if (($k = array_search($c, $elem['class'])) !== false) {
 			array_splice($elem['class'], $k, 1);
 		}
+	}
+}
+
+
+/**
+ *	get the element's tag
+ *
+ *	the tag is always returned in lowercase characters.
+ *	@param array $elem element
+ *	@return string
+ */
+function elem_tag($elem)
+{
+	if (isset($elem['tag'])) {
+		return strtolower($elem['tag']);
+	} else {
+		return '';
 	}
 }
 

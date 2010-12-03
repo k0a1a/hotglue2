@@ -41,128 +41,14 @@ function _text_render_content($s, $name)
 }
 
 
-function text_render_object($args)
-{
-	$obj = $args['obj'];
-	if (!isset($obj['type']) || $obj['type'] != 'text') {
-		return false;
-	}
-	
-	$e = elem('div');
-	elem_attr($e, 'id', $obj['name']);
-	elem_add_class($e, 'text');
-	elem_add_class($e, 'resizable');
-	elem_add_class($e, 'object');
-	// background-color
-	if (!empty($obj['text-background-color'])) {
-		elem_css($e, 'background-color', $obj['text-background-color']);
-	}
-	// content
-	if (!isset($obj['content'])) {
-		$obj['content'] = '';
-	}
-	if ($args['edit']) {
-		// add a textarea
-		$i = elem('textarea');
-		elem_add_class($i, 'glue-text-input');
-		elem_css($i, 'width', '100%');
-		elem_css($i, 'height', '100%');
-		// hide the text area by default
-		elem_css($i, 'display', 'none');
-		// set the context to the textarea to the (unrendered) object content
-		$content = htmlspecialchars($obj['content'], ENT_NOQUOTES, 'UTF-8');
-		// replace newline characters by an entity to prevent render_object() 
-		// from adding some indentation
-		$content = str_replace("\r\n", '&#10;', $content);
-		$content = str_replace("\n", '&#10;', $content);
-		// why not replace tabs as well why we are at it
-		$content = str_replace("\t", '&#09;', $content);
-		elem_val($i, $content);
-		elem_append($e, $i);
-		// and a nested div
-		$r = elem('div');
-		elem_add_class($r, 'glue-text-render');
-		elem_css($r, 'width', '100%');
-		elem_css($r, 'height', '100%');
-		// set the content of the div to the rendered object content
-		elem_val($r, _text_render_content($obj['content'], $obj['name']));
-		elem_append($e, $r);
-	} else {
-		elem_val($e, _text_render_content($obj['content'], $obj['name']));
-	}
-	// font-color
-	if (!empty($obj['text-font-color'])) {
-		elem_css($e, 'color', $obj['text-font-color']);
-	}
-	// font-size
-	if (!empty($obj['text-font-size'])) {
-		elem_css($e, 'font-size', $obj['text-font-size']);
-	}
-	// font-style
-	if (!empty($obj['text-font-style'])) {
-		elem_css($e, 'font-style', $obj['text-font-style']);
-	}
-	// font-weight
-	if (!empty($obj['text-font-weight'])) {
-		elem_css($e, 'font-weight', $obj['text-font-weight']);
-	}
-	// letter-spacing
-	if (!empty($obj['text-letter-spacing'])) {
-		elem_css($e, 'letter-spacing', $obj['text-letter-spacing']);
-	}
-	// line-height
-	if (!empty($obj['text-line-height'])) {
-		elem_css($e, 'line-height', $obj['text-line-height']);
-	}
-	// padding-x
-	if (!empty($obj['text-padding-x'])) {
-		elem_css($e, 'padding-left', $obj['text-padding-x']);
-		elem_css($e, 'padding-right', $obj['text-padding-x']);
-	}
-	// padding-y
-	if (!empty($obj['text-padding-y'])) {
-		elem_css($e, 'padding-top', $obj['text-padding-y']);
-		elem_css($e, 'padding-bottom', $obj['text-padding-y']);
-	}
-	// text-align
-	if (!empty($obj['text-align'])) {
-		elem_css($e, 'text-align', $obj['text-align']);
-	}
-	// word-spacing
-	if (!empty($obj['text-word-spacing'])) {
-		elem_css($e, 'word-spacing', $obj['text-word-spacing']);
-	}
-	
-	// hooks
-	invoke_hook('alter_render_early', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
-	$html = elem_finalize($e);
-	invoke_hook('alter_render_late', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
-	
-	return $html;
-}
-
-
-function text_render_page_early($args)
-{
-	if ($args['edit']) {
-		html_add_js(base_url().'modules/text/text-edit.js');
-		html_add_css(base_url().'modules/text/text-edit.css');
-		html_add_js_var('$.glue.conf.text.auto_br', TEXT_AUTO_BR);
-	}
-}
-
-
-function text_save_state($args)
+function text_alter_save($args)
 {
 	$elem = $args['elem'];
-	$obj = $args['obj'];
-	
+	$obj = &$args['obj'];
 	if (!elem_has_class($elem, 'text')) {
 		return false;
 	}
 	
-	$obj['type'] = 'text';
-	$obj['module'] = 'text';
 	// background-color
 	if (elem_css($elem, 'background-color') !== NULL) {
 		$obj['text-background-color'] = elem_css($elem, 'background-color');
@@ -232,8 +118,149 @@ function text_save_state($args)
 		unset($obj['text-word-spacing']);
 	}
 	
+	return true;
+}
+
+
+function text_alter_render_early($args)
+{
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'text')) {
+		return false;
+	}
+	
+	// background-color
+	if (!empty($obj['text-background-color'])) {
+		elem_css($elem, 'background-color', $obj['text-background-color']);
+	}
+	// content
+	if (!isset($obj['content'])) {
+		$obj['content'] = '';
+	}
+	if ($args['edit']) {
+		// add a textarea
+		$i = elem('textarea');
+		elem_add_class($i, 'glue-text-input');
+		elem_css($i, 'width', '100%');
+		elem_css($i, 'height', '100%');
+		// hide the text area by default
+		elem_css($i, 'display', 'none');
+		// set the context to the textarea to the (unrendered) object content
+		$content = htmlspecialchars($obj['content'], ENT_NOQUOTES, 'UTF-8');
+		// replace newline characters by an entity to prevent render_object() 
+		// from adding some indentation
+		$content = str_replace("\r\n", '&#10;', $content);
+		$content = str_replace("\n", '&#10;', $content);
+		// why not replace tabs as well why we are at it
+		$content = str_replace("\t", '&#09;', $content);
+		elem_val($i, $content);
+		elem_append($elem, $i);
+		// and a nested div
+		$r = elem('div');
+		elem_add_class($r, 'glue-text-render');
+		elem_css($r, 'width', '100%');
+		elem_css($r, 'height', '100%');
+		// set the content of the div to the rendered object content
+		elem_val($r, _text_render_content($obj['content'], $obj['name']));
+		elem_append($elem, $r);
+	} else {
+		elem_append($elem, _text_render_content($obj['content'], $obj['name']));
+	}
+	// font-color
+	if (!empty($obj['text-font-color'])) {
+		elem_css($elem, 'color', $obj['text-font-color']);
+	}
+	// font-size
+	if (!empty($obj['text-font-size'])) {
+		elem_css($elem, 'font-size', $obj['text-font-size']);
+	}
+	// font-style
+	if (!empty($obj['text-font-style'])) {
+		elem_css($elem, 'font-style', $obj['text-font-style']);
+	}
+	// font-weight
+	if (!empty($obj['text-font-weight'])) {
+		elem_css($elem, 'font-weight', $obj['text-font-weight']);
+	}
+	// letter-spacing
+	if (!empty($obj['text-letter-spacing'])) {
+		elem_css($elem, 'letter-spacing', $obj['text-letter-spacing']);
+	}
+	// line-height
+	if (!empty($obj['text-line-height'])) {
+		elem_css($elem, 'line-height', $obj['text-line-height']);
+	}
+	// padding-x
+	if (!empty($obj['text-padding-x'])) {
+		elem_css($elem, 'padding-left', $obj['text-padding-x']);
+		elem_css($elem, 'padding-right', $obj['text-padding-x']);
+	}
+	// padding-y
+	if (!empty($obj['text-padding-y'])) {
+		elem_css($elem, 'padding-top', $obj['text-padding-y']);
+		elem_css($elem, 'padding-bottom', $obj['text-padding-y']);
+	}
+	// text-align
+	if (!empty($obj['text-align'])) {
+		elem_css($elem, 'text-align', $obj['text-align']);
+	}
+	// word-spacing
+	if (!empty($obj['text-word-spacing'])) {
+		elem_css($elem, 'word-spacing', $obj['text-word-spacing']);
+	}
+	
+	return true;
+}
+
+
+function text_render_object($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'text') {
+		return false;
+	}
+	
+	$e = elem('div');
+	elem_attr($e, 'id', $obj['name']);
+	elem_add_class($e, 'text');
+	elem_add_class($e, 'resizable');
+	elem_add_class($e, 'object');
+	
+	// hooks
+	invoke_hook_first('alter_render_early', 'text', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	$html = elem_finalize($e);
+	invoke_hook_last('alter_render_late', 'text', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	
+	return $html;
+}
+
+
+function text_render_page_early($args)
+{
+	if ($args['edit']) {
+		html_add_js(base_url().'modules/text/text-edit.js');
+		html_add_css(base_url().'modules/text/text-edit.css');
+		html_add_js_var('$.glue.conf.text.auto_br', TEXT_AUTO_BR);
+	}
+}
+
+
+function text_save_state($args)
+{
+	$elem = $args['elem'];
+	$obj = $args['obj'];
+	if (array_shift(elem_classes($elem)) != 'text') {
+		return false;
+	}
+	
+	// make sure the type is set
+	$obj['type'] = 'text';
+	$obj['module'] = 'text';
+	
 	// hook
 	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	
 	load_modules('glue');
 	$ret = save_object($obj);
 	if ($ret['#error']) {

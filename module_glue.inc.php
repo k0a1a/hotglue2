@@ -43,6 +43,14 @@ function _cmp_time($a, $b)
 // wait in millis
 function _obj_lock($name, $wait = true)
 {
+	// TODO (later): make this work on Windows (opening and writing to files 
+	// after taking the lock doesn't work there atm)
+	// bandaid below
+	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+		log_msg('warn', 'lock: locking is not supported on WIN32 at the moment');
+		return true;
+	}
+	
 	$start = intval(microtime(true)*1000.0);
 	$fn = CONTENT_DIR.'/'.str_replace('.', '/', $name);
 	// resolve symlinks
@@ -85,6 +93,12 @@ function _obj_lock($name, $wait = true)
 // TODO: document
 function _obj_unlock($f)
 {
+	// bandaid below
+	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+		log_msg('warn', 'unlock: locking is not supported on WIN32 at the moment');
+		return;
+	}
+	
 	if ($f) {
 		@flock($f, LOCK_UN);
 		log_msg('debug', 'lock: released lock');
@@ -684,10 +698,13 @@ function pagenames($args)
 		$files = @scandir(CONTENT_DIR);
 		$ret = array();
 		foreach ($files as $f) {
-			if ($f == '.' || $f == '..' || $f == 'cache') {
+			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared') {
 				continue;
 			} elseif (!is_dir(CONTENT_DIR.'/'.$f)) {
 				// skip files
+				continue;
+			} elseif (substr($f, 0, 1) == '.') {
+				// skip directories starting with a dot (like .svn)
 				continue;
 			} else {
 				$ret[] = $f;
@@ -1214,6 +1231,8 @@ function snapshot($args)
 				log_msg('debug', 'snapshot: copied the content of symlink '.quot($args['page'].'.'.$f));
 			}
 			umask($m);
+			// load the object and give modules a chance to 
+			// copy referenced files as well
 		} elseif (is_file($src.'/'.$f)) {
 			// copy file
 			$m = umask(0111);

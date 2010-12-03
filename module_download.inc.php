@@ -21,6 +21,53 @@ require_once('util.inc.php');
 // (they can be easier than that one though)
 
 
+function download_alter_render_early($args)
+{
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'download')) {
+		return false;
+	}
+	
+	if ($args['edit']) {
+		elem_attr($elem, 'title', 'this is '.$obj['name'].', original file name was '.$obj['download-file']);
+	} else {
+		elem_attr($elem, 'title', 'download file');
+	}
+	// get file extension
+	$a = expl('.', $obj['download-file']);
+	if (1 < count($a)) {
+		$v = elem('div');
+		elem_add_class($v, 'download-ext');
+		elem_val($v, htmlspecialchars(array_pop($a), ENT_NOQUOTES, 'UTF-8'));
+		elem_append($elem, $v);
+	}
+	
+	return true;
+}
+
+
+function download_alter_render_late($args)
+{
+	$elem = $args['elem'];
+	$html = &$args['html'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'download')) {
+		return false;
+	}
+	
+	if (!$args['edit'] && (!isset($obj['download-public']) || $obj['download-public'] != 'public')) {
+		// hide it in viewing mode if not public
+		$html = '';
+	} elseif (!$args['edit']) {
+		// otherwise add the css only on-demand in viewing mode
+		html_add_css(base_url().'modules/download/download.css');
+	}
+	
+	return true;
+}
+
+
 function download_delete_object($args)
 {
 	$obj = $args['obj'];
@@ -64,36 +111,15 @@ function download_render_object($args)
 		return false;
 	}
 	
-	if (!$args['edit'] && (!isset($obj['download-public']) || $obj['download-public'] != 'public')) {
-		// hide it in viewing mode if not public
-		return '';
-	} elseif (!$args['edit']) {
-		// otherwise add the css only on-demand in viewing mode
-		html_add_css(base_url().'modules/download/download.css');
-	}
-	
 	$e = elem('div');
 	elem_attr($e, 'id', $obj['name']);
 	elem_add_class($e, 'download');
 	elem_add_class($e, 'object');
-	if ($args['edit']) {
-		elem_attr($e, 'title', 'this is '.$obj['name'].', original file name was '.$obj['download-file']);
-	} else {
-		elem_attr($e, 'title', 'download file');
-	}
-	// get file extension
-	$a = expl('.', $obj['download-file']);
-	if (1 < count($a)) {
-		$v = elem('div');
-		elem_add_class($v, 'download-ext');
-		elem_val($v, htmlspecialchars(array_pop($a), ENT_NOQUOTES, 'UTF-8'));
-		elem_val($e, $v);
-	}
 	
-	invoke_hook('alter_render_early', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
-	
+	// hooks
+	invoke_hook_first('alter_render_early', 'download', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
 	$html = elem_finalize($e);
-	invoke_hook('alter_render_late', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'download', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
 	
 	if (!$args['edit']) {
 		// put link to file around the element
@@ -122,26 +148,32 @@ function download_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	
-	if (elem_has_class($elem, 'download')) {
-		load_modules('glue');
-		invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
-		// make width and height only be determined by the css
-		if (isset($obj['object-width'])) {
-			unset($obj['object-width']);
-		}
-		if (isset($obj['object-height'])) {
-			unset($obj['object-height']);
-		}
-		$ret = save_object($obj);
-		if ($ret['#error']) {
-			log_msg('error', 'download_save_state: save_object returned '.quot($ret['#data']));
-			return false;
-		} else {
-			return true;
-		}
-	} else {
+	if (array_shift(elem_classes($elem)) != 'download') {
 		return false;
+	}
+	
+	// make sure the type is set
+	$obj['type'] = 'download';
+	$obj['module'] = 'download';
+	
+	// hook
+	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	
+	// make width and height only be determined by the css
+	if (isset($obj['object-width'])) {
+		unset($obj['object-width']);
+	}
+	if (isset($obj['object-height'])) {
+		unset($obj['object-height']);
+	}
+	
+	load_modules('glue');
+	$ret = save_object($obj);
+	if ($ret['#error']) {
+		log_msg('error', 'download_save_state: save_object returned '.quot($ret['#data']));
+		return false;
+	} else {
+		return true;
 	}
 }
 
@@ -154,7 +186,13 @@ function download_serve_resource($args)
 	}
 	
 	$a = expl('.', $obj['name']);
-	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
+	
+	// serve the resource only when it's public or we're logged in (i.e. editing)
+	if ((isset($obj['download-public']) && $obj['download-public'] == 'public') || is_auth()) {
+		serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
+	} else if (!is_auth()) {
+		prompt_auth(true);
+	}
 }
 
 

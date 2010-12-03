@@ -21,46 +21,51 @@ require_once('util.inc.php');
 
 function object_alter_render_early($args)
 {
-	if (!elem_has_class($args['elem'], 'object')) {
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'object')) {
 		return false;
 	}
 	
-	$obj = $args['obj'];
 	if (!empty($obj['object-height'])) {
-		elem_css($args['elem'], 'height', $obj['object-height']);
+		elem_css($elem, 'height', $obj['object-height']);
 	}
 	if (!empty($obj['object-left'])) {
-		elem_css($args['elem'], 'left', $obj['object-left']);
+		elem_css($elem, 'left', $obj['object-left']);
 	}
 	if (!empty($obj['object-opacity'])) {
-		elem_css($args['elem'], 'opacity', $obj['object-opacity']);
+		elem_css($elem, 'opacity', $obj['object-opacity']);
 	}
-	elem_css($args['elem'], 'position', 'absolute');
+	elem_css($elem, 'position', 'absolute');
 	if (!empty($obj['object-top'])) {
-		elem_css($args['elem'], 'top', $obj['object-top']);
+		elem_css($elem, 'top', $obj['object-top']);
 	}
 	if (!empty($obj['object-width'])) {
-		elem_css($args['elem'], 'width', $obj['object-width']);
+		elem_css($elem, 'width', $obj['object-width']);
 	}
 	if (!empty($obj['object-zindex'])) {
-		elem_css($args['elem'], 'z-index', $obj['object-zindex']);
+		elem_css($elem, 'z-index', $obj['object-zindex']);
 	}
+	
 	return true;
 }
 
 
 function object_alter_render_late($args)
 {
+	$elem = $args['elem'];
+	$html = &$args['html'];
+	$obj = $args['obj'];
 	if (!elem_has_class($args['elem'], 'object')) {
 		return false;
 	}
 	
 	if (!$args['edit']) {
 		// add links only for viewing
-		if (!empty($args['obj']['object-link'])) {
-			$link = $args['obj']['object-link'];
+		if (!empty($obj['object-link'])) {
+			$link = $obj['object-link'];
 			// resolve any aliases
-			$link = resolve_aliases($link, $args['obj']['name']);
+			$link = resolve_aliases($link, $obj['name']);
 			if (!is_url($link) && substr($link, 0, 1) != '#') {
 				// add base url for relative links that are not directed towards anchors
 				if (SHORT_URLS) {
@@ -70,11 +75,10 @@ function object_alter_render_late($args)
 				}
 			}
 			// <a> can include block elements in html5
-			$html = $args['html'];
 			if (substr($html, -1) == "\n") {
 				$html = substr($html, 0, -1);
 			}
-			$args['html'] = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
+			$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 			return true;
 		}
 	}
@@ -84,28 +88,43 @@ function object_alter_render_late($args)
 
 function object_alter_save($args)
 {
-	if (!elem_has_class($args['elem'], 'object')) {
+	$elem = $args['elem'];
+	$obj = &$args['obj'];
+	if (!elem_has_class($elem, 'object')) {
 		return false;
 	}
 	
-	if (elem_css($args['elem'], 'height') !== NULL) {
-		$args['obj']['object-height'] = elem_css($args['elem'], 'height');
+	if (elem_css($elem, 'height') !== NULL) {
+		$obj['object-height'] = elem_css($elem, 'height');
+	} else {
+		unset($obj['object-height']);
 	}
-	if (elem_css($args['elem'], 'left') !== NULL) {
-		$args['obj']['object-left'] = elem_css($args['elem'], 'left');
+	if (elem_css($elem, 'left') !== NULL) {
+		$obj['object-left'] = elem_css($elem, 'left');
+	} else {
+		unset($obj['object-left']);
 	}
-	if (elem_css($args['elem'], 'opacity') !== NULL) {
-		$args['obj']['object-opacity'] = elem_css($args['elem'], 'opacity');
+	if (elem_css($elem, 'opacity') !== NULL) {
+		$obj['object-opacity'] = elem_css($elem, 'opacity');
+	} else {
+		unset($obj['object-opacity']);
 	}
-	if (elem_css($args['elem'], 'top') !== NULL) {
-		$args['obj']['object-top'] = elem_css($args['elem'], 'top');
+	if (elem_css($elem, 'top') !== NULL) {
+		$obj['object-top'] = elem_css($elem, 'top');
+	} else {
+		unset($obj['object-top']);
 	}
-	if (elem_css($args['elem'], 'width') !== NULL) {
-		$args['obj']['object-width'] = elem_css($args['elem'], 'width');
+	if (elem_css($elem, 'width') !== NULL) {
+		$obj['object-width'] = elem_css($elem, 'width');
+	} else {
+		unset($obj['object-width']);
 	}
-	if (elem_css($args['elem'], 'z-index') !== NULL) {
-		$args['obj']['object-zindex'] = elem_css($args['elem'], 'z-index');
+	if (elem_css($elem, 'z-index') !== NULL) {
+		$obj['object-zindex'] = elem_css($elem, 'z-index');
+	} else {
+		unset($obj['object-zindex']);
 	}
+	
 	return true;
 }
 

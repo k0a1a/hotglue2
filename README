@@ -22,4 +22,11 @@ BUNDLED THIRD-PARTY CODE
 
 KNOWN ISSUES
 
-  ..
+  * If you receive an error message while uploading a large file this 
+    might  be due to the limits set in the servers's php.ini file.
+    You might want to change the values of these settings:
+    - post_max_size
+    - upload_max_filesize
+    - memory-limit (if memory limits have been enabled)
+    - max_input_time
+    - max_file_uploads

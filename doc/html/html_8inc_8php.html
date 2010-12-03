@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<title>hotglue: /srv/www/sukzessiv.net/h/html.inc.php File Reference</title>
+<title>hotglue: /srv/www/sukzessiv.net/hotglue3/html.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css">
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -20,7 +20,7 @@
   </div>
 </div>
 <div class="contents">
-<h1>/srv/www/sukzessiv.net/h/html.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
+<h1>/srv/www/sukzessiv.net/hotglue3/html.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">if(!isset($html))&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#7fb2b386b2bae219112628971275c225">_array_sort_by_prio</a> (&amp;$a)</td></tr>
@@ -39,6 +39,8 @@
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#894dc22f3b7668c59364599909162b8e">elem_attr</a> (&amp;$elem)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#821651b8923938645b0b0fa6bb084522">elem_classes</a> ($elem)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#c705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a> (&amp;$elem)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#f04b43a4dd09e73ca2cef84a4f2e9381">elem_finalize</a> ($elem)</td></tr>
@@ -48,6 +50,8 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#eb7074172d9164f69e64967b6bcdc643">elem_remove_attr</a> (&amp;$elem, $a)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#6a224914e8f32176ca11a31154b1ae13">elem_remove_class</a> (&amp;$elem, $c)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#158c5e6dccf734bc8c035e6bcd0a446f">elem_tag</a> ($elem)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="html_8inc_8php.html#e28d850c3c906c6884462ca89c06f59b">elem_val</a> (&amp;$elem)</td></tr>
 
@@ -313,6 +317,33 @@ get or set an attribute in an element<p>
 
 </div>
 </div><p>
+<a class="anchor" name="821651b8923938645b0b0fa6bb084522"></a><!-- doxytag: member="html.inc.php::elem_classes" ref="821651b8923938645b0b0fa6bb084522" args="($elem)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">elem_classes           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>elem</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+get the element's classes in an array<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$elem element </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>array </dd></dl>
+
+</div>
+</div><p>
 <a class="anchor" name="c705ef06deb9e2d49e342ed78ecc1c9a"></a><!-- doxytag: member="html.inc.php::elem_css" ref="c705ef06deb9e2d49e342ed78ecc1c9a" args="(&amp;$elem)" -->
 <div class="memitem">
 <div class="memproto">
@@ -474,6 +505,33 @@ remove a class from an element<p>
     <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$c class </td></tr>
   </table>
 </dl>
+
+</div>
+</div><p>
+<a class="anchor" name="158c5e6dccf734bc8c035e6bcd0a446f"></a><!-- doxytag: member="html.inc.php::elem_tag" ref="158c5e6dccf734bc8c035e6bcd0a446f" args="($elem)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">elem_tag           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>elem</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+get the element's tag<p>
+the tag is always returned in lowercase characters. <dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$elem element </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>string </dd></dl>
 
 </div>
 </div><p>
@@ -853,7 +911,7 @@ Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed un
 </div>
 </div><p>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Wed Dec 1 14:07:05 2010 for hotglue by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu Dec 2 16:37:34 2010 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

@@ -1,6 +1,6 @@
 \hypertarget{modules_8inc_8php}{
-\section{/srv/www/sukzessiv.net/h/modules.inc.php File Reference}
-\label{modules_8inc_8php}\index{/srv/www/sukzessiv.net/h/modules.inc.php@{/srv/www/sukzessiv.net/h/modules.inc.php}}
+\section{/srv/www/sukzessiv.net/hotglue3/modules.inc.php File Reference}
+\label{modules_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue3/modules.inc.php@{/srv/www/sukzessiv.net/hotglue3/modules.inc.php}}
 }
 \subsection*{Functions}
 \begin{CompactItemize}
@@ -11,7 +11,11 @@ if(!isset(\$hooks)) if(!isset(\$modules)) if(!isset(\$services)) \hyperlink{modu
 \item 
 \hyperlink{modules_8inc_8php_bf7633223c2fd4ecb199a8e0dc070802}{get\_\-service} (\$service)
 \item 
-\hyperlink{modules_8inc_8php_3318fb85bac26e6fb2397c6ea9f02322}{invoke\_\-hook} (\$hook, \$args=array())
+\hyperlink{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}{invoke\_\-hook} (\$hook, \$args=array(), \$first\_\-module= '', \$last\_\-module= '')
+\item 
+\hyperlink{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}{invoke\_\-hook\_\-first} (\$hook, \$first\_\-module, \$args=array())
+\item 
+\hyperlink{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}{invoke\_\-hook\_\-last} (\$hook, \$last\_\-module, \$args=array())
 \item 
 \hyperlink{modules_8inc_8php_66473fc9f24153d85053f1f9c6ed83e4}{invoke\_\-hook\_\-while} (\$hook, \$while, \$args=array())
 \item 
@@ -68,11 +72,11 @@ call \hyperlink{modules_8inc_8php_23f8be02dc2148a3c860119a1d6ea276}{load\_\-modu
 \end{Desc}
 \begin{Desc}
 \item[Returns:]array or false if not found \end{Desc}
-\hypertarget{modules_8inc_8php_3318fb85bac26e6fb2397c6ea9f02322}{
+\hypertarget{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}{
 \index{modules.inc.php@{modules.inc.php}!invoke\_\-hook@{invoke\_\-hook}}
 \index{invoke\_\-hook@{invoke\_\-hook}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{invoke\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook (\$ {\em hook}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_3318fb85bac26e6fb2397c6ea9f02322}
+\subsubsection[{invoke\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook (\$ {\em hook}, \/  \$ {\em args} = {\tt array()}, \/  \$ {\em first\_\-module} = {\tt ''}, \/  \$ {\em last\_\-module} = {\tt ''})}}
+\label{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}
 
 
 invoke a hook
@@ -81,6 +85,38 @@ this function also takes care of loading all modules. \begin{Desc}
 \item[Parameters:]
 \begin{description}
 \item[{\em string}]\$hook hook to invoke \item[{\em array}]\$args arguments-array (can include references) \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array of results (module=$>$result) \end{Desc}
+\hypertarget{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}{
+\index{modules.inc.php@{modules.inc.php}!invoke\_\-hook\_\-first@{invoke\_\-hook\_\-first}}
+\index{invoke\_\-hook\_\-first@{invoke\_\-hook\_\-first}!modules.inc.php@{modules.inc.php}}
+\subsubsection[{invoke\_\-hook\_\-first}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-first (\$ {\em hook}, \/  \$ {\em first\_\-module}, \/  \$ {\em args} = {\tt array()})}}
+\label{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}
+
+
+invoke a hook with a specified module being called first
+
+this function also takes care of loading all modules. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$hook hook to invoke \item[{\em string}]\$first\_\-module name of first module to call \item[{\em array}]\$args arguments-array (can include references) \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array of results (module=$>$result) \end{Desc}
+\hypertarget{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}{
+\index{modules.inc.php@{modules.inc.php}!invoke\_\-hook\_\-last@{invoke\_\-hook\_\-last}}
+\index{invoke\_\-hook\_\-last@{invoke\_\-hook\_\-last}!modules.inc.php@{modules.inc.php}}
+\subsubsection[{invoke\_\-hook\_\-last}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-last (\$ {\em hook}, \/  \$ {\em last\_\-module}, \/  \$ {\em args} = {\tt array()})}}
+\label{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}
+
+
+invoke a hook with a specified module being called last
+
+this function also takes care of loading all modules. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$hook hook to invoke \item[{\em string}]\$first\_\-module name of last module to call \item[{\em array}]\$args arguments-array (can include references) \end{description}
 \end{Desc}
 \begin{Desc}
 \item[Returns:]array of results (module=$>$result) \end{Desc}

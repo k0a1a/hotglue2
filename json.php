@@ -74,6 +74,8 @@ if (!empty($args['method'])) {
 	log_msg('debug', 'json: arguments are '.var_dump_inl($args));
 	log_msg('debug', 'json: base url is '.quot(base_url()));
 } else {
+	// this can also be caused by an upload exceeding the limits 
+	// set in php.ini
 	$err = response('Required argument "method" missing', 400);
 	echo json_encode($err);
 	log_msg('warn', 'json: '.$err['#data']);

@@ -1443,7 +1443,7 @@ $.glue.upload = function()
 		}
 		var uploading = 0;
 		return {
-			error: function() {
+			error: function(e) {
 				// remove status indicator if no file uploading anymore
 				uploading--;
 				if (uploading == 0) {
@@ -1451,7 +1451,11 @@ $.glue.upload = function()
 				}
 				// e.target.status suggested in 
 				// http://developer.mozilla.org/en/XMLHttpRequest/Using_XMLHttpRequest
-				$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+				if (e && e.target && e.target.status) {
+					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+				} else {
+					$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+				}
 			},
 			finish: function(data) {
 				// DEBUG
@@ -1582,7 +1586,13 @@ $.glue.upload = function()
 			}
 			if (typeof options.finish == 'function') {
 				xhr.onload = function(e) {
-					options.finish($.parseJSON(e.target.responseText));
+					try {
+						options.finish($.parseJSON(e.target.responseText));	
+					} catch (e) {
+						if (typeof options.error == 'function') {
+							options.error(e);
+						}
+					}
 				};
 			}
 			if (typeof options.error == 'function') {

@@ -1,6 +1,6 @@
 \hypertarget{html_8inc_8php}{
-\section{/srv/www/sukzessiv.net/h/html.inc.php File Reference}
-\label{html_8inc_8php}\index{/srv/www/sukzessiv.net/h/html.inc.php@{/srv/www/sukzessiv.net/h/html.inc.php}}
+\section{/srv/www/sukzessiv.net/hotglue3/html.inc.php File Reference}
+\label{html_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue3/html.inc.php@{/srv/www/sukzessiv.net/hotglue3/html.inc.php}}
 }
 \subsection*{Functions}
 \begin{CompactItemize}
@@ -21,6 +21,8 @@ if(!isset(\$html)) \hyperlink{html_8inc_8php_7fb2b386b2bae219112628971275c225}{\
 \item 
 \hyperlink{html_8inc_8php_894dc22f3b7668c59364599909162b8e}{elem\_\-attr} (\&\$elem)
 \item 
+\hyperlink{html_8inc_8php_821651b8923938645b0b0fa6bb084522}{elem\_\-classes} (\$elem)
+\item 
 \hyperlink{html_8inc_8php_c705ef06deb9e2d49e342ed78ecc1c9a}{elem\_\-css} (\&\$elem)
 \item 
 \hyperlink{html_8inc_8php_f04b43a4dd09e73ca2cef84a4f2e9381}{elem\_\-finalize} (\$elem)
@@ -30,6 +32,8 @@ if(!isset(\$html)) \hyperlink{html_8inc_8php_7fb2b386b2bae219112628971275c225}{\
 \hyperlink{html_8inc_8php_eb7074172d9164f69e64967b6bcdc643}{elem\_\-remove\_\-attr} (\&\$elem, \$a)
 \item 
 \hyperlink{html_8inc_8php_6a224914e8f32176ca11a31154b1ae13}{elem\_\-remove\_\-class} (\&\$elem, \$c)
+\item 
+\hyperlink{html_8inc_8php_158c5e6dccf734bc8c035e6bcd0a446f}{elem\_\-tag} (\$elem)
 \item 
 \hyperlink{html_8inc_8php_e28d850c3c906c6884462ca89c06f59b}{elem\_\-val} (\&\$elem)
 \item 
@@ -174,6 +178,22 @@ get or set an attribute in an element
 \begin{description}
 \item[{\em array}]\&\$elem reference to an element \item[{\em string}]attribute name \item[{\em mixed}]attribute value (to set it) \end{description}
 \end{Desc}
+\hypertarget{html_8inc_8php_821651b8923938645b0b0fa6bb084522}{
+\index{html.inc.php@{html.inc.php}!elem\_\-classes@{elem\_\-classes}}
+\index{elem\_\-classes@{elem\_\-classes}!html.inc.php@{html.inc.php}}
+\subsubsection[{elem\_\-classes}]{\setlength{\rightskip}{0pt plus 5cm}elem\_\-classes (\$ {\em elem})}}
+\label{html_8inc_8php_821651b8923938645b0b0fa6bb084522}
+
+
+get the element's classes in an array
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em array}]\$elem element \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array \end{Desc}
 \hypertarget{html_8inc_8php_c705ef06deb9e2d49e342ed78ecc1c9a}{
 \index{html.inc.php@{html.inc.php}!elem\_\-css@{elem\_\-css}}
 \index{elem\_\-css@{elem\_\-css}!html.inc.php@{html.inc.php}}
@@ -248,6 +268,22 @@ remove a class from an element
 \begin{description}
 \item[{\em array}]\&\$elem reference to an element \item[{\em string}]\$c class \end{description}
 \end{Desc}
+\hypertarget{html_8inc_8php_158c5e6dccf734bc8c035e6bcd0a446f}{
+\index{html.inc.php@{html.inc.php}!elem\_\-tag@{elem\_\-tag}}
+\index{elem\_\-tag@{elem\_\-tag}!html.inc.php@{html.inc.php}}
+\subsubsection[{elem\_\-tag}]{\setlength{\rightskip}{0pt plus 5cm}elem\_\-tag (\$ {\em elem})}}
+\label{html_8inc_8php_158c5e6dccf734bc8c035e6bcd0a446f}
+
+
+get the element's tag
+
+the tag is always returned in lowercase characters. \begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em array}]\$elem element \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]string \end{Desc}
 \hypertarget{html_8inc_8php_e28d850c3c906c6884462ca89c06f59b}{
 \index{html.inc.php@{html.inc.php}!elem\_\-val@{elem\_\-val}}
 \index{elem\_\-val@{elem\_\-val}!html.inc.php@{html.inc.php}}

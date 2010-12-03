@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<title>hotglue: /srv/www/sukzessiv.net/h/common.inc.php File Reference</title>
+<title>hotglue: /srv/www/sukzessiv.net/hotglue3/common.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css">
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -20,7 +20,7 @@
   </div>
 </div>
 <div class="contents">
-<h1>/srv/www/sukzessiv.net/h/common.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
+<h1>/srv/www/sukzessiv.net/hotglue3/common.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#6cceb5c6a3c421c18e925515c78f6dfd">cache_output</a> ($category, $name, $out)</td></tr>
@@ -31,17 +31,9 @@
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#0d6d0da45f4adf6283bcccec9fd107e3">glue_version</a> ()</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#6fb34b9210b43349ca3eb16b2738a28b">is_cached</a> ($category, $name, $max_age)</td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#78992fdfae6cd9d7d4e8053d004d1709">resolve_aliases</a> ($s, $name= '')</td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#81eb70073067db81ab43829870f15e6d">resolve_relative_urls</a> ($s)</td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#ac90387dcab722e243df2d083f8d6a00">serve_cached</a> ($category, $name)</td></tr>
-
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#0a3ee1e9beca572266648f17b9c4c75f">startpage</a> ()</td></tr>
-
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#b3abbb2cd13e01231533e7cdc93da6db">is_auth</a> ()</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#6fb34b9210b43349ca3eb16b2738a28b">is_cached</a> ($category, $name, $max_age)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#3d71a269e01b98748fb57719feef27be">object_exists</a> ($s)</td></tr>
 
@@ -52,6 +44,14 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#da968adfb989aa09adaf29867208f1ab">page_short</a> ($s)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#80c23c9d8ac02159151d6368506b1b54">prompt_auth</a> ($header_only=false)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#78992fdfae6cd9d7d4e8053d004d1709">resolve_aliases</a> ($s, $name= '')</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#81eb70073067db81ab43829870f15e6d">resolve_relative_urls</a> ($s)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#ac90387dcab722e243df2d083f8d6a00">serve_cached</a> ($category, $name)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#0a3ee1e9beca572266648f17b9c4c75f">startpage</a> ()</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8inc_8php.html#4659077c34b709eec75f9897ea07e55a">upload_file</a> ($fn, $page, $orig_fn= '', &amp;$existed=false)</td></tr>
 
@@ -571,7 +571,7 @@ the function does not check if the page exists or not. <dl compact><dt><b>Parame
 </div>
 </div><p>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Wed Dec 1 14:07:05 2010 for hotglue by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Thu Dec 2 16:37:34 2010 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>
