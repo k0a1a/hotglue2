@@ -1,0 +1,24 @@
+#user_css {
+	/* page that get's displayed when the user accesses the "stylesheet" 
+	controller */
+}
+
+#user_css h1 {
+	/* heading on the page */
+	margin-left: 10px;
+	margin-top: 10px;
+}
+
+#user_css_text {
+	/* the textarea */
+	height: 500px;
+	margin-bottom: 5px;
+	margin-left: 10px;
+	margin-top: 10px;
+	width: 400px;
+}
+
+#user_css_save {
+	/* the "save" button below */
+	margin-left: 10px;
+}

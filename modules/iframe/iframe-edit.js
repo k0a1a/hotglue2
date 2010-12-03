@@ -22,11 +22,11 @@ $(document).ready(function() {
 			var elem = $('<div class="iframe resizable object" style="position: absolute;"></div>');
 			$(elem).attr('id', data['name']);
 			// default width and height is set in the css
-			child = $('<iframe style="background-color: transparent; border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
+			var child = $('<iframe style="background-color: transparent; border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
 			$(child).attr('src', url);
 			$(elem).append(child);
 			// put the iframe behind some shield for editing
-			var child = $('<div class="glue-iframe-shield glue-ui" style="height: 100%; position: absolute; width: 100%;" title="visitors will be able to interact with the webpage below"></div>');
+			child = $('<div class="glue-iframe-shield glue-ui" style="height: 100%; position: absolute; width: 100%;" title="visitors will be able to interact with the webpage below"></div>');
 			$(elem).append(child);
 			$('body').append(elem);
 			// make width and height explicit

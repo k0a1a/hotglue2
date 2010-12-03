@@ -18,31 +18,31 @@ error_reporting(E_ALL);						// see php documentation
 @define('AUTH_METHOD', 'digest');			// can be digest, basic or none
 @define('AUTH_USER', 'admin');
 @define('AUTH_PASSWORD', 'changeme');
-@define('BASE_URL', '');						// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
+@define('BASE_URL', '');					// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
 @define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
 @define('HOTGLUE_VERSION', '0.99.1');		// expected api.version.patchlevel
-@define('IE8_COMPAT', true);					// try to be compatible with internet explorer 8 in viewing mode
-@define('JQUERY', 'js/jquery-1.4.4.min.js');	// can be an absolute url
+@define('IE8_COMPAT', true);				// try to be compatible with internet explorer 8 in viewing mode
+@define('JQUERY', 'js/jquery-1.4.4.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable
 @define('LOG_LEVEL', 'warn');				// minimum log level (can be error, warn, info, debug)
-@define('SHORT_URLS', false);					// use short urls
+@define('SHORT_URLS', false);				// use short urls
 @define('SITE_NAME', 'hotglue 1.0');
-@define('SNAPSHOT_MAX_AGE', 60*60*24*7);		// auto- revisions are automatically deleted after n seconds (zero to disable)
+@define('SNAPSHOT_MAX_AGE', 60*60*24*7);	// auto- revisions are automatically deleted after n seconds (zero to disable)
 @define('SNAPSHOT_MIN_AGE', 60*60);			// auto- revisions are created every n seconds (zero to disable)
 @define('USE_MIN_FILES', true);				// use minified files if possible (see also JQUERY define)
 // default modules
 @define('IMAGE_JPEG_QUAL', 80);				// quality for jpeg resizing (0 < 100)
 @define('IMAGE_PNG_QUAL', 5);				// quality for png resizing (9 < 0)
-@define('IMAGE_RESIZING', true);				// resize uploaded images on the server (needs gd installed)
+@define('IMAGE_RESIZING', true);			// resize uploaded images on the server (needs gd installed)
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
-@define('PAGE_DEFAULT_GRID_X', 50);				// default grid x spacing in px
-@define('PAGE_DEFAULT_GRID_Y', 50);				// default grid y spacing in px
-@define('PAGE_GUIDES_X', '');						// show a grid line after n horizontal px (space-separated string)
-@define('PAGE_GUIDES_Y', '');						// show a grid line after n vertical px (space-separated string)
+@define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
+@define('PAGE_DEFAULT_GRID_Y', 50);			// default grid y spacing in px
+@define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)
+@define('PAGE_GUIDES_Y', '');				// show a grid line after n vertical px (space-separated string)
 @define('PAGES_NEED_AUTH', true);			// page browser needs authentication
 @define('REVISIONS_NEED_AUTH', true);		// revisions browser needs authentication
 @define('TEXT_AUTO_BR', true);				// automatically add <br> elements for newlines

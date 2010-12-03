@@ -67,6 +67,41 @@ function array_unique_element(&$a, $key)
 
 
 /**
+ *	check if a directory already contains a file (based on its content)
+ *
+ *	@param string $dir directory to check
+ *	@param string $fn file to look for
+ *	@return (basename) filename of identical file in $dir or false if 
+ *	there is none
+ */
+function dir_has_same_file($dir, $fn)
+{
+	// strip any slash at the end of $dir
+	if (substr($dir, -1) == '/') {
+		$dir = substr($dir, 0, -1);
+	}
+	
+	if (($dir_fns = @scandir($dir)) === false) {
+		return false;
+	}
+	// optimization: check $fn first if it occurs in $dir
+	if (($i = array_search(basename($fn), $dir_fns)) !== false) {
+		$a = array_splice($dir_fns, $i, 1);
+		array_unshift($dir_fns, $a[0]);
+	}
+	foreach ($dir_fns as $f) {
+		if ($f == '.' || $f == '..') {
+			continue;
+		}
+		if (!file_is_different($fn, $dir.'/'.$f)) {
+			return $f;
+		}
+	}
+	return false;
+}
+
+
+/**
  *	check if two directories are different
  *
  *	@param string $a filename
@@ -470,6 +505,39 @@ function tab($count = 1)
 		$s .= "\t";
 	}
 	return $s;
+}
+
+
+/**
+ *	find a unique filename for copying a file to destination directory
+ *
+ *	@param string $dir destination directory
+ *	@param string $orig_fn original filename
+ *	@return string (basename) proposed filename
+ */
+function unique_filename($dir, $orig_fn)
+{
+	// strip any slash at the end of $dir
+	if (substr($dir, -1) == '/') {
+		$dir = substr($dir, 0, -1);
+	}
+	
+	$fn = basename($orig_fn);
+	$num = 1;
+	// is_link() is there to catch dangling symlinks
+	while (is_file($dir.'/'.$fn) || is_dir($dir.'/'.$fn) || is_link($dir.'/'.$fn)) {
+		// find first dot and prepend _$num there
+		// TODO (later): we could handle the case where $orig_fn is already 
+		// something like foo_2.bar
+		$fn = basename($orig_fn);
+		if (($p = strpos($fn, '.')) !== false) {
+			$fn = substr($fn, 0, $p).'_'.(++$num).substr($fn, $p);
+		} else {
+			$fn .= '_'.(++$num);
+		}
+	}
+	
+	return $fn;
 }
 
 

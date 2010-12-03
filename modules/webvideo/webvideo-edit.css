@@ -1,0 +1,41 @@
+.webvideo {
+	/* these are default widths and heights for new webvideo */
+	width: 320px;
+	height: 240px;
+}
+
+.glue-webvideo-handle {
+	/* that's the handle displayed above webvideo objects */
+	/* TODO: style */
+	background-color: red;
+	height: 20px;
+	left: -20px;
+	position: relative;
+	top: -20px;
+	width: 20px;
+}
+
+#glue-contextmenu-webvideo-autoplay {
+	/* overwrite the default greenish hue for .glue-menu-enabled */
+	background-color: transparent;
+}
+
+#glue-contextmenu-webvideo-autoplay.glue-menu-disabled {
+	background-image: url(webvideo-autoplay-off.png);
+}
+
+#glue-contextmenu-webvideo-autoplay.glue-menu-enabled {
+	background-image: url(webvideo-autoplay-on.png);
+}
+
+#glue-contextmenu-webvideo-loop {
+	background-color: transparent;
+}
+
+#glue-contextmenu-webvideo-loop.glue-menu-disabled {
+	background-image: url(webvideo-loop-off.png);
+}
+
+#glue-contextmenu-webvideo-loop.glue-menu-enabled {
+	background-image: url(webvideo-loop-on.png);
+}

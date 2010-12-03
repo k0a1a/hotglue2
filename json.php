@@ -116,7 +116,7 @@ if (isset($m['cross-origin']) && $m['cross-origin']) {
 // run service and output result
 $ret = run_service($method, $args);
 if (is_array($ret) && isset($ret['#error']) && $ret['#error']) {
-	log_msg('warn', 'json: service returned error '.quot($ret['#data']));
+	log_msg('warn', 'json: service '.$method.' returned error '.quot($ret['#data']));
 } elseif (is_array($ret) && isset($ret['#data'])) {
 	log_msg('debug', 'json: service returned '.var_dump_inl($ret['#data']));
 }

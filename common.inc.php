@@ -475,58 +475,26 @@ function upload_file($fn, $page, $orig_fn = '', &$existed = false)
 	}
 	
 	// check if file is already in shared directory
-	// try the same filename first
-	$f = $d.'/'.basename($orig_fn);
-	if (is_file($f)) {
-		if (!file_is_different($f, $fn)) {
-			log_msg('info', 'common: reusing file '.quot($f).' instead of newly uploaded file as they don\'t differ');
-			@unlink($fn);
-			$existed = true;
-			// we only return the basename
-			return basename($f);
-		}
-	}
-	// we are greedy so check all other files in shared folder too
-	$files = scandir($d);
-	foreach ($files as $f) {
-		if ($f == '.' || $f == '..' || $f == basename($orig_fn)) {
-			continue;
-		}
-		$f = $d.'/'.$f;
-		if (!file_is_different($f, $fn)) {
-			log_msg('info', 'common: reusing file '.quot($f).' instead of newly uploaded file as they don\'t differ');
-			@unlink($fn);
-			$existed = true;
-			// again, only the basename..
-			return basename($f);
-		}
-	}
-	
-	// okay, we give up
-	// at least find a unique name for the file
-	$f = basename($orig_fn);
-	$num = 1;
-	// the is_link() is there to cover dangling symlinks
-	while (is_file($d.'/'.$f) || is_link($d.'/'.$f)) {
-		// find first dot and prepend _2 there
-		$f = basename($orig_fn);
-		if (($p = strpos($f, '.')) !== false) {
-			$f = substr($f, 0, $p).'_'.(++$num).substr($f, $p);
-		} else {
-			$f .= '_'.(++$num);
-		}
-	}
-	$m = umask(0111);
-	if (!@move_uploaded_file($fn, $d.'/'.$f)) {
-		umask($m);
-		log_msg('error', 'common: error moving uploaded file to '.quot($d.'/'.$f));
-		// not sure if we ought to remove the file in /tmp here (probably not)
-		return false;
-	} else {
-		umask($m);
-		log_msg('info', 'common: moved uploaded file to '.quot($d.'/'.$f));
-		$existed = false;
+	if (($f = dir_has_same_file($d, basename($orig_fn))) !== false) {
+		log_msg('info', 'common: reusing file '.quot($f).' instead of newly uploaded file as they don\'t differ');
+		@unlink($fn);
+		$existed = true;
 		return $f;
+	} else {
+		// at least give it a unique name
+		$f = unique_filename($d, basename($orig_fn));
+		$m = umask(0111);
+		if (!@move_uploaded_file($fn, $d.'/'.$f)) {
+			umask($m);
+			log_msg('error', 'common: error moving uploaded file to '.quot($d.'/'.$f));
+			// not sure if we ought to remove the file in /tmp here (probably not)
+			return false;
+		} else {
+			umask($m);
+			log_msg('info', 'common: moved uploaded file to '.quot($d.'/'.$f));
+			$existed = false;
+			return $f;
+		}
 	}
 }
 

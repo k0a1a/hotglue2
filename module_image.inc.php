@@ -566,6 +566,70 @@ function image_serve_resource($args)
 
 
 /**
+ *	implements snapshot_symlink
+ *
+ *	see snapshot() in module_glue.inc.php
+ */
+function image_snapshot_symlink($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'image') {
+		return false;
+	}
+	
+	// consider the following:
+	// * an image object is on page a, which at some point got distributed to all 
+	// other pages through symlinks
+	// * we are now creating a snapshot of any page b, come across the symlink 
+	// pointing to an object and page a
+	// in this case we don't copy the symlink but the current content of the 
+	// object, as we by all means want to preserve the current _state_ we copy 
+	// the symlink's content (this happens in snapshot() in module_glue.inc.php) 
+	// - thus turning it into a first-class object on the new snapshot-page
+	// because of this we need to copy any referenced files as well from the 
+	// shared directory in page a to the one on page b, this happens in this 
+	// hook
+	
+	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
+	$src_dir = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared';
+	
+	// we do this for image-file and resized-file
+	// .. to add a bit of complexity ;)
+	foreach (array('image-file', 'resized-file') as $field) {
+		if (empty($obj[$field])) {
+			continue;
+		} else {
+			$src_file = $src_dir.'/'.$obj[$field];
+		}
+		if (($f = dir_has_same_file($dest_dir, $src_file)) !== false) {
+			$obj[$field] = $f;
+		} else {
+			// copy file
+			$dest_file = $dest_dir.'/'.unique_filename($dest_dir, $src_file);
+			$m = umask(0111);
+			if (!(@copy($src_file, $dest_file))) {
+				umask($m);
+				log_msg('error', 'image_snapshot_symlink: error copying referenced file '.quot($src_file).' to '.quot($dest_file));
+				return false;
+			}
+			umask($m);
+			$obj[$field] = basename($dest_file);
+			log_msg('info', 'image_snapshot_symlink: copied referenced file to '.quot($dest_file));
+		}
+	}
+	
+	// save changes in the object
+	$ret = save_object($obj);
+	if ($ret['#error']) {
+		log_msg('error', 'image_snapshot_symlink: error saving object '.quot($obj['name']));
+		return false;
+	} else {
+		return true;
+	}
+}
+
+
+/**
  *	implements upload
  */
 function image_upload($args)

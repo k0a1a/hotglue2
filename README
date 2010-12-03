@@ -22,6 +22,9 @@ BUNDLED THIRD-PARTY CODE
 
 KNOWN ISSUES
 
+  * Hotglue 1.0 is not compatible with prior versions of the software. We aim 
+    to preserve compatibility with upcoming releases though.
+  
   * If you receive an error message while uploading a large file this 
     might  be due to the limits set in the servers's php.ini file.
     You might want to change the values of these settings:

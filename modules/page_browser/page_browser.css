@@ -1,5 +1,17 @@
+#pages {
+	/* page that gets displayed when the user accesses the "pages" controller */
+}
+
+#pages h1 {
+	/* heading on the page */
+	margin-bottom: 10px;
+	margin-left: 10px;
+	margin-top: 10px;
+}
+
 .page_browser_entry {
 	margin-bottom: 4.25px;
+	margin-left: 10px;
 	margin-top: 3px;
 }
 

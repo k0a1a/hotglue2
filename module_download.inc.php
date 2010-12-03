@@ -196,6 +196,41 @@ function download_serve_resource($args)
 }
 
 
+function download_snapshot_symlink($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'download') {
+		return false;
+	}
+	
+	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
+	$src_file = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared/'.$obj['download-file'];
+	
+	if (($f = dir_has_same_file($dest_dir, $src_file)) !== false) {
+		$obj['download-file'] = $f;
+	} else {
+		// copy file
+		$dest_file = $dest_dir.'/'.unique_filename($dest_dir, $src_file);
+		$m = umask(0111);
+		if (!(@copy($src_file, $dest_file))) {
+			umask($m);
+			log_msg('error', 'download_snapshot_symlink: error copying referenced file '.quot($src_file).' to '.quot($dest_file));
+			return false;
+		}
+		umask($m);
+		$obj['download-file'] = basename($dest_file);
+		log_msg('info', 'download_snapshot_symlink: copied referenced file to '.quot($dest_file));
+	}
+	$ret = save_object($obj);
+	if ($ret['#error']) {
+		log_msg('error', 'download_snapshot_symlink: error saving object '.quot($obj['name']));
+		return false;
+	} else {
+		return true;
+	}
+}
+
+
 function download_upload_fallback($args)
 {
 	// we handle everything

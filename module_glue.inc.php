@@ -1231,8 +1231,25 @@ function snapshot($args)
 				log_msg('debug', 'snapshot: copied the content of symlink '.quot($args['page'].'.'.$f));
 			}
 			umask($m);
-			// load the object and give modules a chance to 
+			// load the newly created snapshot and give modules a chance to 
 			// copy referenced files as well
+			$dest_name = $a[0].'.'.$args['rev'].'.'.$f;
+			$dest_obj = load_object(array('name'=>$dest_name));
+			if ($dest_obj['#error']) {
+				log_msg('error', 'snapshot: error loading snapshotted object '.quot($dest_name).', skipping hook');
+			} else {
+				$dest_obj = $dest_obj['#data'];
+				// get the source object's target
+				$src_name = $args['page'].'.'.$f;
+				$src_target = object_get_symlink(array('name'=>$src_name));
+				if ($src_target['#error']) {
+					log_msg('error', 'snapshot: error getting the symlink target of source object '.quot($src_name).', skipping hook');
+				} else {
+					$src_target = $src_target['#data'];
+					// hook
+					invoke_hook('snapshot_symlink', array('obj'=>$dest_obj, 'origin'=>implode('.', array_slice(expl('.', $src_target), 0, 2))));
+				}
+			}
 		} elseif (is_file($src.'/'.$f)) {
 			// copy file
 			$m = umask(0111);
