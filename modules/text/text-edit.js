@@ -86,6 +86,17 @@ $.glue.text = function()
 $('.text').live('glue-register', function(e) {
 	// prevent events from bubbling up while we're editing 
 	// and handle a few keycodes
+	$(this).children('.glue-text-input').bind('mousedown', function(e) {
+		// without this selecting text in the textarea doesn't work because of 
+		// a mousedown handler on body in edit.js
+		if ($(this).css('display') == 'none') {
+			// we're not editing
+			return;
+		} else {
+			e.stopPropagation();
+		}
+	});
+		
 	$(this).children('.glue-text-input').bind('keydown', function(e) {
 		if ($(this).css('display') == 'none') {
 			// we're not editing

@@ -1,5 +1,13 @@
 <?php
 
+/**
+ *	module_user_css.inc.php
+ *	Module for setting user-defined per-site and global stylesheets
+ *
+ *	Copyright Gottfried Haider, Danja Vasiliev 2010.
+ *	This source code is licensed under the GNU General Public License.
+ *	See the file COPYING for more details.
+ */
 
 @require_once('config.inc.php');
 require_once('common.inc.php');
@@ -155,7 +163,12 @@ function user_css_set_css($args)
 		}
 	} else {
 		load_modules('glue');
-		return update_object(array('name'=>$args['page'].'.usercss', 'type'=>'usercss', 'module'=>'user_css', 'content'=>$args['css']));
+		if (empty($args['css'])) {
+			delete_object(array('name'=>$args['page'].'.usercss'));
+			return response(true);
+		} else {
+			return update_object(array('name'=>$args['page'].'.usercss', 'type'=>'usercss', 'module'=>'user_css', 'content'=>$args['css']));
+		}
 	}
 }
 

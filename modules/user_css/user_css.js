@@ -1,3 +1,12 @@
+/**
+ *	modules/user_css/user_css.js
+ *	Frontend code for setting user-defined per-site and global stylesheets
+ *
+ *	Copyright Gottfried Haider, Danja Vasiliev 2010.
+ *	This source code is licensed under the GNU General Public License.
+ *	See the file COPYING for more details.
+ */
+
 $(document).ready(function() {
 	var insert_at_cursor = function(elem, s) {
 		// inspired from http://forumsblogswikis.com/2008/07/20/how-to-insert-tabs-in-a-textarea/

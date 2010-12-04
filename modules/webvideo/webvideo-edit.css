@@ -1,7 +1,7 @@
 .webvideo {
-	/* these are default widths and heights for new webvideo */
-	width: 320px;
-	height: 240px;
+	/* these are default widths and heights for new webvideos */
+	height: 360px;
+	width: 480px;
 }
 
 .glue-webvideo-handle {

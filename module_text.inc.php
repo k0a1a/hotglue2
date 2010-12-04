@@ -93,17 +93,33 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-line-height']);
 	}
-	// padding-x
-	if (elem_css($elem, 'padding-left') !== NULL) {
-		$obj['text-padding-x'] = elem_css($elem, 'padding-left');
+	if (elem_css($elem, 'padding') !== NULL) {
+		// parse padding
+		// this is needed for Firefox
+		$s = expl(' ', elem_css($elem, 'padding'));
+		if (count($s) == 1) {
+			// padding-x = padding-y
+			$obj['text-padding-x'] = $s[0];
+			$obj['text-padding-y'] = $s[0];
+		} elseif (1 < count($s)) {
+			// padding-x
+			$obj['text-padding-x'] = $s[0];
+			// padding-y
+			$obj['text-padding-y'] = $s[1];
+		}
 	} else {
-		unset($obj['text-padding-x']);
-	}
-	// padding-y
-	if (elem_css($elem, 'padding-top') !== NULL) {
-		$obj['text-padding-y'] = elem_css($elem, 'padding-top');
-	} else {
-		unset($obj['text-padding-y']);
+		// padding-x
+		if (elem_css($elem, 'padding-left') !== NULL) {
+			$obj['text-padding-x'] = elem_css($elem, 'padding-left');
+		} else {
+			unset($obj['text-padding-x']);
+		}
+		// padding-y
+		if (elem_css($elem, 'padding-top') !== NULL) {
+			$obj['text-padding-y'] = elem_css($elem, 'padding-top');
+		} else {
+			unset($obj['text-padding-y']);
+		}
 	}
 	// text-align
 	if (elem_css($elem, 'text-align') !== NULL) {
