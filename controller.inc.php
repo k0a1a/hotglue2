@@ -35,7 +35,7 @@ function controller_create_page($args)
 		controller_edit($args);
 		return;
 	}
-		
+	
 	load_modules('glue');
 	default_html(true);
 	html_add_css(base_url().'css/create_page.css');
@@ -126,7 +126,7 @@ function controller_default($args)
 		if (page_exists($args[0][0])) {
 			log_msg('debug', 'controller_default: invoking controller_show');
 			controller_show($args);
-		} elseif (is_auth()) {
+		} elseif (ALWAYS_PROMPT_CREATE_PAGE || is_auth()) {
 			log_msg('debug', 'controller_default: invoking controller_create_page');
 			controller_create_page($args);
 		} else {

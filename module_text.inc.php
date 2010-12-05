@@ -103,9 +103,9 @@ function text_alter_save($args)
 			$obj['text-padding-y'] = $s[0];
 		} elseif (1 < count($s)) {
 			// padding-x
-			$obj['text-padding-x'] = $s[0];
+			$obj['text-padding-x'] = $s[1];
 			// padding-y
-			$obj['text-padding-y'] = $s[1];
+			$obj['text-padding-y'] = $s[0];
 		}
 	} else {
 		// padding-x

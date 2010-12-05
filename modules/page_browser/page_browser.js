@@ -37,7 +37,7 @@ $(document).ready(function() {
 	$('.page_browser_rename').live('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var old = $(entry).attr('id');
-		var pn = prompt('new name', old);
+		var pn = prompt('Change the page URL', old);
 		if (pn != null && pn != old) {
 			$.glue.backend({ method: 'glue.rename_page', 'old': old, 'new': pn }, function(data) {
 				$(entry).attr('id', pn);
@@ -50,24 +50,19 @@ $(document).ready(function() {
 	$('.page_browser_delete').live('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var pn = $(entry).attr('id');
-		if (confirm('really delete page '+pn+'?')) {
-			// get all revisions first
+		if (confirm('Really delete page '+pn+'?')) {
+			// get all revisions
 			var pages = [];
 			$.glue.backend({ method: 'glue.revisions', pagename: pn }, function(data) {
 				for (var rev in data) {
-					pages.push(pn+'.'+data['#data'][rev]);
+					pages.push(pn+'.'+data[rev]);
 				}
-				// delete all revisions
+				// and delete them
 				for (var page in pages) {
 					// DEBUG
 					//console.log('deleting '+pages[page]);
-					$.glue.backend({ method: 'glue.delete_page', 'page': pages[page] }, function(data) {
-						if (data['#error']) {
-							$.glue.error(data['#data']);
-						}
-					}, false);
+					$.glue.backend({ method: 'glue.delete_page', 'page': pages[page] });
 				}
-				
 				// TODO (later): check if all revisions were indeed deleted
 				// remove entry
 				$(entry).hide('fast', function() {

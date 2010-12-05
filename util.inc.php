@@ -71,21 +71,27 @@ function array_unique_element(&$a, $key)
  *
  *	@param string $dir directory to check
  *	@param string $fn file to look for
+ *	@param string $orig_fn first check this filename (optional)
  *	@return (basename) filename of identical file in $dir or false if 
  *	there is none
  */
-function dir_has_same_file($dir, $fn)
+function dir_has_same_file($dir, $fn, $orig_fn = '')
 {
 	// strip any slash at the end of $dir
 	if (substr($dir, -1) == '/') {
 		$dir = substr($dir, 0, -1);
 	}
+	if (empty($orig_fn)) {
+		$orig_fn = basename($fn);
+	} else {
+		$orig_fn = basename($orig_fn);
+	}
 	
 	if (($dir_fns = @scandir($dir)) === false) {
 		return false;
 	}
-	// optimization: check $fn first if it occurs in $dir
-	if (($i = array_search(basename($fn), $dir_fns)) !== false) {
+	// optimization: check $orig_fn first
+	if (($i = array_search($orig_fn, $dir_fns)) !== false) {
 		$a = array_splice($dir_fns, $i, 1);
 		array_unshift($dir_fns, $a[0]);
 	}

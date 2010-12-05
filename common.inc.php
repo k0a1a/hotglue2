@@ -475,7 +475,7 @@ function upload_file($fn, $page, $orig_fn = '', &$existed = false)
 	}
 	
 	// check if file is already in shared directory
-	if (($f = dir_has_same_file($d, basename($orig_fn))) !== false) {
+	if (($f = dir_has_same_file($d, $fn, $orig_fn)) !== false) {
 		log_msg('info', 'common: reusing file '.quot($f).' instead of newly uploaded file as they don\'t differ');
 		@unlink($fn);
 		$existed = true;

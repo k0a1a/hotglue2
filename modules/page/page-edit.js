@@ -67,6 +67,7 @@ $(document).ready(function() {
 	// also change tilte below
 	$(elem).attr('title', 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 	$(elem).bind('mousedown', function(e) {
+		var that = this;
 		$.glue.slider(e, function(x, y, evt) {
 			// rectangular grid when pressing shift
 			if (evt.shiftKey) {
@@ -100,12 +101,63 @@ $(document).ready(function() {
 				}
 				$.glue.grid.update();
 			}
+			// update backend
+			$.glue.backend({ method: 'page.set_grid', 'x': $.glue.grid.x(), 'y': $.glue.grid.y() });
 			// update tooltip
-			$(elem).attr('title', 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
+			$(that).attr('title', 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 			// close menu
 			$.glue.menu.hide();
 		});
 		return false;
+	});
+	$.glue.menu.register('page', elem);
+	
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-delete.png" alt="btn" title="delete page" width="32" height="32">');
+	$(elem).bind('click', function(e) {
+		if (confirm('Really delete the current page and all it\'s revisions?')) {
+			var pn = $.glue.page.split('.').shift();
+			var pages = [];
+			// get all revisions
+			$.glue.backend({ method: 'glue.revisions', pagename: pn }, function(data) {
+				for (var rev in data) {
+					pages.push(pn+'.'+data[rev]);
+				}
+				// and delete them
+				for (var page in pages) {
+					// DEBUG
+					//console.log('deleting '+pages[page]);
+					$.glue.backend({ method: 'glue.delete_page', 'page': pages[page] });
+				}
+				// TODO (later): check if all revisions were indeed deleted
+				// redirect to "pages" controller
+				window.location = $.glue.base_url+'?pages';
+			});
+		}
+		$.glue.menu.hide();
+	});
+	$.glue.menu.register('page', elem);
+	
+	// TODO: change icon
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-grid.png" alt="btn" title="change the page&#039;s url" width="32" height="32">');
+	$(elem).bind('click', function(e) {
+		var old_pn = $.glue.page.split('.').shift();
+		var new_pn = prompt('Change the page URL', old_pn);
+		if (new_pn != null && new_pn != old_pn) {
+			$.glue.backend({ method: 'glue.rename_page', 'old': old_pn, 'new': new_pn }, function(data) {
+				// redirect to new url
+				window.location = $.glue.base_url+'?'+new_pn+'/edit';
+			});
+		}
+		$.glue.menu.hide();
+	});
+	$.glue.menu.register('page', elem);
+	
+	// TODO: change icon
+	// TODO (later): glue.get_startpage
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-grid.png" alt="btn" title="make this the start page" width="32" height="32">');
+	$(elem).bind('click', function(e) {
+		$.glue.backend({ method: 'glue.set_startpage', page: $.glue.page });
+		$.glue.menu.hide();
 	});
 	$.glue.menu.register('page', elem);
 });

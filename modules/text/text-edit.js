@@ -328,25 +328,40 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-line-height.png" alt="btn" title="change line height, click to reset to default one" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
+		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
+		/*
 		var obj = $(this).data('owner');
-		$(this).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
+		if ($(obj).css('line-height').substr(-2) == 'em') {
+			$(this).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
+		} else if ($(obj).css('line-height').substr(-2) == 'px') {
+			$(this).attr('title', 'change line height ('+parseFloat($(obj).css('line-height'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+		}
+		*/
 	});
 	$(elem).bind('mousedown', function(e) {
 		var obj = $(this).data('owner');
-		// we assume px here
-		var orig_val = parseInt($(obj).css('line-height'));
-		if (isNaN(orig_val)) {
-			orig_val = 10;
+		// jquery seems to always return line-height in px
+		// but just in case, try to handle em as well
+		// assume px for font-size
+		var font_size = parseFloat($(obj).css('font-size'));
+		if ($(obj).css('line-height').substr(-2) == 'em') {
+			var orig_val = parseFloat($(obj).css('line-height'))*font_size;
+		} else if ($(obj).css('line-height').substr(-2) == 'px') {
+			var orig_val = parseFloat($(obj).css('line-height'));
+		} else {
+			// some sane fallback
+			var orig_val = font_size*1.2;
 		}
 		var no_change = true;
 		var that = this;
 		$.glue.slider(e, function(x, y) {
-			var val = Math.floor(orig_val+y/6);
+			var val = orig_val+y/6;
 			if (val < 0) {
 				val = 0;
 			}
-			$(obj).css('line-height', val+'px');
-			$(that).attr('title', 'change line height ('+val+'px), click to reset to default one');
+			// set line-height in em
+			$(obj).css('line-height', (val/font_size)+'em');
+			//$(that).attr('title', 'change line height ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
@@ -355,7 +370,13 @@ $(document).ready(function() {
 			if (no_change) {
 				$(obj).css('line-height', '');
 				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-line-height' });
-				$(that).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
+				/*
+				if ($(obj).css('line-height').substr(-2) == 'em') {
+					$(that).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
+				} else if ($(obj).css('line-height').substr(-2) == 'px') {
+					$(that).attr('title', 'change line height ('+parseFloat($(obj).css('line-height'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+				}
+				*/
 			} else {
 				$.glue.object.save(obj);
 			}
@@ -366,22 +387,36 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-letter-spacing.png" alt="btn" title="change letter spacing" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
+		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
+		/*
 		var obj = $(this).data('owner');
-		$(this).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
+		if ($(obj).css('letter-spacing').substr(-2) == 'em') {
+			$(this).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
+		} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
+			$(this).attr('title', 'change letter spacing ('+parseFloat($(obj).css('letter-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+		}
+		*/
 	});
 	$(elem).bind('mousedown', function(e) {
 		var obj = $(this).data('owner');
-		// we assume px here (but "normal" works just fine too)
-		var orig_val = parseInt($(obj).css('letter-spacing'));
-		if (isNaN(orig_val)) {
-			orig_val = 0;
+		// jquery seems to always return letter-spacing in px
+		// but just in case, try to handle em as well
+		// assume px for font-size
+		var font_size = parseFloat($(obj).css('font-size'));
+		if ($(obj).css('letter-spacing').substr(-2) == 'em') {
+			var orig_val = parseFloat($(obj).css('letter-spacing'))*font_size;
+		} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
+			var orig_val = parseFloat($(obj).css('letter-spacing'));
+		} else {
+			// some sane fallback
+			var orig_val = 0.0;
 		}
 		var no_change = true;
 		var that = this;
 		$.glue.slider(e, function(x, y) {
-			var val = Math.floor(orig_val+y/6);
-			$(obj).css('letter-spacing', val+'px');
-			$(that).attr('title', 'change letter spacing ('+val+'px), click to reset to default one');
+			var val = orig_val+y/6;
+			$(obj).css('letter-spacing', (val/font_size)+'em');
+			//$(that).attr('title', 'change letter spacing ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
@@ -390,7 +425,13 @@ $(document).ready(function() {
 			if (no_change) {
 				$(obj).css('letter-spacing', '');
 				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-letter-spacing' });
-				$(that).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
+				/*
+				if ($(obj).css('letter-spacing').substr(-2) == 'em') {
+					$(that).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
+				} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
+					$(that).attr('title', 'change letter spacing ('+parseFloat($(obj).css('letter-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+				}
+				*/
 			} else {
 				$.glue.object.save(obj);
 			}
@@ -401,22 +442,36 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-word-spacing.png" alt="btn" title="change word spacing" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
+		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
+		/*
 		var obj = $(this).data('owner');
-		$(this).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
+		if ($(obj).css('word-spacing').substr(-2) == 'em') {
+			$(this).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
+		} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
+			$(this).attr('title', 'change word spacing ('+parseFloat($(obj).css('word-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+		}
+		*/
 	});
 	$(elem).bind('mousedown', function(e) {
 		var obj = $(this).data('owner');
-		// we assume px here (but "normal" works just fine too)
-		var orig_val = parseInt($(obj).css('word-spacing'));
-		if (isNaN(orig_val)) {
-			orig_val = 0;
+		// jquery seems to always return word-spacing in px
+		// but just in case, try to handle em as well
+		// assume px for font-size
+		var font_size = parseFloat($(obj).css('font-size'));
+		if ($(obj).css('word-spacing').substr(-2) == 'em') {
+			var orig_val = parseFloat($(obj).css('word-spacing'))*font_size;
+		} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
+			var orig_val = parseFloat($(obj).css('word-spacing'));
+		} else {
+			// some sane fallback
+			var orig_val = 0.0;
 		}
 		var no_change = true;
 		var that = this;
 		$.glue.slider(e, function(x, y) {
-			var val = Math.floor(orig_val+y/6);
-			$(obj).css('word-spacing', val+'px');
-			$(that).attr('title', 'change word spacing ('+val+'px), click to reset to default one');
+			var val = orig_val+y/6;
+			$(obj).css('word-spacing', (val/font_size)+'em');
+			//$(that).attr('title', 'change word spacing ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
@@ -425,14 +480,20 @@ $(document).ready(function() {
 			if (no_change) {
 				$(obj).css('word-spacing', '');
 				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-word-spacing' });
-				$(that).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
+				/*
+				if ($(obj).css('word-spacing').substr(-2) == 'em') {
+					$(that).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
+				} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
+					$(that).attr('title', 'change word spacing ('+parseFloat($(obj).css('word-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
+				}
+				*/
 			} else {
 				$.glue.object.save(obj);
 			}
 		});
 		return false;
 	});
-	$.glue.contextmenu.register('text', 'text-letter-spacing', elem);
+	$.glue.contextmenu.register('text', 'text-word-spacing', elem);
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-align.png" alt="btn" title="change text alignment" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
@@ -545,7 +606,7 @@ $(document).ready(function() {
 		});
 		return false;
 	});
-	$.glue.contextmenu.register('text', 'text-letter-spacing', elem);
+	$.glue.contextmenu.register('text', 'text-text-padding', elem);
 	
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {

@@ -36,6 +36,8 @@ $.glue.canvas = function()
 			// resize body
 			$('body').css('width', max_x+'px');
 			$('body').css('height', max_y+'px');
+			// update grid
+			$.glue.grid.update();
 		}
 	};
 }();
@@ -827,7 +829,8 @@ $.glue.object = function()
 		},
 		resizable_update_tooltip: function(obj) {
 			var p = $(obj).position();
-			$(obj).children('.ui-resizable-handle').attr('title', $(obj).outerWidth()+'x'+$(obj).outerHeight()+' at '+p.left+'x'+p.top);
+			// don't include any border in the calculation
+			$(obj).children('.ui-resizable-handle').attr('title', $(obj).innerWidth()+'x'+$(obj).innerHeight()+' at '+p.left+'x'+p.top);
 		},
 		save: function(obj) {
 			var elem = $(obj).clone();
@@ -1455,6 +1458,8 @@ $.glue.upload = function()
 					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
 				} else {
 					$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+					// DEBUG
+					console.error(e);
 				}
 			},
 			finish: function(data) {
@@ -1761,6 +1766,8 @@ $.glue.upload = function()
 						$.glue.object.register(obj);
 						// DEBUG
 						//console.log('registered static upload: '+$(obj).attr('id'));
+						// fire handler
+						$(obj).trigger('glue-upload-static');
 						// save object
 						$.glue.object.save(obj);
 					}

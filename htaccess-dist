@@ -1,5 +1,6 @@
 # make sure MultiViews is disabled
 Options -MultiViews
+
 RewriteEngine on
 # shortcut for json
 RewriteRule ^json/?$ json.php [L]
@@ -7,3 +8,17 @@ RewriteRule ^json/?$ json.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?$1
+
+# disallow access to a bunch of static files
+<Files COPYING>
+	order deny,allow
+	deny from all
+</Files>
+<Files INSTALL>
+	order deny,allow
+	deny from all
+</Files>
+<Files README>
+	order deny,allow
+	deny from all
+</Files>

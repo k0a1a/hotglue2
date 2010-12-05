@@ -3,7 +3,7 @@
 h1, h2, h3, h4, h5, h6 {
 	/* defaults for headings */
 	font-size: 25.5px;
-	line-height: 37.74px;
+	line-height: 1.48em;
 }
 
 p {

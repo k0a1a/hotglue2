@@ -303,6 +303,8 @@ function image_render_page_early($args)
 		} else {
 			html_add_js_var('$.glue.conf.image.resizing', IMAGE_RESIZING);		
 		}
+		html_add_js_var('$.glue.conf.image.upload_resize_larger', IMAGE_UPLOAD_RESIZE_LARGER);
+		html_add_js_var('$.glue.conf.image.upload_resize_to', IMAGE_UPLOAD_RESIZE_TO);
 	}
 }
 
@@ -369,7 +371,7 @@ function image_resize($args)
 		unset($obj['image-resized-width']);
 		unset($obj['image-resized-height']);
 		// update object file as well
-		$ret = object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('resized-file', 'resized-width', 'resized-height')));
+		$ret = object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('image-resized-file', 'image-resized-width', 'image-resized-height')));
 		if ($ret['#error']) {
 			return $ret;
 		}
@@ -456,13 +458,13 @@ function image_resize($args)
 	// update_object()
 	$update = array();
 	$update['name'] = $obj['name'];
-	$update['resized-file'] = basename($fn);
-	$update['resized-width'] = $width;
-	$update['resized-height'] = $height;
+	$update['image-resized-file'] = basename($fn);
+	$update['image-resized-width'] = $width;
+	$update['image-resized-height'] = $height;
 	// we change width and height here as well since we are racing with the 
 	// save_object from the frontend after resize
-	$update['width'] = $width.'px';
-	$update['height'] = $height.'px';
+	$update['object-width'] = $width.'px';
+	$update['object-height'] = $height.'px';
 	
 	return update_object($update);
 }
@@ -534,11 +536,11 @@ function image_serve_resource($args)
 		} else if ($ext == 'png') {
 			serve_file($fn, false, 'image/png');
 		} else {
-			log_msg('warn', 'image_serve_resource: unsupported resized-file '.quot($fn));
+			log_msg('warn', 'image_serve_resource: unsupported image-resized-file '.quot($fn));
 		}
 		// if we're still alive it means that the resized file has not been 
 		// found
-		log_msg('warn', 'image_serve_resource: could not serve resized-file '.quot($fn).', falling back to original');
+		log_msg('warn', 'image_serve_resource: could not serve image-resized-file '.quot($fn).', falling back to original');
 		$need_auth = false;
 	} elseif (empty($obj['image-resized-file'])) {
 		// we don't have a resized file
@@ -593,9 +595,9 @@ function image_snapshot_symlink($args)
 	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
 	$src_dir = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared';
 	
-	// we do this for image-file and resized-file
+	// we do this for image-file and image-resized-file
 	// .. to add a bit of complexity ;)
-	foreach (array('image-file', 'resized-file') as $field) {
+	foreach (array('image-file', 'image-resized-file') as $field) {
 		if (empty($obj[$field])) {
 			continue;
 		} else {
