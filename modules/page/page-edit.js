@@ -137,8 +137,7 @@ $(document).ready(function() {
 	});
 	$.glue.menu.register('page', elem);
 	
-	// TODO: change icon
-	elem = $('<img src="'+$.glue.base_url+'modules/page/page-grid.png" alt="btn" title="change the page&#039;s url" width="32" height="32">');
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-url.png" alt="btn" title="change the page&#039;s url" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var old_pn = $.glue.page.split('.').shift();
 		var new_pn = prompt('Change the page URL', old_pn);
@@ -152,9 +151,8 @@ $(document).ready(function() {
 	});
 	$.glue.menu.register('page', elem);
 	
-	// TODO: change icon
 	// TODO (later): glue.get_startpage
-	elem = $('<img src="'+$.glue.base_url+'modules/page/page-grid.png" alt="btn" title="make this the start page" width="32" height="32">');
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-set-startpage.png" alt="btn" title="make this the start page" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		$.glue.backend({ method: 'glue.set_startpage', page: $.glue.page });
 		$.glue.menu.hide();
