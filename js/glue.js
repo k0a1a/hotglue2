@@ -68,6 +68,8 @@ $.glue.backend = function()
 $.glue.error = function()
 {
 	return function(s) {
-		alert('The glue gun manufacturer says: '+s);
+		if ($.glue.conf.show_frontend_errors) {
+			alert('The glue gun manufacturer says: '+s);
+		}
 	};
 }();
