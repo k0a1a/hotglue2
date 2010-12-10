@@ -1,0 +1,12 @@
+type:image
+module:image
+image-file:redarrow_2.png
+image-file-mime:image/png
+image-file-width:40
+object-width:40px
+image-file-height:100
+object-height:100px
+image-background-repeat:no-repeat
+object-left:317px
+object-top:2px
+object-zindex:100
