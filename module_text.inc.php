@@ -63,6 +63,12 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-font-color']);
 	}
+	// font-family
+	if (elem_css($elem, 'font-family') !== NULL) {
+		$obj['text-font-family'] = elem_css($elem, 'font-family');
+	} else {
+		unset($obj['text-font-family']);
+	}
 	// font-size
 	if (elem_css($elem, 'font-size') !== NULL) {
 		$obj['text-font-size'] = elem_css($elem, 'font-size');
@@ -186,6 +192,10 @@ function text_alter_render_early($args)
 	// font-color
 	if (!empty($obj['text-font-color'])) {
 		elem_css($elem, 'color', $obj['text-font-color']);
+	}
+	// font-family
+	if (!empty($obj['text-font-family'])) {
+		elem_css($elem, 'font-family', $obj['text-font-family']);
 	}
 	// font-size
 	if (!empty($obj['text-font-size'])) {

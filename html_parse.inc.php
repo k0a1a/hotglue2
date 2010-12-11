@@ -167,12 +167,12 @@ function html_encode_str_smart($html)
 						break;
 					}
 				} elseif ($ahead == $cur+1) {
-					if ((48 <= ord($c) && ord($c) <= 57) || (97 <= ord($c) && ord($c) <= 102) || $c == '/') {
+					if ((48 <= ord($c) && ord($c) <= 57) || (97 <= ord($c) && ord($c) <= 122) || $c == '/') {
 						// starts with an alphanumeric character or a slash, can be valid
 					} else {
 						// DEBUG
 						$reason = 3;
-						break;					
+						break;
 					}
 				}
 				$ahead++;

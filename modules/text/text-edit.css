@@ -23,6 +23,7 @@
 	background-color: inherit;
 	border: 0px;
 	color: inherit;
+	font-family: inherit;
 	font-size: inherit;
 	font-style: inherit;
 	font-weight: inherit;
@@ -30,4 +31,31 @@
 	line-height: inherit;
 	text-align: inherit;
 	word-spacing: inherit;
+}
+
+
+/* TODO: move this somewhere else? */
+/* TODO: this list also could need some tweaking */
+.glue-font0 {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.glue-font1 {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.glue-font2 {
+	font-family: "Courier New", Courier, monospace;
+}
+
+.glue-font3 {
+	font-family: Georgia, serif;
+}
+
+.glue-font4 {
+	font-family: Tahoma, Geneva, sans-serif;
+}
+
+.glue-font5 {
+	font-family: "Times New Roman", Times, serif;
 }

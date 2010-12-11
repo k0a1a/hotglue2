@@ -234,6 +234,8 @@ function create_object($args)
 	$f = false;
 	$tries = 0;
 	$mtime = intval(microtime(true)*100.0);
+	// DEBUG
+	log_msg('warn', 'create_object: $mtime is '.$mtime.', raw call returns '.quot(microtime(true)));
 	do {
 		// use a finer granularity than unix time by default
 		$name = $args['page'].'.'.($mtime+$tries);
@@ -247,7 +249,8 @@ function create_object($args)
 		return response('Error creating an object in page '.quot($args['page']), 500);
 	} else {
 		fclose($f);
-		log_msg('info', 'create_object: created '.quot($name));
+		// DEBUG
+		log_msg('warn', 'create_object: created '.quot($name));
 		return response(array('name'=>$name));
 	}
 }
@@ -318,6 +321,12 @@ function delete_object($args)
 	}
 	if (!object_exists($args['name'])) {
 		return response('Object '.quot($args['name']).' does not exist', 404);
+	}
+	// check if the object file is writable
+	// this allows us to make singular objects read-only by setting the file 
+	// permissions to 0444 or similar
+	if (!is_writable(CONTENT_DIR.'/'.str_replace('.', '/', $args['name']))) {
+		return response('Object '.quot($args['name']).' is read-only, not deleting it', 500);
 	}
 	
 	// call delete_object unless the object is a symlink

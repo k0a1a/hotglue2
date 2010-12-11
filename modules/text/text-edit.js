@@ -306,6 +306,67 @@ $(document).ready(function() {
 	// this also requires the glue-deselect handler above
 	$.glue.contextmenu.register('text', 'text-font-color', elem);
 	
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-face.png" alt="btn" title="change typeface (click to cycle through available typefaces)" width="32" height="32">');
+	$(elem).bind('click', function(e) {
+		var obj = $(this).data('owner');
+		// get all fonts
+		var fonts = [];
+		for (var i=0; i < document.styleSheets.length; i++) {
+			var sheet = document.styleSheets[i];
+			for (var j=0; sheet.cssRules && j < sheet.cssRules.length; j++) {
+				var rule = sheet.cssRules[j];
+				if (rule.selectorText && rule.selectorText.substr(0, 10) == '.glue-font') {
+					// find font-family property
+					var text = rule.cssText;
+					var start = text.indexOf('font-family:');
+					if (start == -1) {
+						continue;
+					}
+					// move start to beginning of value
+					start += 12;
+					var end = text.length-1;
+					// check for closing bracket
+					var tmp = text.indexOf('}', start);
+					if (tmp != -1) {
+						end = tmp-1;
+					}
+					// check for semicolon
+					tmp = text.indexOf(';', start);
+					if (tmp != -1 && tmp < end) {
+						end = tmp-1;
+					}
+					fonts.push($.trim(text.substr(start, end-start+1)));
+				}
+			}
+		}
+		// DEBUG
+		// console.log(fonts);
+		// search for current font
+		var cur = $(obj).css('font-family');
+		var got_changed = false;
+		for (i=0; i < fonts.length; i++) {
+			if (cur === fonts[i]) {
+				// pick the next one
+				if (i+1 < fonts.length) {
+					$(obj).css('font-family', fonts[i+1]);
+				} else {
+					$(obj).css('font-family', fonts[0]);
+				}
+				got_changed = true;
+			}
+		}
+		// otherwise fall back to the first one
+		if (!got_changed && fonts.length) {
+			$(obj).css('font-family', fonts[0]);
+			got_changed = true;
+		}
+		// and save object
+		if (got_changed) {
+			$.glue.object.save(obj);
+		}
+	});
+	$.glue.contextmenu.register('text', 'text-font-face', elem);
+	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-style.png" alt="btn" title="change font style" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
