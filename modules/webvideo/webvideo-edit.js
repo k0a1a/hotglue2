@@ -38,7 +38,7 @@ $(document).ready(function() {
 				$.glue.error('Error understanding the vimeo link');
 			} else {
 				start += 5;
-				privider = 'vimeo';
+				provider = 'vimeo';
 				var id = String(parseInt(url.slice(start)));
 			}
 		} else {

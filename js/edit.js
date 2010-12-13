@@ -101,6 +101,33 @@ $.glue.colorpicker = function()
 		is_shown: function() {
 			return shown;
 		},
+		set_color: function(col) {
+			$.color.setColor(col);
+			var rgba = $.color.getRGB();
+			var hex = $.color.getHex();
+			if ($(elem).children('#glue-colorpicker-transparent').css('display') == 'block') {
+				// showing transparency button
+				if (rgba.a == 0) {
+					$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-set');
+					$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-notset');
+					col = 'transparent';
+				} else {
+					$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-set');
+					$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-notset');
+				}
+			} else {
+				// not showing transparency button
+				// a special case for color 'transparent'
+				if (rgba.r == 0 && rgba.g == 0 && rgba.b == 0 && rgba.a == 0) {
+					// set color to white
+					hex = '#ffffff';
+				}
+			}
+			// set color wheel
+			$.farbtastic($(elem).children('#glue-colorpicker-wheel')).setColor(hex);
+			$(elem).children('#glue-colorpicker-wheel').find('.marker').attr('title', hex);
+			color = col;
+		},
 		show: function(def, transp, change, finish) {
 			if (shown) {
 				$.glue.colorpicker.hide();
@@ -112,37 +139,18 @@ $.glue.colorpicker = function()
 			change_func = change;
 			finish_func = finish;
 			
+			if (transp) {
+				$(elem).children('#glue-colorpicker-transparent').css('display', 'block');
+			} else {
+				$(elem).children('#glue-colorpicker-transparent').css('display', 'none');
+			}
+			
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
 				$.farbtastic($(elem).children('#glue-colorpicker-wheel')).setColor('#ff0000');
 				$(elem).children('#glue-colorpicker-wheel').find('.marker').removeAttr('title');
 			} else {
-				$.color.setColor(def);
-				var rgba = $.color.getRGB();
-				var hex = $.color.getHex();
-				// handle transparency
-				if (transp) {
-					$(elem).children('#glue-colorpicker-transparent').css('display', 'block');
-					if (rgba.a == 0) {
-						$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-set');
-						$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-notset');
-						color = 'transparent';
-					} else {
-						$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-set');
-						$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-notset');
-					}
-				} else {
-					$(elem).children('#glue-colorpicker-transparent').css('display', 'none');				
-					// a special case for color 'transparent'
-					if (rgba.r == 0 && rgba.g == 0 && rgba.b == 0 && rgba.a == 0) {
-						// set color to white
-						hex = '#ffffff';
-					}
-				}
-				// handle color
-				$.farbtastic($(elem).children('#glue-colorpicker-wheel')).setColor(hex);
-				$(elem).children('#glue-colorpicker-wheel').find('.marker').attr('title', hex);
-				color = def;
+				$.glue.colorpicker.set_color(def);
 			}
 			
 			// add to dom
@@ -301,22 +309,17 @@ $.glue.contextmenu = function()
 			// position items
 			for (var i=0; i < 2; i++) {
 				var target;
-				var cur_left;
-				var cur_top;
+				var cur_left = $(obj).position().left;
+				var cur_top = $(obj).position().top;
 				if (i == 0) {
-					target = left;
-				} else {
 					target = top;
-				}
-				cur_left = $(obj).position().left;
-				cur_top = $(obj).position().top;
-				// TODO (later): prevent context menu items from going off-screen
-				// the following code doesn't do it
-				if (cur_left < 0) {
-					cur_left = 0;
-				}
-				if (cur_top < 0) {
-					cur_top = 0;
+				} else {
+					target = left;
+					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
+					// TODO (later): can be improved
+					if (top.length && cur_top-$(top[0].elem).outerHeight(true) < 0) {
+						cur_top = $(top[0].elem).outerHeight(true);
+					}
 				}
 				// add items to dom
 				for (var j=0; j < target.length; j++) {
@@ -333,14 +336,22 @@ $.glue.contextmenu = function()
 					$(target[j].elem).css('z-index', '201');
 					// add to dom and move
 					$('body').append(target[j].elem);
-					if (target == left) {
-						$(target[j].elem).css('left', (cur_left-$(target[j].elem).outerWidth(true))+'px');
+					if (target == top) {
+						$(target[j].elem).css('left', cur_left+'px');
+						var temp_top = cur_top-$(target[j].elem).outerHeight(true);
+						if (temp_top < 0) {
+							temp_top = 0;
+						}
+						$(target[j].elem).css('top', temp_top+'px');
+						var cur_width = $(target[j].elem).outerWidth(true);
+					} else {
+						var temp_left = cur_left-$(target[j].elem).outerWidth(true);
+						if (temp_left < 0) {
+							temp_left = 0;
+						}
+						$(target[j].elem).css('left', temp_left+'px');
 						$(target[j].elem).css('top', cur_top+'px');
 						var cur_height = $(target[j].elem).outerHeight(true);
-					} else {
-						$(target[j].elem).css('left', cur_left+'px');
-						$(target[j].elem).css('top', (cur_top-$(target[j].elem).outerHeight(true))+'px');
-						var cur_width = $(target[j].elem).outerWidth(true);
 					}
 					// set owner and trigger event
 					$(target[j].elem).data('owner', obj);

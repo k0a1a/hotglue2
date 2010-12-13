@@ -52,7 +52,14 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'img/background-color.png" alt="btn" title="change the background color" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		$.glue.colorpicker.show($('html').css('background-color'), false, function(col) {
+		var col = $('html').css('background-color');
+		if (e.shiftKey) {
+			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
+			if (!col) {
+				return;
+			}
+		}
+		$.glue.colorpicker.show(col, false, function(col) {
 			$('html').css('background-color', col);
 		}, function(col) {
 			// update grid as well

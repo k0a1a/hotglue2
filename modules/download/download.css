@@ -21,3 +21,15 @@
 	width: 26px;
 	word-break: break-all;
 }
+
+#glue-contextmenu-download-public {
+	background-color: transparent;
+}
+
+#glue-contextmenu-download-public.glue-menu-disabled {
+	background-image: url(download-public-off.png);
+}
+
+#glue-contextmenu-download-public.glue-menu-enabled {
+	background-image: url(download-public-on.png);
+}

@@ -229,7 +229,14 @@ $(document).ready(function() {
 	var colorpicker_shown = false;
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
-		$.glue.colorpicker.show($(obj).css('background-color'), false, function(col) {
+		var col = $(obj).css('background-color');
+		if (e.shiftKey) {
+			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
+			if (!col) {
+				return;
+			}
+		}
+		$.glue.colorpicker.show(col, false, function(col) {
 			$(obj).css('background-color', col);
 		}, function (col) {
 			$.glue.object.save(obj);
@@ -295,7 +302,14 @@ $(document).ready(function() {
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-color.png" alt="btn" title="change font color" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
-		$.glue.colorpicker.show($(obj).css('color'), false, function(col) {
+		var col = $(obj).css('color');
+		if (e.shiftKey) {
+			col = prompt('Enter font color (e.g. #ff0000 or rgb(255, 0, 0))', col);
+			if (!col) {
+				return;
+			}
+		}
+		$.glue.colorpicker.show(col, false, function(col) {
 			$(obj).css('color', col);
 		}, function (col) {
 			$.glue.object.save(obj);
@@ -571,28 +585,23 @@ $(document).ready(function() {
 			$(this).attr('title', 'change text alignment (left)');
 		}
 	});
-	$(elem).bind('mousedown', function(e) {
+	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
-		var that = this;
-		$.glue.slider(e, function(x, y, e) {
-			var val = Math.floor(Math.abs(y/6));
-			if (val % 4 == 0) {
-				$(obj).css('text-align', 'left');
-				$(that).attr('title', 'change text alignment (left)');
-			} else if (val % 4 == 1) {
-				$(obj).css('text-align', 'center');
-				$(that).attr('title', 'change text alignment (center)');
-			} else if (val % 4 == 2) {
-				$(obj).css('text-align', 'right');
-				$(that).attr('title', 'change text alignment (right)');
-			} else if (val % 4 == 3) {
-				$(obj).css('text-align', 'justify');
-				$(that).attr('title', 'change text alignment (justify)');
-			}
-		}, function(x, y) {
-			$.glue.object.save(obj);
-		});
-		return false;
+		var val = $(obj).css('text-align');
+		if (val == 'center') {
+			$(obj).css('text-align', 'right');
+			$(this).attr('title', 'change text alignment (right)');
+		} else if (val == 'right') {
+			$(obj).css('text-align', 'justify');
+			$(this).attr('title', 'change text alignment (justify)');
+		} else if (val == 'justify') {
+			$(obj).css('text-align', 'left');
+			$(this).attr('title', 'change text alignment (left)');			
+		} else {
+			$(obj).css('text-align', 'center');
+			$(this).attr('title', 'change text alignment (center)');
+		}
+		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-align', elem);
 	

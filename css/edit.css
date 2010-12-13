@@ -105,7 +105,7 @@
 	/* class for selected objects */
 	border-color: red;
 	border-style: dashed;
-	border-width: 2px;
+	border-width: 1px;
 }
 
 .glue-ui {

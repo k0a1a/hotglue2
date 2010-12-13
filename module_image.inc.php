@@ -410,6 +410,7 @@ function image_resize($args)
 	} elseif ($obj['image-file-mime'] == 'image/gif' || $ext == 'gif') {
 		$orig = @imagecreatefromgif($fn);
 		// save gifs as png
+		// TODO (later): check for animated gif (see php.net/manual/en/function.imagecreatefromgif.php)
 		$dest_ext = 'png';
 	} else {
 		return response('Unsupported source file format '.quot($obj['image-file']), 500);
@@ -424,6 +425,9 @@ function image_resize($args)
 		@imagedestroy($orig);
 		return response('Error creating the resized image', 500);
 	}
+	// preserve any alpha channel
+	@imagealphablending($resized, false);
+	@imagesavealpha($resized, true);
 	// try to resize
 	if (!@imagecopyresampled($resized, $orig, 0, 0, 0, 0, $width, $height, $orig_size[0], $orig_size[1])) {
 		@imagedestroy($resized);
@@ -442,6 +446,9 @@ function image_resize($args)
 	if ($dest_ext == 'jpg') {
 		$ret = @imagejpeg($resized, $fn, IMAGE_JPEG_QUAL);
 	} else if ($dest_ext == 'png') {
+		// preserve any alpha channel
+		@imagealphablending($resized, false);
+		@imagesavealpha($resized, true);
 		$ret = @imagepng($resized, $fn, IMAGE_PNG_QUAL);
 	}
 	umask($m);

@@ -233,12 +233,10 @@ function create_object($args)
 	// try to create new file
 	$f = false;
 	$tries = 0;
-	$mtime = intval(microtime(true)*100.0);
-	// DEBUG
-	log_msg('warn', 'create_object: $mtime is '.$mtime.', raw call returns '.quot(microtime(true)));
+	$mtime = microtime(true);
 	do {
 		// use a finer granularity than unix time by default
-		$name = $args['page'].'.'.($mtime+$tries);
+		$name = $args['page'].'.'.intval(floor($mtime)).intval(($mtime-floor($mtime))*100.0+$tries);
 		$m = umask(0111);
 		$f = @fopen(CONTENT_DIR.'/'.str_replace('.', '/', $name), 'x');
 		umask($m);
@@ -249,8 +247,7 @@ function create_object($args)
 		return response('Error creating an object in page '.quot($args['page']), 500);
 	} else {
 		fclose($f);
-		// DEBUG
-		log_msg('warn', 'create_object: created '.quot($name));
+		log_msg('info', 'create_object: created '.quot($name));
 		return response(array('name'=>$name));
 	}
 }
