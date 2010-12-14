@@ -98,7 +98,11 @@ function default_html($add_glue)
 			html_add_js(base_url().$jquery, 1);
 		}
 		// 2 can be used for third-party components
-		html_add_js(base_url().'js/glue.js', 3);
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'js/glue.min.js', 3);
+		} else {
+			html_add_js(base_url().'js/glue.js', 3);
+		}
 		html_add_js_var('$.glue.base_url', base_url());
 		html_add_js_var('$.glue.conf.show_frontend_errors', SHOW_FRONTEND_ERRORS);
 		html_add_js_var('$.glue.version', glue_version());

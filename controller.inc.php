@@ -39,7 +39,11 @@ function controller_create_page($args)
 	load_modules('glue');
 	default_html(true);
 	html_add_css(base_url().'css/create_page.css');
-	html_add_js(base_url().'js/create_page.js');
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/create_page.min.js');
+	} else {
+		html_add_js(base_url().'js/create_page.js');
+	}
 	html_add_js_var('$.glue.page', $page);
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'create_page');
@@ -87,8 +91,16 @@ function controller_edit($args)
 	} else {
 		html_add_js(base_url().'js/farbtastic.js', 2);
 	}
-	html_add_js(base_url().'js/jquery.xcolor-1.2.1.js', 2);
-	html_add_js(base_url().'js/edit.js', 4);
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/jquery.xcolor-1.2.1.min.js', 2);
+	} else {
+		html_add_js(base_url().'js/jquery.xcolor-1.2.1.js', 2);
+	}
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/edit.min.js', 4);
+	} else {
+		html_add_js(base_url().'js/edit.js', 4);
+	}
 	render_page(array('page'=>$page, 'edit'=>true));
 	echo html_finalize();
 	

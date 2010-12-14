@@ -296,7 +296,11 @@ register_hook('alter_render_late', 'invoked late in the object rendering process
 function image_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/image/image-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/image/image-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/image/image-edit.js');
+		}
 		if (!_gd_available()) {
 			html_add_js_var('$.glue.conf.image.resizing', false);
 			log_msg('debug', 'image: disabling image resizing as gd is not available');

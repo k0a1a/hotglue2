@@ -132,7 +132,11 @@ function object_alter_save($args)
 function object_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/object/object-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/object/object-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/object/object-edit.js');
+		}
 		
 		// add default colors
 		html_add_js_var('$.glue.conf.object.default_colors', expl(' ', OBJECT_DEFAULT_COLORS));

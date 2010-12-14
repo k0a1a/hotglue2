@@ -129,7 +129,9 @@ function video_alter_render_early($args)
 	}
 	elem_css($v, 'width', '100%');
 	elem_css($v, 'height', '100%');
-	elem_css($v, 'preload', 'preload');
+	// we're currently not preloading the video due to some troubles on 
+	// Firefox
+	//elem_css($v, 'preload', 'preload');
 	// set some fallback text
 	if (!empty($obj['video-file']) && !empty($obj['video-file-mime'])) {
 		elem_val($v, '<div class="video-fallback">You are not seeing the video because your browser does not support '.htmlspecialchars($obj['video-file-mime'], ENT_NOQUOTES, 'UTF-8').'. Consider using a contemporary web browser.</div>');
@@ -188,7 +190,11 @@ function video_render_object($args)
 function video_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/video/video-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/video/video-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/video/video-edit.js');
+		}
 		html_add_css(base_url().'modules/video/video-edit.css');
 	}
 }

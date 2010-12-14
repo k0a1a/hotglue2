@@ -25,7 +25,11 @@ function controller_pages($args)
 {
 	default_html(true);
 	html_add_css(base_url().'modules/page_browser/page_browser.css');
-	html_add_js(base_url().'modules/page_browser/page_browser.js');
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'modules/page_browser/page_browser.min.js');
+	} else {
+		html_add_js(base_url().'modules/page_browser/page_browser.js');
+	}
 	html_add_js_var('$.glue.conf.page.startpage', startpage());
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'pages');
@@ -49,7 +53,11 @@ register_controller('pages', '', 'controller_pages', array('auth'=>PAGES_NEED_AU
 function page_browser_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/page_browser/page_browser-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/page_browser/page_browser-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/page_browser/page_browser-edit.js');
+		}
 	}
 }
 

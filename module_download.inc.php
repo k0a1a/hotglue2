@@ -138,7 +138,11 @@ function download_render_object($args)
 function download_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/download/download-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/download/download-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/download/download-edit.js');
+		}
 		html_add_css(base_url().'modules/download/download.css');
 	}
 }

@@ -38,7 +38,11 @@ function controller_user_css_stylesheet($args)
 	default_html(true);
 	html_add_js_var('$.glue.page', $page);
 	html_add_css(base_url().'modules/user_css/user_css.css');
-	html_add_js(base_url().'modules/user_css/user_css.js');
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'modules/user_css/user_css.min.js');
+	} else {
+		html_add_js(base_url().'modules/user_css/user_css.js');
+	}
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'user_css');
 	if ($page === false) {

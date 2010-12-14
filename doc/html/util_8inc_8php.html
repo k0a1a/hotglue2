@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<title>hotglue: /srv/www/sukzessiv.net/hotglue3/util.inc.php File Reference</title>
+<title>hotglue: /srv/www/sukzessiv.net/hotglue/util.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css">
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -20,12 +20,14 @@
   </div>
 </div>
 <div class="contents">
-<h1>/srv/www/sukzessiv.net/hotglue3/util.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
+<h1>/srv/www/sukzessiv.net/hotglue/util.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#61d3b2881d9368741c71509017724bc8">array_to_js</a> ($container)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#4647462c98447c6c2842f70d8c313f85">array_unique_element</a> (&amp;$a, $key)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#7f3e06b0a6f405290cb4d7990b8ac5c6">dir_has_same_file</a> ($dir, $fn, $orig_fn= '')</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#6309f576f2611237288d0dd3eed09db3">dir_is_different</a> ($a, $b)</td></tr>
 
@@ -58,6 +60,8 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#9d3ab20fc8b79fb6ab860f93600c745e">serve_file</a> ($fn, $dl, $mime)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#74e38925e7162356a2ea14db32664c37">tab</a> ($count=1)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#187670bae118aa2d4864c513a21e712d">unique_filename</a> ($dir, $orig_fn)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a5cc9d5f8a0b5bb76dfe3d15796e5940">var_dump_inl</a> ($var)</td></tr>
 
@@ -124,6 +128,50 @@ make an array off associative array unique in a certain key-value<p>
     <tr><td valign="top"></td><td valign="top"><em>mixed</em>&nbsp;</td><td>$key key whose value we compare </td></tr>
   </table>
 </dl>
+
+</div>
+</div><p>
+<a class="anchor" name="7f3e06b0a6f405290cb4d7990b8ac5c6"></a><!-- doxytag: member="util.inc.php::dir_has_same_file" ref="7f3e06b0a6f405290cb4d7990b8ac5c6" args="($dir, $fn, $orig_fn= '')" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dir_has_same_file           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>fn</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>orig_fn</em> = <code>''</code></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+check if a directory already contains a file (based on its content)<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$dir directory to check </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$fn file to look for </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$orig_fn first check this filename (optional) </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>(basename) filename of identical file in $dir or false if there is none </dd></dl>
 
 </div>
 </div><p>
@@ -628,6 +676,43 @@ return a number of tab characters<p>
 
 </div>
 </div><p>
+<a class="anchor" name="187670bae118aa2d4864c513a21e712d"></a><!-- doxytag: member="util.inc.php::unique_filename" ref="187670bae118aa2d4864c513a21e712d" args="($dir, $orig_fn)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unique_filename           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>orig_fn</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+find a unique filename for copying a file to destination directory<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$dir destination directory </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>string</em>&nbsp;</td><td>$orig_fn original filename </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>string (basename) proposed filename </dd></dl>
+
+</div>
+</div><p>
 <a class="anchor" name="a5cc9d5f8a0b5bb76dfe3d15796e5940"></a><!-- doxytag: member="util.inc.php::var_dump_inl" ref="a5cc9d5f8a0b5bb76dfe3d15796e5940" args="($var)" -->
 <div class="memitem">
 <div class="memproto">
@@ -656,7 +741,7 @@ print human-readable information about a variable in inline format<p>
 </div>
 </div><p>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Thu Dec 2 16:37:34 2010 for hotglue by&nbsp;
+<hr size="1"><address style="text-align: right;"><small>Generated on Mon Dec 13 23:04:50 2010 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

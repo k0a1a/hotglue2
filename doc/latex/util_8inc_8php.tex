@@ -1,6 +1,6 @@
 \hypertarget{util_8inc_8php}{
-\section{/srv/www/sukzessiv.net/hotglue3/util.inc.php File Reference}
-\label{util_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue3/util.inc.php@{/srv/www/sukzessiv.net/hotglue3/util.inc.php}}
+\section{/srv/www/sukzessiv.net/hotglue/util.inc.php File Reference}
+\label{util_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/util.inc.php@{/srv/www/sukzessiv.net/hotglue/util.inc.php}}
 }
 \subsection*{Functions}
 \begin{CompactItemize}
@@ -8,6 +8,8 @@
 \hyperlink{util_8inc_8php_61d3b2881d9368741c71509017724bc8}{array\_\-to\_\-js} (\$container)
 \item 
 \hyperlink{util_8inc_8php_4647462c98447c6c2842f70d8c313f85}{array\_\-unique\_\-element} (\&\$a, \$key)
+\item 
+\hyperlink{util_8inc_8php_7f3e06b0a6f405290cb4d7990b8ac5c6}{dir\_\-has\_\-same\_\-file} (\$dir, \$fn, \$orig\_\-fn= '')
 \item 
 \hyperlink{util_8inc_8php_6309f576f2611237288d0dd3eed09db3}{dir\_\-is\_\-different} (\$a, \$b)
 \item 
@@ -40,6 +42,8 @@
 \hyperlink{util_8inc_8php_9d3ab20fc8b79fb6ab860f93600c745e}{serve\_\-file} (\$fn, \$dl, \$mime)
 \item 
 \hyperlink{util_8inc_8php_74e38925e7162356a2ea14db32664c37}{tab} (\$count=1)
+\item 
+\hyperlink{util_8inc_8php_187670bae118aa2d4864c513a21e712d}{unique\_\-filename} (\$dir, \$orig\_\-fn)
 \item 
 \hyperlink{util_8inc_8php_a5cc9d5f8a0b5bb76dfe3d15796e5940}{var\_\-dump\_\-inl} (\$var)
 \end{CompactItemize}
@@ -78,6 +82,22 @@ make an array off associative array unique in a certain key-value
 \begin{description}
 \item[{\em array}]\&\$a reference to array \item[{\em mixed}]\$key key whose value we compare \end{description}
 \end{Desc}
+\hypertarget{util_8inc_8php_7f3e06b0a6f405290cb4d7990b8ac5c6}{
+\index{util.inc.php@{util.inc.php}!dir\_\-has\_\-same\_\-file@{dir\_\-has\_\-same\_\-file}}
+\index{dir\_\-has\_\-same\_\-file@{dir\_\-has\_\-same\_\-file}!util.inc.php@{util.inc.php}}
+\subsubsection[{dir\_\-has\_\-same\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}dir\_\-has\_\-same\_\-file (\$ {\em dir}, \/  \$ {\em fn}, \/  \$ {\em orig\_\-fn} = {\tt ''})}}
+\label{util_8inc_8php_7f3e06b0a6f405290cb4d7990b8ac5c6}
+
+
+check if a directory already contains a file (based on its content)
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$dir directory to check \item[{\em string}]\$fn file to look for \item[{\em string}]\$orig\_\-fn first check this filename (optional) \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:](basename) filename of identical file in \$dir or false if there is none \end{Desc}
 \hypertarget{util_8inc_8php_6309f576f2611237288d0dd3eed09db3}{
 \index{util.inc.php@{util.inc.php}!dir\_\-is\_\-different@{dir\_\-is\_\-different}}
 \index{dir\_\-is\_\-different@{dir\_\-is\_\-different}!util.inc.php@{util.inc.php}}
@@ -312,6 +332,22 @@ return a number of tab characters
 \end{Desc}
 \begin{Desc}
 \item[Returns:]string \end{Desc}
+\hypertarget{util_8inc_8php_187670bae118aa2d4864c513a21e712d}{
+\index{util.inc.php@{util.inc.php}!unique\_\-filename@{unique\_\-filename}}
+\index{unique\_\-filename@{unique\_\-filename}!util.inc.php@{util.inc.php}}
+\subsubsection[{unique\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}unique\_\-filename (\$ {\em dir}, \/  \$ {\em orig\_\-fn})}}
+\label{util_8inc_8php_187670bae118aa2d4864c513a21e712d}
+
+
+find a unique filename for copying a file to destination directory
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em string}]\$dir destination directory \item[{\em string}]\$orig\_\-fn original filename \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]string (basename) proposed filename \end{Desc}
 \hypertarget{util_8inc_8php_a5cc9d5f8a0b5bb76dfe3d15796e5940}{
 \index{util.inc.php@{util.inc.php}!var\_\-dump\_\-inl@{var\_\-dump\_\-inl}}
 \index{var\_\-dump\_\-inl@{var\_\-dump\_\-inl}!util.inc.php@{util.inc.php}}

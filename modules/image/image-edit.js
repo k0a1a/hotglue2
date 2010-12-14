@@ -12,7 +12,10 @@ $.glue.image = function() {
 	var preload_timer = false;
 	
 	return {
-		autoresize: function(obj) {
+		autoresize: function(obj, mode) {
+			if (mode === undefined) {
+				mode = 'center';
+			}
 			var larger = $.glue.conf.image.upload_resize_larger;
 			var to = $.glue.conf.image.upload_resize_to;
 			if (larger == '0%' && to == '0%') {
@@ -56,16 +59,21 @@ $.glue.image = function() {
 				// DEBUG
 				//console.log('moving from '+$(obj).position().left+' and '+$(obj).position().top);
 				//console.log('to '+($(obj).position().left+(w-target_w)/2)+' and '+($(obj).position().top+(h-target_h)/2));
-				$(obj).css('left', ($(obj).position().left+(w-target_w)/2)+'px');
-				$(obj).css('top', ($(obj).position().top+(h-target_h)/2)+'px');
+				if (mode == 'center') {
+					$(obj).css('left', ($(obj).position().left+(w-target_w)/2)+'px');
+					$(obj).css('top', ($(obj).position().top+(h-target_h)/2)+'px');
+				}
 				$.glue.object.resizable_update_tooltip(obj);
 				// call resize
-				$.glue.image.resize(obj);
+				$.glue.image.resize(obj, mode);
 			}
 		},
-		resize: function(obj) {
+		resize: function(obj, mode) {
 			if (!$.glue.conf.image.resizing || $(obj).css('background-repeat') != 'no-repeat') {
 				return;
+			}
+			if (mode === undefined) {
+				mode = 'center';
 			}
 			
 			var width = $(obj).width();
@@ -88,8 +96,10 @@ $.glue.image = function() {
 					$(temp_elem).attr('id', '');
 					$(temp_elem).attr('class', 'glue-object-copy');
 					// this assumes that the borders are equally spaced..
-					$(temp_elem).css('left', ($(obj).position().left+($(obj).outerWidth()-width)/2)+'px');
-					$(temp_elem).css('top', ($(obj).position().top+($(obj).outerHeight()-height)/2)+'px');
+					if (mode == 'center') {
+						$(temp_elem).css('left', ($(obj).position().left+($(obj).outerWidth()-width)/2)+'px');
+						$(temp_elem).css('top', ($(obj).position().top+($(obj).outerHeight()-height)/2)+'px');
+					}
 					// set new url (w & h are only here to prevent caching)
 					$(temp_elem).css('background-image', 'url('+$.glue.base_url+'?'+$(obj).attr('id')+'&w='+width+'&h='+height+')');
 					$(obj).before(temp_elem);
@@ -151,10 +161,10 @@ $('.image').live('glue-upload-dynamic-late', function(e, loaded) {
 	}
 });
 
-$('.image').live('glue-upload-static', function(e) {
+$('.image').live('glue-upload-static', function(e, mode) {
 	// this is only getting triggered when the object width and height is set 
 	// immediately after uploading, i.e. when gd is available on the server
-	$.glue.image.autoresize(this);
+	$.glue.image.autoresize(this, mode);
 });
 
 

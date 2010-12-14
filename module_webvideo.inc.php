@@ -95,7 +95,11 @@ function webvideo_render_object($args)
 function webvideo_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/webvideo/webvideo-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/webvideo/webvideo-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/webvideo/webvideo-edit.js');
+		}
 		html_add_css(base_url().'modules/webvideo/webvideo-edit.css');
 	}
 }

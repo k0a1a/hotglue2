@@ -49,7 +49,11 @@ function controller_revisions($args)
 	
 	default_html(true);
 	html_add_css(base_url().'modules/revisions_browser/revisions_browser.css');
-	html_add_js(base_url().'modules/revisions_browser/revisions_browser.js');
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'modules/revisions_browser/revisions_browser.min.js');
+	} else {
+		html_add_js(base_url().'modules/revisions_browser/revisions_browser.js');
+	}
 	html_add_js_var('$.glue.page', $page);
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'revisions');
@@ -84,7 +88,11 @@ register_controller('*', 'revisions', 'controller_revisions', array('auth'=>REVI
 function revisions_browser_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/revisions_browser/revisions_browser-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/revisions_browser/revisions_browser-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/revisions_browser/revisions_browser-edit.js');
+		}
 	}
 }
 

@@ -1778,7 +1778,7 @@ $.glue.upload = function()
 						// DEBUG
 						//console.log('registered static upload: '+$(obj).attr('id'));
 						// fire handler
-						$(obj).trigger('glue-upload-static');
+						$(obj).trigger('glue-upload-static', [ mode ]);
 						// save object
 						$.glue.object.save(obj);
 					}

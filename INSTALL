@@ -53,3 +53,5 @@ DEBUGGING HOTGLUE
   requests with "--- json request ---". If you report a problem, make sure you 
   send with it only the relevant pieces of logging information (like the request 
   and all associated AJAX request that get written when the problem occurs).
+  For debugging frontend (JavaScript) issues, you can set USE_MIN_FILES to 
+  false.

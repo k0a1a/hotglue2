@@ -59,7 +59,11 @@ function page_render_object($args)
 function page_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/page/page-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/page/page-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/page/page-edit.js');
+		}
 		
 		// set default grid
 		$grid = page_get_grid(array());

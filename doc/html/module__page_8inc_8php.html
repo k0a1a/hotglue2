@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<title>hotglue: /srv/www/sukzessiv.net/hotglue3/module_page.inc.php File Reference</title>
+<title>hotglue: /srv/www/sukzessiv.net/hotglue/module_page.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css">
 <link href="doxygen.css" rel="stylesheet" type="text/css">
 </head><body>
@@ -20,15 +20,47 @@
   </div>
 </div>
 <div class="contents">
-<h1>/srv/www/sukzessiv.net/hotglue3/module_page.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
+<h1>/srv/www/sukzessiv.net/hotglue/module_page.inc.php File Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Functions</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__page_8inc_8php.html#ac90d98ff7e17055e3dc3d953371d673">page_get_grid</a> ($args)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__page_8inc_8php.html#53e7091b9a654d0d772cea6e3127820e">page_render_object</a> ($args)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__page_8inc_8php.html#80aff2ea069c7a2ba120e26bb218efa5">page_render_page_early</a> ($args)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__page_8inc_8php.html#aadab51471c838ab9a0fa0c93a04b817">page_set_grid</a> ($args)</td></tr>
+
 </table>
 <hr><h2>Function Documentation</h2>
+<a class="anchor" name="ac90d98ff7e17055e3dc3d953371d673"></a><!-- doxytag: member="module_page.inc.php::page_get_grid" ref="ac90d98ff7e17055e3dc3d953371d673" args="($args)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">page_get_grid           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>args</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+<a class="el" href="module__page_8inc_8php.html">module_page.inc.php</a> Module for managing pages<p>
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. get the current grid size<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$args arguments </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>array response 'x', 'y' the grid size </dd></dl>
+
+</div>
+</div><p>
 <a class="anchor" name="53e7091b9a654d0d772cea6e3127820e"></a><!-- doxytag: member="module_page.inc.php::page_render_object" ref="53e7091b9a654d0d772cea6e3127820e" args="($args)" -->
 <div class="memitem">
 <div class="memproto">
@@ -46,8 +78,7 @@
 <div class="memdoc">
 
 <p>
-<a class="el" href="module__page_8inc_8php.html">module_page.inc.php</a> Module for managing pages<p>
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. 
+
 </div>
 </div><p>
 <a class="anchor" name="80aff2ea069c7a2ba120e26bb218efa5"></a><!-- doxytag: member="module_page.inc.php::page_render_page_early" ref="80aff2ea069c7a2ba120e26bb218efa5" args="($args)" -->
@@ -70,8 +101,35 @@ Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed un
 
 </div>
 </div><p>
+<a class="anchor" name="aadab51471c838ab9a0fa0c93a04b817"></a><!-- doxytag: member="module_page.inc.php::page_set_grid" ref="aadab51471c838ab9a0fa0c93a04b817" args="($args)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">page_set_grid           </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>args</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
 </div>
-<hr size="1"><address style="text-align: right;"><small>Generated on Thu Dec 2 16:37:34 2010 for hotglue by&nbsp;
+<div class="memdoc">
+
+<p>
+get the current grid size<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>array</em>&nbsp;</td><td>$args arguments key 'x', 'y' is the grid size </td></tr>
+  </table>
+</dl>
+<dl class="return" compact><dt><b>Returns:</b></dt><dd>array response true if successful </dd></dl>
+
+</div>
+</div><p>
+</div>
+<hr size="1"><address style="text-align: right;"><small>Generated on Mon Dec 13 23:04:50 2010 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> 1.5.8 </small></address>
 </body>

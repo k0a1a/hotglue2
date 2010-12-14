@@ -9,7 +9,7 @@
  */
 
 
-error_reporting(E_ALL);						// see php documentation
+//error_reporting(E_ALL);						// see php documentation
 
 // try to include user configuration
 @include('user-config.inc.php');
@@ -24,7 +24,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
-@define('HOTGLUE_VERSION', '0.99.1');		// expected api.version.patchlevel
+@define('HOTGLUE_VERSION', '1.00.0');		// expected api.version.patchlevel
 @define('IE8_COMPAT', true);				// try to be compatible with internet explorer 8 in viewing mode
 @define('JQUERY', 'js/jquery-1.4.4.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock

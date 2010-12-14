@@ -265,7 +265,11 @@ function text_render_object($args)
 function text_render_page_early($args)
 {
 	if ($args['edit']) {
-		html_add_js(base_url().'modules/text/text-edit.js');
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/text/text-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/text/text-edit.js');
+		}
 		html_add_css(base_url().'modules/text/text-edit.css');
 		html_add_js_var('$.glue.conf.text.auto_br', TEXT_AUTO_BR);
 	}

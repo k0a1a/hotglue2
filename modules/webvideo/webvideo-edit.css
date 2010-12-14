@@ -6,7 +6,6 @@
 
 .glue-webvideo-handle {
 	/* that's the handle displayed above webvideo objects */
-	/* TODO: style */
 	background-image: url(webvideo-handle.png);
 	height: 20px;
 	left: -20px;

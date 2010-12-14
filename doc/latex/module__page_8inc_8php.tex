@@ -1,17 +1,39 @@
 \hypertarget{module__page_8inc_8php}{
-\section{/srv/www/sukzessiv.net/hotglue3/module\_\-page.inc.php File Reference}
-\label{module__page_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue3/module\_\-page.inc.php@{/srv/www/sukzessiv.net/hotglue3/module\_\-page.inc.php}}
+\section{/srv/www/sukzessiv.net/hotglue/module\_\-page.inc.php File Reference}
+\label{module__page_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/module\_\-page.inc.php@{/srv/www/sukzessiv.net/hotglue/module\_\-page.inc.php}}
 }
 \subsection*{Functions}
 \begin{CompactItemize}
 \item 
+\hyperlink{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}{page\_\-get\_\-grid} (\$args)
+\item 
 \hyperlink{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}{page\_\-render\_\-object} (\$args)
 \item 
 \hyperlink{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}{page\_\-render\_\-page\_\-early} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}{page\_\-set\_\-grid} (\$args)
 \end{CompactItemize}
 
 
 \subsection{Function Documentation}
+\hypertarget{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-get\_\-grid@{page\_\-get\_\-grid}}
+\index{page\_\-get\_\-grid@{page\_\-get\_\-grid}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-get\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-get\_\-grid (\$ {\em args})}}
+\label{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}
+
+
+\hyperlink{module__page_8inc_8php}{module\_\-page.inc.php} Module for managing pages
+
+Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. get the current grid size
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em array}]\$args arguments \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array response 'x', 'y' the grid size \end{Desc}
 \hypertarget{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}{
 \index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-object@{page\_\-render\_\-object}}
 \index{page\_\-render\_\-object@{page\_\-render\_\-object}!module_page.inc.php@{module\_\-page.inc.php}}
@@ -19,12 +41,26 @@
 \label{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}
 
 
-\hyperlink{module__page_8inc_8php}{module\_\-page.inc.php} Module for managing pages
-
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. \hypertarget{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}{
+\hypertarget{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}{
 \index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}}
 \index{page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}!module_page.inc.php@{module\_\-page.inc.php}}
 \subsubsection[{page\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-render\_\-page\_\-early (\$ {\em args})}}
 \label{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}
 
 
+\hypertarget{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-set\_\-grid@{page\_\-set\_\-grid}}
+\index{page\_\-set\_\-grid@{page\_\-set\_\-grid}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-set\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-set\_\-grid (\$ {\em args})}}
+\label{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}
+
+
+get the current grid size
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em array}]\$args arguments key 'x', 'y' is the grid size \end{description}
+\end{Desc}
+\begin{Desc}
+\item[Returns:]array response true if successful \end{Desc}
