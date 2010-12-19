@@ -1,5 +1,5 @@
 .anchor {
-	background-color: blue;
+	background-image: url(anchor-object.png);
 	height: 32px;
 	overflow: visible;
 	width: 32px;
@@ -7,10 +7,11 @@
 }
 
 .glue-anchor-name {
+	font-size: 10px;
 	height: 100%;
 	overflow: visible;
-	left: 0px;
+	left: 34px;
 	position: absolute;
-	top: 0px;
+	top: 8px;
 	width: 100%;
 }

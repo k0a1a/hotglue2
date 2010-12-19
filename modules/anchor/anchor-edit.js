@@ -16,7 +16,7 @@ $(document).ready(function() {
 	//
 	// menu items
 	//
-	var elem = $('<div style="background-color: red; height: 32px; width: 32px;" title="add a named anchor">');
+	var elem = $('<img src="'+$.glue.base_url+'modules/anchor/anchor.png" alt="btn" title="add a named anchor" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		$.glue.menu.hide();
 		var name = prompt('Enter the anchor\'s name (e.g. #someanchor)');
@@ -26,7 +26,7 @@ $(document).ready(function() {
 				name = name.substr(1);
 			}
 			$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
-				var elem = $('<div class="anchor object" style="position: absolute;"><a name="'+name+'" href=""></a><div class="glue-anchor-name glue-ui">#'+name+'</div></div>');
+				var elem = $('<div class="anchor object" style="position: absolute;" title="this is a named anchor, regular visitors won\'t be seing this icon"><a name="'+name+'" href=""></a><div class="glue-anchor-name glue-ui">#'+name+'</div></div>');
 				$(elem).attr('id', data['name']);
 				$('body').append(elem);
 				$(elem).css('width', $(elem).width()+'px');
@@ -38,7 +38,7 @@ $(document).ready(function() {
 			});
 		}
 	});
-	$.glue.menu.register('new', elem);
+	$.glue.menu.register('new', elem, 14);
 	
 	//
 	// context menu items

@@ -40,7 +40,7 @@ $(document).ready(function() {
 		});
 		$.glue.menu.hide();
 	});
-	$.glue.menu.register('new', elem);
+	$.glue.menu.register('new', elem, 12);
 	
 	//
 	// context menu items

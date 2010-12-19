@@ -13,5 +13,5 @@ $(document).ready(function() {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?pages';
 	});
-	$.glue.menu.register('page', elem);
+	$.glue.menu.register('page', elem, 11);
 });

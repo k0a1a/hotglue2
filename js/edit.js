@@ -677,6 +677,7 @@ $.glue.menu = function()
 			var max_h = 0;
 			cur = m[menu];
 			// add items to dom
+			num_shown = 0;
 			for (var i=0; i < cur.length; i++) {
 				var elem = cur[i].elem;
 				// set crucial css properties
@@ -690,6 +691,14 @@ $.glue.menu = function()
 				$(elem).css('z-index', '201');
 				// add to dom
 				$('body').append(elem);
+				// trigger event
+				$(elem).trigger('glue-menu-activate');
+				// check if we still want to show the icon ;)
+				if ($(elem).css('display') == 'none') {
+					continue;
+				} else {
+					num_shown++;
+				}
 				// calculate max width & height
 				// make sure you specify the width & height attribute for images etc
 				if (max_w < $(elem).outerWidth(true)) {
@@ -701,20 +710,22 @@ $.glue.menu = function()
 			}
 			// position items
 			var num_rows = 1;
-			while (num_rows*num_rows < cur.length) {
+			while (num_rows*num_rows < num_shown) {
 				num_rows++;
+			}
+			var num_cols = num_rows;
+			if (num_shown <= num_rows*(num_rows-1)) {
+				num_cols--;
 			}
 			var cur_row = 0;
 			var cur_col = 0;
 			for (var i=0; i < cur.length; i++) {
 				var elem = cur[i].elem;
-				// trigger event
-				$(elem).trigger('glue-menu-activate');
-				// check if we still want to show the icon ;)
+				// check if the icon is shown
 				if ($(elem).css('display') == 'none') {
 					continue;
 				}
-				if (cur_col == num_rows) {
+				if (cur_col == num_cols) {
 					cur_row++;
 					cur_col = 0;
 				}
@@ -1521,7 +1532,7 @@ $.glue.upload = function()
 			upload.x = p.x;
 			upload.y = p.y;
 		});
-		$.glue.menu.register('new', elem);
+		$.glue.menu.register('new', elem, 11);
 		
 		// handle drop events on body
 		// this is based on http://developer.mozilla.org/en/using_files_from_web_applications

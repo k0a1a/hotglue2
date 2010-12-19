@@ -14,5 +14,5 @@ $(document).ready(function() {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?'+$.glue.page+'/revisions';
 	});
-	$.glue.menu.register('page', elem);
+	$.glue.menu.register('page', elem, 12);
 });
