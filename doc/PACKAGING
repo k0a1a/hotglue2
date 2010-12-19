@@ -1,0 +1,10 @@
+PREPARING HOTGLUE FOR DISTRIBUTION
+
+  * make sure the development tree matches what is in the svn (don't forget newly created files)
+  * make sure all images ran through pngcrush (pngcrush -brute old.png new.png)
+  * make sure all minified javascript files match their counterparts (using http://www.refresh-sf.com/yui/)
+  * check for unwanted changes to config.inc.php (such as error_reporting or LOG_LEVEL)
+  * make sure .htaccess is not being distributed and merge relevant changes back to htaccess-dist
+  * also check that user-config.inc.php is not being distributed
+  * make sure .svn directories are not being distributed
+  * make the files be owned by root:root before compressing them
