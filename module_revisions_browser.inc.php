@@ -27,7 +27,7 @@ function controller_revisions($args)
 	page_canonical($args[0][0]);
 	$page = $args[0][0];
 	if (!page_exists($page)) {
-		http_404();
+		hotglue_error(404);
 	}
 	
 	// get all revisions of page and determine the current revision's index
@@ -44,7 +44,7 @@ function controller_revisions($args)
 	}
 	if ($cur_rev === false) {
 		// we didn't find the current revision
-		http_500();
+		hotglue_error(500);
 	}
 	
 	default_html(true);

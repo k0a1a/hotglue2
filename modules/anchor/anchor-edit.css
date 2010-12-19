@@ -1,0 +1,16 @@
+.anchor {
+	background-color: blue;
+	height: 32px;
+	overflow: visible;
+	width: 32px;
+	z-index: 200;
+}
+
+.glue-anchor-name {
+	height: 100%;
+	overflow: visible;
+	left: 0px;
+	position: absolute;
+	top: 0px;
+	width: 100%;
+}

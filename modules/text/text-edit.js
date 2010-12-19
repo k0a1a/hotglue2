@@ -320,7 +320,7 @@ $(document).ready(function() {
 	// this also requires the glue-deselect handler above
 	$.glue.contextmenu.register('text', 'text-font-color', elem);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-face.png" alt="btn" title="change typeface (click to cycle through available typefaces)" width="32" height="32">');
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-family.png" alt="btn" title="change typeface (click to cycle through available typefaces)" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		// get all fonts

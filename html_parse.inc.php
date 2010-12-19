@@ -14,6 +14,7 @@ require_once('html.inc.php');
 require_once('util.inc.php');
 
 
+// TODO: document
 function html_encode_str_smart($html)
 {
 	// TODO (later): remove debug code

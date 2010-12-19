@@ -20,6 +20,81 @@ require_once('util.inc.php');
 
 
 /**
+ *	clear the page's current background image
+ *
+ *	@param array $args arguments
+ *		key 'page' is the page (i.e. page.rev)
+ *	@return array response
+ */
+function page_clear_background_img($args)
+{
+	if (!isset($args['page'])) {
+		return response('Required argument "page" missing', 400);
+	}
+	if (!page_exists($args['page'])) {
+		return response('Page '.quot($args['page']).' does not exist', 400);
+	}
+	
+	load_modules('glue');
+	$obj = load_object(array('name'=>$args['page'].'.page'));
+	if ($obj['#error']) {
+		// page object does not exist, hence no background image to clear
+		return response(true);
+	} else {
+		$obj = $obj['#data'];
+	}
+	
+	if (!empty($obj['page-background-file'])) {
+		// delete file
+		delete_upload(array('pagename'=>array_shift(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		// and remove attributes
+		return object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('page-background-file', 'page-background-mime')));
+	} else {
+		return response(true);
+	}
+}
+
+register_service('page.clear_background_img', 'page_clear_background_img', array('auth'=>true));
+
+
+function page_delete_page($args)
+{
+	$page = $args['page'];
+	
+	// check if there is a page object
+	$obj = load_object(array('name'=>$page.'.page'));
+	if ($obj['#error']) {
+		return false;
+	} else {
+		$obj = $obj['#data'];
+	}
+	// check if there is a background-image
+	if (!empty($obj['page-background-file'])) {
+		// delete it
+		delete_upload(array('pagename'=>array_shift(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+function page_has_reference($args)
+{
+	$obj = $args['obj'];
+	if (array_pop(expl('.', $obj['name'])) != 'page') {
+		return false;
+	}
+	
+	if (!empty($obj['page-background-file']) && $obj['page-background-file'] == $args['file']) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+/**
  *	get the current grid size
  *
  *	@param array $args arguments
@@ -46,8 +121,26 @@ function page_render_object($args)
 	if ($a[2] != 'page') {
 		return false;
 	}
-	if (isset($obj['page-background-color'])) {
+	
+	// background-attachment
+	if (!empty($obj['page-background-attachment'])) {
+		html_css('background-attachment', $obj['page-background-attachment']);
+	}
+	// background-color
+	if (!empty($obj['page-background-color'])) {
 		html_css('background-color', $obj['page-background-color']);
+	}
+	// background-image
+	if (!empty($obj['page-background-file'])) {
+		if (SHORT_URLS) {
+			html_css('background-image', 'url('.base_url().htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+		} else {
+			html_css('background-image', 'url('.base_url().'?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+		}
+	}
+	// background-image-position
+	if (!empty($obj['page-background-image-position'])) {
+		html_css('background-position', $obj['page-background-image-position']);
 	}
 	// set the html title
 	if (isset($obj['page-title'])) {
@@ -64,6 +157,7 @@ function page_render_page_early($args)
 		} else {
 			html_add_js(base_url().'modules/page/page-edit.js');
 		}
+		html_add_css(base_url().'modules/page/page-edit.css');
 		
 		// set default grid
 		$grid = page_get_grid(array());
@@ -87,6 +181,30 @@ function page_render_page_early($args)
 	// set the html title to the page name by default
 	html_title(page_short($args['page']));
 }
+
+
+function page_serve_resource($args)
+{
+	$obj = $args['obj'];
+	if (array_pop(expl('.', $obj['name'])) != 'page') {
+		return false;
+	}
+	$pn = array_shift(expl('.', $obj['name']));
+	
+	if (!empty($obj['page-background-file'])) {
+		$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['page-background-file'];
+		if (isset($obj['page-background-mime'])) {
+			$mime = $obj['page-background-mime'];
+		} else {
+			$mime = '';
+		}
+		serve_file($fn, false, $mime);
+	}
+	
+	// if everything fails
+	return false;
+}
+
 
 /**
  *	get the current grid size
@@ -116,6 +234,46 @@ function page_set_grid($args)
 }
 
 register_service('page.set_grid', 'page_set_grid', array('auth'=>true));
+
+
+function page_upload($args)
+{
+	// only handle the file if the frontend wants us to
+	if (empty($args['preferred_module']) || $args['preferred_module'] != 'page') {
+		return false;
+	}
+	// check if supported file
+	if (!in_array($args['mime'], array('image/jpeg', 'image/png', 'image/gif')) || ($args['mime'] == '' && !in_array(filext($args['file']), array('jpg', 'jpeg', 'png', 'gif')))) {
+		return false;
+	}
+	
+	// check if there is already a background-image and delete it
+	$obj = load_object(array('name'=>$args['page'].'.page'));
+	if (!$obj['#error']) {
+		$obj = $obj['#data'];
+		if (!empty($obj['page-background-file'])) {
+			delete_upload(array('pagename'=>array_shift(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		}
+	}
+	
+	// set as background-image in page object
+	$obj = array();
+	$obj['name'] = $args['page'].'.page';
+	$obj['page-background-file'] = $args['file'];
+	$obj['page-background-mime'] = $args['mime'];
+	
+	// update page object
+	load_modules('glue');
+	$ret = update_object($obj);
+	if ($ret['#error']) {
+		log_msg('page_upload: error updating page object: '.quot($ret['#data']));
+		return false;
+	} else {
+		// we don't actually render the object here, but signal the 
+		// frontend that everything went okay
+		return true;
+	}
+}
 
 
 ?>

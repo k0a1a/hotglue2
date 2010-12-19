@@ -11,7 +11,12 @@ $(document).ready(function() {
 	$('#create_page_btn').bind('click', function(e) {
 		$('#create_page_btn').attr('disabled', 'disabled');
 		$.glue.backend({ method: 'glue.create_page', page: $.glue.page }, function(data) {
-			window.location = $.glue.base_url+'?'+$.glue.page+'/edit';
+			var page_short = $.glue.page;
+			var a = page_short.split('.');
+			if (a[1] == 'head') {
+				var page_short = a[0];
+			}
+			window.location = $.glue.base_url+'?'+page_short+'/edit';
 		});
 	});
 });

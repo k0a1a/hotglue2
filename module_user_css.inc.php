@@ -28,7 +28,7 @@ function controller_user_css_stylesheet($args)
 		$page = $args[0][0];
 		page_canonical($page);
 		if (!page_exists($page)) {
-			http_404();
+			hotglue_error(404);
 		}
 	} else {
 		// changing global stylesheet

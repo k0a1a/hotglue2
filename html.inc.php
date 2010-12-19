@@ -12,13 +12,10 @@
 @require_once('config.inc.php');
 require_once('util.inc.php');
 
-$single_tags = array('link', 'meta', 'hr', 'br', 'img', 'param', 'input');
-	
+$single_tags = array('br', 'hr', 'img', 'input', 'link', 'meta', 'param');
+
 if (!isset($html)) {
-	$html = array();
-	$html['header'] = array('title'=>'');
-	$html['body'] = array('tag'=>'body');
-	$html['cache'] = true;
+	html_flush();
 }
 
 
@@ -234,7 +231,7 @@ function elem_finalize($elem)
 	$ret .= '>';
 	
 	// make block elements have a newline after the opening tag
-	$block_tags = array('body', 'div', 'script', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ol', 'ul', 'li', 'blockquote', 'hr', 'pre');
+	$block_tags = array('blockquote', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'script', 'ul');
 	if (in_array($elem['tag'], $block_tags)) {
 		$block_tag = true;
 		$ret .= nl();
@@ -608,6 +605,19 @@ function html_finalize(&$cache = false)
 	}
 	
 	return $ret;
+}
+
+
+/**
+ *	reset the html output
+ */
+function html_flush()
+{
+	global $html;
+	$html = array();
+	$html['header'] = array('title'=>'');
+	$html['body'] = array('tag'=>'body');
+	$html['cache'] = true;
 }
 
 

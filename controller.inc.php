@@ -38,7 +38,7 @@ function controller_create_page($args)
 	
 	load_modules('glue');
 	default_html(true);
-	html_add_css(base_url().'css/create_page.css');
+	html_add_css(base_url().'css/hotglue_error.css');
 	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/create_page.min.js');
 	} else {
@@ -47,11 +47,29 @@ function controller_create_page($args)
 	html_add_js_var('$.glue.page', $page);
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'create_page');
-	body_append('<form>');
-	// TODO (listed): we need hotglue theming here
-	body_append('<p>The page you are trying to access does not exist yet</p>');
-	body_append('<input id="create_page_btn" type="button" value="Create it">');
-	body_append('</form>');
+	body_append(tab(1).'<div id="paper">'.nl());
+	body_append(tab(2).'<div id="wrapper">'.nl());
+	body_append(tab(3).'<div id="content">'.nl());
+	body_append(tab(4).'<div id="left-nav">'.nl());
+	body_append(tab(5).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(4).'<div id="main">'.nl());
+	body_append(tab(5).'<h1 id="error-title">Page does not exist yet!</h1>'.nl());
+	body_append(tab(5).'<p>'.nl());
+	body_append(tab(6).'This page does not exist yet!<br>'.nl());
+	body_append(tab(6).'Would you like to create the page?'.nl());
+	body_append(tab(5).'</p>'.nl());
+	body_append(tab(5).'<form><input id="create_page_btn" type="button" value="Create it!"></form>'.nl());
+	body_append(tab(5).'<p>'.nl());
+	body_append(tab(6).'<a href="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
+	body_append(tab(5).'</p>'.nl());
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(3).'</div>'.nl());
+	body_append(tab(2).'</div>'.nl());
+	body_append(tab(2).'<div style="position: absolute; left: 200px; top: -10px; z-index: 2;">'.nl());
+	body_append(tab(3).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-404.png" alt="404">'.nl());
+	body_append(tab(2).'</div>'.nl());
+	body_append(tab(1).'</div>'.nl());
 	echo html_finalize();
 }
 
@@ -143,7 +161,7 @@ function controller_default($args)
 			controller_create_page($args);
 		} else {
 			log_msg('info', 'controller_default: page '.quot($args[0][0]).' not found, serving 404');
-			http_404();
+			hotglue_error(404);
 		}
 	} else {
 		// possibly object requested
@@ -158,11 +176,11 @@ function controller_default($args)
 			log_msg('debug', 'controller_default: invoking serve_resource');
 			if (!serve_resource($args[0][0], $dl)) {
 				log_msg('info', 'controller_default: object '.quot($args[0][0]).' has no associated resource, serving 404');
-				http_404();
+				hotglue_error(404);
 			}
 		} else {
 			log_msg('info', 'controller_default: object '.quot($args[0][0]).' not found, serving 404');
-			http_404();
+			hotglue_error(404);
 		}
 	}
 }
@@ -207,7 +225,7 @@ function controller_show($args)
 	$page = $args[0][0];
 	if (!page_exists($page)) {
 		log_msg('info', 'controller_show: page '.quot($page).' not found, serving 404');
-		http_404();
+		hotglue_error(404);
 	}
 	
 	// serve from page if possible
@@ -292,7 +310,7 @@ function invoke_controller($args)
 				$bu = base_url();
 				if (substr($_SERVER['HTTP_REFERER'], 0, strlen($bu)) != $bu) {
 					log_msg('warn', 'controller: possible xsrf detected, referer is '.quot($_SERVER['HTTP_REFERER']).', arguments '.var_dump_inl($args));
-					http_400();
+					hotglue_error(400);
 				}
 			}
 		}
@@ -303,7 +321,7 @@ function invoke_controller($args)
 		// normally we won't reach this as some default (*/*) controller will 
 		// be present
 		log_msg('warn', 'controller: no match for '.quot($args[0][0].'/'.$args[0][1]));
-		http_400();
+		hotglue_error(400);
 	}
 }
 

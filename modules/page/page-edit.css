@@ -1,0 +1,12 @@
+#glue-menu-page-background-scroll {
+	/* overwrite the default greenish hue for .glue-menu-enabled */
+	background-color: transparent;
+}
+
+#glue-menu-page-background-scroll.glue-menu-disabled {
+	background-image: url(page-background-scroll-off.png);
+}
+
+#glue-menu-page-background-scroll.glue-menu-enabled {
+	background-image: url(page-background-scroll-on.png);
+}

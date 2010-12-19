@@ -52,6 +52,15 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'img/background-color.png" alt="btn" title="change the background color" width="32" height="32">');
 	$(elem).bind('click', function(e) {
+		if ($('html').css('background-image').length != 0 && $('html').css('background-image') != 'none') {
+			if (confirm('Do you want to clear the current background image?')) {
+				$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page });
+				$('html').css('background-image', '');
+			} else {
+				$.glue.menu.hide();
+				return;
+			}
+		}
 		var col = $('html').css('background-color');
 		if (e.shiftKey) {
 			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
@@ -114,6 +123,111 @@ $(document).ready(function() {
 			$(that).attr('title', 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 			// close menu
 			$.glue.menu.hide();
+		});
+		return false;
+	});
+	$.glue.menu.register('page', elem);
+	
+	elem = $('<div style="height: 32px; max-height: 32px; max-width: 32px; overflow: hidden; width: 32px;"><img src="'+$.glue.base_url+'modules/page/page-background-image.png" alt="btn" width="32" height="32"></div>');
+	var upload = {
+		error: function(e) {
+			if (e && e.target && e.target.status) {
+				$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+			} else {
+				$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+				// DEBUG
+				console.error(e);
+			}
+			$.glue.menu.hide();
+		},
+		finish: function(data) {
+			if (!data) {
+				$.glue.error('There was a problem communicating with the server');
+			} else if (data['#error']) {
+				$.glue.error('There was a problem uploading the file ('+data['#data']+')');
+			} else {
+				// the timestamp here is to trick any caching going on
+				$('html').css('background-image', 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')');
+			}
+			$.glue.menu.hide();
+		},
+		tooltip: 'upload a background image'
+	};
+	$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, upload);
+	$.glue.menu.register('page', elem);
+	
+	elem = $('<div id="glue-menu-page-background-scroll" alt="btn" style="height: 32px; width: 32px;" title="toggle between having the background image fixed or having it scroll with the rest of the page">');
+	$(elem).bind('glue-menu-activate', function(e) {
+		var elem = $('#glue-menu-page-background-scroll');
+		if ($('html').css('background-image').length != 0 && $('html').css('background-image') != 'none') {
+			if ($('html').css('background-attachment') == 'fixed') {
+				$(elem).removeClass('glue-menu-enabled');
+				$(elem).addClass('glue-menu-disabled');
+			} else {
+				$(elem).addClass('glue-menu-enabled');
+				$(elem).removeClass('glue-menu-disabled');
+			}
+			$(elem).css('display', 'block');
+		} else {
+			$(elem).css('display', 'none');
+		}
+	});
+	$(elem).bind('click', function(e) {
+		if ($('html').css('background-attachment') == 'fixed') {
+			$('html').css('background-attachment', 'scroll');
+			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'scroll' });
+			$(this).addClass('glue-menu-enabled');
+			$(this).removeClass('glue-menu-disabled');
+		} else {
+			$('html').css('background-attachment', 'fixed');
+			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
+			$(this).removeClass('glue-menu-enabled');
+			$(this).addClass('glue-menu-disabled');
+		}
+		$.glue.menu.hide();
+	});
+	$.glue.menu.register('page', elem);
+	
+	elem = $('<img src="'+$.glue.base_url+'modules/page/page-background-image-pos.png" alt="btn" title="adjust background image selection" width="32" height="32">');
+	$(elem).bind('glue-menu-activate', function(e) {
+		var elem = $('#glue-menu-page-background-scroll');
+		if ($('html').css('background-image').length != 0 && $('html').css('background-image') != 'none') {
+			$(elem).css('display', 'block');
+		} else {
+			$(elem).css('display', 'none');
+		}
+	});
+	$(elem).bind('mousedown', function(e) {
+		var a = $('html').css('background-position').split(' ');
+		if (a.length != 2) {
+			var prev_x_pos = 0;
+			var prev_y_pos = 0;
+		} else {
+			// we assume px (or 0%..)
+			var prev_x_pos = parseInt(a[0]);
+			if (isNaN(prev_x_pos)) {
+				prev_x_pos = 0;
+			}
+			var prev_y_pos = parseInt(a[1]);
+			if (isNaN(prev_y_pos)) {
+				prev_y_pos = 0;
+			}
+		}
+		var no_change = true;
+		$.glue.slider(e, function(x, y) {
+			// background-position-{x,y} does not work in Firefox (but seems to be faster)
+			$('html').css('background-position', (prev_x_pos+x)+'px '+(prev_y_pos+y)+'px');
+			if (x != 0 || y != 0) {
+				no_change = false;
+			}
+		}, function(x, y) {
+			// reset background position if there was no change at all
+			if (no_change) {
+				$('html').css('background-position', '');
+				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-image-position' });
+			} else {
+				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': $('html').css('background-position') });
+			}
 		});
 		return false;
 	});

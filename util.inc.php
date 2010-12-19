@@ -253,47 +253,38 @@ function filext($s)
 
 
 /**
- *	return a error 400 message to the client
+ *	return a http error message to the client
  *
- *	this function doesn't return.
+ *	if $header_only is false (the default), the function doesn't 
+ *	return if successful.
+ *	@param int $code error code
+ *	@param bool $header_only only output the header and return
+ *	@return bool true if successful (only if $header_only is true), false 
+ *	if not
  */
-function http_400()
+function http_error($code, $header_only = false)
 {
-	// TODO (listed): we need hotglue theming here
-	// TODO (later): turn this into http_error()
-	header($_SERVER['SERVER_PROTOCOL'].' 400 Bad Request');
-	echo 'Bad Request';
-	die();
-}
-
-
-/**
- *	return a error 404 message to the client
- *
- *	this function doesn't return.
- */
-function http_404()
-{
-	// TODO (listed): we need hotglue theming here
-	// TODO (later): turn this into http_error()
-	header($_SERVER['SERVER_PROTOCOL'].' 404 Not Found');
-	echo 'Not Found';
-	die();
-}
-
-
-/**
- *	return a error 500 message to the client
- *
- *	this function doesn't return.
- */
-function http_500()
-{
-	// TODO (listed): we need hotglue theming here
-	// TODO (later): turn this into http_error()
-	header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
-	echo 'Internal Server Error';
-	die();
+	switch ($code) {
+		case 400:
+			$error = 'Bad Request';
+			break;
+		case 404:
+			$error = 'Not Found';
+			break;
+		case 500:
+			$error = 'Internal Server Error';
+			break;
+		default:
+			// unsupported
+			return false;
+	}
+	header($_SERVER['SERVER_PROTOCOL'].' '.$code.' '.$error);
+	if (!$header_only) {
+		echo $error;
+		die();
+	} else {
+		return true;
+	}
 }
 
 

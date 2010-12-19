@@ -176,6 +176,78 @@ function handle_updates()
 
 
 /**
+ *	return a hotglue-themed error message to the client
+ *
+ *	the function does not return if successful.
+ *	@param int $code error code
+ *	@param bool $no_header don't output any header
+ *	@return false if the error code is not supported yet
+ */
+function hotglue_error($code, $no_header = false)
+{
+	if (!$no_header) {
+		// output header
+		if (USE_HOTGLUE_ERRORS) {
+			$header_only = true;
+		} else {
+			$header_only = false;
+		}
+		if (!http_error($code, $header_only)) {
+			return false;
+		}
+	}
+	
+	// output informative message
+	html_flush();
+	default_html(false);
+	html_add_css(base_url().'css/hotglue_error.css');
+	$bdy = &body();
+	elem_attr($bdy, 'id', 'hotglue_error');
+	body_append(tab(1).'<div id="paper">'.nl());
+	body_append(tab(2).'<div id="wrapper">'.nl());
+	body_append(tab(3).'<div id="content">'.nl());
+	body_append(tab(4).'<div id="left-nav">'.nl());
+	body_append(tab(5).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(4).'<div id="main">'.nl());
+	if ($code == 400) {
+		body_append(tab(5).'<h1 id="error-title">ERROR 400, bad request!</h1>'.nl());
+	} elseif ($code == 401) {
+		body_append(tab(5).'<h1 id="error-title">Authorization required!</h1>'.nl());	
+	} elseif ($code == 404) {
+		body_append(tab(5).'<h1 id="error-title">ERROR 404, not found!</h1>'.nl());	
+	} elseif ($code == 500) {
+		body_append(tab(5).'<h1 id="error-title">ERROR 500, server fault!</h1>'.nl());	
+	}
+	body_append(tab(5).'<p>'.nl());
+	if ($code == 400) {
+		body_append(tab(6).'Something got screwed up...<br>'.nl());
+		body_append(tab(6).'The page is sending a bad request to the server!'.nl());
+	} elseif ($code == 401) {
+		body_append(tab(6).'You need to be logged in in order to do this.<br>'.nl());
+	} elseif ($code == 404) {
+		body_append(tab(6).'It looks like you got lost in cyber-space...<br>'.nl());
+		body_append(tab(6).'The page you are trying to reach does not exist!'.nl());
+	} elseif ($code == 500) {
+		body_append(tab(6).'Are we runnining out of fuel?!<br>'.nl());
+		body_append(tab(6).'Something is causing serious server errors!'.nl());
+	}
+	body_append(tab(5).'</p>'.nl());
+	body_append(tab(6).'<a href="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(3).'</div>'.nl());
+	body_append(tab(2).'</div>'.nl());
+	body_append(tab(2).'<div style="position: absolute; left: 200px; top: -10px; z-index: 2;">'.nl());
+	body_append(tab(3).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-404.png" alt="404">'.nl());
+	body_append(tab(2).'</div>'.nl());
+	body_append(tab(1).'</div>'.nl());
+	echo html_finalize();
+	
+	die();
+}
+
+
+/**
  *	check if the user is authenticated or not
  *
  *	@return true if authenticated, false if not
@@ -338,8 +410,7 @@ function prompt_auth($header_only = false)
 	} else {
 		log_msg('error', 'common: invalid or missing AUTH_METHOD config setting');
 	}
-	// TODO (listed): we need hotglue theming here
-	die();
+	hotglue_error(401, true);
 }
 
 

@@ -41,7 +41,7 @@ $(document).ready(function() {
 	});
 	$.glue.contextmenu.register('download', 'download-download', elem);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/download/download-public.png" alt="btn" title="" width="32" height="32">');
+	elem = $('<div alt="btn" style="height: 32px; width: 32px;">');
 	$(elem).bind('glue-menu-activate', function(e) {
 		var obj = $(this).data('owner');
 		var that = this;

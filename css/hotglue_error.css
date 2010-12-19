@@ -1,0 +1,65 @@
+html, body {
+	background: #f5f5f5;
+	color: #4d4948;
+	font-family: "Courier New", Courier, serif;
+	font-weight: 400;
+}
+
+#paper {
+	background: url('../img/hotglue-bluegrid.png');
+	height: 626px;
+	margin: 15px;
+	padding-top: 50px;
+	width: 1041px;
+}
+
+#wrapper {
+	background: #fbfde3;
+	box-shadow: 3px 3px 4px #aaa;
+	-moz-box-shadow: 3px 3px 4px #aaa;
+	-webkit-box-shadow: 3px 3px 4px #aaa;
+	/* for IE 8 */
+	-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aaaaaa')";
+	/* for IE 5.5 - 7 */
+	filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aaaaaa');
+	margin: 20px auto 20px 70px;
+	overflow: auto;
+	padding-bottom: 40px;
+	position: relative;
+	width: 650px;
+	z-index: 100;
+}
+
+#content {
+	padding: 30px 30px 30px 30px;
+}
+
+#left-nav {
+	float: left;
+	font-size: 95%;
+	width: 100px;
+}
+
+#main {
+	float: right;
+	font-size: 90%;
+	width: 450px;
+}
+
+h1#error-title {
+	color: #eb1551;
+	margin-bottom: 25px;
+}
+
+p {
+	clear: both;
+}
+
+a#home {
+	color: #00324e;
+	font-weight: bold;
+}
+
+a#home:hover {
+	color: #eb1551;
+}

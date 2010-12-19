@@ -654,6 +654,7 @@ function object_remove_attr($args)
 	}
 	
 	// LOCK
+	// TODO (later): $args['name'] might not be set
 	$_l = _obj_lock($args['name'], LOCK_TIME);
 	if ($_l === false) {
 		return response('Could not acquire lock to '.quot($args['name']).' in '.LOCK_TIME.'ms', 500);
@@ -1343,6 +1344,8 @@ function upload_files($args)
 		$s = false;
 		// check preferred_module first
 		if (!empty($args['preferred_module'])) {
+			// make sure all modules are loaded
+			load_modules();
 			$func = $args['preferred_module'].'_upload';
 			if (is_callable($func)) {
 				log_msg('debug', 'upload_files: invoking hook upload, calling '.$func);
