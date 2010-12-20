@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_user_css.inc.php
  *	Module for setting user-defined per-site and global stylesheets
  *
@@ -80,27 +80,6 @@ register_controller('stylesheet', '', 'controller_user_css_stylesheet', array('a
 register_controller('*', 'stylesheet', 'controller_user_css_stylesheet', array('auth'=>true));
 
 
-/**
- *	controller that serves either a page's or the global user-defined css file
- */
-function controller_user_css_user_css($args)
-{
-	header('Content-type: text/css; charset=UTF-8');
-	if (empty($args[0][1])) {
-		// serve global stylesheet
-		@readfile(CONTENT_DIR.'/usercss');
-	} else {
-		load_modules('glue');
-		$obj = load_object(array('name'=>$args[0][1].'.usercss'));
-		if (!$obj['#error'] && isset($obj['#data']['content'])) {
-			echo $obj['#data']['content'];
-		}
-	}
-}
-
-register_controller('user_css', '*', 'controller_user_css_user_css');
-
-
 function user_css_render_object($args)
 {
 	$obj = $args['obj'];
@@ -109,11 +88,7 @@ function user_css_render_object($args)
 	}
 	
 	if (!empty($obj['content'])) {
-		if (SHORT_URLS) {
-			html_add_css(base_url().'user_css/'.implode('.', array_slice(expl('.', $obj['name']), 0, 2)), 9);
-		} else {
-			html_add_css(base_url().'?user_css/'.implode('.', array_slice(expl('.', $obj['name']), 0, 2)), 9);
-		}
+		html_add_css_inline($obj['content'], 6);
 	}
 	return '';
 }
@@ -123,11 +98,7 @@ function user_css_render_page_early($args)
 {
 	// include the global usercss if it exists
 	if (@is_file(CONTENT_DIR.'/usercss')) {
-		if (SHORT_URLS) {
-			html_add_css(base_url().'user_css', 8);
-		} else {
-			html_add_css(base_url().'?user_css', 8);
-		}
+		html_add_css_inline(@file_get_contents(CONTENT_DIR.'/usercss'), 5);
 	}
 }
 
@@ -151,6 +122,7 @@ function user_css_set_css($args)
 	}
 	
 	if ($args['page'] === false) {
+		// TODO (later): drop_cache()
 		if (empty($args['css'])) {
 			// empty stylesheet
 			@unlink(CONTENT_DIR.'/usercss');
@@ -166,6 +138,7 @@ function user_css_set_css($args)
 			}
 		}
 	} else {
+		drop_cache('page', $args['page']);
 		load_modules('glue');
 		if (empty($args['css'])) {
 			delete_object(array('name'=>$args['page'].'.usercss'));

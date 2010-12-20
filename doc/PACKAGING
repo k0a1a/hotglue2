@@ -7,4 +7,6 @@ PREPARING HOTGLUE FOR DISTRIBUTION
   * make sure .htaccess is not being distributed and merge relevant changes back to htaccess-dist
   * also check that user-config.inc.php is not being distributed
   * make sure .svn directories are not being distributed
+  * make sure to bump the version number in config.inc.php and Doxyfile
+  * update doxygen documentation (cd doc && doxygen) - make sure use doxygen >= 1.7.2
   * make the files be owned by root:root before compressing them

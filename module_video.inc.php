@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_video.inc.php
  *	Module for embedding video elements on a page
  *

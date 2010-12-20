@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_page.inc.php
  *	Module for managing pages
  *

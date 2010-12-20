@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	html_parse.inc.php
  *	Generic html parsing functions
  *
@@ -14,7 +14,12 @@ require_once('html.inc.php');
 require_once('util.inc.php');
 
 
-// TODO: document
+/**
+ *	try to turn a mixture of html code an plain text into valid html
+ *
+ *	@param string $html input
+ *	@return string encoded output
+ */
 function html_encode_str_smart($html)
 {
 	// TODO (later): remove debug code

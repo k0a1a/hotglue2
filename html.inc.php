@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	html.inc.php
  *	Generic html element functions
  *
@@ -405,6 +405,22 @@ function html_add_css($url, $prio = 5, $media = '')
 
 
 /**
+ *	add a css rule to the html header
+ *
+ *	@param string $rule css rule
+ *	@param int $prio when to insert code (0 - very early to 9 - late)
+ */
+function html_add_css_inline($rule, $prio = 5)
+{
+	global $html;
+	if (!@is_array($html['header']['css_inline'])) {
+		$html['header']['css_inline'] = array();
+	}
+	$html['header']['css_inline'][] = array('rule'=>$rule, 'prio'=>$prio);
+}
+
+
+/**
  *	add a reference to a javascript file to the html header
  *
  *	duplicate references will be removed from the output.
@@ -428,13 +444,13 @@ function html_add_js($url, $prio = 5)
  *	@param int $prio when to insert code (0 - very early to 9 - late)
  *	@param string $reason (e.g. your module) (optional)
  */
-function html_add_js_code($code, $prio = 5, $reason = '')
+function html_add_js_inline($code, $prio = 5, $reason = '')
 {
 	global $html;
-	if (!@is_array($html['header']['js_code'])) {
-		$html['header']['js_code'] = array();
+	if (!@is_array($html['header']['js_inline'])) {
+		$html['header']['js_inline'] = array();
 	}
-	$html['header']['js_code'][] = array('code'=>$code, 'prio'=>$prio, 'reason'=>$reason);
+	$html['header']['js_inline'][] = array('code'=>$code, 'prio'=>$prio, 'reason'=>$reason);
 }
 
 
@@ -457,7 +473,7 @@ function html_add_js_var($key, $val)
 /**
  *	get or set a css property in the html element
  *
- *	@param string css property name
+ *	@param string $prop css property name
  *	@param mixed css property value (to set it; empty string to clear it)
  */
 function html_css($prop)
@@ -566,6 +582,25 @@ function html_finalize(&$cache = false)
 			$ret .= '>'.nl();
 		}
 	}
+	if (@is_array($html['header']['css_inline'])) {
+		_array_sort_by_prio($html['header']['css_inline']);
+		if (0 < count($html['header']['css_inline'])) {
+			$ret .= '<style type="text/css">'.nl();
+		}
+		foreach ($html['header']['css_inline'] as $c) {
+			$rule = $c['rule'];
+			// if the rule ends with a newline character, remove it
+			if (substr($rule, -1) == "\n") {
+				$rule = substr($rule, 0, -1);
+			}
+			// move rule in by one tab
+			$rule = str_replace("\n", "\n\t", $rule);
+			$ret .= tab().$rule.nl();
+		}
+		if (0 < count($html['header']['css_inline'])) {
+			$ret .= '</style>'.nl();
+		}
+	}
 	if (@is_array($html['header']['js'])) {
 		_array_sort_by_prio($html['header']['js']);
 		array_unique_element($html['header']['js'], 'url');
@@ -576,9 +611,9 @@ function html_finalize(&$cache = false)
 	if (@is_array($html['header']['js_var'])) {
 		$ret .= array_to_js($html['header']['js_var']);
 	}
-	if (@is_array($html['header']['js_code'])) {
-		_array_sort_by_prio($html['header']['js_code']);
-		foreach ($html['header']['js_code'] as $c) {
+	if (@is_array($html['header']['js_inline'])) {
+		_array_sort_by_prio($html['header']['js_inline']);
+		foreach ($html['header']['js_inline'] as $c) {
 			if (!empty($c['reason'])) {
 				$ret .= '<!-- '.$c['reason'].' -->'.nl();
 				$ret .= '<script type="text/javascript">'.nl();

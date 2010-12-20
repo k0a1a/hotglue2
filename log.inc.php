@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	log.inc.php
  *	Generic logging infrastructure
  *

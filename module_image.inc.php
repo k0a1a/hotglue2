@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_image.inc.php
  *	Module for displaying images uploaded by the user
  *
@@ -185,6 +185,8 @@ function image_alter_save($args)
 	}
 	
 	// update the object based on the element's properties
+	// by convention all properties are prefixed with the module name, in order 
+	// to prevent any naming collisions
 	if (elem_css($elem, 'background-repeat') !== NULL) {
 		$val = elem_css($elem, 'background-repeat');
 		// normalize
@@ -270,6 +272,10 @@ function image_render_object($args)
 	
 	// the outer element must be a div or something else that can contain 
 	// other elements
+	// we only set up the most basic element here - all the other work is 
+	// done inside the alter_render_early hook
+	// this way also object that "derive" from this (which don't have their 
+	// $obj['type'] set to image) can use this code
 	$e = elem('div');
 	elem_attr($e, 'id', $obj['name']);
 	elem_add_class($e, 'image');
@@ -278,9 +284,12 @@ function image_render_object($args)
 	
 	// hook
 	// elem is passed as reference here
+	// it is suggested that we first call our own function before any others 
+	// that might want to modify the element that is being set up
 	invoke_hook_first('alter_render_early', 'image', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
 	$html = elem_finalize($e);
 	// html is passed as reference here
+	// it is suggested that we call our own function after all others
 	invoke_hook_last('alter_render_late', 'image', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
 	
 	return $html;

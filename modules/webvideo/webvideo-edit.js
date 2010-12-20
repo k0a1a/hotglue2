@@ -52,9 +52,9 @@ $(document).ready(function() {
 				$(elem).attr('id', data['name']);
 				// default width and height is set in the css
 				if (provider == 'youtube') {
-					var child = $('<iframe class="youtube-player" frameborder="0" src="http://www.youtube.com/embed/'+id+'?rel=0" style="border-width: 0px; height: 100%; position: absolute; width: 100%;" type="text/html"></iframe>');
+					var child = $('<iframe class="youtube-player" src="http://www.youtube.com/embed/'+id+'?rel=0" style="border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
 				} else if (provider == 'vimeo') {
-					var child = $('<iframe frameborder="0" src="http://player.vimeo.com/video/'+id+'?title=0&amp;byline=0&amp;portrait=0&amp;color=ffffff" style="border-width: 0px; height: 100%; position: absolute; width: 100%;" type="text/html"></iframe>');
+					var child = $('<iframe src="http://player.vimeo.com/video/'+id+'?title=0&amp;byline=0&amp;portrait=0&amp;color=ffffff" style="border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
 				}
 				$(elem).append(child);
 				// put the iframe behind some shield for editing

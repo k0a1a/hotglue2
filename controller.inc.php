@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	controller.inc.php
  *	Generic dispatcher code mixed with some hotglue-specific controllers
  *

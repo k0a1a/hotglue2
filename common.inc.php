@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	common.inc.php
  *	Common hotglue infrastructure
  *
@@ -118,6 +118,7 @@ function default_html($add_glue)
  */
 function drop_cache($category, $name)
 {
+	// TODO (later): make name optional
 	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
 	if (@unlink($f)) {
 		log_msg('debug', 'common: dropped cache of '.$category.' '.quot($name));
@@ -414,7 +415,13 @@ function prompt_auth($header_only = false)
 }
 
 
-// TODO: document
+/**
+ *	resolve common aliases which should be used in lieu of explicit page names
+ *
+ *	@param string $s input string
+ *	@param string $name current object name (when applicable)
+ *	@return string resolved string
+ */
 function resolve_aliases($s, $name = '')
 {
 	// base url
@@ -441,7 +448,14 @@ function resolve_aliases($s, $name = '')
 }
 
 
-// TODO: document
+/**
+ *	resolve relative urls in various page content to include the pages base 
+ *	url
+ *
+ *	this function looks for href and src attributes.
+ *	@param string $s input string
+ *	@return string resolved string
+ */
 function resolve_relative_urls($s)
 {
 	$attrs = array('href', 'src');

@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_glue.inc.php
  *	Main hotglue module
  *
@@ -39,8 +39,15 @@ function _cmp_time($a, $b)
 }
 
 
-// TODO: document
-// wait in millis
+/**
+ *	lock an object file
+ *
+ *	@param string $name object name (i.e. page.rev.obj)
+ *	@param mixed $wait false = give up right away, true = wait until successful, 
+ *		integer values = wait up to $wait ms
+ *	@return mixed true (on Win32 for now) or lock handle for success, NULL if 
+ *		the object doesn't exist, and false if the lock could not be acquired
+ */
 function _obj_lock($name, $wait = true)
 {
 	// TODO (later): make this work on Windows (opening and writing to files 
@@ -90,7 +97,11 @@ function _obj_lock($name, $wait = true)
 }
 
 
-// TODO: document
+/**
+ *	unlock an object file
+ *
+ *	@param mixed $f lock handle (or anything on Win32)
+ */
 function _obj_unlock($f)
 {
 	// bandaid below
@@ -572,7 +583,7 @@ register_service('glue.object_get_symlink', 'object_get_symlink', array('auth'=>
  *
  *	@param array $args arguments
  *		key 'name' is the object name (i.e. page.rev.obj)
- *	@param array response
+ *	@return array response
  */
 function object_make_symlink($args)
 {
@@ -1272,6 +1283,7 @@ function snapshot($args)
 }
 
 register_service('glue.snapshot', 'snapshot', array('auth'=>true));
+register_hook('snapshot_symlink', 'invoked when a symlink is part of a page that gets snapshotted; the module in question is supposed to copy all referenced files to the shared directory of the destination page');
 
 
 /**
@@ -1316,7 +1328,16 @@ function update_object($args)
 register_service('glue.update_object', 'update_object', array('auth'=>true));
 
 
-// TODO: document
+/**
+ *	upload one or more files
+ *
+ *	@param array $args arguments
+ *		key 'page' page to upload the files to (i.e. page.rev)
+ *		key 'preferred_module' (optional) try first to invoke the upload method 
+ *			on this module
+ *	@return array response
+ *		array of rendered, newly created objects
+ */
 function upload_files($args)
 {
 	if (empty($args['page'])) {
@@ -1452,20 +1473,6 @@ function upload_references($args)
 
 register_service('glue.upload_references', 'upload_references', array('auth'=>true));
 register_hook('has_reference', 'check if an object references an uploaded file');
-
-
-function glue_module_info()
-{
-	return array(
-		'description' => 'core hotglue functionality, do not remove',
-		'author' => 'gohai',
-		'version' => 1.0,
-		'url' => 'http://hotglue.me/',
-		'dependencies' => array()
-	);
-}
-
-register_hook('module_info', 'return information about the module');
 
 
 ?>

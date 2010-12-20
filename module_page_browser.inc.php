@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_page_browser.inc.php
  *	Module for listing and managing all available pages
  *

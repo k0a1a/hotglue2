@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_anchor.inc.php
  *	Module for adding named anchor elements
  *
@@ -29,18 +29,19 @@ function anchor_alter_render_early($args)
 	}
 	
 	if (!empty($obj['anchor-name'])) {
-		$a = elem('a');
-		elem_attr($a, 'name', $obj['anchor-name']);
-		elem_val($a, '&nbsp;');
-		elem_append($elem, $a);
+		// use a div with attribute id instead of the deprecated name attribute 
+		// of a
+		$d = elem('div');
+		elem_attr($d, 'id', $obj['anchor-name']);
 		if ($args['edit']) {
-			elem_attr($elem, 'title', 'this is a named anchor, regular visitors won\'t be seing this icon');
-			$d = elem('div');
 			elem_add_class($d, 'glue-anchor-name');
 			elem_add_class($d, 'glue-ui');
 			elem_val($d, htmlspecialchars('#'.$obj['anchor-name'], ENT_NOQUOTES, 'UTF-8'));
-			elem_append($elem, $d);
+			elem_attr($elem, 'title', 'this is a named anchor, regular visitors won\'t be seing this icon');
+		} else {
+			elem_val($d, '&nbsp;');
 		}
+		elem_append($elem, $d);
 	}
 	
 	return true;
@@ -58,11 +59,9 @@ function anchor_alter_save($args)
 	unset($obj['anchor-name']);
 	$childs = html_parse(elem_val($elem));
 	foreach ($childs as $child) {
-		if (elem_tag($child) == 'a') {
-			if (elem_attr($child, 'name') !== NULL) {
-				$obj['anchor-name'] = elem_attr($child, 'name');
-				break;
-			}
+		if (elem_has_class($child, 'glue-anchor-name')) {
+			$obj['anchor-name'] = elem_attr($child, 'id');
+			break;
 		}
 	}
 	

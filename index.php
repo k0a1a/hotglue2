@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	index.php
  *	Main HTTP request handler
  *

@@ -3,124 +3,191 @@
 \label{controller_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/controller.inc.php@{/srv/www/sukzessiv.net/hotglue/controller.inc.php}}
 }
 \subsection*{Functions}
-\begin{CompactItemize}
+\begin{DoxyCompactItemize}
 \item 
-if(!isset(\$controllers)) \hyperlink{controller_8inc_8php_647d96ea8304771250e8fa4251a4d12e}{controller\_\-create\_\-page} (\$args)
+if(!isset(\$controllers)) \hyperlink{controller_8inc_8php_a647d96ea8304771250e8fa4251a4d12e}{controller\_\-create\_\-page} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_406fb5b2a2a93bef89e4ba46f8829d2f}{controller\_\-edit} (\$args)
+\hyperlink{controller_8inc_8php_a406fb5b2a2a93bef89e4ba46f8829d2f}{controller\_\-edit} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_e9c67435a37f4b70d0769079c9dbf379}{controller\_\-default} (\$args)
+\hyperlink{controller_8inc_8php_ae9c67435a37f4b70d0769079c9dbf379}{controller\_\-default} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_c3e283e26869e2ffd938bdf9775c3e81}{controller\_\-login} (\$args)
+\hyperlink{controller_8inc_8php_ac3e283e26869e2ffd938bdf9775c3e81}{controller\_\-login} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_d135971740244b9e81718d4cd0407b11}{controller\_\-show} (\$args)
+\hyperlink{controller_8inc_8php_ad135971740244b9e81718d4cd0407b11}{controller\_\-show} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_170bef82dc4636c51b678276323e4ff4}{invoke\_\-controller} (\$args)
+\hyperlink{controller_8inc_8php_a170bef82dc4636c51b678276323e4ff4}{invoke\_\-controller} (\$args)
 \item 
-\hyperlink{controller_8inc_8php_51a50fbc5165b4ff0a289b2010bb7597}{parse\_\-query\_\-string} ()
+\hyperlink{controller_8inc_8php_a51a50fbc5165b4ff0a289b2010bb7597}{parse\_\-query\_\-string} ()
 \item 
-\hyperlink{controller_8inc_8php_543961dbcd309fa2cb6a887a8666bf1c}{register\_\-controller} (\$arg0, \$arg1, \$func, \$args=array())
+\hyperlink{controller_8inc_8php_a543961dbcd309fa2cb6a887a8666bf1c}{register\_\-controller} (\$arg0, \$arg1, \$func, \$args=array())
 \item 
-\hyperlink{controller_8inc_8php_5d5274c3531eb05a1ea5927ff3cd08d3}{serve\_\-resource} (\$s, \$dl)
-\end{CompactItemize}
+\hyperlink{controller_8inc_8php_a5d5274c3531eb05a1ea5927ff3cd08d3}{serve\_\-resource} (\$s, \$dl)
+\end{DoxyCompactItemize}
 
 
 \subsection{Function Documentation}
-\hypertarget{controller_8inc_8php_647d96ea8304771250e8fa4251a4d12e}{
+\hypertarget{controller_8inc_8php_a647d96ea8304771250e8fa4251a4d12e}{
 \index{controller.inc.php@{controller.inc.php}!controller\_\-create\_\-page@{controller\_\-create\_\-page}}
 \index{controller\_\-create\_\-page@{controller\_\-create\_\-page}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{controller\_\-create\_\-page}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$controllers)) controller\_\-create\_\-page (\$ {\em args})}}
-\label{controller_8inc_8php_647d96ea8304771250e8fa4251a4d12e}
+\subsubsection[{controller\_\-create\_\-page}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$controllers)) controller\_\-create\_\-page (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a647d96ea8304771250e8fa4251a4d12e}
+show a site where authenticated users can create new pages 
 
+Definition at line 29 of file controller.inc.php.
 
-\hyperlink{controller_8inc_8php}{controller.inc.php} Generic dispatcher code mixed with some hotglue-specific controllers
-
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. show a site where authenticated users can create new pages \hypertarget{controller_8inc_8php_e9c67435a37f4b70d0769079c9dbf379}{
+\hypertarget{controller_8inc_8php_ae9c67435a37f4b70d0769079c9dbf379}{
 \index{controller.inc.php@{controller.inc.php}!controller\_\-default@{controller\_\-default}}
 \index{controller\_\-default@{controller\_\-default}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{controller\_\-default}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-default (\$ {\em args})}}
-\label{controller_8inc_8php_e9c67435a37f4b70d0769079c9dbf379}
-
-
+\subsubsection[{controller\_\-default}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-default (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_ae9c67435a37f4b70d0769079c9dbf379}
 this is the default (fallback) controller
 
-it mainly invokes other controllers or sends error messages \hypertarget{controller_8inc_8php_406fb5b2a2a93bef89e4ba46f8829d2f}{
+it mainly invokes other controllers or sends error messages 
+
+Definition at line 137 of file controller.inc.php.
+
+\hypertarget{controller_8inc_8php_a406fb5b2a2a93bef89e4ba46f8829d2f}{
 \index{controller.inc.php@{controller.inc.php}!controller\_\-edit@{controller\_\-edit}}
 \index{controller\_\-edit@{controller\_\-edit}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{controller\_\-edit}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-edit (\$ {\em args})}}
-\label{controller_8inc_8php_406fb5b2a2a93bef89e4ba46f8829d2f}
+\subsubsection[{controller\_\-edit}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-edit (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a406fb5b2a2a93bef89e4ba46f8829d2f}
+show a site to edit pages 
 
+Definition at line 82 of file controller.inc.php.
 
-show a site to edit pages \hypertarget{controller_8inc_8php_c3e283e26869e2ffd938bdf9775c3e81}{
+\hypertarget{controller_8inc_8php_ac3e283e26869e2ffd938bdf9775c3e81}{
 \index{controller.inc.php@{controller.inc.php}!controller\_\-login@{controller\_\-login}}
 \index{controller\_\-login@{controller\_\-login}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{controller\_\-login}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-login (\$ {\em args})}}
-\label{controller_8inc_8php_c3e283e26869e2ffd938bdf9775c3e81}
-
-
+\subsubsection[{controller\_\-login}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-login (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_ac3e283e26869e2ffd938bdf9775c3e81}
 promt the user to authenticate
 
-this might be helpful as other controller's authentication seem to be only valid for the respective directory. (e.g. having privileges in '/foo/edit' does not seem to have an effect on the parent directory or any other sibling directory. \hypertarget{controller_8inc_8php_d135971740244b9e81718d4cd0407b11}{
+this might be helpful as other controller's authentication seem to be only valid for the respective directory. (e.g. having privileges in '/foo/edit' does not seem to have an effect on the parent directory or any other sibling directory. 
+
+Definition at line 199 of file controller.inc.php.
+
+\hypertarget{controller_8inc_8php_ad135971740244b9e81718d4cd0407b11}{
 \index{controller.inc.php@{controller.inc.php}!controller\_\-show@{controller\_\-show}}
 \index{controller\_\-show@{controller\_\-show}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{controller\_\-show}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-show (\$ {\em args})}}
-\label{controller_8inc_8php_d135971740244b9e81718d4cd0407b11}
+\subsubsection[{controller\_\-show}]{\setlength{\rightskip}{0pt plus 5cm}controller\_\-show (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_ad135971740244b9e81718d4cd0407b11}
+show a page 
 
+Definition at line 220 of file controller.inc.php.
 
-show a page \hypertarget{controller_8inc_8php_170bef82dc4636c51b678276323e4ff4}{
+\hypertarget{controller_8inc_8php_a170bef82dc4636c51b678276323e4ff4}{
 \index{controller.inc.php@{controller.inc.php}!invoke\_\-controller@{invoke\_\-controller}}
 \index{invoke\_\-controller@{invoke\_\-controller}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{invoke\_\-controller}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-controller (\$ {\em args})}}
-\label{controller_8inc_8php_170bef82dc4636c51b678276323e4ff4}
-
-
+\subsubsection[{invoke\_\-controller}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-controller (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a170bef82dc4636c51b678276323e4ff4}
 invoke a controller based on the query arguments given
 
-this function does not return in case of an error. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em array}]\$args query-arguments array \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]mixed return value of controller that was called \end{Desc}
-\hypertarget{controller_8inc_8php_51a50fbc5165b4ff0a289b2010bb7597}{
+this function does not return in case of an error. 
+\begin{DoxyParams}[1]{Parameters}
+array & {\em \$args} & query-\/arguments array \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+mixed return value of controller that was called 
+\end{DoxyReturn}
+
+
+Definition at line 263 of file controller.inc.php.
+
+\hypertarget{controller_8inc_8php_a51a50fbc5165b4ff0a289b2010bb7597}{
 \index{controller.inc.php@{controller.inc.php}!parse\_\-query\_\-string@{parse\_\-query\_\-string}}
 \index{parse\_\-query\_\-string@{parse\_\-query\_\-string}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{parse\_\-query\_\-string}]{\setlength{\rightskip}{0pt plus 5cm}parse\_\-query\_\-string ()}}
-\label{controller_8inc_8php_51a50fbc5165b4ff0a289b2010bb7597}
-
-
+\subsubsection[{parse\_\-query\_\-string}]{\setlength{\rightskip}{0pt plus 5cm}parse\_\-query\_\-string (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a51a50fbc5165b4ff0a289b2010bb7597}
 parse the QUERY\_\-STRING server variable
 
-\begin{Desc}
-\item[Returns:]array query-arguments array (key/value and numeric keys) \end{Desc}
-\hypertarget{controller_8inc_8php_543961dbcd309fa2cb6a887a8666bf1c}{
+\begin{DoxyReturn}{Returns}
+array query-\/arguments array (key/value and numeric keys) 
+\end{DoxyReturn}
+
+
+Definition at line 334 of file controller.inc.php.
+
+\hypertarget{controller_8inc_8php_a543961dbcd309fa2cb6a887a8666bf1c}{
 \index{controller.inc.php@{controller.inc.php}!register\_\-controller@{register\_\-controller}}
 \index{register\_\-controller@{register\_\-controller}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{register\_\-controller}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-controller (\$ {\em arg0}, \/  \$ {\em arg1}, \/  \$ {\em func}, \/  \$ {\em args} = {\tt array()})}}
-\label{controller_8inc_8php_543961dbcd309fa2cb6a887a8666bf1c}
-
-
+\subsubsection[{register\_\-controller}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-controller (
+\begin{DoxyParamCaption}
+\item[{\$}]{ arg0, }
+\item[{\$}]{ arg1, }
+\item[{\$}]{ func, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a543961dbcd309fa2cb6a887a8666bf1c}
 register a controller
 
-\begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$arg0 first argument of query to match ($\ast$ for wildcard) \item[{\em string}]\$arg1 second argument of query to match ($\ast$ for widcard) \item[{\em string}]\$func function name \item[{\em array}]\$args optional arguments \end{description}
-\end{Desc}
-\hypertarget{controller_8inc_8php_5d5274c3531eb05a1ea5927ff3cd08d3}{
+
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$arg0} & first argument of query to match ($\ast$ for wildcard) \\
+\hline
+string & {\em \$arg1} & second argument of query to match ($\ast$ for widcard) \\
+\hline
+string & {\em \$func} & function name \\
+\hline
+array & {\em \$args} & optional arguments \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 376 of file controller.inc.php.
+
+\hypertarget{controller_8inc_8php_a5d5274c3531eb05a1ea5927ff3cd08d3}{
 \index{controller.inc.php@{controller.inc.php}!serve\_\-resource@{serve\_\-resource}}
 \index{serve\_\-resource@{serve\_\-resource}!controller.inc.php@{controller.inc.php}}
-\subsubsection[{serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-resource (\$ {\em s}, \/  \$ {\em dl})}}
-\label{controller_8inc_8php_5d5274c3531eb05a1ea5927ff3cd08d3}
-
-
+\subsubsection[{serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-resource (
+\begin{DoxyParamCaption}
+\item[{\$}]{ s, }
+\item[{\$}]{ dl}
+\end{DoxyParamCaption}
+)}}
+\label{controller_8inc_8php_a5d5274c3531eb05a1ea5927ff3cd08d3}
 serve a resource associated with an object
 
-the function might not return (e.g. when a module calls \hyperlink{util_8inc_8php_9d3ab20fc8b79fb6ab860f93600c745e}{serve\_\-file()}). \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$s object (e.g. page.rev.obj) \item[{\em bool}]\$dl download file \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]bool \end{Desc}
+the function might not return (e.g. when a module calls \hyperlink{util_8inc_8php_a9d3ab20fc8b79fb6ab860f93600c745e}{serve\_\-file()}). 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$s} & object (e.g. page.rev.obj) \\
+\hline
+bool & {\em \$dl} & download file \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool 
+\end{DoxyReturn}
+
+
+Definition at line 395 of file controller.inc.php.
+

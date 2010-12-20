@@ -69,9 +69,10 @@ function iframe_alter_render_early($args)
 	
 	// add iframe
 	$i = elem('iframe');
-	if (!$args['edit'] && IE8_COMPAT) {
-		elem_attr($i, 'frameborder', '0');
-	}
+	// frameborder is not valid html5
+	//if (!$args['edit'] && IE8_COMPAT) {
+	//	elem_attr($i, 'frameborder', '0');
+	//}
 	elem_css($i, 'background-color', 'transparent');
 	elem_css($i, 'border-width', '0px');
 	elem_css($i, 'height', '100%');

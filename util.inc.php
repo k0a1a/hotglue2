@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	util.inc.php
  *	Static utility functions
  *

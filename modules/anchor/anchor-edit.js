@@ -26,7 +26,7 @@ $(document).ready(function() {
 				name = name.substr(1);
 			}
 			$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
-				var elem = $('<div class="anchor object" style="position: absolute;" title="this is a named anchor, regular visitors won\'t be seing this icon"><a name="'+name+'" href=""></a><div class="glue-anchor-name glue-ui">#'+name+'</div></div>');
+				var elem = $('<div class="anchor object" style="position: absolute;" title="this is a named anchor, regular visitors won\'t be seing this icon"><div id="'+name+'" class="glue-anchor-name glue-ui">#'+name+'</div></div>');
 				$(elem).attr('id', data['name']);
 				$('body').append(elem);
 				$(elem).css('width', $(elem).width()+'px');
@@ -46,7 +46,7 @@ $(document).ready(function() {
 	elem = $('<img src="'+$.glue.base_url+'modules/anchor/anchor-name.png" alt="btn" title="change the anchor\'s name" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
-		var old_name = '#'+$(obj).children('a').first().attr('name');
+		var old_name = '#'+$(obj).children('.glue-anchor-name').attr('id');
 		$.glue.menu.hide();
 		var name = prompt('Enter the anchor\'s name (e.g. #someanchor)', old_name);
 		if (name && name != old_name) {
@@ -54,7 +54,7 @@ $(document).ready(function() {
 			if (name.substr(0, 1) == '#') {
 				name = name.substr(1);
 			}
-			$(obj).children('a').first().attr('name', name);
+			$(obj).children('.glue-anchor-name').attr('id', name);
 			$(obj).children('.glue-anchor-name').html('#'+name);
 			$.glue.object.save(obj);
 		}

@@ -4,7 +4,7 @@ html, body {
 	/* default font */
 	font-family: Verdana, Geneva, Tahoma, sans-serif;
 	font-size: 13px;
-	line-height: 19.25px;
+	line-height: 1.48em;
 }
 
 a, a:link, a:visited, a:active, a:hover {

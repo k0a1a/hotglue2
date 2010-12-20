@@ -3,28 +3,36 @@
 \label{log_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/log.inc.php@{/srv/www/sukzessiv.net/hotglue/log.inc.php}}
 }
 \subsection*{Functions}
-\begin{CompactItemize}
+\begin{DoxyCompactItemize}
 \item 
-if(!isset(\$logfile)) if(!isset(\$loglevels)) if(!isset(\$request\_\-id)) \hyperlink{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}{log\_\-msg} (\$level, \$msg)
-\end{CompactItemize}
+if(!isset(\$logfile)) if(!isset(\$loglevels)) if(!isset(\$request\_\-id)) \hyperlink{log_8inc_8php_a0d59d693ca96c65b67de4b197954ce60}{log\_\-msg} (\$level, \$msg)
+\end{DoxyCompactItemize}
 
 
 \subsection{Function Documentation}
-\hypertarget{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}{
+\hypertarget{log_8inc_8php_a0d59d693ca96c65b67de4b197954ce60}{
 \index{log.inc.php@{log.inc.php}!log\_\-msg@{log\_\-msg}}
 \index{log\_\-msg@{log\_\-msg}!log.inc.php@{log.inc.php}}
-\subsubsection[{log\_\-msg}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$logfile)) if (!isset(\$loglevels)) if (!isset(\$request\_\-id)) log\_\-msg (\$ {\em level}, \/  \$ {\em msg})}}
-\label{log_8inc_8php_0d59d693ca96c65b67de4b197954ce60}
+\subsubsection[{log\_\-msg}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$logfile)) if (!isset(\$loglevels)) if (!isset(\$request\_\-id)) log\_\-msg (
+\begin{DoxyParamCaption}
+\item[{\$}]{ level, }
+\item[{\$}]{ msg}
+\end{DoxyParamCaption}
+)}}
+\label{log_8inc_8php_a0d59d693ca96c65b67de4b197954ce60}
+log a message to file
 
 
-\hyperlink{log_8inc_8php}{log.inc.php} Generic logging infrastructure
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$level} & can be error, warn, info or debug \\
+\hline
+string & {\em \$msg} & message \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool true if successful, false if not 
+\end{DoxyReturn}
 
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. log a message to file
 
-\begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$level can be error, warn, info or debug \item[{\em string}]\$msg message \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]bool true if successful, false if not \end{Desc}
+Definition at line 34 of file log.inc.php.
+

@@ -3,212 +3,337 @@
 \label{modules_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/modules.inc.php@{/srv/www/sukzessiv.net/hotglue/modules.inc.php}}
 }
 \subsection*{Functions}
-\begin{CompactItemize}
+\begin{DoxyCompactItemize}
 \item 
-if(!isset(\$hooks)) if(!isset(\$modules)) if(!isset(\$services)) \hyperlink{modules_8inc_8php_dcaa12e356133b7fa0670571698b38cc}{get\_\-hooks} ()
+if(!isset(\$hooks)) if(!isset(\$modules)) if(!isset(\$services)) \hyperlink{modules_8inc_8php_adcaa12e356133b7fa0670571698b38cc}{get\_\-hooks} ()
 \item 
-\hyperlink{modules_8inc_8php_1b73e435e11b07906d0781b146b4aa21}{get\_\-modules} ()
+\hyperlink{modules_8inc_8php_a1b73e435e11b07906d0781b146b4aa21}{get\_\-modules} ()
 \item 
-\hyperlink{modules_8inc_8php_bf7633223c2fd4ecb199a8e0dc070802}{get\_\-service} (\$service)
+\hyperlink{modules_8inc_8php_abf7633223c2fd4ecb199a8e0dc070802}{get\_\-service} (\$service)
 \item 
-\hyperlink{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}{invoke\_\-hook} (\$hook, \$args=array(), \$first\_\-module= '', \$last\_\-module= '')
+\hyperlink{modules_8inc_8php_a92ef7c094f294cfec43a3bb53227a21a}{invoke\_\-hook} (\$hook, \$args=array(), \$first\_\-module= '', \$last\_\-module= '')
 \item 
-\hyperlink{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}{invoke\_\-hook\_\-first} (\$hook, \$first\_\-module, \$args=array())
+\hyperlink{modules_8inc_8php_acac937809bdb98ce29616134e43050ed}{invoke\_\-hook\_\-first} (\$hook, \$first\_\-module, \$args=array())
 \item 
-\hyperlink{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}{invoke\_\-hook\_\-last} (\$hook, \$last\_\-module, \$args=array())
+\hyperlink{modules_8inc_8php_ae1ff036fae9d272fe1d58dff8a9caed2}{invoke\_\-hook\_\-last} (\$hook, \$last\_\-module, \$args=array())
 \item 
-\hyperlink{modules_8inc_8php_66473fc9f24153d85053f1f9c6ed83e4}{invoke\_\-hook\_\-while} (\$hook, \$while, \$args=array())
+\hyperlink{modules_8inc_8php_a66473fc9f24153d85053f1f9c6ed83e4}{invoke\_\-hook\_\-while} (\$hook, \$while, \$args=array())
 \item 
-\hyperlink{modules_8inc_8php_23f8be02dc2148a3c860119a1d6ea276}{load\_\-modules} (\$search= '', \$optional=false)
+\hyperlink{modules_8inc_8php_a23f8be02dc2148a3c860119a1d6ea276}{load\_\-modules} (\$search= '', \$optional=false)
 \item 
-\hyperlink{modules_8inc_8php_e6ed600fb2ce39a4b0837bbb01fe8d6e}{register\_\-service} (\$service, \$func, \$args=array())
+\hyperlink{modules_8inc_8php_ae6ed600fb2ce39a4b0837bbb01fe8d6e}{register\_\-service} (\$service, \$func, \$args=array())
 \item 
-\hyperlink{modules_8inc_8php_d91a5f96df0655d782404170324e567d}{register\_\-hook} (\$hook, \$info= '')
+\hyperlink{modules_8inc_8php_ad91a5f96df0655d782404170324e567d}{register\_\-hook} (\$hook, \$info= '')
 \item 
-\hyperlink{modules_8inc_8php_361058ff2a03c098045c4442440a2574}{response} (\$data, \$error=false)
+\hyperlink{modules_8inc_8php_a361058ff2a03c098045c4442440a2574}{response} (\$data, \$error=false)
 \item 
-\hyperlink{modules_8inc_8php_3d581f1636df2e24ffe7b013a12fb1db}{run\_\-service} (\$service, \$args=array())
-\end{CompactItemize}
+\hyperlink{modules_8inc_8php_a3d581f1636df2e24ffe7b013a12fb1db}{run\_\-service} (\$service, \$args=array())
+\end{DoxyCompactItemize}
 
 
 \subsection{Function Documentation}
-\hypertarget{modules_8inc_8php_dcaa12e356133b7fa0670571698b38cc}{
+\hypertarget{modules_8inc_8php_adcaa12e356133b7fa0670571698b38cc}{
 \index{modules.inc.php@{modules.inc.php}!get\_\-hooks@{get\_\-hooks}}
 \index{get\_\-hooks@{get\_\-hooks}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{get\_\-hooks}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$hooks)) if (!isset(\$modules)) if (!isset(\$services)) get\_\-hooks ()}}
-\label{modules_8inc_8php_dcaa12e356133b7fa0670571698b38cc}
+\subsubsection[{get\_\-hooks}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$hooks)) if (!isset(\$modules)) if (!isset(\$services)) get\_\-hooks (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_adcaa12e356133b7fa0670571698b38cc}
+get an array of all currently registered hooks
+
+\begin{DoxyReturn}{Returns}
+array 
+\end{DoxyReturn}
 
 
-\hyperlink{modules_8inc_8php}{modules.inc.php} Generic modules and services infrastructure
+Definition at line 31 of file modules.inc.php.
 
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. get an array of all currently registered hooks
-
-\begin{Desc}
-\item[Returns:]array \end{Desc}
-\hypertarget{modules_8inc_8php_1b73e435e11b07906d0781b146b4aa21}{
+\hypertarget{modules_8inc_8php_a1b73e435e11b07906d0781b146b4aa21}{
 \index{modules.inc.php@{modules.inc.php}!get\_\-modules@{get\_\-modules}}
 \index{get\_\-modules@{get\_\-modules}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{get\_\-modules}]{\setlength{\rightskip}{0pt plus 5cm}get\_\-modules ()}}
-\label{modules_8inc_8php_1b73e435e11b07906d0781b146b4aa21}
-
-
+\subsubsection[{get\_\-modules}]{\setlength{\rightskip}{0pt plus 5cm}get\_\-modules (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a1b73e435e11b07906d0781b146b4aa21}
 get an array of all currently loaded modules
 
-\begin{Desc}
-\item[Returns:]array \end{Desc}
-\hypertarget{modules_8inc_8php_bf7633223c2fd4ecb199a8e0dc070802}{
+\begin{DoxyReturn}{Returns}
+array 
+\end{DoxyReturn}
+
+
+Definition at line 43 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_abf7633223c2fd4ecb199a8e0dc070802}{
 \index{modules.inc.php@{modules.inc.php}!get\_\-service@{get\_\-service}}
 \index{get\_\-service@{get\_\-service}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{get\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}get\_\-service (\$ {\em service})}}
-\label{modules_8inc_8php_bf7633223c2fd4ecb199a8e0dc070802}
+\subsubsection[{get\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}get\_\-service (
+\begin{DoxyParamCaption}
+\item[{\$}]{ service}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_abf7633223c2fd4ecb199a8e0dc070802}
+return a service-\/array
+
+call \hyperlink{modules_8inc_8php_a23f8be02dc2148a3c860119a1d6ea276}{load\_\-modules()} before calling this function. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$service} & service name \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array or false if not found 
+\end{DoxyReturn}
 
 
-return a service-array
+Definition at line 59 of file modules.inc.php.
 
-call \hyperlink{modules_8inc_8php_23f8be02dc2148a3c860119a1d6ea276}{load\_\-modules()} before calling this function. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$service service name \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array or false if not found \end{Desc}
-\hypertarget{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}{
+\hypertarget{modules_8inc_8php_a92ef7c094f294cfec43a3bb53227a21a}{
 \index{modules.inc.php@{modules.inc.php}!invoke\_\-hook@{invoke\_\-hook}}
 \index{invoke\_\-hook@{invoke\_\-hook}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{invoke\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook (\$ {\em hook}, \/  \$ {\em args} = {\tt array()}, \/  \$ {\em first\_\-module} = {\tt ''}, \/  \$ {\em last\_\-module} = {\tt ''})}}
-\label{modules_8inc_8php_92ef7c094f294cfec43a3bb53227a21a}
-
-
+\subsubsection[{invoke\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook (
+\begin{DoxyParamCaption}
+\item[{\$}]{ hook, }
+\item[{\$}]{ args = {\ttfamily array()}, }
+\item[{\$}]{ first\_\-module = {\ttfamily ''}, }
+\item[{\$}]{ last\_\-module = {\ttfamily ''}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a92ef7c094f294cfec43a3bb53227a21a}
 invoke a hook
 
-this function also takes care of loading all modules. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$hook hook to invoke \item[{\em array}]\$args arguments-array (can include references) \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array of results (module=$>$result) \end{Desc}
-\hypertarget{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}{
+this function also takes care of loading all modules. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$hook} & hook to invoke \\
+\hline
+array & {\em \$args} & arguments-\/array (can include references) \\
+\hline
+string & {\em \$first\_\-module} & first module to call (optional) \\
+\hline
+string & {\em \$last\_\-module} & last module to call (optional) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array of results (module=$>$result) 
+\end{DoxyReturn}
+
+
+Definition at line 80 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_acac937809bdb98ce29616134e43050ed}{
 \index{modules.inc.php@{modules.inc.php}!invoke\_\-hook\_\-first@{invoke\_\-hook\_\-first}}
 \index{invoke\_\-hook\_\-first@{invoke\_\-hook\_\-first}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{invoke\_\-hook\_\-first}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-first (\$ {\em hook}, \/  \$ {\em first\_\-module}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_cac937809bdb98ce29616134e43050ed}
-
-
+\subsubsection[{invoke\_\-hook\_\-first}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-first (
+\begin{DoxyParamCaption}
+\item[{\$}]{ hook, }
+\item[{\$}]{ first\_\-module, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_acac937809bdb98ce29616134e43050ed}
 invoke a hook with a specified module being called first
 
-this function also takes care of loading all modules. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$hook hook to invoke \item[{\em string}]\$first\_\-module name of first module to call \item[{\em array}]\$args arguments-array (can include references) \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array of results (module=$>$result) \end{Desc}
-\hypertarget{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}{
+this function also takes care of loading all modules. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$hook} & hook to invoke \\
+\hline
+string & {\em \$first\_\-module} & name of first module to call \\
+\hline
+array & {\em \$args} & arguments-\/array (can include references) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array of results (module=$>$result) 
+\end{DoxyReturn}
+
+
+Definition at line 133 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_ae1ff036fae9d272fe1d58dff8a9caed2}{
 \index{modules.inc.php@{modules.inc.php}!invoke\_\-hook\_\-last@{invoke\_\-hook\_\-last}}
 \index{invoke\_\-hook\_\-last@{invoke\_\-hook\_\-last}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{invoke\_\-hook\_\-last}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-last (\$ {\em hook}, \/  \$ {\em last\_\-module}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_e1ff036fae9d272fe1d58dff8a9caed2}
-
-
+\subsubsection[{invoke\_\-hook\_\-last}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-last (
+\begin{DoxyParamCaption}
+\item[{\$}]{ hook, }
+\item[{\$}]{ last\_\-module, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_ae1ff036fae9d272fe1d58dff8a9caed2}
 invoke a hook with a specified module being called last
 
-this function also takes care of loading all modules. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$hook hook to invoke \item[{\em string}]\$first\_\-module name of last module to call \item[{\em array}]\$args arguments-array (can include references) \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array of results (module=$>$result) \end{Desc}
-\hypertarget{modules_8inc_8php_66473fc9f24153d85053f1f9c6ed83e4}{
+this function also takes care of loading all modules. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$hook} & hook to invoke \\
+\hline
+string & {\em \$last\_\-module} & name of last module to call \\
+\hline
+array & {\em \$args} & arguments-\/array (can include references) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array of results (module=$>$result) 
+\end{DoxyReturn}
+
+
+Definition at line 148 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_a66473fc9f24153d85053f1f9c6ed83e4}{
 \index{modules.inc.php@{modules.inc.php}!invoke\_\-hook\_\-while@{invoke\_\-hook\_\-while}}
 \index{invoke\_\-hook\_\-while@{invoke\_\-hook\_\-while}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{invoke\_\-hook\_\-while}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-while (\$ {\em hook}, \/  \$ {\em while}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_66473fc9f24153d85053f1f9c6ed83e4}
-
-
+\subsubsection[{invoke\_\-hook\_\-while}]{\setlength{\rightskip}{0pt plus 5cm}invoke\_\-hook\_\-while (
+\begin{DoxyParamCaption}
+\item[{\$}]{ hook, }
+\item[{\$}]{ while, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a66473fc9f24153d85053f1f9c6ed83e4}
 invoke a hook while the returned result is \$while
 
-this function also takes care of loading all modules. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$hook hook to invoke \item[{\em mixed}]\$while value to compare the returned result with \item[{\em array}]\$args arguments-array \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array with result (module=$>$result) or empty result if there was none \end{Desc}
-\hypertarget{modules_8inc_8php_23f8be02dc2148a3c860119a1d6ea276}{
+this function also takes care of loading all modules. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$hook} & hook to invoke \\
+\hline
+mixed & {\em \$while} & value to compare the returned result with \\
+\hline
+array & {\em \$args} & arguments-\/array \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array with result (module=$>$result) or empty result if there was none 
+\end{DoxyReturn}
+
+
+Definition at line 163 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_a23f8be02dc2148a3c860119a1d6ea276}{
 \index{modules.inc.php@{modules.inc.php}!load\_\-modules@{load\_\-modules}}
 \index{load\_\-modules@{load\_\-modules}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{load\_\-modules}]{\setlength{\rightskip}{0pt plus 5cm}load\_\-modules (\$ {\em search} = {\tt ''}, \/  \$ {\em optional} = {\tt false})}}
-\label{modules_8inc_8php_23f8be02dc2148a3c860119a1d6ea276}
-
-
+\subsubsection[{load\_\-modules}]{\setlength{\rightskip}{0pt plus 5cm}load\_\-modules (
+\begin{DoxyParamCaption}
+\item[{\$}]{ search = {\ttfamily ''}, }
+\item[{\$}]{ optional = {\ttfamily false}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a23f8be02dc2148a3c860119a1d6ea276}
 load modules
 
-use this function instead of including module\_\-$\ast$ files directly. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$search module to load (by default all modules are loaded) \item[{\em bool}]\$optional whether to log any error to locate the module \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]bool true if successful, false if not \end{Desc}
-\hypertarget{modules_8inc_8php_d91a5f96df0655d782404170324e567d}{
+use this function instead of including module\_\-$\ast$ files directly. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$search} & module to load (by default all modules are loaded) \\
+\hline
+bool & {\em \$optional} & whether to log any error to locate the module \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool true if successful, false if not 
+\end{DoxyReturn}
+
+
+Definition at line 198 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_ad91a5f96df0655d782404170324e567d}{
 \index{modules.inc.php@{modules.inc.php}!register\_\-hook@{register\_\-hook}}
 \index{register\_\-hook@{register\_\-hook}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{register\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-hook (\$ {\em hook}, \/  \$ {\em info} = {\tt ''})}}
-\label{modules_8inc_8php_d91a5f96df0655d782404170324e567d}
-
-
+\subsubsection[{register\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-hook (
+\begin{DoxyParamCaption}
+\item[{\$}]{ hook, }
+\item[{\$}]{ info = {\ttfamily ''}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_ad91a5f96df0655d782404170324e567d}
 register a hook
 
-this function is for information purposes only. you can also use a hook without registering it here. this is not recommended though. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$hook hook name \item[{\em string}]\$info some words on the hook's purpose \end{description}
-\end{Desc}
-\hypertarget{modules_8inc_8php_e6ed600fb2ce39a4b0837bbb01fe8d6e}{
+this function is for information purposes only. you can also use a hook without registering it here. this is not recommended though. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$hook} & hook name \\
+\hline
+string & {\em \$info} & some words on the hook's purpose \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 276 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_ae6ed600fb2ce39a4b0837bbb01fe8d6e}{
 \index{modules.inc.php@{modules.inc.php}!register\_\-service@{register\_\-service}}
 \index{register\_\-service@{register\_\-service}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{register\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-service (\$ {\em service}, \/  \$ {\em func}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_e6ed600fb2ce39a4b0837bbb01fe8d6e}
-
-
+\subsubsection[{register\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}register\_\-service (
+\begin{DoxyParamCaption}
+\item[{\$}]{ service, }
+\item[{\$}]{ func, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_ae6ed600fb2ce39a4b0837bbb01fe8d6e}
 register a service
 
-you can specify the service's arguments in \$args\mbox{[}'args'\mbox{]}. see run\_\-services(). \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$service service name \item[{\em string}]\$func function name \item[{\em array}]\$args optional arguments \end{description}
-\end{Desc}
-\hypertarget{modules_8inc_8php_361058ff2a03c098045c4442440a2574}{
+you can specify the service's arguments in \$args\mbox{[}'args'\mbox{]}. see run\_\-services(). 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$service} & service name \\
+\hline
+string & {\em \$func} & function name \\
+\hline
+array & {\em \$args} & optional arguments \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 259 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_a361058ff2a03c098045c4442440a2574}{
 \index{modules.inc.php@{modules.inc.php}!response@{response}}
 \index{response@{response}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{response}]{\setlength{\rightskip}{0pt plus 5cm}response (\$ {\em data}, \/  \$ {\em error} = {\tt false})}}
-\label{modules_8inc_8php_361058ff2a03c098045c4442440a2574}
+\subsubsection[{response}]{\setlength{\rightskip}{0pt plus 5cm}response (
+\begin{DoxyParamCaption}
+\item[{\$}]{ data, }
+\item[{\$}]{ error = {\ttfamily false}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a361058ff2a03c098045c4442440a2574}
+return a response-\/array
 
 
-return a response-array
+\begin{DoxyParams}[1]{Parameters}
+mixed & {\em \$data} & (payload) data (should be the error-\/message if \$error is true) \\
+\hline
+mixed & {\em \$error} & error core or true if an error occurred \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array 
+\end{DoxyReturn}
 
-\begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em mixed}]\$data (payload) data (should be the error-message if \$error is true) \item[{\em mixed}]\$error error core or true if an error occurred \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array \end{Desc}
-\hypertarget{modules_8inc_8php_3d581f1636df2e24ffe7b013a12fb1db}{
+
+Definition at line 293 of file modules.inc.php.
+
+\hypertarget{modules_8inc_8php_a3d581f1636df2e24ffe7b013a12fb1db}{
 \index{modules.inc.php@{modules.inc.php}!run\_\-service@{run\_\-service}}
 \index{run\_\-service@{run\_\-service}!modules.inc.php@{modules.inc.php}}
-\subsubsection[{run\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}run\_\-service (\$ {\em service}, \/  \$ {\em args} = {\tt array()})}}
-\label{modules_8inc_8php_3d581f1636df2e24ffe7b013a12fb1db}
-
-
+\subsubsection[{run\_\-service}]{\setlength{\rightskip}{0pt plus 5cm}run\_\-service (
+\begin{DoxyParamCaption}
+\item[{\$}]{ service, }
+\item[{\$}]{ args = {\ttfamily array()}}
+\end{DoxyParamCaption}
+)}}
+\label{modules_8inc_8php_a3d581f1636df2e24ffe7b013a12fb1db}
 run a service
 
-this function checks the arguments in \$args against the (optional) declaration given in \hyperlink{modules_8inc_8php_e6ed600fb2ce39a4b0837bbb01fe8d6e}{register\_\-service()}. \begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em string}]\$service service name \item[{\em array}]\$args arguments-array \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]return value of the service function or a response-array in case of an error \end{Desc}
+this function checks the arguments in \$args against the (optional) declaration given in \hyperlink{modules_8inc_8php_ae6ed600fb2ce39a4b0837bbb01fe8d6e}{register\_\-service()}. 
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$service} & service name \\
+\hline
+array & {\em \$args} & arguments-\/array \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+return value of the service function or a response-\/array in case of an error 
+\end{DoxyReturn}
+
+
+Definition at line 319 of file modules.inc.php.
+

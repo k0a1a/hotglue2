@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_revisions_browser.inc.php
  *	Module for browsing through revisions of a page
  *

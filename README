@@ -8,7 +8,8 @@ made for you
 
 HOW TO INSTALL ADDITIONAL MODULES
 
-  ..
+  * copy any module_*.php files to the main directory
+  * all auxiliary files go to the modules subdirectory
 
 
 BUNDLED THIRD-PARTY CODE
@@ -17,6 +18,7 @@ BUNDLED THIRD-PARTY CODE
   * jQuery UI (MIT, GPLv2 licensed)
   * Farbtastic: JQuery color picker plug-in (GPL licensed)
   * jQuery xcolor (MIT, GPLv2 licensed)
+  * DejaVu Fonts (Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is a trademark of Bitstream, Inc.)
   * the file icon has been taken from gnome-icon-theme (GPL licensed)
 
 
@@ -24,7 +26,11 @@ KNOWN ISSUES
 
   * Hotglue 1.0 is not compatible with prior versions of the software. We aim 
     to preserve compatibility with upcoming releases though.
-  
+
+  * On certain shared hosts we have seen issues with digest authentication (see AUTH_METHOD configuration option). For those hosts basic authentication has to be used.
+
+  * Rewrite rules in the Apache configuration or in any parent directory .htaccess file can clash with the Hotglue one.
+
   * If you receive an error message while uploading a large file this 
     might  be due to the limits set in the servers's php.ini file.
     You might want to change the values of these settings:
@@ -34,8 +40,9 @@ KNOWN ISSUES
     - max_input_time
     - max_file_uploads
 
+  * For now, caching or seeking is not implemented for retrieval of uploaded files. 
+    This might be an issue when embedding large video files.
+
+  * Making animated GIF images smaller than their native size disables the animation.
+
   * When modifying objects that also appear on other pages, these changes might not immediately appear on them if caching is enabled.
-
-  * Rewrite rules in the Apache configuration or in any parent directory .htaccess file can clash with the Hotglue one.
-
-  * On certain shared hosts we have seen issues with digest authentication (see AUTH_METHOD configuration option). For those hosts basic authentication has to be used.

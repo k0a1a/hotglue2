@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_download.inc.php
  *	Module for allowing to download arbitrary files that were uploaded 
  *	by the user

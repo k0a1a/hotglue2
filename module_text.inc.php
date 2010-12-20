@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_text.inc.php
  *	Module for placing text elements on a page
  *
@@ -22,7 +22,87 @@ require_once('util.inc.php');
 // (they can be easier than that one though)
 
 
-// TODO: document
+/**
+ *	include the font-face css for a woff-font
+ *
+ *	@param string $font_family font family to include
+ *	@param string $style_to_include style to include (normal, italic, bold, bolditalic) (default: include all styles)
+ *	@return true if successful, false if not
+ */
+function _include_woff_font($font_family, $style_to_include = '')
+{
+	static $already_included = array();
+	
+	// strip quotation marks
+	// TODO (later): do proper parsing of font-family string
+	$font_family = str_replace('"', '', $font_family);
+	$font_family = str_replace('\'', '', $font_family);
+	$woff_fonts = _woff_fonts();
+	if (!array_key_exists($font_family, $woff_fonts)) {
+		return false;
+	}
+	
+	foreach ($woff_fonts[$font_family] as $style=>$woff) {
+		if (!empty($style_to_include) && $style_to_include != $style) {
+			continue;
+		}
+		// check if already included
+		if (isset($already_included[$font_family])) {
+			if (isset($already_included[$font_family][$style])) {
+				continue;
+			}
+		}
+		// TODO (later): check css encoding
+		$rule = '@font-face {'.nl();
+		$rule .= tab().'font-family: \''.$font_family.'\';'.nl();
+		if ($style == 'italic' || $style == 'bolditalic') {
+			$rule .= tab().'font-style: italic;'.nl();
+		} else {
+			$rule .= tab().'font-style: normal;'.nl();
+		}
+		if ($style == 'bold' || $style == 'bolditalic') {
+			$rule .= tab().'font-weight: bold;'.nl();
+		} else {
+			$rule .= tab().'font-weight: normal;'.nl();
+		}
+		$rule .= tab().'src: url('.base_url().'img/'.$woff.') format("woff");'.nl();
+		$rule .= '}';
+		html_add_css_inline($rule, 5);
+		// add to list of already included font styles
+		if (!isset($already_included[$font_family])) {
+			$already_included[$font_family] = array();
+		}
+		$already_included[$font_family][$style] = true;
+	}
+	return true;
+}
+
+
+/**
+ *	return if the font-family includes a woff-font
+ *
+ *	@param string $font_family font family
+ *	@return true if there is a woff-font, false if not
+ */
+function _is_woff_font($font_family)
+{
+	$woff_fonts = _woff_fonts();
+	// strip quotation marks for the comparison
+	// TODO (later): do proper parsing of font-family string
+	$font_family = str_replace('"', '', $font_family);
+	$font_family = str_replace('\'', '', $font_family);
+	return array_key_exists($font_family, $woff_fonts);
+}
+
+
+/**
+ *	helper function for rendering the content of a text object for use in 
+ *	editing (outside the textarea) and viewing
+ *
+ *	@param string $s content
+ *	@param string $name object name
+ *	@return html-encoded content
+ */
 function _text_render_content($s, $name)
 {
 	// resolve any aliases
@@ -38,6 +118,38 @@ function _text_render_content($s, $name)
 	// resolve any relative urls
 	$s = resolve_relative_urls($s);
 	return $s;
+}
+
+
+// TODO (later): why do global variables not work here?
+/**
+ *	return an array of all available woff-fonts
+ *
+ *	@return array
+ */
+function _woff_fonts()
+{
+	// use a hardcoded array of woff fonts for now
+	return array(
+		'DejaVuSans' => array(
+			'normal' => 'dejavusans-webfont.woff',
+			'italic' => 'dejavusans-oblique-webfont.woff',
+			'bold' => 'dejavusans-bold-webfont.woff',
+			'bolditalic' => 'dejavusans-boldoblique-webfont.woff'
+		),
+		'DejaVuSerif' => array(
+			'normal' => 'dejavuserif-webfont.woff',
+			'italic' => 'dejavuserif-italic-webfont.woff',
+			'bold' => 'dejavuserif-bold-webfont.woff',
+			'bolditalic' => 'dejavuserif-bolditalic-webfont.woff'
+		),
+		'DejaVuSansMono' => array(
+			'normal' => 'dejavusansmono-webfont.woff',
+			'italic' => 'dejavusansmono-oblique-webfont.woff',
+			'bold' => 'dejavusansmono-bold-webfont.woff',
+			'bolditalic' => 'dejavusansmono-boldoblique-webfont.woff'
+		)
+	);
 }
 
 
@@ -196,6 +308,13 @@ function text_alter_render_early($args)
 	// font-family
 	if (!empty($obj['text-font-family'])) {
 		elem_css($elem, 'font-family', $obj['text-font-family']);
+		if (TEXT_USE_WOFF_FONTS) {
+			if (_is_woff_font($obj['text-font-family'])) {
+				// include all styles of the font because of inline html 
+				// (<strong>, etc)
+				_include_woff_font($obj['text-font-family']);
+			}
+		}
 	}
 	// font-size
 	if (!empty($obj['text-font-size'])) {
@@ -272,6 +391,19 @@ function text_render_page_early($args)
 		}
 		html_add_css(base_url().'modules/text/text-edit.css');
 		html_add_js_var('$.glue.conf.text.auto_br', TEXT_AUTO_BR);
+		
+		if (TEXT_USE_WOFF_FONTS) {
+			$woff_fonts = _woff_fonts();
+			foreach ($woff_fonts as $font=>$styles) {
+				_include_woff_font($font);
+				// TODO (later): check css encoding
+				$rule = '.glue-font-woff-'.$font.' {'.nl();
+				// we use single quotes as they don't clash with inline styles
+				$rule .= tab().'font-family: \''.$font.'\';'.nl();
+				$rule .= '}';
+				html_add_css_inline($rule, 6);
+			}
+		}
 	}
 }
 

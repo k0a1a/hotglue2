@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_webvideo.inc.php
  *	Module for embedding youtube and vimeo videos
  *
@@ -48,13 +48,12 @@ function webvideo_alter_render_early($args)
 		}
 		elem_attr($i, 'src', $src);
 	}
-	elem_attr($i, 'frameborder', '0');
+	// frameborder is not valid html
+	//elem_attr($i, 'frameborder', '0');
 	elem_css($i, 'border-width', '0px');
 	elem_css($i, 'height', '100%');
 	elem_css($i, 'position', 'absolute');
 	elem_css($i, 'width', '100%');		
-	// this is taken from youtube's embedd code
-	elem_attr($i, 'type', 'text/html');
 	elem_append($elem, $i);
 	
 	if ($args['edit']) {

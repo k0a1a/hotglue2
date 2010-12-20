@@ -3,64 +3,173 @@
 \label{module__page_8inc_8php}\index{/srv/www/sukzessiv.net/hotglue/module\_\-page.inc.php@{/srv/www/sukzessiv.net/hotglue/module\_\-page.inc.php}}
 }
 \subsection*{Functions}
-\begin{CompactItemize}
+\begin{DoxyCompactItemize}
 \item 
-\hyperlink{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}{page\_\-get\_\-grid} (\$args)
+\hyperlink{module__page_8inc_8php_a6bef3e7d1d82b4117ed83e4c72b5d652}{page\_\-clear\_\-background\_\-img} (\$args)
 \item 
-\hyperlink{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}{page\_\-render\_\-object} (\$args)
+\hyperlink{module__page_8inc_8php_aedf11987fbd07763073255783077951b}{page\_\-delete\_\-page} (\$args)
 \item 
-\hyperlink{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}{page\_\-render\_\-page\_\-early} (\$args)
+\hyperlink{module__page_8inc_8php_a0184f1023facb8121f9a99348c978d55}{page\_\-has\_\-reference} (\$args)
 \item 
-\hyperlink{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}{page\_\-set\_\-grid} (\$args)
-\end{CompactItemize}
+\hyperlink{module__page_8inc_8php_aac90d98ff7e17055e3dc3d953371d673}{page\_\-get\_\-grid} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_a53e7091b9a654d0d772cea6e3127820e}{page\_\-render\_\-object} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_a80aff2ea069c7a2ba120e26bb218efa5}{page\_\-render\_\-page\_\-early} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_a4072227b7cf50c8d7bb6f49d85d95c39}{page\_\-serve\_\-resource} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_aaadab51471c838ab9a0fa0c93a04b817}{page\_\-set\_\-grid} (\$args)
+\item 
+\hyperlink{module__page_8inc_8php_a0b7e8997d0fe2f4725a68e158f2d0fb5}{page\_\-upload} (\$args)
+\end{DoxyCompactItemize}
 
 
 \subsection{Function Documentation}
-\hypertarget{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}{
+\hypertarget{module__page_8inc_8php_a6bef3e7d1d82b4117ed83e4c72b5d652}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-clear\_\-background\_\-img@{page\_\-clear\_\-background\_\-img}}
+\index{page\_\-clear\_\-background\_\-img@{page\_\-clear\_\-background\_\-img}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-clear\_\-background\_\-img}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-clear\_\-background\_\-img (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a6bef3e7d1d82b4117ed83e4c72b5d652}
+clear the page's current background image
+
+
+\begin{DoxyParams}[1]{Parameters}
+array & {\em \$args} & arguments key 'page' is the page (i.e. page.rev) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array response 
+\end{DoxyReturn}
+
+
+Definition at line 29 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_aedf11987fbd07763073255783077951b}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-delete\_\-page@{page\_\-delete\_\-page}}
+\index{page\_\-delete\_\-page@{page\_\-delete\_\-page}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-delete\_\-page}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-delete\_\-page (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_aedf11987fbd07763073255783077951b}
+
+
+Definition at line 60 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_aac90d98ff7e17055e3dc3d953371d673}{
 \index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-get\_\-grid@{page\_\-get\_\-grid}}
 \index{page\_\-get\_\-grid@{page\_\-get\_\-grid}!module_page.inc.php@{module\_\-page.inc.php}}
-\subsubsection[{page\_\-get\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-get\_\-grid (\$ {\em args})}}
-\label{module__page_8inc_8php_ac90d98ff7e17055e3dc3d953371d673}
-
-
-\hyperlink{module__page_8inc_8php}{module\_\-page.inc.php} Module for managing pages
-
-Copyright Gottfried Haider, Danja Vasiliev 2010. This source code is licensed under the GNU General Public License. See the file COPYING for more details. get the current grid size
-
-\begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em array}]\$args arguments \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array response 'x', 'y' the grid size \end{Desc}
-\hypertarget{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}{
-\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-object@{page\_\-render\_\-object}}
-\index{page\_\-render\_\-object@{page\_\-render\_\-object}!module_page.inc.php@{module\_\-page.inc.php}}
-\subsubsection[{page\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-render\_\-object (\$ {\em args})}}
-\label{module__page_8inc_8php_53e7091b9a654d0d772cea6e3127820e}
-
-
-\hypertarget{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}{
-\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}}
-\index{page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}!module_page.inc.php@{module\_\-page.inc.php}}
-\subsubsection[{page\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-render\_\-page\_\-early (\$ {\em args})}}
-\label{module__page_8inc_8php_80aff2ea069c7a2ba120e26bb218efa5}
-
-
-\hypertarget{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}{
-\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-set\_\-grid@{page\_\-set\_\-grid}}
-\index{page\_\-set\_\-grid@{page\_\-set\_\-grid}!module_page.inc.php@{module\_\-page.inc.php}}
-\subsubsection[{page\_\-set\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-set\_\-grid (\$ {\em args})}}
-\label{module__page_8inc_8php_aadab51471c838ab9a0fa0c93a04b817}
-
-
+\subsubsection[{page\_\-get\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-get\_\-grid (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_aac90d98ff7e17055e3dc3d953371d673}
 get the current grid size
 
-\begin{Desc}
-\item[Parameters:]
-\begin{description}
-\item[{\em array}]\$args arguments key 'x', 'y' is the grid size \end{description}
-\end{Desc}
-\begin{Desc}
-\item[Returns:]array response true if successful \end{Desc}
+
+\begin{DoxyParams}[1]{Parameters}
+array & {\em \$args} & arguments \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array response 'x', 'y' the grid size 
+\end{DoxyReturn}
+
+
+Definition at line 104 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_a0184f1023facb8121f9a99348c978d55}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-has\_\-reference@{page\_\-has\_\-reference}}
+\index{page\_\-has\_\-reference@{page\_\-has\_\-reference}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-has\_\-reference}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-has\_\-reference (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a0184f1023facb8121f9a99348c978d55}
+
+
+Definition at line 82 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_a53e7091b9a654d0d772cea6e3127820e}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-object@{page\_\-render\_\-object}}
+\index{page\_\-render\_\-object@{page\_\-render\_\-object}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-render\_\-object (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a53e7091b9a654d0d772cea6e3127820e}
+
+
+Definition at line 117 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_a80aff2ea069c7a2ba120e26bb218efa5}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}}
+\index{page\_\-render\_\-page\_\-early@{page\_\-render\_\-page\_\-early}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-render\_\-page\_\-early (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a80aff2ea069c7a2ba120e26bb218efa5}
+
+
+Definition at line 152 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_a4072227b7cf50c8d7bb6f49d85d95c39}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-serve\_\-resource@{page\_\-serve\_\-resource}}
+\index{page\_\-serve\_\-resource@{page\_\-serve\_\-resource}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-serve\_\-resource (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a4072227b7cf50c8d7bb6f49d85d95c39}
+
+
+Definition at line 186 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_aaadab51471c838ab9a0fa0c93a04b817}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-set\_\-grid@{page\_\-set\_\-grid}}
+\index{page\_\-set\_\-grid@{page\_\-set\_\-grid}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-set\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-set\_\-grid (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_aaadab51471c838ab9a0fa0c93a04b817}
+get the current grid size
+
+
+\begin{DoxyParams}[1]{Parameters}
+array & {\em \$args} & arguments key 'x', 'y' is the grid size \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array response true if successful 
+\end{DoxyReturn}
+
+
+Definition at line 217 of file module\_\-page.inc.php.
+
+\hypertarget{module__page_8inc_8php_a0b7e8997d0fe2f4725a68e158f2d0fb5}{
+\index{module\_\-page.inc.php@{module\_\-page.inc.php}!page\_\-upload@{page\_\-upload}}
+\index{page\_\-upload@{page\_\-upload}!module_page.inc.php@{module\_\-page.inc.php}}
+\subsubsection[{page\_\-upload}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-upload (
+\begin{DoxyParamCaption}
+\item[{\$}]{ args}
+\end{DoxyParamCaption}
+)}}
+\label{module__page_8inc_8php_a0b7e8997d0fe2f4725a68e158f2d0fb5}
+
+
+Definition at line 239 of file module\_\-page.inc.php.
+

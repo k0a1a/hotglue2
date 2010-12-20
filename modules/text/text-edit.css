@@ -17,6 +17,14 @@
 	*/
 }
 
+#glue-contextmenu-text-font-face.glue-text-font-family {
+	background-image: url(text-font-family.png);
+}
+
+#glue-contextmenu-text-font-face.glue-text-font-face {
+	background-image: url(text-font-face.png);
+}
+
 .glue-text-input {
 	/* this is the textarea for editing */
 	/* inherit as much as possible */
@@ -45,7 +53,7 @@
 }
 
 .glue-font2 {
-	font-family: "Courier New", Courier, monospace;
+	font-family: 'Courier New', Courier, monospace;
 }
 
 .glue-font3 {
@@ -57,5 +65,7 @@
 }
 
 .glue-font5 {
-	font-family: "Times New Roman", Times, serif;
+	font-family: 'Times New Roman', Times, serif;
+}
+}
 }

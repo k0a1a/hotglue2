@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	module_object.inc.php
  *	Module for handling general object properties
  *

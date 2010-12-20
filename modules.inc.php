@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  *	modules.inc.php
  *	Generic modules and services infrastructure
  *
@@ -73,6 +73,8 @@ function get_service($service)
  *	this function also takes care of loading all modules.
  *	@param string $hook hook to invoke
  *	@param array $args arguments-array (can include references)
+ *	@param string $first_module first module to call (optional)
+ *	@param string $last_module last module to call (optional)
  *	@return array of results (module=>result)
  */
 function invoke_hook($hook, $args = array(), $first_module = '', $last_module = '')
@@ -139,7 +141,7 @@ function invoke_hook_first($hook, $first_module, $args = array())
  *
  *	this function also takes care of loading all modules.
  *	@param string $hook hook to invoke
- *	@param string $first_module name of last module to call
+ *	@param string $last_module name of last module to call
  *	@param array $args arguments-array (can include references)
  *	@return array of results (module=>result)
  */
