@@ -1,0 +1,541 @@
+EDITING AND VIEWING MODES
+
+  * to view the default page, simply navigate to the site's url (henceforth 
+  referred to as "base url")
+  * to view any other page, navigate to the base url with "?sitename" appended 
+  to it (without quotes)
+  * to start editing any page, simply navigate to the base url with 
+  "?sitename/edit" appended to it (again, without quotes)
+  * editing the default page is also possible by just navigating to the base url 
+  plus "?edit (without quotes)
+
+MENUS
+
+  * clicking once on any empty space on a page in editing mode launches the 
+  "new object" menu
+  * you can select from a variety of object types by clicking on the 
+  corresponding icon (hover with with the mouse cursor over it to get a textual 
+  description as well)
+  * new objects are created on the spot where you launched the menu
+  
+  * by clicking twice on any empty space on a page in editing mode the "page" 
+  menu gets displayed
+  * there you can change general properties of the page you are editing, like 
+  its background color
+  
+  * clicking anywhere outside the menu lets you close any opened menu again
+  * when clicking on the page's empty space to close a menu, it doesn't get 
+  immediately opened again; you can, however, doubleclick when the "new object" 
+  menu is shown in order to get to the "page" menu
+
+OBJECTS
+
+  * all of the page's content comes in form of objects
+  * these can objects come in various types, such as the ones that are listed in 
+  the "new" menu
+  * any change to objects (or general page properties for that matter) get 
+  immediately reflected on the server and is shown to anyone who navigates to 
+  the page; there is thus no need to "save" any of your changes as the system 
+  takes care about this for you
+
+OBJECT SELECTION
+
+  * you can select an object by (left) clicking on it
+  * selected objects have a red-ish selection border
+  
+  * pressing the [tab] key lets the selection cycle between all objects on the 
+  page
+  * this is especially handy when you have larger number of objects, or objects 
+  that are hard to reach (like partly off-screen) or when you work with many 
+  layers
+  * the page is automatically scrolled to the newly selected object after 
+  pressing [tab]
+  
+  * you can select multiple objects by pressing [shift] and (left) clicking on 
+  one or more additional objects
+  * these object then share the selection border
+  * when you have multiple objects selected you can move or delete all of them 
+  at the same time (the latter only through the keyboard, though)
+  * in order to deselect a selected item hold [shift] and (left) click on the 
+  object in question again
+  
+  * to deselect any selected items (left) click on an empty space on the page
+  * you can also press [ctrl] and [d] to do the same
+  
+  * pressing [ctrl]+[a] selects all objects at once
+  * pressing [ctrl]+[i] inverts the current selection (i.e. objects that were 
+  not selected get selected and vice versa)
+
+MOVING OBJECTS
+
+  * you can (left) click on any object (selected or not) and drag it while still 
+  holding down the mouse button to move it around
+  * release the mouse button to place it at it's current location
+  
+  * when an object is selected, you can also use the four arrow keys to move the 
+  object around
+  * by default, pressing one of the arrow keys briefly moves the object by 1 
+  pixel
+  * you can hold the arrow key down for a longer period of course
+  * by holding [shift] while pressing any of the arrow keys, the object is moved 
+  by the current grid step (more on this later; the default is 50 pixels) in the 
+  right direction
+  
+  * when you press [shift] while moving an object with the mouse the object's 
+  movements are contrained to the horizontal or vertical axis of its original 
+  position
+  
+  * when multiple objects are selected these can be moved together as well 
+  (they might look a bit jittery but their relative positions will be alright 
+  when you release the mouse button)
+
+CONTEXTMENUS
+
+  * when an object gets selected its contextmenu gets shown as well
+  * the contextmenu consists of a vertical column of icons and a horizontal row, 
+  both starting at the upper left corner of the object
+  * the vertical column consists of properties that are common to most if not 
+  all object types, the horizontal row consists of properties specific to the 
+  type of the object
+  
+  * when you start to move an object the contextmenu gets automatically hidden, 
+  it will reappear after the movement has stopped
+  * there is no contextmenu shown when two or more objects are selected at the 
+  same time
+
+COMMON OBJECT PROPERTIES
+
+  * these are to be found in the vertical column of the context menu
+  * hovering with the mousecursor over any of these icons gives you more 
+  information
+  
+  * clone object (sheep icon): create a duplicate of the current object; the 
+  duplicate gets placed one grid step to the right and down from the current 
+  object, it's also getting automatically selected
+  
+  * change transparency: click and drag the mouse to the left or right to change 
+  the object's opacity; clicking the icon without dragging resets the opacity 
+  back to its default (100%); you can hover with the mouse over the icon to see 
+  the current opacity in the tooltip
+  
+  * move the object to the foreground or background: by default, all newly 
+  created objects have a z-index value of 100. how they overlap is determined by 
+  their order in the document - whereby newer objects are on top of older ones.
+  using this icon you can, however, create an arbitrary stacking: clicking and 
+  dragging the mouse to the left by more than 15 pixels makes the current 
+  object appear behind all objects that are intersecting it, dragging it to the 
+  right by more than 15 pixels makes it appear in front of them. Any value 
+  between retains the current z-index value.
+  * The actual z-index values that end up being used are determined by the 
+  system (which also does things like reusing unused z-index levels etc).
+  
+  * make the object a link: you can turn (almost) all objects into hyperlinks 
+  using this icon; in the input field that pops up you can make the object 
+  point to arbitrary webpages (by specifying a canonical url, such as 
+  http://www.disney.com/), but also other pages on this hotglue installation 
+  (by entering their page name) and even anchors on the same site (by entering 
+  their name preceded by "#" (without quotes))
+  * links have no effect while editing, but when accessing the site in viewing 
+  mode you will find the object be turned into an hyperlink
+  * by placing an empty string in the input field and pressing "OK" you can 
+  remove links again
+  
+  * make this object appear on all pages: clicking this icon creates a reference 
+  (symlink) of the current object on all other pages on this hotglue installation 
+  that happen to exist at the time; these reference objects appear on these pages 
+  like regular objects would, but all of them reference the same single object 
+  file - hence doing changes to one of them makes them simultaneously appear on 
+  all other pages as well.
+  * this feature is very handy for creating a shared menu, header or footer that 
+  you want to have on all pages.
+  * when you delete an object that really is a reference (symlink) to an object 
+  on another page, only this single reference gets deleted and no changes made 
+  to the original object. this way you can, for example, remove a menu from a 
+  small subset of pages again after creating references on all pages.
+  * be aware, however not do delete the original object as this would make the 
+  object disappear from all pages.
+  
+  * delete object: clicking this icon deletes the current object
+  * you can also press [del] to do the same (this also works for deleting 
+  multiple objects at once, when no contextmenu is being shown
+
+OBJECT TYPES: TEXT
+
+  * select the text icon in the "new object" menu to create a text object
+  * text objects have a background color by default which get randomly chosen 
+  from a few presets (see OBJECT_DEFAULT_COLORS in config.inc.php)
+  
+  * when a text object is selected and you click once more on it, the object's 
+  content is turned into a textarea, allowing you to edit its content
+  * while editing the content, certain global shortcuts (such as the arrow keys 
+  to move objects or [del] to delete the object) don't work
+  * disselect the object again (e.g. by clicking on an empty space) to stop 
+  editing again
+  
+  * by default, the text object offers the following contextmenu items in the 
+  horizontal bar at the top:
+  
+  * change background color: clicking this launches a color wheel at the lower 
+  right corner of the window, allowing you to easily change the objects 
+  background color by clicking and dragging
+  * if you hover over one of the two markers on the color wheel, the current 
+  color value (in hex-format) is shown in a tooltip
+  * click anywhere outside the colorpicker to close it again
+  * you can alternatively press [shift] while clicking the background color icon 
+  to open up an input field that allows you to dial in a specific color code 
+  (in hex- or rgb-format)
+  
+  * make the background transparent: click to make the background transparent
+  
+  * change font size: click and drag the the mouse up or down to adjust the 
+  current font size; clicking the icon without any dragging resets the font 
+  size to the default; the icon's tooltip shows the current font size
+  
+  * change font color: as background color
+  
+  * change type face: click to cycle through different web font-families that 
+  get applied to the object and its content
+  * note that these fonts will probably look different on other operating 
+  systems.
+  
+  * change font style: click to cycle through these font-styles that get applied 
+  to the objects and its content: normal, bold, italic, bold+italic
+  
+  * change line height: click and drag the mouse up or down to adjust the 
+  current line height; clicking the icon without any dragging resets the line 
+  height to the default
+  * the line height is internally saved in em units.
+  
+  * change letter spacing: click and drag the mouse up or down to adjust the 
+  current letter spacing; clicking the icon without any dragging resets the 
+  letter spacing to the default
+  * letter spacing is also internally saved in em units.
+  
+  * change word spacing: click and drag the mouse up or down to adjust the 
+  current word spacing; clicking the icon without any dragging resets the 
+  word spacing to the default
+  * word spacing is also internally saved in em units.
+  
+  * change text alignment: click to cycle though different alignments that get 
+  applied to the object and its content: left, center, right, justify
+  
+  * change padding: click and drag the mouse to adjust the current padding 
+  horizontally as well as vertically; pressing [shift] makes the the padding 
+  in both axis be the same; clicking the icon without any dragging resets the 
+  padding to the default
+  * extensive padding might make it impossible to edit the text object's content 
+  - in this case remove the padding before you click to turn the content into a 
+  textarea.
+
+TEXT OBJECT CONTENTS
+
+  * in text objects, you can either write regular plain text, valid html code 
+  or a mixture of both. the system tries its best to figure it out for you.
+  
+  * pressing [shift] and [space] while editing a text object adds a 
+  non-breakable space; (in viewing mode this is then encoded as &nbsp;)
+  
+  * by default, text breaks using [return] will automatically be converted into 
+  html <br> elements outside the textarea (see TEXT_AUTO_BR in config.inc.php)
+  
+  * pressing [tab] while editing a text objects adds tabulator; while this does 
+  not influence the rendered output of the object, the tab will be retained for 
+  editing
+  
+  * there are a number of strings that are automatically substituted by the 
+  system; it is preferable to use them instead of explicitly spelling out 
+  e.g. the base url or the page's name, as they might unexpectedly change:
+  
+  * $BASEURL$ (or $baseurl$, same for all following): the site's base url
+  * $GLUE$: the hotglue version number (e.g. "1.0.0")
+  * $OBJ$: the name of the current object (e.g. "page.rev.obj")
+  * $PAGE$: the canonical name of the current page (e.g. "page.rev")
+  * $PAGENAME$: the name of the current page (e.g. "page")
+  * $REV": the current revision (e.g. "rev")
+  
+  * these substitutions can also be used when setting an object's link target
+  
+  * when using html code inside text objects, any relative urls in "src" or 
+  "href" attributes are automatically made absolute by prepending the site's 
+  base url in viewing mode
+  
+  * all input is retrieved and stored in UTF-8 format, which should allow for 
+  support of international character sets regardless of the server configuration
+
+RESIZING OBJECTS
+
+  * a number of objects, such as text objects, images etc can be resized.
+  
+  * if you hover over any resizable object's lower right corner you get a mouse 
+  cursor indicating this ability. simply (left) click and drag to resize, and 
+  release the mouse cursor again to stop resizing.
+  * pressing [shift] while resizing retains the object's proportions.
+  
+  * similarly, it is also possible to only modify the object's width or height 
+  clicking and dragging the object's eastern or southern border.
+  
+  * when hovering over one of these borders or the lower right corner a tooltip 
+  with the object's dimensions and position (both in pixels) gets shown.
+
+OBJECT TYPES: IMAGES
+
+  * to include an image file on a page, upload it to the server by opening the 
+  "new object" menu and clicking the "upload a file" icon
+  * in the file selection dialog that pops up select one or more image files
+  * by default *.jpg, *.jpeg, *.png and *.gif files are supported (or files that 
+  have the mime-type image/jpeg, image/png or image/gif set).
+  * a status bar lets you know how your upload is doing - you can hover over it 
+  to see the current progress expressed in bytes and percent.
+  * if you upload is exceeding the limits set in the configuration you will 
+  receive an error message (look in the README file for more information).
+  
+  * HOTGLUE supports server-side resizing of images. by default, images that are 
+  larger than 120% of your window dimensions while uploading are automatically 
+  resized to 80% of the window's dimensions. (see IMAGE_UPLOAD_RESIZE_{LARGER,TO} 
+  in config.inc.php)
+  * all other uploaded images create an object that has the same width and 
+  height as the original image file itself.
+  * the server still keeps a copy of the original file that you uploaded, and 
+  uses this one for any other resizing operation that you end up doing on that 
+  object. this way you can entrust HOTGLUE for example with your photos and 
+  always have images on your sites in the best possible quality while not 
+  burning any bandwidth.
+  * after the initial upload, any resizing of the image that results in the 
+  object being smaller than the original file in both its width and height 
+  triggers an automatic resizing operation on the server.
+  
+  * by default, images offer the the following contextmenu items in the 
+  horizontal bar at the top:
+  
+  * toggle image tiling: click to switch between stretching the image to fill 
+  the object or tiling it; this of course only matters when the object size is 
+  larger or smaller than the image.
+  
+  * reset image size: click to reset the object to the native size of the 
+  (original) image file
+  * if you press [shift] only the height gets adjusted to match the object's 
+  current width
+  * if you press [ctrl] only the width gets adjusted to match the object's 
+  current height
+  
+  * adjust image selection: click and drag the mouse to change the position 
+  of the image origin; clicking the icon without dragging resets the position of 
+  origin
+  
+  * download original file: click to download the original (non-resized) file 
+  to your computer again
+
+OBJECT TYPES: EMBEDDED WEBSITES
+
+  * select the "embedd another webpage" icon on the "new object" menu; enter the 
+  full canonical url of the page you wish to include into the input field that 
+  pops up
+  
+  * embedded websites are inactive (shown with a greyish hue) in edit mode, but 
+  regular visitors can interact with them
+
+OBJECT TYPES: WEB VIDEOS
+
+  * select the "embedd a youtube or vimeo video" icon on the "new object" menu; 
+  enter the full canonical url of the video you wish to embedd (like 
+  http://www.youtube.com/watch?v=_mdVHEus0T8)
+  
+  * since adobe flash objects might be embedded in the webvideo object, you have to 
+  click on the small handle (hand icon) in the object's top left corner in order 
+  to select and move the object. if the handle is not accessible, try cycling 
+  trough all objects using the [tab] key and move it to an position where the 
+  handle is accessible using the arrow keys.
+  
+  * when a adobe flash object is used to embedd the video, resizing of the 
+  object might be difficult.
+  
+  * webvideo objects can be set to start playback automatically (autostart) and 
+  to enable/disable looping, both done by clicking icons in the contextmenu. 
+  both need a reload of the page to take effect.
+
+OBJECT TYPES: ANCHORS
+
+  * so called "anchors" can be placed at arbitrary position on pages to allow 
+  for links to navigate to that particular spot on the page.
+  
+  * click the "add a named anchor" icon on the "new object" menu and enter a 
+  unique name in the input field that pops up
+  
+  * anchors are displayed as round, target-like symbols with the chosen name 
+  displayed next to it. they are invisible in viewing mode however.
+  
+  * you can change the anchor's name at any time using the contextmenu.
+
+UPLOADING FILES
+
+  * uploading files can not only be done through the "new object" menu, but 
+  also by simply dragging one or many files from your computer and dropping them 
+  over he page you are editing. (this works at least on recent browsers..)
+  
+  * after the uploading is finished the system tries to convert these files into 
+  any sensible object type and place these at the spot you dropped the files 
+  (or launched the "new object" menu)
+  
+  * the system also takes care to handle duplicates, i.e. uploading the same 
+  file twice results only in a single file in the page's shared directory, with 
+  two objects referencing this file
+
+UPLOADING FILES: DOWNLOAD OBJECT (FALLBACK)
+
+  * if the system has no better way of dealing with the file you uploaded (based 
+  on its file extension and mime-type), it is turned into a "download" object - 
+  allowing for its (binary) download
+  
+  * by default, download objects only appear only in editing mode; if you want 
+  any user to be able to access the file, make the object public by toggling the 
+  related option in the download object's contextmenu (this can be changed back 
+  at any time)
+  
+  * the download object shows any file extension that the original file had
+  * hovering over the download object makes a tooltip with the object's name 
+  and the original filename (before uploading) appear
+  
+  * the file content can be accessed by navigating (or linking) to 
+  base url appended with "?" (without quotes) and the object's name if the 
+  object is public or you are logged in
+  * you can download the file through the object's contextmenu in any case
+
+UPLOADING FILES: VIDEO OBJECT
+
+  * by default, HOTGLUE can also handle html5 video files that are uploaded.
+  
+  * files having one of the following extensions are regarded as html5 videos: 
+  *.ogv, *.ogg, *.h264, *.mp4, *.webm; additionally files having the following 
+  mime-types set are also regarded as html5 videos: video/ogg, video/h264, 
+  video/mp4, video/webm.
+  
+  * support for these container-formats and video-codecs varies in different 
+  browsers: while recent versions of Google's Chrome browser support all three 
+  of them, Firefox only supports ogg (with support for webm coming in version 
+  4.0), Safari only supports h264 (same as Internet Explorer 9).
+  
+  * the video objects allow the following customizations through the 
+  contextmenu:
+  
+  * toggle automatic playback of video
+  
+  * toggle looping of video
+  
+  * show or hide control elements
+  
+  * mute or unmute video
+  
+  * reset video size
+  
+  * download original file
+
+PAGE PROPERTIES
+
+  * access the page menu by doubleclicking on an empty space on the page
+  
+  * change page title: click and change the page's title (the one that is 
+  displayed in the browser's title bar)
+  * the default page title is the name of the page (as in the url).
+  
+  * change the page's url: click and change the page's name, which in turns 
+  determines the address to reach this page
+  * modifying a page's name also changes the name (and address) of all its 
+  revisions and resources (such as objects).
+  * after renaming a page this way, you are automatically redirected to the 
+  renamed page's editing mode.
+  
+  * make this the start page: click to make this page that is shown by default 
+  when visitors navigate to your base url without specifying any particular page.
+  no confirmation is shown as a result of this.
+  
+  * change the background color: click to launch the color wheel; clicking 
+  anywhere outside the wheel hides it again; if you have uploaded a background 
+  image before you must first agree to remove it before being able to set a 
+  background color again
+  
+  * create a new page: click to create a new page and enter the desired page 
+  name in the input fild that pops up
+  
+  * delete the page: click and confirm to delete the current page and all prior 
+  revisions of it, there is no turning back. afterwards you will be redirected 
+  to the list of all available pages.
+  
+  * upload a background image: click and select a single image file (same file 
+  formats and mime-types as for image objects) in order to upload. there is no 
+  status bar displayed when uploading background images, but you should either 
+  see the image as your background or an error message.
+  * when uploading a second image the first one gets automatically deleted.
+  
+  * toggle between having the background fixed or having it scroll with the 
+  rest of the page
+  
+  * adjust background image position: click and drag the mouse to change the 
+  position of the image origin; clicking the icon without dragging resets the 
+  position of origin
+  
+  * list all pages: navigate to a pages that shows all available pages
+  
+  * compare revisions of this page: navigate to a pages that allows you to 
+  visually compare different revisions of the same page
+  
+  * grid: click to show or hide the grid; click and drag the mouse to change 
+  the grid's steps horizontally as well as vertically; press [shift] while 
+  dragging to make the grid's steps be the same for horizontal as well as 
+  vertical
+  * the grid's steps are saved and shared among all pages on the installation
+  * if enabled, the grid reacts to changes of the page's background-color 
+  in order to remain visible
+
+PAGE BROWSER
+
+  * the page browser can be accessed through the "page" menu or by navigating 
+  to the base url appended with "?pages" (without quotes)
+  
+  * the page browser gives you a list of all available pages sorted by name and 
+  lets you jump to the editing or viewing mode of any of them, as well as 
+  renaming, deleting them or setting one of them as startpage
+
+REVISIONS
+
+  * HOTGLUE automatically creates snapshots (revisions) of the pages that you 
+  are editing based on its configuration.
+  
+  * by default, a new revision is created whenever the user navigates to the 
+  page's editing mode, and the prior revision is older than 1 hour and the 
+  current (head) revision differes from the prior revision (see 
+  SNAPSHOT_MIN_AGE in config.inc.php)
+  * since new revisions are created when the user navigates to editing mode, 
+  you can of course also trigger this manually by pressing refresh ([f5]).
+  
+  * by default, revisions are automatically deleted again after 7 days (see 
+  SHAPSHOT_MAX_AGE).
+  
+  * the system takes care of keeping uploaded files in the shared folder as 
+  long as revisions reference them, and automatically deletes them when this 
+  is not the case anymore.
+  * it is thus suggested not to manually delete files in shared directories 
+  or revisions in the pages' directories. (if you don't need revisions you 
+  can turn them off completely by setting SNAPSHOT_MIN_AGE to zero)
+  
+  * since snapshotting aims to preserve the entire look and content of a page 
+  at a particular time, it also turns objects on other pages that are referenced 
+  (symlinks) into first class citizens by copying their content.
+
+REVISIONS BROWSER
+
+  * the page browser can be accessed through the "page" menu or by navigating 
+  to the base url appended with "?pagename/revisions" (without quotes)
+  
+  * using the controls in the window's lower right corner you can navigate 
+  between all revisions of the page
+  * pressing the left and right arrow key also allows you to navigate accordingly
+  
+  * clicking "revert" makes this revision the page's new current (head) version
+  * after clicking revert you will be redirected to the editing mode of the 
+  newly reverted revision (what is now your new head revision) :)
+  * obviously you cannot revert to the head revision.
+
+SHORT URLS
+
+  * when the htaccess-dist file got renamed into .htaccess (and you host supports 
+  this as well) you are able to leave out the question mark in above's urls.

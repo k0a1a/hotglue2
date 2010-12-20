@@ -266,7 +266,7 @@ $(document).ready(function() {
 	//
 	// context menu items
 	//
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-color.png" alt="btn" title="change background-color" width="32" height="32">');
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-color.png" alt="btn" title="change background color" width="32" height="32">');
 	var colorpicker_shown = false;
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');

@@ -45,4 +45,6 @@ KNOWN ISSUES
 
   * Making animated GIF images smaller than their native size disables the animation.
 
+  * The looping property of YouTube's new HTML5 video embedd code seems to be broken at the moment.
+
   * When modifying objects that also appear on other pages, these changes might not immediately appear on them if caching is enabled.

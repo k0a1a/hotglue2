@@ -202,11 +202,11 @@ $(document).ready(function() {
 				if (e.shiftKey) {
 					// shift: only change aspect ratio
 					// fit height to width
-					$(obj).css('height', ($(obj).width()*aspect)+'px');
+					$(obj).css('height', ($(obj).width()/aspect)+'px');
 				} else if (e.ctrlKey) {
 					// ctrl: only change aspect ratio
 					// fit width to heigth
-					$(obj).css('width', ($(obj).height()/aspect)+'px');
+					$(obj).css('width', ($(obj).height()*aspect)+'px');
 				} else {
 					$(obj).css('width', data['image-file-width']+'px');
 					$(obj).css('height', data['image-file-height']+'px');

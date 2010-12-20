@@ -388,6 +388,7 @@ function delete_page($args)
 	
 	// TODO (later): make it possible to delete all revisions at once 
 	// (optimization for frontend)
+	// TODO (later): how to deal with .svn and .git subdirectories?
 	// it's objects first
 	$files = @scandir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']));
 	foreach ($files as $f) {
@@ -927,6 +928,7 @@ function revert($args)
 	log_msg('info', 'revert: reverting to '.quot($args['page']));
 	
 	// delete current head revision
+	// TODO (later): create a snapshot of it before doing so?
 	if (page_exists($a[0].'.head')) {
 		$ret = delete_page(array('page'=>$a[0].'.head'));
 		if ($ret['#error']) {
@@ -992,6 +994,9 @@ function revisions($args)
 			continue;
 		} elseif (!is_dir(CONTENT_DIR.'/'.$args['pagename'].'/'.$f)) {
 			// skip files
+			continue;
+		} elseif (substr($f, 0, 1) == '.') {
+			// skip directories starting with a dot (like .svn)
 			continue;
 		} else {
 			$ret[] = $f;

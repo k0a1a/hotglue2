@@ -86,82 +86,81 @@
 <a name="l00058"></a>00058         
 <a name="l00059"></a>00059         unset($obj[<span class="stringliteral">&#39;anchor-name&#39;</span>]);
 <a name="l00060"></a>00060         $childs = <a class="code" href="html__parse_8inc_8php.html#a1003b146f08aef5a3a78d75a3538a4d7">html_parse</a>(<a class="code" href="html_8inc_8php.html#ae28d850c3c906c6884462ca89c06f59b">elem_val</a>($elem));
-<a name="l00061"></a>00061         <a class="code" href="log_8inc_8php.html#a0d59d693ca96c65b67de4b197954ce60">log_msg</a>(<span class="stringliteral">&#39;warn&#39;</span>, <a class="code" href="util_8inc_8php.html#aa5cc9d5f8a0b5bb76dfe3d15796e5940">var_dump_inl</a>($childs));
-<a name="l00062"></a>00062         <span class="keywordflow">foreach</span> ($childs as $child) {
-<a name="l00063"></a>00063                 <span class="keywordflow">if</span> (<a class="code" href="html_8inc_8php.html#ab1019c4b75181c1c1af10e1c1e5e197d">elem_has_class</a>($child, <span class="stringliteral">&#39;glue-anchor-name&#39;</span>)) {
-<a name="l00064"></a>00064                         $obj[<span class="stringliteral">&#39;anchor-name&#39;</span>] = <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($child, <span class="stringliteral">&#39;id&#39;</span>);
-<a name="l00065"></a>00065                         <span class="keywordflow">break</span>;
-<a name="l00066"></a>00066                 }
-<a name="l00067"></a>00067         }
-<a name="l00068"></a>00068         
-<a name="l00069"></a>00069         <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00070"></a>00070 }
+<a name="l00061"></a>00061         <span class="keywordflow">foreach</span> ($childs as $child) {
+<a name="l00062"></a>00062                 <span class="keywordflow">if</span> (<a class="code" href="html_8inc_8php.html#ab1019c4b75181c1c1af10e1c1e5e197d">elem_has_class</a>($child, <span class="stringliteral">&#39;glue-anchor-name&#39;</span>)) {
+<a name="l00063"></a>00063                         $obj[<span class="stringliteral">&#39;anchor-name&#39;</span>] = <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($child, <span class="stringliteral">&#39;id&#39;</span>);
+<a name="l00064"></a>00064                         <span class="keywordflow">break</span>;
+<a name="l00065"></a>00065                 }
+<a name="l00066"></a>00066         }
+<a name="l00067"></a>00067         
+<a name="l00068"></a>00068         <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00069"></a>00069 }
+<a name="l00070"></a>00070 
 <a name="l00071"></a>00071 
-<a name="l00072"></a>00072 
-<a name="l00073"></a><a class="code" href="module__anchor_8inc_8php.html#a76377f7a0a64bf1627c5385d9d88424f">00073</a> function <a class="code" href="module__anchor_8inc_8php.html#a76377f7a0a64bf1627c5385d9d88424f">anchor_render_object</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00074"></a>00074 {
-<a name="l00075"></a>00075         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
-<a name="l00076"></a>00076         <span class="keywordflow">if</span> (!isset($obj[<span class="stringliteral">&#39;type&#39;</span>]) || $obj[<span class="stringliteral">&#39;type&#39;</span>] != <span class="stringliteral">&#39;anchor&#39;</span>) {
-<a name="l00077"></a>00077                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00078"></a>00078         }
-<a name="l00079"></a>00079         
-<a name="l00080"></a>00080         $e = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
-<a name="l00081"></a>00081         <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($e, <span class="stringliteral">&#39;id&#39;</span>, $obj[<span class="stringliteral">&#39;name&#39;</span>]);
-<a name="l00082"></a>00082         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;anchor&#39;</span>);
-<a name="l00083"></a>00083         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;object&#39;</span>);
-<a name="l00084"></a>00084         
-<a name="l00085"></a>00085         <a class="code" href="modules_8inc_8php.html#acac937809bdb98ce29616134e43050ed">invoke_hook_first</a>(<span class="stringliteral">&#39;alter_render_early&#39;</span>, <span class="stringliteral">&#39;anchor&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;&amp;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
-<a name="l00086"></a>00086         $html = <a class="code" href="html_8inc_8php.html#af04b43a4dd09e73ca2cef84a4f2e9381">elem_finalize</a>($e);
-<a name="l00087"></a>00087         <a class="code" href="modules_8inc_8php.html#ae1ff036fae9d272fe1d58dff8a9caed2">invoke_hook_last</a>(<span class="stringliteral">&#39;alter_render_late&#39;</span>, <span class="stringliteral">&#39;anchor&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;html&#39;</span>=&gt;&amp;$html, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
-<a name="l00088"></a>00088         
-<a name="l00089"></a>00089         <span class="keywordflow">return</span> $html;
-<a name="l00090"></a>00090 }
+<a name="l00072"></a><a class="code" href="module__anchor_8inc_8php.html#a76377f7a0a64bf1627c5385d9d88424f">00072</a> function <a class="code" href="module__anchor_8inc_8php.html#a76377f7a0a64bf1627c5385d9d88424f">anchor_render_object</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00073"></a>00073 {
+<a name="l00074"></a>00074         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
+<a name="l00075"></a>00075         <span class="keywordflow">if</span> (!isset($obj[<span class="stringliteral">&#39;type&#39;</span>]) || $obj[<span class="stringliteral">&#39;type&#39;</span>] != <span class="stringliteral">&#39;anchor&#39;</span>) {
+<a name="l00076"></a>00076                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00077"></a>00077         }
+<a name="l00078"></a>00078         
+<a name="l00079"></a>00079         $e = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
+<a name="l00080"></a>00080         <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($e, <span class="stringliteral">&#39;id&#39;</span>, $obj[<span class="stringliteral">&#39;name&#39;</span>]);
+<a name="l00081"></a>00081         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;anchor&#39;</span>);
+<a name="l00082"></a>00082         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;object&#39;</span>);
+<a name="l00083"></a>00083         
+<a name="l00084"></a>00084         <a class="code" href="modules_8inc_8php.html#acac937809bdb98ce29616134e43050ed">invoke_hook_first</a>(<span class="stringliteral">&#39;alter_render_early&#39;</span>, <span class="stringliteral">&#39;anchor&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;&amp;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
+<a name="l00085"></a>00085         $html = <a class="code" href="html_8inc_8php.html#af04b43a4dd09e73ca2cef84a4f2e9381">elem_finalize</a>($e);
+<a name="l00086"></a>00086         <a class="code" href="modules_8inc_8php.html#ae1ff036fae9d272fe1d58dff8a9caed2">invoke_hook_last</a>(<span class="stringliteral">&#39;alter_render_late&#39;</span>, <span class="stringliteral">&#39;anchor&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;html&#39;</span>=&gt;&amp;$html, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
+<a name="l00087"></a>00087         
+<a name="l00088"></a>00088         <span class="keywordflow">return</span> $html;
+<a name="l00089"></a>00089 }
+<a name="l00090"></a>00090 
 <a name="l00091"></a>00091 
-<a name="l00092"></a>00092 
-<a name="l00093"></a><a class="code" href="module__anchor_8inc_8php.html#aeb9a9d13328402b731ddbf06b6cdebaf">00093</a> function <a class="code" href="module__anchor_8inc_8php.html#aeb9a9d13328402b731ddbf06b6cdebaf">anchor_render_page_early</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00094"></a>00094 {
-<a name="l00095"></a>00095         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
-<a name="l00096"></a>00096                 <span class="keywordflow">if</span> (<a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">USE_MIN_FILES</a>) {
-<a name="l00097"></a>00097                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.min.js&#39;</span>);
-<a name="l00098"></a>00098                 } <span class="keywordflow">else</span> {
-<a name="l00099"></a>00099                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.js&#39;</span>);
-<a name="l00100"></a>00100                 }
-<a name="l00101"></a>00101                 <a class="code" href="html_8inc_8php.html#a962ef1b29e909a38b9a7b79086d54ab2">html_add_css</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.css&#39;</span>);
-<a name="l00102"></a>00102                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00103"></a>00103         } <span class="keywordflow">else</span> {
-<a name="l00104"></a>00104                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00105"></a>00105         }
-<a name="l00106"></a>00106 }
+<a name="l00092"></a><a class="code" href="module__anchor_8inc_8php.html#aeb9a9d13328402b731ddbf06b6cdebaf">00092</a> function <a class="code" href="module__anchor_8inc_8php.html#aeb9a9d13328402b731ddbf06b6cdebaf">anchor_render_page_early</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00093"></a>00093 {
+<a name="l00094"></a>00094         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
+<a name="l00095"></a>00095                 <span class="keywordflow">if</span> (<a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">USE_MIN_FILES</a>) {
+<a name="l00096"></a>00096                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.min.js&#39;</span>);
+<a name="l00097"></a>00097                 } <span class="keywordflow">else</span> {
+<a name="l00098"></a>00098                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.js&#39;</span>);
+<a name="l00099"></a>00099                 }
+<a name="l00100"></a>00100                 <a class="code" href="html_8inc_8php.html#a962ef1b29e909a38b9a7b79086d54ab2">html_add_css</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/anchor/anchor-edit.css&#39;</span>);
+<a name="l00101"></a>00101                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00102"></a>00102         } <span class="keywordflow">else</span> {
+<a name="l00103"></a>00103                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00104"></a>00104         }
+<a name="l00105"></a>00105 }
+<a name="l00106"></a>00106 
 <a name="l00107"></a>00107 
-<a name="l00108"></a>00108 
-<a name="l00109"></a><a class="code" href="module__anchor_8inc_8php.html#a287df82036d77baa9316116945ff34e7">00109</a> function <a class="code" href="module__anchor_8inc_8php.html#a287df82036d77baa9316116945ff34e7">anchor_save_state</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00110"></a>00110 {
-<a name="l00111"></a>00111         $elem = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;elem&#39;</span>];
-<a name="l00112"></a>00112         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
-<a name="l00113"></a>00113         <span class="keywordflow">if</span> (array_shift(<a class="code" href="html_8inc_8php.html#a821651b8923938645b0b0fa6bb084522">elem_classes</a>($elem)) != <span class="stringliteral">&#39;anchor&#39;</span>) {
-<a name="l00114"></a>00114                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00115"></a>00115         }
-<a name="l00116"></a>00116         
-<a name="l00117"></a>00117         $obj[<span class="stringliteral">&#39;type&#39;</span>] = <span class="stringliteral">&#39;anchor&#39;</span>;
-<a name="l00118"></a>00118         $obj[<span class="stringliteral">&#39;module&#39;</span>] = <span class="stringliteral">&#39;anchor&#39;</span>;
-<a name="l00119"></a>00119         
-<a name="l00120"></a>00120         <a class="code" href="modules_8inc_8php.html#a92ef7c094f294cfec43a3bb53227a21a">invoke_hook</a>(<span class="stringliteral">&#39;alter_save&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;&amp;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$elem));
-<a name="l00121"></a>00121         
-<a name="l00122"></a>00122         <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
-<a name="l00123"></a>00123         $ret = <a class="code" href="module__glue_8inc_8php.html#ab294f21c7f6fed0932b65167f180c78c">save_object</a>($obj);
-<a name="l00124"></a>00124         <span class="keywordflow">if</span> ($ret[<span class="stringliteral">&#39;#error&#39;</span>]) {
-<a name="l00125"></a>00125                 <a class="code" href="log_8inc_8php.html#a0d59d693ca96c65b67de4b197954ce60">log_msg</a>(<span class="stringliteral">&#39;error&#39;</span>, <span class="stringliteral">&#39;anchor_save_state: save_object returned &#39;</span>.<a class="code" href="util_8inc_8php.html#a3c7d87c658499c1559a6b98cac06f58d">quot</a>($ret[<span class="stringliteral">&#39;#data&#39;</span>]));
-<a name="l00126"></a>00126                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00127"></a>00127         } <span class="keywordflow">else</span> {
-<a name="l00128"></a>00128                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00129"></a>00129         }
-<a name="l00130"></a>00130 }
+<a name="l00108"></a><a class="code" href="module__anchor_8inc_8php.html#a287df82036d77baa9316116945ff34e7">00108</a> function <a class="code" href="module__anchor_8inc_8php.html#a287df82036d77baa9316116945ff34e7">anchor_save_state</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00109"></a>00109 {
+<a name="l00110"></a>00110         $elem = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;elem&#39;</span>];
+<a name="l00111"></a>00111         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
+<a name="l00112"></a>00112         <span class="keywordflow">if</span> (array_shift(<a class="code" href="html_8inc_8php.html#a821651b8923938645b0b0fa6bb084522">elem_classes</a>($elem)) != <span class="stringliteral">&#39;anchor&#39;</span>) {
+<a name="l00113"></a>00113                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00114"></a>00114         }
+<a name="l00115"></a>00115         
+<a name="l00116"></a>00116         $obj[<span class="stringliteral">&#39;type&#39;</span>] = <span class="stringliteral">&#39;anchor&#39;</span>;
+<a name="l00117"></a>00117         $obj[<span class="stringliteral">&#39;module&#39;</span>] = <span class="stringliteral">&#39;anchor&#39;</span>;
+<a name="l00118"></a>00118         
+<a name="l00119"></a>00119         <a class="code" href="modules_8inc_8php.html#a92ef7c094f294cfec43a3bb53227a21a">invoke_hook</a>(<span class="stringliteral">&#39;alter_save&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;&amp;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$elem));
+<a name="l00120"></a>00120         
+<a name="l00121"></a>00121         <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
+<a name="l00122"></a>00122         $ret = <a class="code" href="module__glue_8inc_8php.html#ab294f21c7f6fed0932b65167f180c78c">save_object</a>($obj);
+<a name="l00123"></a>00123         <span class="keywordflow">if</span> ($ret[<span class="stringliteral">&#39;#error&#39;</span>]) {
+<a name="l00124"></a>00124                 <a class="code" href="log_8inc_8php.html#a0d59d693ca96c65b67de4b197954ce60">log_msg</a>(<span class="stringliteral">&#39;error&#39;</span>, <span class="stringliteral">&#39;anchor_save_state: save_object returned &#39;</span>.<a class="code" href="util_8inc_8php.html#a3c7d87c658499c1559a6b98cac06f58d">quot</a>($ret[<span class="stringliteral">&#39;#data&#39;</span>]));
+<a name="l00125"></a>00125                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00126"></a>00126         } <span class="keywordflow">else</span> {
+<a name="l00127"></a>00127                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00128"></a>00128         }
+<a name="l00129"></a>00129 }
+<a name="l00130"></a>00130 
 <a name="l00131"></a>00131 
-<a name="l00132"></a>00132 
-<a name="l00133"></a>00133 ?&gt;
+<a name="l00132"></a>00132 ?&gt;
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Mon Dec 20 2010 17:56:48 for hotglue by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Mon Dec 20 2010 23:34:33 for hotglue by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.2 </small></address>
 </body>
