@@ -6,6 +6,13 @@ with support from the Mondriaan Foundation
 made for you
 
 
+HOW DOES THIS WORK
+
+  * see INSTALL
+  * if you feel like reading boring lists, check out doc/FEATURES
+  * otherwise make sure you have seen http://www.vimeo.com/17924249
+
+
 HOW TO INSTALL ADDITIONAL MODULES
 
   * copy any module_*.php files to the main directory
