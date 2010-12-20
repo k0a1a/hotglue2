@@ -11,7 +11,7 @@ $(document).ready(function() {
 	//
 	// menu items
 	//
-	var elem = $('<img src="'+$.glue.base_url+'modules/webvideo/webvideo.png" alt="btn" title="embedded a youtube or vimeo video" width="32" height="32">');
+	var elem = $('<img src="'+$.glue.base_url+'modules/webvideo/webvideo.png" alt="btn" title="embed a youtube or vimeo video" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var url = prompt('Enter the video URL (e.g. http://www.youtube.com/watch?v=_mdVHEus0T8)');
 		if (!url) {

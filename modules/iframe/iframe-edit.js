@@ -11,7 +11,7 @@ $(document).ready(function() {
 	//
 	// menu items
 	//
-	var elem = $('<img src="'+$.glue.base_url+'modules/iframe/iframe.png" alt="btn" title="embedded another webpage" width="32" height="32">');
+	var elem = $('<img src="'+$.glue.base_url+'modules/iframe/iframe.png" alt="btn" title="embed another webpage" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var url = prompt('Enter the URL to show');
 		if (!url) {

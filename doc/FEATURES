@@ -14,7 +14,7 @@ MENUS
   * clicking once on any empty space on a page in editing mode launches the 
   "new object" menu
   * you can select from a variety of object types by clicking on the 
-  corresponding icon (hover with with the mouse cursor over it to get a textual 
+  corresponding icon (hover with the mouse cursor over it to get a textual 
   description as well)
   * new objects are created on the spot where you launched the menu
   
@@ -70,7 +70,7 @@ MOVING OBJECTS
 
   * you can (left) click on any object (selected or not) and drag it while still 
   holding down the mouse button to move it around
-  * release the mouse button to place it at it's current location
+  * release the mouse button to place it at its current location
   
   * when an object is selected, you can also use the four arrow keys to move the 
   object around
@@ -82,7 +82,7 @@ MOVING OBJECTS
   right direction
   
   * when you press [shift] while moving an object with the mouse the object's 
-  movements are contrained to the horizontal or vertical axis of its original 
+  movements are constrained to the horizontal or vertical axis of its original 
   position
   
   * when multiple objects are selected these can be moved together as well 
@@ -106,7 +106,7 @@ CONTEXTMENUS
 COMMON OBJECT PROPERTIES
 
   * these are to be found in the vertical column of the context menu
-  * hovering with the mousecursor over any of these icons gives you more 
+  * hovering with the mouse cursor over any of these icons gives you more 
   information
   
   * clone object (sheep icon): create a duplicate of the current object; the 
@@ -132,7 +132,7 @@ COMMON OBJECT PROPERTIES
   * make the object a link: you can turn (almost) all objects into hyperlinks 
   using this icon; in the input field that pops up you can make the object 
   point to arbitrary webpages (by specifying a canonical url, such as 
-  http://www.disney.com/), but also other pages on this hotglue installation 
+  http://www.disney.com/), but also other pages on this HOTGLUE installation 
   (by entering their page name) and even anchors on the same site (by entering 
   their name preceded by "#" (without quotes))
   * links have no effect while editing, but when accessing the site in viewing 
@@ -141,7 +141,7 @@ COMMON OBJECT PROPERTIES
   remove links again
   
   * make this object appear on all pages: clicking this icon creates a reference 
-  (symlink) of the current object on all other pages on this hotglue installation 
+  (symlink) of the current object on all other pages on this HOTGLUE installation 
   that happen to exist at the time; these reference objects appear on these pages 
   like regular objects would, but all of them reference the same single object 
   file - hence doing changes to one of them makes them simultaneously appear on 
@@ -162,14 +162,14 @@ COMMON OBJECT PROPERTIES
 OBJECT TYPES: TEXT
 
   * select the text icon in the "new object" menu to create a text object
-  * text objects have a background color by default which get randomly chosen 
+  * text objects have a background color by default which gets randomly chosen 
   from a few presets (see OBJECT_DEFAULT_COLORS in config.inc.php)
   
   * when a text object is selected and you click once more on it, the object's 
   content is turned into a textarea, allowing you to edit its content
   * while editing the content, certain global shortcuts (such as the arrow keys 
   to move objects or [del] to delete the object) don't work
-  * disselect the object again (e.g. by clicking on an empty space) to stop 
+  * deselect the object again (e.g. by clicking on an empty space) to stop 
   editing again
   
   * by default, the text object offers the following contextmenu items in the 
@@ -187,7 +187,7 @@ OBJECT TYPES: TEXT
   
   * make the background transparent: click to make the background transparent
   
-  * change font size: click and drag the the mouse up or down to adjust the 
+  * change font size: click and drag the mouse up or down to adjust the 
   current font size; clicking the icon without any dragging resets the font 
   size to the default; the icon's tooltip shows the current font size
   
@@ -220,7 +220,7 @@ OBJECT TYPES: TEXT
   applied to the object and its content: left, center, right, justify
   
   * change padding: click and drag the mouse to adjust the current padding 
-  horizontally as well as vertically; pressing [shift] makes the the padding 
+  horizontally as well as vertically; pressing [shift] makes the padding 
   in both axis be the same; clicking the icon without any dragging resets the 
   padding to the default
   * extensive padding might make it impossible to edit the text object's content 
@@ -247,7 +247,7 @@ TEXT OBJECT CONTENTS
   e.g. the base url or the page's name, as they might unexpectedly change:
   
   * $BASEURL$ (or $baseurl$, same for all following): the site's base url
-  * $GLUE$: the hotglue version number (e.g. "1.0.0")
+  * $GLUE$: the HOTGLUE version number (e.g. "1.0.0")
   * $OBJ$: the name of the current object (e.g. "page.rev.obj")
   * $PAGE$: the canonical name of the current page (e.g. "page.rev")
   * $PAGENAME$: the name of the current page (e.g. "page")
@@ -294,7 +294,7 @@ OBJECT TYPES: IMAGES
   resized to 80% of the window's dimensions. (see IMAGE_UPLOAD_RESIZE_{LARGER,TO} 
   in config.inc.php)
   * all other uploaded images create an object that has the same width and 
-  height as the original image file itself.
+  height as the original image file.
   * the server still keeps a copy of the original file that you uploaded, and 
   uses this one for any other resizing operation that you end up doing on that 
   object. this way you can entrust HOTGLUE for example with your photos and 
@@ -304,7 +304,7 @@ OBJECT TYPES: IMAGES
   object being smaller than the original file in both its width and height 
   triggers an automatic resizing operation on the server.
   
-  * by default, images offer the the following contextmenu items in the 
+  * by default, images offer the following contextmenu items in the 
   horizontal bar at the top:
   
   * toggle image tiling: click to switch between stretching the image to fill 
@@ -327,7 +327,7 @@ OBJECT TYPES: IMAGES
 
 OBJECT TYPES: EMBEDDED WEBSITES
 
-  * select the "embedd another webpage" icon on the "new object" menu; enter the 
+  * select the "embed another webpage" icon on the "new object" menu; enter the 
   full canonical url of the page you wish to include into the input field that 
   pops up
   
@@ -336,8 +336,8 @@ OBJECT TYPES: EMBEDDED WEBSITES
 
 OBJECT TYPES: WEB VIDEOS
 
-  * select the "embedd a youtube or vimeo video" icon on the "new object" menu; 
-  enter the full canonical url of the video you wish to embedd (like 
+  * select the "embed a youtube or vimeo video" icon on the "new object" menu; 
+  enter the full canonical url of the video you wish to embed (like 
   http://www.youtube.com/watch?v=_mdVHEus0T8)
   
   * since adobe flash objects might be embedded in the webvideo object, you have to 
@@ -346,7 +346,7 @@ OBJECT TYPES: WEB VIDEOS
   trough all objects using the [tab] key and move it to an position where the 
   handle is accessible using the arrow keys.
   
-  * when a adobe flash object is used to embedd the video, resizing of the 
+  * when a adobe flash object is used to embed the video, resizing of the 
   object might be difficult.
   
   * webvideo objects can be set to start playback automatically (autostart) and 
@@ -370,7 +370,7 @@ UPLOADING FILES
 
   * uploading files can not only be done through the "new object" menu, but 
   also by simply dragging one or many files from your computer and dropping them 
-  over he page you are editing. (this works at least on recent browsers..)
+  over the page you are editing. (this works at least on recent browsers..)
   
   * after the uploading is finished the system tries to convert these files into 
   any sensible object type and place these at the spot you dropped the files 
@@ -454,10 +454,10 @@ PAGE PROPERTIES
   background color again
   
   * create a new page: click to create a new page and enter the desired page 
-  name in the input fild that pops up
+  name in the input field that pops up
   
   * delete the page: click and confirm to delete the current page and all prior 
-  revisions of it, there is no turning back. afterwards you will be redirected 
+  revisions of it - there is no turning back. afterwards you will be redirected 
   to the list of all available pages.
   
   * upload a background image: click and select a single image file (same file 
@@ -473,7 +473,7 @@ PAGE PROPERTIES
   position of the image origin; clicking the icon without dragging resets the 
   position of origin
   
-  * list all pages: navigate to a pages that shows all available pages
+  * list all pages: navigate to a page that shows all available pages
   
   * compare revisions of this page: navigate to a pages that allows you to 
   visually compare different revisions of the same page
@@ -493,7 +493,7 @@ PAGE BROWSER
   
   * the page browser gives you a list of all available pages sorted by name and 
   lets you jump to the editing or viewing mode of any of them, as well as 
-  renaming, deleting them or setting one of them as startpage
+  renaming, deleting them or setting one of them as start page
 
 REVISIONS
 
@@ -502,7 +502,7 @@ REVISIONS
   
   * by default, a new revision is created whenever the user navigates to the 
   page's editing mode, and the prior revision is older than 1 hour and the 
-  current (head) revision differes from the prior revision (see 
+  current (head) revision differs from the prior revision (see 
   SNAPSHOT_MIN_AGE in config.inc.php)
   * since new revisions are created when the user navigates to editing mode, 
   you can of course also trigger this manually by pressing refresh ([f5]).
@@ -538,4 +538,4 @@ REVISIONS BROWSER
 SHORT URLS
 
   * when the htaccess-dist file got renamed into .htaccess (and you host supports 
-  this as well) you are able to leave out the question mark in above's urls.
+  this as well) you are able to leave out the question mark in the urls above.
