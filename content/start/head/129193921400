@@ -1,0 +1,17 @@
+type:text
+module:text
+object-height:99px
+object-left:712px
+object-top:142px
+object-width:302px
+object-zindex:100
+text-background-color:transparent
+text-font-size:16px
+text-font-color:rgb(255, 5, 93)
+text-font-style:normal
+text-font-weight:bold
+text-align:left
+
+once in editing mode:
+ - single click to create things
+ - double click to change properties of the page and make a new one

@@ -1,0 +1,13 @@
+type:text
+module:text
+object-height:56px
+object-left:50px
+object-top:165px
+object-width:317px
+object-zindex:100
+text-background-color:transparent
+text-padding-x:2px
+text-padding-y:4px
+text-font-color:rgb(163, 0, 30)
+
+... for example "http://you.hotglue.me/?edit"
