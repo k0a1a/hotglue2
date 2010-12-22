@@ -48,6 +48,12 @@ function iframe_alter_save($args)
 	} else {
 		unset($obj['iframe-url']);
 	}
+  // danja: name
+//  if (elem_attr($i, 'name') !== NULL) {
+//    $obj['iframe-name'] = elem_attr($i, 'name');
+//  } else {
+//    unset($obj['iframe-name']);
+//  }
 	// scrolling
 	if (elem_css($i, 'overflow') == 'hidden' || (elem_css($i, 'overflow-x') == 'hidden' && elem_css($i, 'overflow-y') == 'hidden')) {
 		unset($obj['iframe-scroll']);
