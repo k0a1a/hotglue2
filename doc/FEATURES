@@ -126,6 +126,8 @@ COMMON OBJECT PROPERTIES
   object appear behind all objects that are intersecting it, dragging it to the 
   right by more than 15 pixels makes it appear in front of them. Any value 
   between retains the current z-index value.
+  * pressing [shift] and [pageup] or [pagedown] also moves any selected object 
+  to the front/back
   * The actual z-index values that end up being used are determined by the 
   system (which also does things like reusing unused z-index levels etc).
   
@@ -286,7 +288,7 @@ OBJECT TYPES: IMAGES
   have the mime-type image/jpeg, image/png or image/gif set).
   * a status bar lets you know how your upload is doing - you can hover over it 
   to see the current progress expressed in bytes and percent.
-  * if you upload is exceeding the limits set in the configuration you will 
+  * if your upload is exceeding the limits set in the configuration you will 
   receive an error message (look in the README file for more information).
   
   * HOTGLUE supports server-side resizing of images. by default, images that are 
@@ -297,9 +299,9 @@ OBJECT TYPES: IMAGES
   height as the original image file.
   * the server still keeps a copy of the original file that you uploaded, and 
   uses this one for any other resizing operation that you end up doing on that 
-  object. this way you can entrust HOTGLUE for example with your photos and 
-  always have images on your sites in the best possible quality while not 
-  burning any bandwidth.
+  object. this way you can entrust HOTGLUE for example with your high-resolution 
+  photos and  always have images on your sites in the best possible quality 
+  while not burning any bandwidth.
   * after the initial upload, any resizing of the image that results in the 
   object being smaller than the original file in both its width and height 
   triggers an automatic resizing operation on the server.
@@ -323,7 +325,7 @@ OBJECT TYPES: IMAGES
   origin
   
   * download original file: click to download the original (non-resized) file 
-  to your computer again
+  back to your computer
 
 OBJECT TYPES: EMBEDDED WEBSITES
 
@@ -350,8 +352,8 @@ OBJECT TYPES: WEB VIDEOS
   object might be difficult.
   
   * webvideo objects can be set to start playback automatically (autostart) and 
-  to enable/disable looping, both done by clicking icons in the contextmenu. 
-  both need a reload of the page to take effect.
+  looping can be enabled or disabled; both can be accomplished by clicking icons 
+  in the contextmenu. they need a reload of the page to take effect.
 
 OBJECT TYPES: ANCHORS
 
@@ -370,7 +372,8 @@ UPLOADING FILES
 
   * uploading files can not only be done through the "new object" menu, but 
   also by simply dragging one or many files from your computer and dropping them 
-  over the page you are editing. (this works at least on recent browsers..)
+  over the page you are editing. (this works at least on recent browser 
+  versions..)
   
   * after the uploading is finished the system tries to convert these files into 
   any sensible object type and place these at the spot you dropped the files 
@@ -412,7 +415,7 @@ UPLOADING FILES: VIDEO OBJECT
   * support for these container-formats and video-codecs varies in different 
   browsers: while recent versions of Google's Chrome browser support all three 
   of them, Firefox only supports ogg (with support for webm coming in version 
-  4.0), Safari only supports h264 (same as Internet Explorer 9).
+  4.0) and Safari only supports h264 (same as Internet Explorer 9).
   
   * the video objects allow the following customizations through the 
   contextmenu:
@@ -444,27 +447,28 @@ PAGE PROPERTIES
   * after renaming a page this way, you are automatically redirected to the 
   renamed page's editing mode.
   
-  * make this the start page: click to make this page that is shown by default 
+  * make this the start page: click to make this page the one shown by default 
   when visitors navigate to your base url without specifying any particular page.
-  no confirmation is shown as a result of this.
+  no confirmation is shown as a result of this action.
   
   * change the background color: click to launch the color wheel; clicking 
   anywhere outside the wheel hides it again; if you have uploaded a background 
   image before you must first agree to remove it before being able to set a 
-  background color again
+  background color
   
   * create a new page: click to create a new page and enter the desired page 
-  name in the input field that pops up
+  name in the input field that pops up; you will be redirected to the new page's 
+  editing mode
   
   * delete the page: click and confirm to delete the current page and all prior 
   revisions of it - there is no turning back. afterwards you will be redirected 
   to the list of all available pages.
   
-  * upload a background image: click and select a single image file (same file 
-  formats and mime-types as for image objects) in order to upload. there is no 
-  status bar displayed when uploading background images, but you should either 
-  see the image as your background or an error message.
-  * when uploading a second image the first one gets automatically deleted.
+  * upload a background image: click and select a single image file to upload 
+  (same file formats and mime-types as for image objects). there is no status 
+  bar displayed when uploading background images, but you should either see the
+  image as your background or an error message.
+  * when uploading a second image, the first one gets automatically deleted.
   
   * toggle between having the background fixed or having it scroll with the 
   rest of the page
@@ -493,7 +497,7 @@ PAGE BROWSER
   
   * the page browser gives you a list of all available pages sorted by name and 
   lets you jump to the editing or viewing mode of any of them, as well as 
-  renaming, deleting them or setting one of them as start page
+  renaming, deleting them or setting one of them as the start page
 
 REVISIONS
 
@@ -507,7 +511,7 @@ REVISIONS
   * since new revisions are created when the user navigates to editing mode, 
   you can of course also trigger this manually by pressing refresh ([f5]).
   
-  * by default, revisions are automatically deleted again after 7 days (see 
+  * by default, revisions are automatically being deleted after 7 days (see 
   SHAPSHOT_MAX_AGE).
   
   * the system takes care of keeping uploaded files in the shared folder as 
@@ -528,9 +532,9 @@ REVISIONS BROWSER
   
   * using the controls in the window's lower right corner you can navigate 
   between all revisions of the page
-  * pressing the left and right arrow key also allows you to navigate accordingly
-  
-  * clicking "revert" makes this revision the page's new current (head) version
+  * pressing the left and right arrow keys is also supported
+ 
+  * clicking "revert" makes this revision the page's new current (head) revision
   * after clicking revert you will be redirected to the editing mode of the 
   newly reverted revision (what is now your new head revision) :)
   * obviously you cannot revert to the head revision.
