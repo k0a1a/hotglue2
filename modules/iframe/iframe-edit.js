@@ -22,7 +22,7 @@ $(document).ready(function() {
 			var elem = $('<div class="iframe resizable object" style="position: absolute;"></div>');
 			$(elem).attr('id', data['name']);
 			// default width and height is set in the css
-			var child = $('<iframe sandbox="allow-forms allow-same-origin allow-scripts allow-top-navigation" style="background-color: transparent; border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
+			var child = $('<iframe style="background-color: transparent; border-width: 0px; height: 100%; position: absolute; width: 100%;"></iframe>');
 			$(child).attr('name', data['name']);
 			$(child).attr('src', url);
 			$(elem).append(child);

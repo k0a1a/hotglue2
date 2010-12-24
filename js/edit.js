@@ -1821,6 +1821,8 @@ $(document).ready(function() {
 	// trigger menus on click and doubleclick
 	var menu_dblclick_timeout = false;
 	$('html').bind('click', function(e) {
+		// make sure no iframe has focus as this breaks keyboard shortcuts etc
+		window.focus();
 		// we use 'html' here to give the colorpicker et al a chance to stop the 
 		// propagation of the event in 'body'
 		if (e.target == $('body').get(0)) {
