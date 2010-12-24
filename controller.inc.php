@@ -154,8 +154,13 @@ function controller_default($args)
 	if (count($obj) == 2) {
 		// page requested
 		if (page_exists($args[0][0])) {
-			log_msg('debug', 'controller_default: invoking controller_show');
-			controller_show($args);
+			if (DEFAULT_TO_EDIT && is_auth()) {
+				log_msg('debug', 'controller_default: invoking controller_edit');
+				controller_edit($args);
+			} else {
+				log_msg('debug', 'controller_default: invoking controller_show');
+				controller_show($args);
+			}
 		} elseif (ALWAYS_PROMPT_CREATE_PAGE || is_auth()) {
 			log_msg('debug', 'controller_default: invoking controller_create_page');
 			controller_create_page($args);

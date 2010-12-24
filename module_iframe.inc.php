@@ -48,12 +48,6 @@ function iframe_alter_save($args)
 	} else {
 		unset($obj['iframe-url']);
 	}
-  // danja: name
-//  if (elem_attr($i, 'name') !== NULL) {
-//    $obj['iframe-name'] = elem_attr($i, 'name');
-//  } else {
-//    unset($obj['iframe-name']);
-//  }
 	// scrolling
 	if (elem_css($i, 'overflow') == 'hidden' || (elem_css($i, 'overflow-x') == 'hidden' && elem_css($i, 'overflow-y') == 'hidden')) {
 		unset($obj['iframe-scroll']);
@@ -79,6 +73,10 @@ function iframe_alter_render_early($args)
 	//if (!$args['edit'] && IE8_COMPAT) {
 	//	elem_attr($i, 'frameborder', '0');
 	//}
+	// set the name attribute
+	elem_attr($i, 'name', $obj['name']);
+	// try to lift any restrictions
+	elem_attr($i, 'sandbox', 'allow-forms allow-same-origin allow-scripts allow-top-navigation');
 	elem_css($i, 'background-color', 'transparent');
 	elem_css($i, 'border-width', '0px');
 	elem_css($i, 'height', '100%');

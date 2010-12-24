@@ -23,6 +23,7 @@
 @define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
+@define('DEFAULT_TO_EDIT', false);			// edit pages by default
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
 @define('HOTGLUE_VERSION', '1.00.0');		// expected api.version.patchlevel
 @define('IE8_COMPAT', true);				// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)

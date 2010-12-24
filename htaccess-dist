@@ -2,8 +2,13 @@
 Options -MultiViews
 
 RewriteEngine on
+
+# this seems to be needed for authentication if php is working in cgi mode
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # shortcut for json
 RewriteRule ^json/?$ json.php [L]
+
 # redirect everything that is not a real file or directory towards index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

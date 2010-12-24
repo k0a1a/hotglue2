@@ -31,6 +31,9 @@ INSTALLING HOTGLUE
   * (optional) if your hosting environment allows you to use mod_rewrite and 
     you want to use short URLs for your pages, you can rename the htaccess-dist 
     file to .htaccess (e.g. by running "move htaccess-dist .htaccess")
+  * if php is not installed as a module to apache (mod_php), but rather installed 
+    as (Fast-)CGI binary, installing the htaccess file is mandatory (see known 
+    issues section in README)
   
   and finally
   

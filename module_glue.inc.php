@@ -1242,6 +1242,9 @@ function snapshot($args)
 	foreach ($files as $f) {
 		if ($f == '.' || $f == '..') {
 			continue;
+		} elseif (is_dir($src.'/'.$f) && substr($f, 0, 1) == '.') {
+			// skip directories that start with a dot (like .svn) without a warning
+			continue;
 		} elseif (is_dir($src.'/'.$f)) {
 			log_msg('warn', 'snapshot: skipping '.quot($src.'/'.$f).' as we don\'t support directories inside pages');
 		} elseif (is_link($src.'/'.$f) && is_file($src.'/'.$f)) {

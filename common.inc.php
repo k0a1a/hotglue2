@@ -268,7 +268,11 @@ function is_auth()
 				return false;
 			}
 		} else {
-			log_msg('debug', 'common: no auth data (auth_method basic)');
+			if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+				log_msg('warn', 'common: no auth data (auth_method basic) but HTTP_AUTHORIZATION is '.quot(var_dump_inl($_SERVER['HTTP_AUTHORIZATION'])));
+			} else {
+				log_msg('debug', 'common: no auth data (auth_method basic)');
+			}
 			return false;
 		}
 	} elseif (AUTH_METHOD == 'digest') {
@@ -282,6 +286,13 @@ function is_auth()
 				log_msg('info', 'common: auth failure '.$res.' (auth_method digest)');
 				return false;
 			}
+		} else {
+			if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+				log_msg('warn', 'common: no auth data (auth_method digest) but HTTP_AUTHORIZATION is '.quot(var_dump_inl($_SERVER['HTTP_AUTHORIZATION'])));
+			} else {
+				log_msg('debug', 'common: no auth data (auth_method digest)');
+			}
+			return false;
 		}
 	} else {
 		log_msg('error', 'common: invalid or missing AUTH_METHOD config setting');
