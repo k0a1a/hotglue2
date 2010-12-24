@@ -16,12 +16,16 @@ MENUS
   * you can select from a variety of object types by clicking on the 
   corresponding icon (hover with the mouse cursor over it to get a textual 
   description as well)
+  * if you can't access any empty space, you can also launch this menu by 
+  pressing [alt] and [o]
   * new objects are created on the spot where you launched the menu
   
   * by clicking twice on any empty space on a page in editing mode the "page" 
   menu gets displayed
   * there you can change general properties of the page you are editing, like 
   its background color
+  * if you can't access any empty space, you can also launch this menu by 
+  pressing [alt] and [p]
   
   * clicking anywhere outside the menu lets you close any opened menu again
   * when clicking on the page's empty space to close a menu, it doesn't get 

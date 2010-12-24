@@ -1845,6 +1845,19 @@ $(document).ready(function() {
 		}
 	});
 	
+	// menu shortcuts
+	$('html').bind('keyup', function(e) {
+		if (e.altKey && e.which == 79) {
+			// alt+o: show new object menu
+			$.glue.menu.show('new');
+			return false;
+		} else if (e.altKey && e.which == 80) {
+			// alt+p: show page menu
+			$.glue.menu.show('page');
+			return false;
+		}
+	});
+	
 	// I really don't know why, but when we don't handle the mousedown event here 
 	// double-clicking the page does select some object (the first child of body 
 	// on Firefox and the nearest element on Chrome)
