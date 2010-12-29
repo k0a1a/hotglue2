@@ -124,6 +124,14 @@ $(document).ready(function() {
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
 	
+	elem = $('<img src="'+$.glue.base_url+'modules/object/object-target.png" alt="btn" title="get the name of this object (for linking to it)" width="32" height="32">');
+	$(elem).bind('click', function(e) {
+		var obj = $(this).data('owner');
+		var name = $(obj).attr('id').split('.').pop();
+		prompt('You can link to this object by copying and pasting this string', '#$page$.'+name);
+	});
+	$.glue.contextmenu.register('object', 'object-target', elem);
+	
 	elem = $('<img src="'+$.glue.base_url+'modules/object/object-symlink.png" alt="btn" title="make this object appear on all pages" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');

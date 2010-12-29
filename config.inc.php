@@ -25,7 +25,7 @@
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
-@define('HOTGLUE_VERSION', '1.00.0');		// expected api.version.patchlevel
+@define('HOTGLUE_VERSION', '1.0.1');		// expected api.version.patchlevel
 @define('IE8_COMPAT', true);				// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)
 @define('JQUERY', 'js/jquery-1.4.4.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock

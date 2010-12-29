@@ -146,6 +146,12 @@ COMMON OBJECT PROPERTIES
   * by placing an empty string in the input field and pressing "OK" you can 
   remove links again
   
+  * get the name of this object: when clicking an input fild pops up that have 
+  the name of the local object in it; copy this string and paste it as the link 
+  of any other object (see above)
+  * be not fooled by the "OK" and "Cancel" buttons - you actually can't change 
+  the name of the object here by design :)
+  
   * make this object appear on all pages: clicking this icon creates a reference 
   (symlink) of the current object on all other pages on this HOTGLUE installation 
   that happen to exist at the time; these reference objects appear on these pages 
@@ -358,19 +364,6 @@ OBJECT TYPES: WEB VIDEOS
   * webvideo objects can be set to start playback automatically (autostart) and 
   looping can be enabled or disabled; both can be accomplished by clicking icons 
   in the contextmenu. they need a reload of the page to take effect.
-
-OBJECT TYPES: ANCHORS
-
-  * so called "anchors" can be placed at arbitrary position on pages to allow 
-  for links to navigate to that particular spot on the page.
-  
-  * click the "add a named anchor" icon on the "new object" menu and enter a 
-  unique name in the input field that pops up
-  
-  * anchors are displayed as round, target-like symbols with the chosen name 
-  displayed next to it. they are invisible in viewing mode however.
-  
-  * you can change the anchor's name at any time using the contextmenu.
 
 UPLOADING FILES
 

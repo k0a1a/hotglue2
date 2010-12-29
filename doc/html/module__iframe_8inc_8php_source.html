@@ -101,110 +101,116 @@
 <a name="l00073"></a>00073         <span class="comment">//if (!$args[&#39;edit&#39;] &amp;&amp; IE8_COMPAT) {</span>
 <a name="l00074"></a>00074         <span class="comment">//      elem_attr($i, &#39;frameborder&#39;, &#39;0&#39;);</span>
 <a name="l00075"></a>00075         <span class="comment">//}</span>
-<a name="l00076"></a>00076         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;background-color&#39;</span>, <span class="stringliteral">&#39;transparent&#39;</span>);
-<a name="l00077"></a>00077         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;border-width&#39;</span>, <span class="stringliteral">&#39;0px&#39;</span>);
-<a name="l00078"></a>00078         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;height&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
-<a name="l00079"></a>00079         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;position&#39;</span>, <span class="stringliteral">&#39;absolute&#39;</span>);
-<a name="l00080"></a>00080         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;width&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
-<a name="l00081"></a>00081         <span class="comment">// url</span>
-<a name="l00082"></a>00082         <span class="keywordflow">if</span> (!empty($obj[<span class="stringliteral">&#39;iframe-url&#39;</span>])) {
-<a name="l00083"></a>00083                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;src&#39;</span>, $obj[<span class="stringliteral">&#39;iframe-url&#39;</span>]);
-<a name="l00084"></a>00084         } <span class="keywordflow">else</span> {
-<a name="l00085"></a>00085                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;src&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);
-<a name="l00086"></a>00086         }
-<a name="l00087"></a>00087         <span class="comment">// scrolling</span>
-<a name="l00088"></a>00088         <span class="keywordflow">if</span> (isset($obj[<span class="stringliteral">&#39;iframe-scroll&#39;</span>]) &amp;&amp; $obj[<span class="stringliteral">&#39;iframe-scroll&#39;</span>] == <span class="stringliteral">&#39;scroll&#39;</span>) {
-<a name="l00089"></a>00089                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;overflow&#39;</span>, <span class="stringliteral">&#39;auto&#39;</span>);
-<a name="l00090"></a>00090                 <span class="comment">// attribute scrolling is not available in html5 but this effectivly </span>
-<a name="l00091"></a>00091                 <span class="comment">// removes the scrollbars on Chrome, so..</span>
-<a name="l00092"></a>00092                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;scrolling&#39;</span>, <span class="stringliteral">&#39;auto&#39;</span>);
-<a name="l00093"></a>00093         } <span class="keywordflow">else</span> {
-<a name="l00094"></a>00094                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;overflow&#39;</span>, <span class="stringliteral">&#39;hidden&#39;</span>);
-<a name="l00095"></a>00095                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;scrolling&#39;</span>, <span class="stringliteral">&#39;no&#39;</span>);
-<a name="l00096"></a>00096                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;seamless&#39;</span>, <span class="stringliteral">&#39;seamless&#39;</span>);
-<a name="l00097"></a>00097         }
-<a name="l00098"></a>00098         <a class="code" href="html_8inc_8php.html#aea37c451f5d55e2efbb2656e340c1dae">elem_append</a>($elem, $i);
-<a name="l00099"></a>00099         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
-<a name="l00100"></a>00100                 <span class="comment">// add shield as well</span>
-<a name="l00101"></a>00101                 $s = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
-<a name="l00102"></a>00102                 <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($s, <span class="stringliteral">&#39;glue-iframe-shield&#39;</span>);
-<a name="l00103"></a>00103                 <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($s, <span class="stringliteral">&#39;glue-ui&#39;</span>);
-<a name="l00104"></a>00104                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;height&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
-<a name="l00105"></a>00105                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;position&#39;</span>, <span class="stringliteral">&#39;absolute&#39;</span>);
-<a name="l00106"></a>00106                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;width&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
-<a name="l00107"></a>00107                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($s, <span class="stringliteral">&#39;title&#39;</span>, <span class="stringliteral">&#39;visitors will be able to interact with the webpage below&#39;</span>);
-<a name="l00108"></a>00108                 <a class="code" href="html_8inc_8php.html#aea37c451f5d55e2efbb2656e340c1dae">elem_append</a>($elem, $s);
-<a name="l00109"></a>00109         }
-<a name="l00110"></a>00110         
-<a name="l00111"></a>00111         <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00112"></a>00112 }
-<a name="l00113"></a>00113 
-<a name="l00114"></a>00114 
-<a name="l00115"></a><a class="code" href="module__iframe_8inc_8php.html#a40856482f79fb837bc538e8eed66aff4">00115</a> function <a class="code" href="module__iframe_8inc_8php.html#a40856482f79fb837bc538e8eed66aff4">iframe_render_object</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00116"></a>00116 {
-<a name="l00117"></a>00117         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
-<a name="l00118"></a>00118         <span class="keywordflow">if</span> (!isset($obj[<span class="stringliteral">&#39;type&#39;</span>]) || $obj[<span class="stringliteral">&#39;type&#39;</span>] != <span class="stringliteral">&#39;iframe&#39;</span>) {
-<a name="l00119"></a>00119                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00120"></a>00120         }
-<a name="l00121"></a>00121         
-<a name="l00122"></a>00122         $e = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
-<a name="l00123"></a>00123         <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($e, <span class="stringliteral">&#39;id&#39;</span>, $obj[<span class="stringliteral">&#39;name&#39;</span>]);
-<a name="l00124"></a>00124         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;iframe&#39;</span>);
-<a name="l00125"></a>00125         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;resizable&#39;</span>);
-<a name="l00126"></a>00126         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;object&#39;</span>);
+<a name="l00076"></a>00076         <span class="comment">// set the name attribute</span>
+<a name="l00077"></a>00077         <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;name&#39;</span>, $obj[<span class="stringliteral">&#39;name&#39;</span>]);
+<a name="l00078"></a>00078         <span class="keywordflow">if</span> (!<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
+<a name="l00079"></a>00079                 <span class="comment">// try to lift any restrictions</span>
+<a name="l00080"></a>00080                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;sandbox&#39;</span>, <span class="stringliteral">&#39;allow-forms allow-same-origin allow-scripts allow-top-navigation&#39;</span>);
+<a name="l00081"></a>00081         }
+<a name="l00082"></a>00082         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;background-color&#39;</span>, <span class="stringliteral">&#39;transparent&#39;</span>);
+<a name="l00083"></a>00083         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;border-width&#39;</span>, <span class="stringliteral">&#39;0px&#39;</span>);
+<a name="l00084"></a>00084         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;height&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
+<a name="l00085"></a>00085         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;position&#39;</span>, <span class="stringliteral">&#39;absolute&#39;</span>);
+<a name="l00086"></a>00086         <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;width&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
+<a name="l00087"></a>00087         <span class="comment">// url</span>
+<a name="l00088"></a>00088         <span class="keywordflow">if</span> (!empty($obj[<span class="stringliteral">&#39;iframe-url&#39;</span>])) {
+<a name="l00089"></a>00089                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;src&#39;</span>, $obj[<span class="stringliteral">&#39;iframe-url&#39;</span>]);
+<a name="l00090"></a>00090         } <span class="keywordflow">else</span> {
+<a name="l00091"></a>00091                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;src&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);
+<a name="l00092"></a>00092         }
+<a name="l00093"></a>00093         <span class="comment">// scrolling</span>
+<a name="l00094"></a>00094         <span class="keywordflow">if</span> (isset($obj[<span class="stringliteral">&#39;iframe-scroll&#39;</span>]) &amp;&amp; $obj[<span class="stringliteral">&#39;iframe-scroll&#39;</span>] == <span class="stringliteral">&#39;scroll&#39;</span>) {
+<a name="l00095"></a>00095                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;overflow&#39;</span>, <span class="stringliteral">&#39;auto&#39;</span>);
+<a name="l00096"></a>00096                 <span class="comment">// attribute scrolling is not available in html5 but this effectivly </span>
+<a name="l00097"></a>00097                 <span class="comment">// removes the scrollbars on Chrome, so..</span>
+<a name="l00098"></a>00098                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;scrolling&#39;</span>, <span class="stringliteral">&#39;auto&#39;</span>);
+<a name="l00099"></a>00099         } <span class="keywordflow">else</span> {
+<a name="l00100"></a>00100                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($i, <span class="stringliteral">&#39;overflow&#39;</span>, <span class="stringliteral">&#39;hidden&#39;</span>);
+<a name="l00101"></a>00101                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;scrolling&#39;</span>, <span class="stringliteral">&#39;no&#39;</span>);
+<a name="l00102"></a>00102                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($i, <span class="stringliteral">&#39;seamless&#39;</span>, <span class="stringliteral">&#39;seamless&#39;</span>);
+<a name="l00103"></a>00103         }
+<a name="l00104"></a>00104         <a class="code" href="html_8inc_8php.html#aea37c451f5d55e2efbb2656e340c1dae">elem_append</a>($elem, $i);
+<a name="l00105"></a>00105         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
+<a name="l00106"></a>00106                 <span class="comment">// add shield as well</span>
+<a name="l00107"></a>00107                 $s = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
+<a name="l00108"></a>00108                 <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($s, <span class="stringliteral">&#39;glue-iframe-shield&#39;</span>);
+<a name="l00109"></a>00109                 <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($s, <span class="stringliteral">&#39;glue-ui&#39;</span>);
+<a name="l00110"></a>00110                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;height&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
+<a name="l00111"></a>00111                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;position&#39;</span>, <span class="stringliteral">&#39;absolute&#39;</span>);
+<a name="l00112"></a>00112                 <a class="code" href="html_8inc_8php.html#ac705ef06deb9e2d49e342ed78ecc1c9a">elem_css</a>($s, <span class="stringliteral">&#39;width&#39;</span>, <span class="stringliteral">&#39;100%&#39;</span>);
+<a name="l00113"></a>00113                 <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($s, <span class="stringliteral">&#39;title&#39;</span>, <span class="stringliteral">&#39;visitors will be able to interact with the webpage below&#39;</span>);
+<a name="l00114"></a>00114                 <a class="code" href="html_8inc_8php.html#aea37c451f5d55e2efbb2656e340c1dae">elem_append</a>($elem, $s);
+<a name="l00115"></a>00115         }
+<a name="l00116"></a>00116         
+<a name="l00117"></a>00117         <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00118"></a>00118 }
+<a name="l00119"></a>00119 
+<a name="l00120"></a>00120 
+<a name="l00121"></a><a class="code" href="module__iframe_8inc_8php.html#a40856482f79fb837bc538e8eed66aff4">00121</a> function <a class="code" href="module__iframe_8inc_8php.html#a40856482f79fb837bc538e8eed66aff4">iframe_render_object</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00122"></a>00122 {
+<a name="l00123"></a>00123         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
+<a name="l00124"></a>00124         <span class="keywordflow">if</span> (!isset($obj[<span class="stringliteral">&#39;type&#39;</span>]) || $obj[<span class="stringliteral">&#39;type&#39;</span>] != <span class="stringliteral">&#39;iframe&#39;</span>) {
+<a name="l00125"></a>00125                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00126"></a>00126         }
 <a name="l00127"></a>00127         
-<a name="l00128"></a>00128         <span class="comment">// hooks</span>
-<a name="l00129"></a>00129         <a class="code" href="modules_8inc_8php.html#acac937809bdb98ce29616134e43050ed">invoke_hook_first</a>(<span class="stringliteral">&#39;alter_render_early&#39;</span>, <span class="stringliteral">&#39;iframe&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;&amp;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
-<a name="l00130"></a>00130         $html = <a class="code" href="html_8inc_8php.html#af04b43a4dd09e73ca2cef84a4f2e9381">elem_finalize</a>($e);
-<a name="l00131"></a>00131         <a class="code" href="modules_8inc_8php.html#ae1ff036fae9d272fe1d58dff8a9caed2">invoke_hook_last</a>(<span class="stringliteral">&#39;alter_render_late&#39;</span>, <span class="stringliteral">&#39;iframe&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;html&#39;</span>=&gt;&amp;$html, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
-<a name="l00132"></a>00132         
-<a name="l00133"></a>00133         <span class="keywordflow">return</span> $html;
-<a name="l00134"></a>00134 }
-<a name="l00135"></a>00135 
-<a name="l00136"></a>00136 
-<a name="l00137"></a><a class="code" href="module__iframe_8inc_8php.html#ad4d8fd8256a19beb570193c2886659e5">00137</a> function <a class="code" href="module__iframe_8inc_8php.html#ad4d8fd8256a19beb570193c2886659e5">iframe_render_page_early</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00138"></a>00138 {
-<a name="l00139"></a>00139         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
-<a name="l00140"></a>00140                 <span class="keywordflow">if</span> (<a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">USE_MIN_FILES</a>) {
-<a name="l00141"></a>00141                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.min.js&#39;</span>);
-<a name="l00142"></a>00142                 } <span class="keywordflow">else</span> {
-<a name="l00143"></a>00143                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.js&#39;</span>);
-<a name="l00144"></a>00144                 }
-<a name="l00145"></a>00145                 <a class="code" href="html_8inc_8php.html#a962ef1b29e909a38b9a7b79086d54ab2">html_add_css</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.css&#39;</span>);
-<a name="l00146"></a>00146         }
-<a name="l00147"></a>00147 }
-<a name="l00148"></a>00148 
-<a name="l00149"></a>00149 
-<a name="l00150"></a><a class="code" href="module__iframe_8inc_8php.html#a3034fcc475334b511b91932918fcfe57">00150</a> function <a class="code" href="module__iframe_8inc_8php.html#a3034fcc475334b511b91932918fcfe57">iframe_save_state</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00151"></a>00151 {
-<a name="l00152"></a>00152         $elem = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;elem&#39;</span>];
-<a name="l00153"></a>00153         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
-<a name="l00154"></a>00154         <span class="keywordflow">if</span> (array_shift(<a class="code" href="html_8inc_8php.html#a821651b8923938645b0b0fa6bb084522">elem_classes</a>($elem)) != <span class="stringliteral">&#39;iframe&#39;</span>) {
-<a name="l00155"></a>00155                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00156"></a>00156         }
-<a name="l00157"></a>00157         
-<a name="l00158"></a>00158         <span class="comment">// make sure the type is set</span>
-<a name="l00159"></a>00159         $obj[<span class="stringliteral">&#39;type&#39;</span>] = <span class="stringliteral">&#39;iframe&#39;</span>;
-<a name="l00160"></a>00160         $obj[<span class="stringliteral">&#39;module&#39;</span>] = <span class="stringliteral">&#39;iframe&#39;</span>;
-<a name="l00161"></a>00161         
-<a name="l00162"></a>00162         <span class="comment">// hook</span>
-<a name="l00163"></a>00163         <a class="code" href="modules_8inc_8php.html#a92ef7c094f294cfec43a3bb53227a21a">invoke_hook</a>(<span class="stringliteral">&#39;alter_save&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;&amp;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$elem));
-<a name="l00164"></a>00164         
-<a name="l00165"></a>00165         <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
-<a name="l00166"></a>00166         $ret = <a class="code" href="module__glue_8inc_8php.html#ab294f21c7f6fed0932b65167f180c78c">save_object</a>($obj);
-<a name="l00167"></a>00167         <span class="keywordflow">if</span> ($ret[<span class="stringliteral">&#39;#error&#39;</span>]) {
-<a name="l00168"></a>00168                 <a class="code" href="log_8inc_8php.html#a0d59d693ca96c65b67de4b197954ce60">log_msg</a>(<span class="stringliteral">&#39;error&#39;</span>, <span class="stringliteral">&#39;iframe_save_state: save_object returned &#39;</span>.<a class="code" href="util_8inc_8php.html#a3c7d87c658499c1559a6b98cac06f58d">quot</a>($ret[<span class="stringliteral">&#39;#data&#39;</span>]));
-<a name="l00169"></a>00169                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00170"></a>00170         } <span class="keywordflow">else</span> {
-<a name="l00171"></a>00171                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00172"></a>00172         }
-<a name="l00173"></a>00173 }
-<a name="l00174"></a>00174 
-<a name="l00175"></a>00175 
-<a name="l00176"></a>00176 ?&gt;
+<a name="l00128"></a>00128         $e = <a class="code" href="html_8inc_8php.html#aa7a1256f84f937f1656195d5ce7b8d91">elem</a>(<span class="stringliteral">&#39;div&#39;</span>);
+<a name="l00129"></a>00129         <a class="code" href="html_8inc_8php.html#a894dc22f3b7668c59364599909162b8e">elem_attr</a>($e, <span class="stringliteral">&#39;id&#39;</span>, $obj[<span class="stringliteral">&#39;name&#39;</span>]);
+<a name="l00130"></a>00130         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;iframe&#39;</span>);
+<a name="l00131"></a>00131         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;resizable&#39;</span>);
+<a name="l00132"></a>00132         <a class="code" href="html_8inc_8php.html#aafa12d2b690751666e599fb052e19ca6">elem_add_class</a>($e, <span class="stringliteral">&#39;object&#39;</span>);
+<a name="l00133"></a>00133         
+<a name="l00134"></a>00134         <span class="comment">// hooks</span>
+<a name="l00135"></a>00135         <a class="code" href="modules_8inc_8php.html#acac937809bdb98ce29616134e43050ed">invoke_hook_first</a>(<span class="stringliteral">&#39;alter_render_early&#39;</span>, <span class="stringliteral">&#39;iframe&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;&amp;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
+<a name="l00136"></a>00136         $html = <a class="code" href="html_8inc_8php.html#af04b43a4dd09e73ca2cef84a4f2e9381">elem_finalize</a>($e);
+<a name="l00137"></a>00137         <a class="code" href="modules_8inc_8php.html#ae1ff036fae9d272fe1d58dff8a9caed2">invoke_hook_last</a>(<span class="stringliteral">&#39;alter_render_late&#39;</span>, <span class="stringliteral">&#39;iframe&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;$obj, <span class="stringliteral">&#39;html&#39;</span>=&gt;&amp;$html, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$e, <span class="stringliteral">&#39;edit&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]));
+<a name="l00138"></a>00138         
+<a name="l00139"></a>00139         <span class="keywordflow">return</span> $html;
+<a name="l00140"></a>00140 }
+<a name="l00141"></a>00141 
+<a name="l00142"></a>00142 
+<a name="l00143"></a><a class="code" href="module__iframe_8inc_8php.html#ad4d8fd8256a19beb570193c2886659e5">00143</a> function <a class="code" href="module__iframe_8inc_8php.html#ad4d8fd8256a19beb570193c2886659e5">iframe_render_page_early</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00144"></a>00144 {
+<a name="l00145"></a>00145         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
+<a name="l00146"></a>00146                 <span class="keywordflow">if</span> (<a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">USE_MIN_FILES</a>) {
+<a name="l00147"></a>00147                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.min.js&#39;</span>);
+<a name="l00148"></a>00148                 } <span class="keywordflow">else</span> {
+<a name="l00149"></a>00149                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.js&#39;</span>);
+<a name="l00150"></a>00150                 }
+<a name="l00151"></a>00151                 <a class="code" href="html_8inc_8php.html#a962ef1b29e909a38b9a7b79086d54ab2">html_add_css</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/iframe/iframe-edit.css&#39;</span>);
+<a name="l00152"></a>00152         }
+<a name="l00153"></a>00153 }
+<a name="l00154"></a>00154 
+<a name="l00155"></a>00155 
+<a name="l00156"></a><a class="code" href="module__iframe_8inc_8php.html#a3034fcc475334b511b91932918fcfe57">00156</a> function <a class="code" href="module__iframe_8inc_8php.html#a3034fcc475334b511b91932918fcfe57">iframe_save_state</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00157"></a>00157 {
+<a name="l00158"></a>00158         $elem = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;elem&#39;</span>];
+<a name="l00159"></a>00159         $obj = <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;obj&#39;</span>];
+<a name="l00160"></a>00160         <span class="keywordflow">if</span> (array_shift(<a class="code" href="html_8inc_8php.html#a821651b8923938645b0b0fa6bb084522">elem_classes</a>($elem)) != <span class="stringliteral">&#39;iframe&#39;</span>) {
+<a name="l00161"></a>00161                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00162"></a>00162         }
+<a name="l00163"></a>00163         
+<a name="l00164"></a>00164         <span class="comment">// make sure the type is set</span>
+<a name="l00165"></a>00165         $obj[<span class="stringliteral">&#39;type&#39;</span>] = <span class="stringliteral">&#39;iframe&#39;</span>;
+<a name="l00166"></a>00166         $obj[<span class="stringliteral">&#39;module&#39;</span>] = <span class="stringliteral">&#39;iframe&#39;</span>;
+<a name="l00167"></a>00167         
+<a name="l00168"></a>00168         <span class="comment">// hook</span>
+<a name="l00169"></a>00169         <a class="code" href="modules_8inc_8php.html#a92ef7c094f294cfec43a3bb53227a21a">invoke_hook</a>(<span class="stringliteral">&#39;alter_save&#39;</span>, array(<span class="stringliteral">&#39;obj&#39;</span>=&gt;&amp;$obj, <span class="stringliteral">&#39;elem&#39;</span>=&gt;$elem));
+<a name="l00170"></a>00170         
+<a name="l00171"></a>00171         <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
+<a name="l00172"></a>00172         $ret = <a class="code" href="module__glue_8inc_8php.html#ab294f21c7f6fed0932b65167f180c78c">save_object</a>($obj);
+<a name="l00173"></a>00173         <span class="keywordflow">if</span> ($ret[<span class="stringliteral">&#39;#error&#39;</span>]) {
+<a name="l00174"></a>00174                 <a class="code" href="log_8inc_8php.html#a0d59d693ca96c65b67de4b197954ce60">log_msg</a>(<span class="stringliteral">&#39;error&#39;</span>, <span class="stringliteral">&#39;iframe_save_state: save_object returned &#39;</span>.<a class="code" href="util_8inc_8php.html#a3c7d87c658499c1559a6b98cac06f58d">quot</a>($ret[<span class="stringliteral">&#39;#data&#39;</span>]));
+<a name="l00175"></a>00175                 <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00176"></a>00176         } <span class="keywordflow">else</span> {
+<a name="l00177"></a>00177                 <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00178"></a>00178         }
+<a name="l00179"></a>00179 }
+<a name="l00180"></a>00180 
+<a name="l00181"></a>00181 
+<a name="l00182"></a>00182 ?&gt;
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Mon Dec 20 2010 23:59:34 for hotglue by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Wed Dec 29 2010 15:29:04 for hotglue by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.2 </small></address>
 </body>
