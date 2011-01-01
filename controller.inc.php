@@ -381,9 +381,6 @@ function parse_query_string()
 function register_controller($arg0, $arg1, $func, $args = array())
 {
 	global $controllers;
-	if (!isset($controllers[$arg0])) {
-		$controllers[$arg0] = array();
-	}
 	$controllers[$arg0.'-'.$arg1] = array_merge($args, array('func'=>$func));
 	log_msg('debug', 'controller: registered controller '.quot($arg0.'/'.$arg1).' => '.$func);
 }
