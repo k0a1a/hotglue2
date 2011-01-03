@@ -1,15 +1,16 @@
 type:text
 module:text
-object-height:64px
-object-left:97px
-object-top:103px
-object-width:246px
+object-height:82px
+object-left:52px
+object-top:107px
+object-width:448px
 object-zindex:100
 text-background-color:transparent
-text-font-size:16px
-text-font-color:rgb(255, 5, 93)
+text-font-size:15px
+text-font-color:rgb(0, 0, 0)
 text-font-style:normal
 text-font-weight:bold
-text-align:right
+text-align:left
+text-font-family:'Courier New',Courier,monospace
 
-add "?edit" (no quotes!) to the address and start editing this page!
+Just add "?edit" (no quotes!) to the current address and start editing this page! For example <span style="background-color:lightyellow;padding:0 5px 0 5px;">http://your.hotglue.me/?edit</span>

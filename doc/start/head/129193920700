@@ -3,10 +3,10 @@ module:image
 image-file:bluegrid.png
 image-file-mime:image/png
 image-file-width:40
-object-width:352px
+object-width:361px
 image-file-height:40
 object-height:591px
 image-background-repeat:repeat
-object-left:316px
-object-top:20px
+object-left:537px
+object-top:21px
 object-zindex:99
