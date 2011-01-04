@@ -1,0 +1,15 @@
+type:text
+module:text
+object-height:48px
+object-left:51px
+object-top:27px
+object-width:333px
+object-zindex:100
+text-background-color:transparent
+text-font-size:20px
+text-font-style:italic
+text-font-weight:bold
+text-font-family:'Courier New',Courier,monospace
+
+Hi there!
+Wondering how to begin?

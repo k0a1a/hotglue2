@@ -1,0 +1,16 @@
+type:text
+module:text
+object-height:223px
+object-left:52px
+object-top:197px
+object-width:455px
+object-zindex:100
+text-background-color:transparent
+text-font-family:'Courier New',Courier,monospace
+
+You will be asked for your username and password, and once you have entered those you are in 'editing mode'!
+
+Once in editing mode:
+- A single click anywhere (on an empty canvas) gives you a toolset to add new elements, for example a text field.
+- A double click gives you a toolset that allows you to change the properties of a page, or make a new one.
+- Adding .PNG or .JPEG images can simply be done by drag-and-drop action, that goes for animated GIF too!
