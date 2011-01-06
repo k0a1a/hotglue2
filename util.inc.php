@@ -457,7 +457,7 @@ function quot($s)
  *	@param bool $dl download file
  *	@param string $mime mime type
  */
-function serve_file($fn, $dl, $mime)
+function serve_file($fn, $dl, $mime = '')
 {
 	if (($size = @filesize($fn)) === false) {
 		return false;

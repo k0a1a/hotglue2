@@ -91,7 +91,7 @@ function html_encode_str_smart($html)
 					}
 				} else {
 					// DEBUG
-					$reson = 6;
+					$reason = 6;
 				}
 			} else {
 				// assume a named entity
