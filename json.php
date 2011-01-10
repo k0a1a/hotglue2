@@ -43,6 +43,10 @@ switch ($_SERVER['REQUEST_METHOD']) {
 	//	}
 	//	break;
 	case 'POST':
+		// DEBUG
+		log_msg('debug', 'json: magic quotes are '.(get_magic_quotes_gpc()?'on':'off'));
+		log_msg('debug', 'json: php version '.phpversion());
+		log_msg('debug', 'json: raw post '.quot(var_dump_inl($_POST)));
 		foreach ($_POST as $key=>$val) {
 			if (get_magic_quotes_gpc()) {
 				$val = stripslashes($val);
