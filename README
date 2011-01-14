@@ -36,6 +36,8 @@ KNOWN ISSUES
 
   * On certain shared hosts we have seen issues with digest authentication (see AUTH_METHOD configuration option). For those hosts basic authentication has to be used.
 
+  * Native JSON decoding seems to be broken in early versions of PHP 5.2. This can result in error messages such as "Error saving state as class 'object' is not set". Make sure you are using PHP 5.2.6 or later.
+
   * Support for supporting hosts that have PHP installed as a (Fast-)CGI binary is still worked on. For now it is recommended to use mod_php, although success with FastCGI has been reported as well.
 
   * Rewrite rules in the Apache configuration or in any parent directory .htaccess file can clash with the Hotglue one.

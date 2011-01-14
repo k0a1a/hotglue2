@@ -413,6 +413,8 @@ function delete_page($args)
 	
 	// then the revision directory
 	if (!@rmdir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']))) {
+		// DEBUG
+		log_msg('error', 'delete_page: rmdir returned '.var_dump_inl(error_get_last()));
 		return response('Error deleting page '.$args['page'], 500);
 	} else {
 		log_msg('debug', 'delete_page: deleted '.quot($args['page']));

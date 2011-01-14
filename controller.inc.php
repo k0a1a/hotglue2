@@ -82,7 +82,9 @@ register_controller('*', 'create_page', 'controller_create_page', array('auth'=>
 function controller_edit($args)
 {
 	handle_updates();
-	
+	// this is a good spot to log the server's php version as well
+	log_msg('debug', 'controller_edit: running on php version '.phpversion());
+
 	// most of these checks are only necessary if the client calls 
 	// page/edit directly
 	page_canonical($args[0][0]);

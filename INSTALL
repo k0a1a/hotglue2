@@ -1,7 +1,7 @@
 SERVER REQUIREMENTS
 
   * Apache 2.x
-  * PHP 5.x
+  * PHP 5.2.6 or later
   * (optional) mod_rewrite (for short URLs)
   * (optional) php5-gd (for server-side image resizing)
   
