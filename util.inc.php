@@ -450,6 +450,37 @@ function quot($s)
 
 
 /**
+ *	delete a file or directory
+ *
+ *	@param string $f file name
+ *	@return true if successful, false if not
+ */
+function rm_recursive($f)
+{
+	if (@is_file($f) || @is_link($f)) {
+		// note: symlinks get deleted right away, and not recursed into
+		return @unlink($f);
+	} else {
+		if (($childs = @scandir($f)) === false) {
+			return false;
+		}
+		// strip a tailing slash
+		if (substr($f, -1) == '/') {
+			$f = substr($f, 0, -1);
+		}
+		foreach ($childs as $child) {
+			if ($child == '.' || $child == '..') {
+				continue;
+			} else {
+				rm_recursive($f.'/'.$child);
+			}
+		}
+		return @rmdir($f);
+	}
+}
+
+
+/**
  *	serve a file to the client
  *
  *	this function only returns on errors.

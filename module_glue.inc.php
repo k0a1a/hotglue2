@@ -392,20 +392,23 @@ function delete_page($args)
 	// it's objects first
 	$files = @scandir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']));
 	foreach ($files as $f) {
+		$fn = CONTENT_DIR.'/'.str_replace('.', '/', $args['page']).'/'.$f;
 		if ($f == '.' || $f == '..') {
 			continue;
-		}
-		$ret = delete_object(array('name'=>$args['page'].'.'.$f));
-		if ($ret['#error']) {
-			// try to delete dangling symlinks
-			$fn = CONTENT_DIR.'/'.str_replace('.', '/', $args['page']).'/'.$f;
-			if (is_link($fn) && !is_file($fn) && !is_dir($fn)) {
-				if (@unlink($fn)) {
-					log_msg('info', 'delete_page: deleted dangling symlink '.quot($args['page'].'.'.$f));
-				} else {
-					log_msg('error', 'delete_page: error deleting dangling symlink '.quot($args['page'].'.'.$f));
-				}
-			} else {
+		} elseif (substr($f, 0, 1) == '.') {
+			// delete .svn directories and the like
+			if (!rm_recursive($fn)) {
+				log_msg('error', 'delete_page: error deleting '.quot($fn));
+			}
+		} elseif (is_link($fn) && !is_file($fn) && !is_dir($fn)) {
+			// delete dangling symlinks
+			if (!@unlink($fn)) {
+				log_msg('error', 'delete_page: error deleting dangling symlink '.quot($fn));
+			}
+		} else {
+			// and everything else through delete_object
+			$ret = delete_object(array('name'=>$args['page'].'.'.$f));
+			if ($ret['#error']) {
 				log_msg('error', 'delete_object: '.$ret['#data']);
 			}
 		}
@@ -413,8 +416,6 @@ function delete_page($args)
 	
 	// then the revision directory
 	if (!@rmdir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']))) {
-		// DEBUG
-		log_msg('error', 'delete_page: rmdir returned '.var_dump_inl(error_get_last()));
 		return response('Error deleting page '.$args['page'], 500);
 	} else {
 		log_msg('debug', 'delete_page: deleted '.quot($args['page']));
