@@ -10,4 +10,5 @@ html, body {
 a, a:link, a:visited, a:active, a:hover {
 	/* this removes the blue color from links on Chrome 7.0.517.41 */
 	color: inherit;
+	text-decoration: inherit;
 }
