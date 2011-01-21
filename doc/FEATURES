@@ -410,9 +410,9 @@ UPLOADING FILES: VIDEO OBJECT
   video/mp4, video/webm.
   
   * support for these container-formats and video-codecs varies in different 
-  browsers: while recent versions of Google's Chrome browser support all three 
-  of them, Firefox only supports ogg (with support for webm coming in version 
-  4.0) and Safari only supports h264 (same as Internet Explorer 9).
+  browsers: recent versions of Google Chrome support webm and ogg, as will 
+  Firefox 4 when it's released (version 3.6 only supports ogg). Safari and 
+  Internet Explorer 9 meanwhile only include support for h264.
   
   * the video objects allow the following customizations through the 
   contextmenu:
