@@ -35,7 +35,9 @@
 \item 
 \hyperlink{util_8inc_8php_a3c7d87c658499c1559a6b98cac06f58d}{quot} (\$s)
 \item 
-\hyperlink{util_8inc_8php_a9d3ab20fc8b79fb6ab860f93600c745e}{serve\_\-file} (\$fn, \$dl, \$mime)
+\hyperlink{util_8inc_8php_aea325eb074a103f961fdabadbc5e4fb6}{rm\_\-recursive} (\$f)
+\item 
+\hyperlink{util_8inc_8php_a43278b320bd522e46bd7abdd3a2f6fb0}{serve\_\-file} (\$fn, \$dl, \$mime= '')
 \item 
 \hyperlink{util_8inc_8php_a74e38925e7162356a2ea14db32664c37}{tab} (\$count=1)
 \item 
@@ -428,17 +430,40 @@ string
 
 Definition at line 446 of file util.inc.php.
 
-\hypertarget{util_8inc_8php_a9d3ab20fc8b79fb6ab860f93600c745e}{
+\hypertarget{util_8inc_8php_aea325eb074a103f961fdabadbc5e4fb6}{
+\index{util.inc.php@{util.inc.php}!rm\_\-recursive@{rm\_\-recursive}}
+\index{rm\_\-recursive@{rm\_\-recursive}!util.inc.php@{util.inc.php}}
+\subsubsection[{rm\_\-recursive}]{\setlength{\rightskip}{0pt plus 5cm}rm\_\-recursive (
+\begin{DoxyParamCaption}
+\item[{\$}]{ f}
+\end{DoxyParamCaption}
+)}}
+\label{util_8inc_8php_aea325eb074a103f961fdabadbc5e4fb6}
+delete a file or directory
+
+
+\begin{DoxyParams}[1]{Parameters}
+string & {\em \$f} & file name \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if successful, false if not 
+\end{DoxyReturn}
+
+
+Definition at line 458 of file util.inc.php.
+
+\hypertarget{util_8inc_8php_a43278b320bd522e46bd7abdd3a2f6fb0}{
 \index{util.inc.php@{util.inc.php}!serve\_\-file@{serve\_\-file}}
 \index{serve\_\-file@{serve\_\-file}!util.inc.php@{util.inc.php}}
 \subsubsection[{serve\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-file (
 \begin{DoxyParamCaption}
 \item[{\$}]{ fn, }
 \item[{\$}]{ dl, }
-\item[{\$}]{ mime}
+\item[{\$}]{ mime = {\ttfamily ''}}
 \end{DoxyParamCaption}
 )}}
-\label{util_8inc_8php_a9d3ab20fc8b79fb6ab860f93600c745e}
+\label{util_8inc_8php_a43278b320bd522e46bd7abdd3a2f6fb0}
 serve a file to the client
 
 this function only returns on errors. 
@@ -452,7 +477,7 @@ string & {\em \$mime} & mime type \\
 \end{DoxyParams}
 
 
-Definition at line 460 of file util.inc.php.
+Definition at line 491 of file util.inc.php.
 
 \hypertarget{util_8inc_8php_a74e38925e7162356a2ea14db32664c37}{
 \index{util.inc.php@{util.inc.php}!tab@{tab}}
@@ -475,7 +500,7 @@ string
 \end{DoxyReturn}
 
 
-Definition at line 498 of file util.inc.php.
+Definition at line 529 of file util.inc.php.
 
 \hypertarget{util_8inc_8php_a187670bae118aa2d4864c513a21e712d}{
 \index{util.inc.php@{util.inc.php}!unique\_\-filename@{unique\_\-filename}}
@@ -501,7 +526,7 @@ string (basename) proposed filename
 \end{DoxyReturn}
 
 
-Definition at line 515 of file util.inc.php.
+Definition at line 546 of file util.inc.php.
 
 \hypertarget{util_8inc_8php_aa5cc9d5f8a0b5bb76dfe3d15796e5940}{
 \index{util.inc.php@{util.inc.php}!var\_\-dump\_\-inl@{var\_\-dump\_\-inl}}
@@ -524,5 +549,5 @@ string
 \end{DoxyReturn}
 
 
-Definition at line 547 of file util.inc.php.
+Definition at line 578 of file util.inc.php.
 

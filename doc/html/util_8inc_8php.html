@@ -49,7 +49,8 @@ Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a9f9eeab2eb9a39518e80609fc7f83842">nl</a> ($count=1)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a37ef346387afe0af2cf86a8bea887173">pad</a> ($s, $num, $chr= ' ')</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a3c7d87c658499c1559a6b98cac06f58d">quot</a> ($s)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a9d3ab20fc8b79fb6ab860f93600c745e">serve_file</a> ($fn, $dl, $mime)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#aea325eb074a103f961fdabadbc5e4fb6">rm_recursive</a> ($f)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a43278b320bd522e46bd7abdd3a2f6fb0">serve_file</a> ($fn, $dl, $mime= '')</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a74e38925e7162356a2ea14db32664c37">tab</a> ($count=1)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#a187670bae118aa2d4864c513a21e712d">unique_filename</a> ($dir, $orig_fn)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="util_8inc_8php.html#aa5cc9d5f8a0b5bb76dfe3d15796e5940">var_dump_inl</a> ($var)</td></tr>
@@ -583,7 +584,34 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a9d3ab20fc8b79fb6ab860f93600c745e"></a><!-- doxytag: member="util.inc.php::serve_file" ref="a9d3ab20fc8b79fb6ab860f93600c745e" args="($fn, $dl, $mime)" -->
+<a class="anchor" id="aea325eb074a103f961fdabadbc5e4fb6"></a><!-- doxytag: member="util.inc.php::rm_recursive" ref="aea325eb074a103f961fdabadbc5e4fb6" args="($f)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">rm_recursive </td>
+          <td>(</td>
+          <td class="paramtype">$&#160;</td>
+          <td class="paramname"> <em>f</em>&#160;)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+<p>delete a file or directory</p>
+<dl><dt><b>Parameters:</b></dt><dd>
+  <table class="params">
+    <tr><td class="paramtype">string</td><td class="paramname">$f</td><td>file name </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="return"><dt><b>Returns:</b></dt><dd>true if successful, false if not </dd></dl>
+
+<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00458">458</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a43278b320bd522e46bd7abdd3a2f6fb0"></a><!-- doxytag: member="util.inc.php::serve_file" ref="a43278b320bd522e46bd7abdd3a2f6fb0" args="($fn, $dl, $mime= '')" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -603,7 +631,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">$&#160;</td>
-          <td class="paramname"> <em>mime</em>&#160;</td>
+          <td class="paramname"> <em>mime</em> = <code>''</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -624,7 +652,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00460">460</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00491">491</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
 
 </div>
 </div>
@@ -651,7 +679,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>string </dd></dl>
 
-<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00498">498</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00529">529</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
 
 </div>
 </div>
@@ -689,7 +717,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>string (basename) proposed filename </dd></dl>
 
-<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00515">515</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00546">546</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
 
 </div>
 </div>
@@ -716,12 +744,12 @@ Functions</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>string </dd></dl>
 
-<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00547">547</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="util_8inc_8php_source.html#l00578">578</a> of file <a class="el" href="util_8inc_8php_source.html">util.inc.php</a>.</p>
 
 </div>
 </div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Wed Dec 29 2010 15:29:04 for hotglue by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Fri Jan 21 2011 15:15:03 for hotglue by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.2 </small></address>
 </body>

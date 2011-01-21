@@ -279,6 +279,8 @@ $(document).ready(function() {
 		}
 		$.glue.colorpicker.show(col, false, function(col) {
 			$(obj).css('background-color', col);
+			// explicitly set the color for the textarea as changes to the parent object are not reflected while editing on Chrome 10.0.634.0 and below)
+			$(obj).children('.glue-text-input').css('background-color', col);
 		}, function (col) {
 			$.glue.object.save(obj);
 			colorpicker_shown = false;
@@ -298,6 +300,7 @@ $(document).ready(function() {
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		$(obj).css('background-color', 'transparent');
+		$(obj).children('.glue-text-input').css('background-color', 'transparent');
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);

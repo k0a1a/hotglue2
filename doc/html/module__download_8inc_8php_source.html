@@ -221,7 +221,7 @@
 <a name="l00193"></a>00193         
 <a name="l00194"></a>00194         <span class="comment">// serve the resource only when it&#39;s public or we&#39;re logged in (i.e. editing)</span>
 <a name="l00195"></a>00195         <span class="keywordflow">if</span> ((isset($obj[<span class="stringliteral">&#39;download-public&#39;</span>]) &amp;&amp; $obj[<span class="stringliteral">&#39;download-public&#39;</span>] == <span class="stringliteral">&#39;public&#39;</span>) || <a class="code" href="common_8inc_8php.html#ab3abbb2cd13e01231533e7cdc93da6db">is_auth</a>()) {
-<a name="l00196"></a>00196                 <a class="code" href="util_8inc_8php.html#a9d3ab20fc8b79fb6ab860f93600c745e">serve_file</a>(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="charliteral">&#39;/&#39;</span>.$a[0].<span class="stringliteral">&#39;/shared/&#39;</span>.$obj[<span class="stringliteral">&#39;download-file&#39;</span>], <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;dl&#39;</span>], $obj[<span class="stringliteral">&#39;download-file-mime&#39;</span>]);
+<a name="l00196"></a>00196                 <a class="code" href="util_8inc_8php.html#a43278b320bd522e46bd7abdd3a2f6fb0">serve_file</a>(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="charliteral">&#39;/&#39;</span>.$a[0].<span class="stringliteral">&#39;/shared/&#39;</span>.$obj[<span class="stringliteral">&#39;download-file&#39;</span>], <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;dl&#39;</span>], $obj[<span class="stringliteral">&#39;download-file-mime&#39;</span>]);
 <a name="l00197"></a>00197         } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!<a class="code" href="common_8inc_8php.html#ab3abbb2cd13e01231533e7cdc93da6db">is_auth</a>()) {
 <a name="l00198"></a>00198                 <a class="code" href="common_8inc_8php.html#a80c23c9d8ac02159151d6368506b1b54">prompt_auth</a>(<span class="keyword">true</span>);
 <a name="l00199"></a>00199         }
@@ -292,7 +292,7 @@
 <a name="l00264"></a>00264 ?&gt;
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Wed Dec 29 2010 15:29:04 for hotglue by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Fri Jan 21 2011 15:15:03 for hotglue by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.2 </small></address>
 </body>

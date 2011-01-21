@@ -40,16 +40,31 @@ $(document).ready(function() {
 		var old_pn = $.glue.page.split('.').shift();
 		var new_pn = prompt('Change the page URL', old_pn);
 		if (new_pn != null && new_pn != old_pn) {
-			$.glue.backend({ method: 'glue.rename_page', 'old': old_pn, 'new': new_pn }, function(data) {
-				// redirect to new url
-				window.location = $.glue.base_url+'?'+new_pn+'/edit';
+			// check if the current page is also the starting page
+			$.glue.backend({ method: 'glue.get_startpage' }, function(data) {
+				var is_startpage = false;
+				if (data == $.glue.page) {
+					is_startpage = true;
+				}
+				$.glue.backend({ method: 'glue.rename_page', 'old': old_pn, 'new': new_pn }, function(data) {
+					if (is_startpage) {
+						// change startpage accordingly
+						$.glue.backend({ method: 'glue.set_startpage', page: new_pn+'.head' }, function(data) {
+							// redirect to new url
+							window.location = $.glue.base_url+'?'+new_pn+'/edit';
+						});
+					} else {
+						// redirect to new url
+						window.location = $.glue.base_url+'?'+new_pn+'/edit';
+					}
+				});
 			});
 		}
 		$.glue.menu.hide();
 	});
 	$.glue.menu.register('page', elem);
 	
-	// TODO (later): glue.get_startpage
+	// TODO (later): only display if not already the starting page
 	elem = $('<img src="'+$.glue.base_url+'modules/page/page-set-startpage.png" alt="btn" title="make this the start page" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		$.glue.backend({ method: 'glue.set_startpage', page: $.glue.page });

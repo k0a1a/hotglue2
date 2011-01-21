@@ -486,6 +486,26 @@ register_service('glue.delete_upload', 'delete_upload', array('auth'=>true));
 
 
 /**
+ *	get the startpage
+ *
+ *	@param array $args unused
+ *	@return array response
+ *		string
+ */
+function get_startpage($args)
+{
+	$s = @file_get_contents(CONTENT_DIR.'/startpage');
+	if ($s) {
+		return response($s);
+	} else {
+		return response(DEFAULT_PAGE);
+	}
+}
+
+register_service('glue.get_startpage', 'get_startpage');
+
+
+/**
  *	load an object from the content directory
  *
  *	@param array $args arguments
@@ -1188,7 +1208,7 @@ function set_startpage($args)
 	}
 	
 	$m = umask(0111);
-	if (file_put_contents(CONTENT_DIR.'/startpage', $args['page']) === false) {
+	if (@file_put_contents(CONTENT_DIR.'/startpage', $args['page']) === false) {
 		umask($m);
 		return response('Error setting start page', 500);
 	} else {
