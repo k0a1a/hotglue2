@@ -396,7 +396,7 @@ function http_digest_prompt($realm = '')
  */
 function is_url($s)
 {
-	if (strpos($s, '://')) {
+	if (strpos($s, '://') || strtolower(substr($s, 0, 7)) == 'mailto:') {
 		return true;
 	} else {
 		return false;
