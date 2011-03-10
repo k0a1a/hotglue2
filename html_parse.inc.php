@@ -405,6 +405,3 @@ function html_parse_elem($html, $recursive = false)
 	
 	return $ret;
 }
-
-
-?>

@@ -60,6 +60,3 @@ function page_browser_render_page_early($args)
 		}
 	}
 }
-
-
-?>

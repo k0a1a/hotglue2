@@ -65,6 +65,3 @@ function log_msg($level, $msg )
 
 // we need no extra function to log response-arrays as they are logged further 
 // down in the server (e.g. json.php)
-
-
-?>

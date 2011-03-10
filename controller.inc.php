@@ -426,6 +426,3 @@ function serve_resource($s, $dl)
 }
 
 register_hook('serve_resource', 'serve resources associated with objects');
-
-
-?>

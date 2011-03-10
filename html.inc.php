@@ -670,6 +670,3 @@ function html_title()
 		$html['header']['title'] = func_get_arg(0);
 	}
 }
-
-
-?>

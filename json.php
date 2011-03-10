@@ -121,6 +121,3 @@ if (is_array($ret) && isset($ret['#error']) && $ret['#error']) {
 	log_msg('debug', 'json: service returned '.var_dump_inl($ret['#data']));
 }
 echo json_encode($ret);
-
-
-?>

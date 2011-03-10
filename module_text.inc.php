@@ -432,6 +432,3 @@ function text_save_state($args)
 		return true;
 	}
 }
-
-
-?>

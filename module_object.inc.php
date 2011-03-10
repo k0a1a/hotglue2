@@ -142,6 +142,3 @@ function object_render_page_early($args)
 		html_add_js_var('$.glue.conf.object.default_colors', expl(' ', OBJECT_DEFAULT_COLORS));
 	}
 }
-
-
-?>

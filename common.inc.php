@@ -136,7 +136,7 @@ function glue_version()
 	$a = expl('.', HOTGLUE_VERSION);
 	$ret = array(0, 0, 0);
 	for ($i=0; $i < count($a); $i++) {
-		$ret[$i] = $a[$i];
+		$ret[$i] = intval($a[$i]);
 	}
 	return $ret;
 }
@@ -633,6 +633,3 @@ function valid_pagename($s)
 		return true;
 	}
 }
-
-
-?>

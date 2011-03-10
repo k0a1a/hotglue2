@@ -693,6 +693,3 @@ function image_upload($args)
 		return $ret['#data'];
 	}
 }
-
-
-?>

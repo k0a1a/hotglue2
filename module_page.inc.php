@@ -274,6 +274,3 @@ function page_upload($args)
 		return true;
 	}
 }
-
-
-?>

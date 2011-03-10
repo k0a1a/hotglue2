@@ -177,6 +177,3 @@ function iframe_save_state($args)
 		return true;
 	}
 }
-
-
-?>

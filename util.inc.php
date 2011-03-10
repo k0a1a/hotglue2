@@ -596,6 +596,3 @@ function var_dump_inl($var)
 	} while (0 < $cnt);
 	return trim($ret);
 }
-
-
-?>

@@ -1504,6 +1504,3 @@ function upload_references($args)
 
 register_service('glue.upload_references', 'upload_references', array('auth'=>true));
 register_hook('has_reference', 'check if an object references an uploaded file');
-
-
-?>

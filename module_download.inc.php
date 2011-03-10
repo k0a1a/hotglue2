@@ -259,6 +259,3 @@ function download_upload_fallback($args)
 		return $ret['#data'];
 	}
 }
-
-
-?>

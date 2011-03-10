@@ -321,6 +321,3 @@ function video_upload($args)
 		return $ret['#data'];
 	}
 }
-
-
-?>

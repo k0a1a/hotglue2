@@ -95,6 +95,3 @@ function revisions_browser_render_page_early($args)
 		}
 	}
 }
-
-
-?>

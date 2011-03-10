@@ -376,6 +376,3 @@ function run_service($service, $args = array())
 	log_msg('info', 'modules: running service '.quot($service));
 	return $services[$service]['func']($args);
 }
-
-
-?>

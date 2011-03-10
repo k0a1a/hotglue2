@@ -150,6 +150,3 @@ function user_css_set_css($args)
 }
 
 register_service('user_css.set_css', 'user_css_set_css', array('auth'=>true));
-
-
-?>

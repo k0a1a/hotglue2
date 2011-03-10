@@ -128,6 +128,3 @@ function webvideo_save_state($args)
 		return true;
 	}
 }
-
-
-?>
