@@ -1,0 +1,14 @@
+#welcome-msg {
+	background-color: lightgrey;
+	border-radius: 9px;
+	display: none;
+	left: 20px;
+	padding: 10px;
+	position: absolute;
+	top: 20px;
+	width: 300px;
+}
+
+#welcome-msg a {
+	text-decoration: underline;
+}
