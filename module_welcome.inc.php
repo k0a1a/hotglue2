@@ -32,7 +32,7 @@ function welcome_render_page_late($args)
 	if (!$args['edit'] || $page_has_object) {
 		return false;
 	}
-	// we only display the informative when there are no other pages in the 
+	// we only display the information when there are no other pages in the 
 	// content directory except the current one
 	load_modules('glue');
 	$pns = pagenames(array());
