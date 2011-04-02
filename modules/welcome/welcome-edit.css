@@ -1,14 +1,25 @@
 #welcome-msg {
-	background-color: lightgrey;
+	color: #111;
+	background-color: #eee;
 	border-radius: 9px;
 	display: none;
 	left: 20px;
 	padding: 10px;
 	position: absolute;
 	top: 20px;
-	width: 300px;
+	width: 450px;
 }
 
 #welcome-msg a {
 	text-decoration: underline;
+}
+
+#welcome-first {
+	font-size:110%;
+	font-weight:bold;
+}
+
+#welcome-light {
+	font-size:80%;
+	color:gray;
 }
