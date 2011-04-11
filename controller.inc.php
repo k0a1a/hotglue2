@@ -163,7 +163,7 @@ function controller_default($args)
 				log_msg('debug', 'controller_default: invoking controller_show');
 				controller_show($args);
 			}
-		} elseif (ALWAYS_PROMPT_CREATE_PAGE || is_auth()) {
+		} elseif (ALWAYS_PROMPT_CREATE_PAGE || is_auth() || $args[0][0] == startpage()) {
 			log_msg('debug', 'controller_default: invoking controller_create_page');
 			controller_create_page($args);
 		} else {
