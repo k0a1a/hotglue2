@@ -110,6 +110,14 @@ $.glue.text = function()
 			// pagename
 			s = str_replace('$PAGENAME$', $.glue.page.split('.').slice(0, 1), s);
 			s = str_replace('$pagename$', $.glue.page.split('.').slice(0, 1), s);
+			// protocol used
+			if (location.protocol == 'https:') {
+				s = str_replace('$PROT$', 'https', s);
+				s = str_replace('$prot$', 'https', s);
+			} else {
+				s = str_replace('$PROT$', 'http', s);
+				s = str_replace('$prot$', 'http', s);
+			}
 			// revision
 			s = str_replace('$REV$', $.glue.page.split('.').slice(1, 2), s);
 			s = str_replace('$rev$', $.glue.page.split('.').slice(1, 2), s);

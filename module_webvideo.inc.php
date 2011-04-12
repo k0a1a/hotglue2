@@ -28,7 +28,12 @@ function webvideo_alter_render_early($args)
 	
 	$i = elem('iframe');
 	if ($obj['webvideo-provider'] == 'youtube') {
-		$src = 'http://www.youtube.com/embed/'.$obj['webvideo-id'].'?rel=0';
+		if (empty($_SERVER['HTTPS'])) {
+			$src = 'http://';
+		} else {
+			$src = 'https://';
+		}
+		$src .= 'www.youtube.com/embed/'.$obj['webvideo-id'].'?rel=0';
 		if (isset($obj['webvideo-autoplay']) && $obj['webvideo-autoplay'] == 'autoplay') {
 			$src .= '&autoplay=1';
 		}

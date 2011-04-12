@@ -24,6 +24,12 @@ require_once('modules.inc.php');
  */
 function cache_output($category, $name, $out)
 {
+	// don't cache the output if we're using https
+	if (!empty($_SERVER['HTTPS'])) {
+		log_msg('debug', 'common: not caching '.quot($name).' because of https');
+		return false;
+	}
+	
 	// check if cache dir exists
 	$f = CONTENT_DIR.'/cache';
 	if (!is_dir($f)) {
@@ -311,6 +317,12 @@ function is_auth()
  */
 function is_cached($category, $name, $max_age)
 {
+	// don't use the cached file if we're using https
+	// TODO (later): make a separate cache for https
+	if (!empty($_SERVER['HTTPS'])) {
+		return false;
+	}
+	
 	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
 	if (!is_file($f)) {
 		return false;
@@ -451,6 +463,9 @@ function resolve_aliases($s, $name = '')
 		// pagename
 		$s = str_replace('$PAGENAME$', array_shift(expl('.', $name)), $s);
 		$s = str_replace('$pagename$', array_shift(expl('.', $name)), $s);
+		// protocol used
+		$s = str_replace('$PROT$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
+		$s = str_replace('$prot$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
 		// revision
 		$s = str_replace('$REV$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
 		$s = str_replace('$rev$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);

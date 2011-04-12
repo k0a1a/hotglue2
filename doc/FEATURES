@@ -263,6 +263,7 @@ TEXT OBJECT CONTENTS
   * $OBJ$: the name of the current object (e.g. "page.rev.obj")
   * $PAGE$: the canonical name of the current page (e.g. "page.rev")
   * $PAGENAME$: the name of the current page (e.g. "page")
+  * $PROT$: the protocol currently being used (either "http" or "https")
   * $REV": the current revision (e.g. "rev")
   
   * these substitutions can also be used when setting an object's link target

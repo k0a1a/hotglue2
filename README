@@ -58,4 +58,6 @@ KNOWN ISSUES
 
   * The looping property of YouTube's new HTML5 video embed code seems to be broken at the moment.
 
+  * Vimeo does not currently offer a way to embed videos over HTTPS. You might thus receive a (legitimate) browser warning when accessing a page containing a Vimeo video using HTTPS.
+
   * When modifying objects that also appear on other pages, these changes might not immediately appear on them if caching is enabled.
