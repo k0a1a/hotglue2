@@ -16,7 +16,7 @@ $(document).ready(function() {
 			if (a[1] == 'head') {
 				var page_short = a[0];
 			}
-			window.location = $.glue.base_url+'?'+page_short+'/edit';
+			window.location = $.glue.base_url+page_short+'/edit';
 		});
 	});
 });

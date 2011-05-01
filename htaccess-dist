@@ -3,6 +3,10 @@ Options -MultiViews
 
 RewriteEngine on
 
+# set to physical path to the files
+# ie: '/hotglue' if the URL is http://mysite.me/hotglue
+RewriteBase /
+
 # this seems to be needed for authentication if php is working in cgi mode
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 

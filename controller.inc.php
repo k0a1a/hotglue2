@@ -44,7 +44,7 @@ function controller_create_page($args)
 	} else {
 		html_add_js(base_url().'js/create_page.js');
 	}
-	html_add_js_var('$.glue.page', $page);
+	html_add_js_var('$.glue.page', (SHORT_URLS ? '' : '?').$page);
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'create_page');
 	body_append(tab(1).'<div id="paper">'.nl());
