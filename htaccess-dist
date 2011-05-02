@@ -3,9 +3,13 @@ Options -MultiViews
 
 RewriteEngine on
 
-# set to physical path to the files
-# ie: '/hotglue' if the URL is http://mysite.me/hotglue
-RewriteBase /
+# explicidly set relative URL of Hotglue files.
+# this might be nessesary on some hosts which use
+# funky redirects before serving the contents of 'docroot'.
+# SYMPTOMS: white screen, /edit does not work, authentication does not work.
+# SOLUTION: set 'RewriteBase' to the last part of Hotglue URL,
+# ie: '/hotglue' (no quotes) if the URL is http://mysite.me/hotglue
+## RewriteBase /hotglue
 
 # this seems to be needed for authentication if php is working in cgi mode
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
