@@ -1,7 +1,7 @@
 #welcome-msg {
-	color: #111;
 	background-color: #eee;
 	border-radius: 9px;
+	color: #111;
 	display: none;
 	left: 20px;
 	padding: 10px;
@@ -15,11 +15,11 @@
 }
 
 #welcome-first {
-	font-size:110%;
-	font-weight:bold;
+	font-size: 110%;
+	font-weight: bold;
 }
 
 #welcome-light {
-	font-size:80%;
-	color:gray;
+	color: gray;
+	font-size: 80%;
 }

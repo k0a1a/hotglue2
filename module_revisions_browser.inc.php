@@ -70,7 +70,9 @@ function controller_revisions($args)
 		body_append(htmlspecialchars($revs[$cur_rev]['revision'], ENT_NOQUOTES, 'UTF-8'));
 	}
 	body_append('<br>');
-	if ($a[1] != 'head') {
+	if ($a[1] == 'head') {
+		body_append('<a href="'.base_url().'?'.htmlspecialchars(urlencode($page, ENT_COMPAT, 'UTF-8')).'/edit">back to editing</a>');
+	} else {
 		body_append('<a id="revisions_browser_revert_btn" href="#">revert</a>');
 	}
 	body_append('</div><div id="revisions_browser_next">');

@@ -40,19 +40,21 @@ function welcome_render_page_late($args)
 	if (1 < count($pns)) {
 		return false;
 	}
-
+	
 	html_add_css(base_url().'modules/welcome/welcome-edit.css');
 	html_add_js(base_url().'modules/welcome/welcome.js');
 	body_append('<div id="welcome-msg">'.nl());
-	body_append(tab().'<span id="welcome-first">Welcome to HOTGLUE!</span><br/>Your Content Manipulation System is ready to go!'.nl());
-	body_append(tab().'<p>Short intro before you start:<br/>'.nl());
-	body_append(tab().'&nbsp;&#164; Add "/edit'.(SHORT_URLS ? '' : '?').'" to the address of your page to enter "edit mode" (ie: '.base_url().'<b>'.(SHORT_URLS ? '' : '?').'edit</b>'.').<br/>'.nl());
-	body_append(tab().'&nbsp;&#164; Once in "edit mode" use single and double click to access menus.<br/>'.nl());
-	body_append(tab().'&nbsp;&#164; Click page background to open a menu that lets you create new objects, upload files and embed videos (YouTube and Vimeo).<br/>'.nl());
-	body_append(tab().'&nbsp;&#164; Double-click to open a menu that allows you to change preferences, show a grid, make new pages and more!<br/>'.nl());
-	body_append(tab().'&nbsp;&#164; Remove "/edit'.(SHORT_URLS ? '' : '?').'" from the address of the page to go back to normal viewing mode!</p>'.nl());
-	body_append(tab().'<p>You can find more ideas on how to use HOTGLUE on <a href="http://hotglue.me/">How-to</a> and <a href="http://hotglue.me/">Screencasts</a> sections of our website!</p>'.nl());
-	body_append(tab().'<p>Good luck!<span id="welcome-light"><br/>[This message goes away when you click it]</span></p>'.nl());
+	body_append(tab().'<span id="welcome-first">Welcome to HOTGLUE!</span><br>'.nl());
+	body_append(tab().'Your Content Manipulation System is ready to go!'.nl());
+	body_append(tab().'<p>A short intro before you start:<br>'.nl());
+	body_append(tab().'&nbsp;&#164; Add "'.(SHORT_URLS ? '' : '?').'edit" to the address in the address bar to enter editing mode (ie: '.htmlspecialchars(base_url(), ENT_NOQUOTES, 'UTF-8').'<b>'.(SHORT_URLS ? '' : '?').'edit</b>)<br>'.nl());
+	body_append(tab().'&nbsp;&#164; Once in editing mode, use single and double click to access the menus.<br>'.nl());
+	body_append(tab().'&nbsp;&#164; Click the page\'s background once to open a menu that lets you create new objects, upload files and embed videos (YouTube and Vimeo).<br>'.nl());
+	body_append(tab().'&nbsp;&#164; Double-click to open a menu that allows you to change preferences, show a grid, make new pages and more.<br>'.nl());
+	body_append(tab().'&nbsp;&#164; Remove "'.(SHORT_URLS ? '' : '?').'edit" from the address in the address bar to go back to viewing-only mode.</p>'.nl());
+	body_append(tab().'<p>You can find more ideas on how to use HOTGLUE on the How-to section of <a href="http://hotglue.me/">our website</a>!'.nl());
+	body_append(tab().'<p>Good luck!<br>'.nl());
+	body_append(tab().'<span id="welcome-light">[This message goes away when you click it]</span></p>'.nl());
 	body_append('</div>'.nl());
 	return true;
 }
