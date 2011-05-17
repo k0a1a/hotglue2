@@ -31,7 +31,7 @@
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable
 @define('LOG_LEVEL', 'warn');				// minimum log level (can be error, warn, info, debug)
-@define('SHORT_URLS', false);				// use short urls
+@define('SHORT_URLS', true);				// use short urls internally
 @define('SHOW_FRONTEND_ERRORS', true);
 @define('SITE_NAME', 'hotglue 1.0');
 @define('SNAPSHOT_MAX_AGE', 60*60*24*7);	// auto- revisions are automatically deleted after n seconds (zero to disable)

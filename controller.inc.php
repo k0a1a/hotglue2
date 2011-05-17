@@ -61,9 +61,6 @@ function controller_create_page($args)
 	body_append(tab(6).'Would you like to create the page?'.nl());
 	body_append(tab(5).'</p>'.nl());
 	body_append(tab(5).'<form><input id="create_page_btn" type="button" value="Create it!"></form>'.nl());
-	body_append(tab(5).'<p>'.nl());
-	body_append(tab(6).'<a href="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
-	body_append(tab(5).'</p>'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(3).'</div>'.nl());
 	body_append(tab(2).'</div>'.nl());

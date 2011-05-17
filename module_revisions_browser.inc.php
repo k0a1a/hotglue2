@@ -71,7 +71,7 @@ function controller_revisions($args)
 	}
 	body_append('<br>');
 	if ($a[1] == 'head') {
-		body_append('<a href="'.base_url().'?'.htmlspecialchars(urlencode($page, ENT_COMPAT, 'UTF-8')).'/edit">back to editing</a>');
+		body_append('<a href="'.base_url().'?'.htmlspecialchars(urlencode($page), ENT_COMPAT, 'UTF-8').'/edit">back to editing mode</a>');
 	} else {
 		body_append('<a id="revisions_browser_revert_btn" href="#">revert</a>');
 	}
