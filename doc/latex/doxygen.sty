@@ -10,48 +10,48 @@
 \RequirePackage{longtable}
 \RequirePackage{verbatim}
 \RequirePackage{ifthen}
-\RequirePackage{xcolor}
+\RequirePackage[table]{xcolor}
 
 % Use helvetica font instead of times roman
 \RequirePackage{helvet}
 \RequirePackage{sectsty}
 \RequirePackage{tocloft}
 \allsectionsfont{\usefont{OT1}{phv}{bc}{n}\selectfont}
-\renewcommand{\cftchapfont}{%
+\providecommand{\cftchapfont}{%
   \fontsize{11}{13}\usefont{OT1}{phv}{bc}{n}\selectfont
 }
-\renewcommand{\cftchappagefont}{%
+\providecommand{\cftchappagefont}{%
   \fontsize{11}{13}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsecfont}{%
+\providecommand{\cftsecfont}{%
   \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsecpagefont}{%
+\providecommand{\cftsecpagefont}{%
   \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsubsecfont}{%
+\providecommand{\cftsubsecfont}{%
   \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsubsecpagefont}{%
+\providecommand{\cftsubsecpagefont}{%
   \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsubsubsecfont}{%
+\providecommand{\cftsubsubsecfont}{%
   \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftsubsubsecpagefont}{%
+\providecommand{\cftsubsubsecpagefont}{%
   \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftparafont}{%
+\providecommand{\cftparafont}{%
   \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cftparapagefont}{%
+\providecommand{\cftparapagefont}{%
   \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
 }
-\renewcommand{\cfttoctitlefont}{%
+\providecommand{\cfttoctitlefont}{%
   \fontsize{20}{22}\usefont{OT1}{phv}{b}{n}\selectfont
 }
-\renewcommand{\rmdefault}{phv}
-\renewcommand{\bfdefault}{bc}
+\providecommand{\rmdefault}{phv}
+\providecommand{\bfdefault}{bc}
 
 
 % Setup fancy headings
@@ -73,8 +73,8 @@
 \fancyhead[RO]{\fancyplain{}{\bfseries\thepage}}
 \fancyfoot[LE]{\fancyplain{}{}}
 \fancyfoot[CE]{\fancyplain{}{}}
-\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Generated on Fri Jan 21 2011 15:15:03 for hotglue by Doxygen }}
-\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Generated on Fri Jan 21 2011 15:15:03 for hotglue by Doxygen }}
+\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Generated on Tue May 17 2011 14:19:32 for hotglue by Doxygen }}
+\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Generated on Tue May 17 2011 14:19:32 for hotglue by Doxygen }}
 \fancyfoot[CO]{\fancyplain{}{}}
 \fancyfoot[RO]{\fancyplain{}{}}
 %---------- Internal commands used in this style file ----------------
