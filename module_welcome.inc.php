@@ -52,7 +52,7 @@ function welcome_render_page_late($args)
 	body_append(tab().'&#164; Click the page\'s background once to open a menu that lets you create new objects, upload files and embed videos (YouTube and Vimeo).<br>'.nl());
 	body_append(tab().'&#164; Double-click to open a menu that allows you to change preferences, show a grid, make new pages and more.<br>'.nl());
 	body_append(tab().'&#164; Remove "'.(SHORT_URLS ? '' : '?').'edit" from the address in the address bar to go to the viewing-only mode of this page.</p>'.nl());
-	body_append(tab().'<p>You can find more ideas on how to use HOTGLUE at the <a href="http://hotglue.me/how_basic">"How-to" section of our website</a>!'.nl());
+	body_append(tab().'<p>You can find more ideas on how to use HOTGLUE at the <a href="http://hotglue.me/how_basic" target="_blank">"How-to" section of our website</a>!'.nl());
 	body_append(tab().'<p>Enjoy!<br>'.nl());
 	body_append(tab().'<span id="welcome-light">[This message goes away when you click it]</span></p>'.nl());
 	body_append('</div>'.nl());
