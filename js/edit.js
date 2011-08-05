@@ -836,7 +836,7 @@ $.glue.object = function()
 				$(obj).css('z-index', $.glue.stack.default_z());
 			}
 			// obj must have width & height for draggable to work
-			$(obj).draggable({ addClasses: false });
+			$(obj).draggable({ addClasses: false, distance: 30 });
 			// obj must not be an img element (otherwise resizable creates a 
 			// wrapper which fucks things up)
 			if ($(obj).hasClass('resizable')) {
