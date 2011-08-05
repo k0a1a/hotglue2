@@ -122,7 +122,7 @@ function user_css_set_css($args)
 	}
 	
 	if ($args['page'] === false) {
-		// TODO (later): drop_cache()
+		drop_cache('page');
 		if (empty($args['css'])) {
 			// empty stylesheet
 			@unlink(CONTENT_DIR.'/usercss');

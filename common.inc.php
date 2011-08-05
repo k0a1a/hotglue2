@@ -119,15 +119,29 @@ function default_html($add_glue)
 /**
  *	remove a page from the cache
  *
+ *	If no name is given, all pages of the category are being removed.
  *	@param string $category cache category (e.g. 'page')
- *	@param string $name item name
+ *	@param string $name item name (optional)
  */
-function drop_cache($category, $name)
+function drop_cache($category, $name = '')
 {
-	// TODO (later): make name optional
-	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
-	if (@unlink($f)) {
-		log_msg('debug', 'common: dropped cache of '.$category.' '.quot($name));
+	if (empty($name)) {
+		$d = @scandir(CONTENT_DIR.'/cache/'.$category);
+		if ($d === false) {
+			return;
+		}
+	} else {
+		$d = array($name);
+	}
+	
+	foreach ($d as $f) {
+		if ($f == '.' || $f == '..') {
+			continue;
+		}
+		$fn = CONTENT_DIR.'/cache/'.$category.'/'.$f;
+		if (@unlink($fn)) {
+			log_msg('debug', 'common: dropped cache of '.$category.' '.quot($f));
+		}
 	}
 }
 

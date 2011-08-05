@@ -356,9 +356,9 @@ function delete_object($args)
 		return response('Error deleting object '.quot($args['name']), 500);
 	} else {
 		log_msg('info', 'delete_object: deleted '.quot($args['name']));
-		// drop the object's page from cache
-		$a = expl('.', $args['name']);
-		drop_cache('page', $a[0].'.'.$a[1]);
+		// drop the all pages from the cache (since the object could have been 
+		// symlinked)
+		drop_cache('page');
 		return response(true);
 	}
 }
@@ -1124,11 +1124,8 @@ function save_object($args)
 	}
 	
 	fclose($f);
-	// drop the page from cache
-	// TODO (later): also drop related caches if object is a symlink or target 
-	// of a symlink
-	$a = expl('.', $args['name']);
-	drop_cache('page', $a[0].'.'.$a[1]);
+	// drop all pages from cache (since the object could be symlinked)
+	drop_cache('page');
 	
 	return response(true);
 }
