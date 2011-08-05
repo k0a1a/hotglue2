@@ -16,6 +16,8 @@ $(document).ready(function() {
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		$.glue.backend({ method: 'glue.clone_object', name: $(obj).attr('id') }, function(data) {
+			// deselect current object
+			$.glue.sel.none();
 			var clone = $(obj).clone();
 			// set new id
 			$(clone).attr('id', data);
@@ -27,7 +29,6 @@ $(document).ready(function() {
 			$(clone).trigger('glue-pre-clone');
 			$.glue.object.register(clone);
 			// select new object
-			$.glue.sel.none();
 			$.glue.sel.select(clone);
 			$.glue.object.save(clone);
 		});
