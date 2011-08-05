@@ -192,8 +192,37 @@ $('.text').live('glue-register', function(e) {
 	$(this).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
 });
 
+$('.text').live('glue-deselect', function(e) {
+	// do nothing if we are not editing
+	if (!$(this).hasClass('glue-text-editing')) {
+		return;
+	}
+	// copy the rendered textarea value
+	$(this).children('.glue-text-render').html($.glue.text.render_content($(this).children('.glue-text-input').val(), $(this).attr('id')));
+	$(this).removeClass('glue-text-editing');
+	// disable links
+	$(this).children('.glue-text-render').find('a').bind('click', function(e) {
+		return false;
+	});
+	$(this).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
+	// resolve relative urls
+	$(this).children('.glue-text-render').find('a').each(function() {
+		// check if scheme is set
+		var url = $(this).attr('href');
+		if (url.charAt(0) != '#' && url.indexOf('://') < 1) {
+			$(this).attr('href', $.glue.base_url+url);
+		}
+	});
+	// hide the text area again
+	$(this).children('.glue-text-input').css('display', 'none');
+	$(this).children('.glue-text-render').css('display', 'block');
+	// update the content on the server
+	// see the comments in $.glue.object.register_alter_pre_save below
+	$.glue.backend({ method: 'glue.update_object', name: $(this).attr('id'), 'content': $(this).children('.glue-text-input').val() });
+});
+
 $('.text.glue-selected').live('click', function(e) {
-	// if we are not editing yet
+	// check if we are already editing
 	if ($(this).hasClass('glue-text-editing')) {
 		return;
 	}
@@ -203,34 +232,7 @@ $('.text.glue-selected').live('click', function(e) {
 			$.glue.sel.deselect(this);
 		});
 	}
-	// register an event
-	$(this).one('glue-deselect', function(e) {
-		if ($(this).hasClass('glue-text-editing')) {
-			// copy the rendered textarea value
-			$(this).children('.glue-text-render').html($.glue.text.render_content($(this).children('.glue-text-input').val(), $(this).attr('id')));
-			$(this).removeClass('glue-text-editing');
-			// disable links
-			$(this).children('.glue-text-render').find('a').bind('click', function(e) {
-				return false;
-			});
-			$(this).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
-			// resolve relative urls
-			$(this).children('.glue-text-render').find('a').each(function() {
-				// check if scheme is set
-				var url = $(this).attr('href');
-				if (url.charAt(0) != '#' && url.indexOf('://') < 1) {
-					$(this).attr('href', $.glue.base_url+url);
-				}
-			});
-			// hide the text area again
-			$(this).children('.glue-text-input').css('display', 'none');
-			$(this).children('.glue-text-render').css('display', 'block');
-			// update the content on the server
-			// see the comments in $.glue.object.register_alter_pre_save below
-			$.glue.backend({ method: 'glue.update_object', name: $(this).attr('id'), 'content': $(this).children('.glue-text-input').val() });
-		}
-	});
-	// and make the textarea visible
+	// make the textarea visible
 	$(this).children('.glue-text-input').css('display', 'block');
 	$(this).children('.glue-text-render').css('display', 'none');
 	$(this).addClass('glue-text-editing');
