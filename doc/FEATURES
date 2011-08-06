@@ -183,6 +183,8 @@ OBJECT TYPES: TEXT
   to move objects or [del] to delete the object) don't work
   * deselect the object again (e.g. by clicking on an empty space) to stop 
   editing again
+  * you can also press [esc] to stop editing while still retaining the object 
+  selection
   
   * by default, the text object offers the following contextmenu items in the 
   horizontal bar at the top:
