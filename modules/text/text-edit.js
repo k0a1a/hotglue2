@@ -216,6 +216,9 @@ $('.text').live('glue-deselect', function(e) {
 	// hide the text area again
 	$(this).children('.glue-text-input').css('display', 'none');
 	$(this).children('.glue-text-render').css('display', 'block');
+	// update the textarea's inner html as well (.val() seems to be 
+	// different from .text(), at least with jquery 1.5.2 on chromium 12
+	$(this).children('.glue-text-input').text($(this).children('.glue-text-input').val());
 	// update the content on the server
 	// see the comments in $.glue.object.register_alter_pre_save below
 	$.glue.backend({ method: 'glue.update_object', name: $(this).attr('id'), 'content': $(this).children('.glue-text-input').val() });
