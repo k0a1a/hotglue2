@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>hotglue: /var-www-hotglue/src.git-dev/module_user_code.inc.php Source File</title>
+<title>hotglue: /var-www-hotglue/hotglue.org-test/dev/module_user_code.inc.php Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="doxygen.css" rel="stylesheet" type="text/css"/>
 </head>
@@ -21,7 +21,7 @@
       <li><a href="globals.html"><span>File&nbsp;Members</span></a></li>
     </ul>
   </div>
-<h1>/var-www-hotglue/src.git-dev/module_user_code.inc.php</h1><a href="module__user__code_8inc_8php.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 &lt;?php
+<h1>/var-www-hotglue/hotglue.org-test/dev/module_user_code.inc.php</h1><a href="module__user__code_8inc_8php.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 &lt;?php
 <a name="l00002"></a>00002 
 <a name="l00003"></a>00003 <span class="comment">/*</span>
 <a name="l00004"></a>00004 <span class="comment"> *      module_user_code.inc.php</span>
@@ -150,65 +150,72 @@
 <a name="l00127"></a>00127                         $func(@file_get_contents(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="stringliteral">&#39;/user&#39;</span>.$x), 5);
 <a name="l00128"></a>00128                 }
 <a name="l00129"></a>00129         }
-<a name="l00130"></a>00130 }
-<a name="l00131"></a>00131 
-<a name="l00132"></a>00132 <span class="comment"></span>
-<a name="l00133"></a>00133 <span class="comment">/**</span>
-<a name="l00134"></a>00134 <span class="comment"> *      set the user-defined code files</span>
-<a name="l00135"></a>00135 <span class="comment"> *</span>
-<a name="l00136"></a>00136 <span class="comment"> *      @param array $args arguments</span>
-<a name="l00137"></a>00137 <span class="comment"> *              key &#39;page&#39; is the page (i.e. page.rev) or false the global code</span>
-<a name="l00138"></a>00138 <span class="comment"> *              key &#39;head&#39; is the content of the head file</span>
-<a name="l00139"></a>00139 <span class="comment"> *              key &#39;body&#39; is the content of the body file</span>
-<a name="l00140"></a>00140 <span class="comment"> *      @return array response</span>
-<a name="l00141"></a>00141 <span class="comment"> *              true if successful</span>
-<a name="l00142"></a>00142 <span class="comment"> */</span>
-<a name="l00143"></a><a class="code" href="module__user__code_8inc_8php.html#a788372f1e959532d09dceb63209507cb">00143</a> function <a class="code" href="module__user__code_8inc_8php.html#a788372f1e959532d09dceb63209507cb">user_code_set_code</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
-<a name="l00144"></a>00144 {
-<a name="l00145"></a>00145         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]) || (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>] !== <span class="keyword">false</span> &amp;&amp; !<a class="code" href="common_8inc_8php.html#aa71868111dd5b8af98df9cc9c968e523">page_exists</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]))) {
-<a name="l00146"></a>00146                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;page&quot; missing or invalid&#39;</span>, 400);
-<a name="l00147"></a>00147         }
-<a name="l00148"></a>00148         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;head&#39;</span>])) {
-<a name="l00149"></a>00149                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;head&quot; missing&#39;</span>, 400);
-<a name="l00150"></a>00150         }
-<a name="l00151"></a>00151         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;body&#39;</span>])) {
-<a name="l00152"></a>00152                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;body&quot; missing&#39;</span>, 400);
-<a name="l00153"></a>00153         }
-<a name="l00154"></a>00154 
-<a name="l00155"></a>00155         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>] === <span class="keyword">false</span>) {
-<a name="l00156"></a>00156                 <a class="code" href="common_8inc_8php.html#a29be04ac495441a2d15a99fa6ef63e9d">drop_cache</a>(<span class="stringliteral">&#39;page&#39;</span>);
-<a name="l00157"></a>00157                 <span class="keywordflow">foreach</span> (array(<span class="stringliteral">&#39;head&#39;</span>,<span class="stringliteral">&#39;body&#39;</span>) as $x) {
-<a name="l00158"></a>00158                         <span class="keywordflow">if</span> (empty(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
-<a name="l00159"></a>00159                                 @unlink(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="stringliteral">&#39;/user&#39;</span>.$x);
-<a name="l00160"></a>00160                         } <span class="keywordflow">else</span> {
-<a name="l00161"></a>00161                                 $m = umask(0111);
-<a name="l00162"></a>00162                                 <span class="keywordflow">if</span> (!@file_put_contents(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="stringliteral">&#39;/user&#39;</span>.$x, <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
-<a name="l00163"></a>00163                                         umask($m);
-<a name="l00164"></a>00164                                         <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Error saving user &#39;</span>.$x, 500);
-<a name="l00165"></a>00165                                 } <span class="keywordflow">else</span> {
-<a name="l00166"></a>00166                                         umask($m);
-<a name="l00167"></a>00167                                 }
-<a name="l00168"></a>00168                         }
-<a name="l00169"></a>00169                 }
-<a name="l00170"></a>00170                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="keyword">true</span>);
-<a name="l00171"></a>00171         } <span class="keywordflow">else</span> {
-<a name="l00172"></a>00172                 <a class="code" href="common_8inc_8php.html#a29be04ac495441a2d15a99fa6ef63e9d">drop_cache</a>(<span class="stringliteral">&#39;page&#39;</span>, <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]);
-<a name="l00173"></a>00173                 <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
-<a name="l00174"></a>00174                 <span class="keywordflow">foreach</span> (array(<span class="stringliteral">&#39;head&#39;</span>,<span class="stringliteral">&#39;body&#39;</span>) as $x) {
-<a name="l00175"></a>00175                         <span class="keywordflow">if</span> (empty(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
-<a name="l00176"></a>00176                                 <a class="code" href="module__glue_8inc_8php.html#a51fdb1d1ff829d6d2d79a9f852b7e0ef">delete_object</a>(array(<span class="stringliteral">&#39;name&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>].<span class="stringliteral">&#39;.user&#39;</span>.$x));
-<a name="l00177"></a>00177 
-<a name="l00178"></a>00178                         } <span class="keywordflow">else</span> {
-<a name="l00179"></a>00179                                 <a class="code" href="module__glue_8inc_8php.html#a4aed316adcde13b40c9fc1b35e6537a4">update_object</a>(array(<span class="stringliteral">&#39;name&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>].<span class="stringliteral">&#39;.user&#39;</span>.$x, <span class="stringliteral">&#39;type&#39;</span>=&gt;<span class="stringliteral">&#39;user&#39;</span>.$x, <span class="stringliteral">&#39;module&#39;</span>=&gt;<span class="stringliteral">&#39;user_code&#39;</span>, <span class="stringliteral">&#39;content&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x]));
-<a name="l00180"></a>00180                         }
-<a name="l00181"></a>00181                 }
-<a name="l00182"></a>00182                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="keyword">true</span>);
-<a name="l00183"></a>00183         }
-<a name="l00184"></a>00184 }
-<a name="l00185"></a>00185 
-<a name="l00186"></a>00186 <a class="code" href="modules_8inc_8php.html#ae6ed600fb2ce39a4b0837bbb01fe8d6e">register_service</a>(<span class="stringliteral">&#39;user_code.set_code&#39;</span>, <span class="stringliteral">&#39;user_code_set_code&#39;</span>, array(<span class="stringliteral">&#39;auth&#39;</span>=&gt;<span class="keyword">true</span>));
+<a name="l00130"></a>00130         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;edit&#39;</span>]) {
+<a name="l00131"></a>00131                 <span class="keywordflow">if</span> (<a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">USE_MIN_FILES</a>) {
+<a name="l00132"></a>00132                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/user_code/user_code-edit.min.js&#39;</span>);
+<a name="l00133"></a>00133                 } <span class="keywordflow">else</span> {
+<a name="l00134"></a>00134                         <a class="code" href="html_8inc_8php.html#a450214704e1bbc2e8849abb54db38a03">html_add_js</a>(<a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>().<span class="stringliteral">&#39;modules/user_code/user_code-edit.js&#39;</span>);
+<a name="l00135"></a>00135                 }
+<a name="l00136"></a>00136         }
+<a name="l00137"></a>00137 }
+<a name="l00138"></a>00138 
+<a name="l00139"></a>00139 <span class="comment"></span>
+<a name="l00140"></a>00140 <span class="comment">/**</span>
+<a name="l00141"></a>00141 <span class="comment"> *      set the user-defined code files</span>
+<a name="l00142"></a>00142 <span class="comment"> *</span>
+<a name="l00143"></a>00143 <span class="comment"> *      @param array $args arguments</span>
+<a name="l00144"></a>00144 <span class="comment"> *              key &#39;page&#39; is the page (i.e. page.rev) or false the global code</span>
+<a name="l00145"></a>00145 <span class="comment"> *              key &#39;head&#39; is the content of the head file</span>
+<a name="l00146"></a>00146 <span class="comment"> *              key &#39;body&#39; is the content of the body file</span>
+<a name="l00147"></a>00147 <span class="comment"> *      @return array response</span>
+<a name="l00148"></a>00148 <span class="comment"> *              true if successful</span>
+<a name="l00149"></a>00149 <span class="comment"> */</span>
+<a name="l00150"></a><a class="code" href="module__user__code_8inc_8php.html#a788372f1e959532d09dceb63209507cb">00150</a> function <a class="code" href="module__user__code_8inc_8php.html#a788372f1e959532d09dceb63209507cb">user_code_set_code</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>)
+<a name="l00151"></a>00151 {
+<a name="l00152"></a>00152         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]) || (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>] !== <span class="keyword">false</span> &amp;&amp; !<a class="code" href="common_8inc_8php.html#aa71868111dd5b8af98df9cc9c968e523">page_exists</a>(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]))) {
+<a name="l00153"></a>00153                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;page&quot; missing or invalid&#39;</span>, 400);
+<a name="l00154"></a>00154         }
+<a name="l00155"></a>00155         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;head&#39;</span>])) {
+<a name="l00156"></a>00156                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;head&quot; missing&#39;</span>, 400);
+<a name="l00157"></a>00157         }
+<a name="l00158"></a>00158         <span class="keywordflow">if</span> (!isset(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;body&#39;</span>])) {
+<a name="l00159"></a>00159                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Required argument &quot;body&quot; missing&#39;</span>, 400);
+<a name="l00160"></a>00160         }
+<a name="l00161"></a>00161 
+<a name="l00162"></a>00162         <span class="keywordflow">if</span> (<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>] === <span class="keyword">false</span>) {
+<a name="l00163"></a>00163                 <a class="code" href="common_8inc_8php.html#a29be04ac495441a2d15a99fa6ef63e9d">drop_cache</a>(<span class="stringliteral">&#39;page&#39;</span>);
+<a name="l00164"></a>00164                 <span class="keywordflow">foreach</span> (array(<span class="stringliteral">&#39;head&#39;</span>,<span class="stringliteral">&#39;body&#39;</span>) as $x) {
+<a name="l00165"></a>00165                         <span class="keywordflow">if</span> (empty(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
+<a name="l00166"></a>00166                                 @unlink(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="stringliteral">&#39;/user&#39;</span>.$x);
+<a name="l00167"></a>00167                         } <span class="keywordflow">else</span> {
+<a name="l00168"></a>00168                                 $m = umask(0111);
+<a name="l00169"></a>00169                                 <span class="keywordflow">if</span> (!@file_put_contents(<a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">CONTENT_DIR</a>.<span class="stringliteral">&#39;/user&#39;</span>.$x, <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
+<a name="l00170"></a>00170                                         umask($m);
+<a name="l00171"></a>00171                                         <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="stringliteral">&#39;Error saving user &#39;</span>.$x, 500);
+<a name="l00172"></a>00172                                 } <span class="keywordflow">else</span> {
+<a name="l00173"></a>00173                                         umask($m);
+<a name="l00174"></a>00174                                 }
+<a name="l00175"></a>00175                         }
+<a name="l00176"></a>00176                 }
+<a name="l00177"></a>00177                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="keyword">true</span>);
+<a name="l00178"></a>00178         } <span class="keywordflow">else</span> {
+<a name="l00179"></a>00179                 <a class="code" href="common_8inc_8php.html#a29be04ac495441a2d15a99fa6ef63e9d">drop_cache</a>(<span class="stringliteral">&#39;page&#39;</span>, <a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>]);
+<a name="l00180"></a>00180                 <a class="code" href="modules_8inc_8php.html#a23f8be02dc2148a3c860119a1d6ea276">load_modules</a>(<span class="stringliteral">&#39;glue&#39;</span>);
+<a name="l00181"></a>00181                 <span class="keywordflow">foreach</span> (array(<span class="stringliteral">&#39;head&#39;</span>,<span class="stringliteral">&#39;body&#39;</span>) as $x) {
+<a name="l00182"></a>00182                         <span class="keywordflow">if</span> (empty(<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x])) {
+<a name="l00183"></a>00183                                 <a class="code" href="module__glue_8inc_8php.html#a51fdb1d1ff829d6d2d79a9f852b7e0ef">delete_object</a>(array(<span class="stringliteral">&#39;name&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>].<span class="stringliteral">&#39;.user&#39;</span>.$x));
+<a name="l00184"></a>00184 
+<a name="l00185"></a>00185                         } <span class="keywordflow">else</span> {
+<a name="l00186"></a>00186                                 <a class="code" href="module__glue_8inc_8php.html#a4aed316adcde13b40c9fc1b35e6537a4">update_object</a>(array(<span class="stringliteral">&#39;name&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[<span class="stringliteral">&#39;page&#39;</span>].<span class="stringliteral">&#39;.user&#39;</span>.$x, <span class="stringliteral">&#39;type&#39;</span>=&gt;<span class="stringliteral">&#39;user&#39;</span>.$x, <span class="stringliteral">&#39;module&#39;</span>=&gt;<span class="stringliteral">&#39;user_code&#39;</span>, <span class="stringliteral">&#39;content&#39;</span>=&gt;<a class="code" href="index_8php.html#a67e94494731d99ed23b123e95175bc10">$args</a>[$x]));
+<a name="l00187"></a>00187                         }
+<a name="l00188"></a>00188                 }
+<a name="l00189"></a>00189                 <span class="keywordflow">return</span> <a class="code" href="modules_8inc_8php.html#a361058ff2a03c098045c4442440a2574">response</a>(<span class="keyword">true</span>);
+<a name="l00190"></a>00190         }
+<a name="l00191"></a>00191 }
+<a name="l00192"></a>00192 
+<a name="l00193"></a>00193 <a class="code" href="modules_8inc_8php.html#ae6ed600fb2ce39a4b0837bbb01fe8d6e">register_service</a>(<span class="stringliteral">&#39;user_code.set_code&#39;</span>, <span class="stringliteral">&#39;user_code_set_code&#39;</span>, array(<span class="stringliteral">&#39;auth&#39;</span>=&gt;<span class="keyword">true</span>));
 </pre></div></div>
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Mon Sep 19 04:23:57 2011 for hotglue by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Mon Sep 19 05:51:54 2011 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>

@@ -7,11 +7,21 @@
 	padding: 10px;
 	position: absolute;
 	top: 20px;
-	width: 450px;
+	width: 550px;
 }
 
 #welcome-msg a {
 	text-decoration: underline;
+}
+
+#welcome-msg span#text {
+	display:block;
+	margin:5px;
+}
+
+#welcome-msg span#cont {
+	display:block;
+	margin:15px 0 15px 5px;
 }
 
 #welcome-first {

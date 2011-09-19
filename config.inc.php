@@ -30,7 +30,7 @@
 @define('JQUERY', 'js/jquery-1.5.2.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable
-@define('LOG_LEVEL', 'info');				// minimum log level (can be error, warn, info, debug)
+@define('LOG_LEVEL', 'error');				// minimum log level (can be error, warn, info, debug)
 @define('SHORT_URLS', false);				// use short urls internally
 @define('SHOW_FRONTEND_ERRORS', true);
 @define('SITE_NAME', 'hotglue 1.0');

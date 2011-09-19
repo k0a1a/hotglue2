@@ -127,6 +127,13 @@ function user_code_render_page_early($args)
 			$func(@file_get_contents(CONTENT_DIR.'/user'.$x), 5);
 		}
 	}
+	if ($args['edit']) {
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'modules/user_code/user_code-edit.min.js');
+		} else {
+			html_add_js(base_url().'modules/user_code/user_code-edit.js');
+		}
+	}
 }
 
 

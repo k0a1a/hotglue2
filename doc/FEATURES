@@ -549,9 +549,9 @@ SHORT URLS
 
 CODE EDITOR
 
-  * code editor can be accessed by navigating to the base url appended with
-  "?pagename/code" (no quotes) for per-page code or "/?code" for 
-  per-site code.
+  * code editor can be accessed through the "page" menu or by navigating 
+  to the base url appended with "?pagename/code" (no quotes) for per-page code 
+  or "/?code" for per-site code (per-site mode is only available via the url).
   * two textarea fields allow for insertion of custom HTML, CSS or JavaScript 
   code into the source of the page.
   * the code is appended to the very end of respectful sections of the page - 
