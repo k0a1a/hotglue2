@@ -435,7 +435,7 @@ function html_add_head_inline($def, $prio = 5)
 }
 
 /**
- *	add body definitions to the html header
+ *	add body definitions to the html body
  *
  *	@param string $def heade definition
  *	@param int $prio when to insert code (0 - very early to 9 - late)
