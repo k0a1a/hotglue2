@@ -92,8 +92,6 @@ function controller_user_code_stylesheet($args)
 	body_append('<textarea id="user_body_text" placeholder="enter code here">'.$code['body'].'</textarea>'.nl());
 	body_append('<div id=\'fake_tags\'>&lt;/body&gt;</div><br>'.nl());
 	body_append('<input id="user_code_save" type="button" value="save">'.nl());
-	body_append('<br>'.nl());
-	body_append('<br>'.nl());
 	echo html_finalize();
 }
 
