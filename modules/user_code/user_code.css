@@ -1,0 +1,42 @@
+#user_code {
+	/* page that get's displayed when the user accesses the "code" 
+	controller */
+	width: 550px;
+}
+
+#user_code h1 {
+	/* heading on the page */
+	margin-left: 10px;
+	margin-top: 10px;
+}
+
+#user_code div#fake_tags {
+	/* container for 'fake' tags */
+	margin-left: 13px;
+	color: gray;
+	font-family: monospace;
+}
+
+#user_code div#text {
+	/* container for text under the heading */
+	margin-left: 10px;
+}
+
+#user_head_text, #user_body_text {
+	/* the textarea */
+	height: 250px;
+	margin-bottom: 0px;
+	margin-left: 10px;
+	margin-top: 0px;
+	width: 500px;
+	color:black;
+	border: solid 1px grey;
+	padding: 3px;
+	font-family: monospace;
+}
+
+#user_code_save {
+	/* the "save" button below */
+	margin-left: 10px;
+	width:100px;
+}

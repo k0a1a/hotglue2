@@ -196,6 +196,7 @@ $('.text').live('glue-register', function(e) {
 			e.preventDefault();
 			return false;
 		}
+ 
 	});
 	
 	$(this).children('.glue-text-input').bind('keypress', function(e) {
