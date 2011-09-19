@@ -9,7 +9,7 @@
  */
 
 
-error_reporting(E_ALL);						// see php documentation
+// error_reporting(E_ALL);						// see php documentation
 
 // try to include user configuration
 @include('user-config.inc.php');
@@ -20,7 +20,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('AUTH_USER', 'admin');
 @define('AUTH_PASSWORD', 'changeme');
 @define('BASE_URL', '');					// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
-@define('CACHE_TIME', 0*0);				// cache time in seconds (zero to disable)
+@define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
@@ -30,14 +30,14 @@ error_reporting(E_ALL);						// see php documentation
 @define('JQUERY', 'js/jquery-1.5.2.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable
-@define('LOG_LEVEL', 'debug');				// minimum log level (can be error, warn, info, debug)
+@define('LOG_LEVEL', 'info');				// minimum log level (can be error, warn, info, debug)
 @define('SHORT_URLS', false);				// use short urls internally
 @define('SHOW_FRONTEND_ERRORS', true);
 @define('SITE_NAME', 'hotglue 1.0');
 @define('SNAPSHOT_MAX_AGE', 60*60*24*7);	// auto- revisions are automatically deleted after n seconds (zero to disable)
 @define('SNAPSHOT_MIN_AGE', 60*60);			// auto- revisions are created every n seconds (zero to disable)
 @define('USE_HOTGLUE_ERRORS', true);		// use hotglue theming for error pages
-@define('USE_MIN_FILES', false);				// use minified files if possible (see also JQUERY define)
+@define('USE_MIN_FILES', true);				// use minified files if possible (see also JQUERY define)
 // default modules
 @define('IMAGE_JPEG_QUAL', 80);				// quality for jpeg resizing (0 < 100)
 @define('IMAGE_PNG_QUAL', 5);				// quality for png resizing (9 < 0)

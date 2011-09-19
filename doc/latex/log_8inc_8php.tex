@@ -1,6 +1,6 @@
 \hypertarget{log_8inc_8php}{
-\section{/srv/www/hotglue/log.inc.php File Reference}
-\label{log_8inc_8php}\index{/srv/www/hotglue/log.inc.php@{/srv/www/hotglue/log.inc.php}}
+\section{/var-\/www-\/hotglue/src.git-\/dev/log.inc.php File Reference}
+\label{log_8inc_8php}\index{/var-\/www-\/hotglue/src.git-\/dev/log.inc.php@{/var-\/www-\/hotglue/src.git-\/dev/log.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -13,22 +13,13 @@ if(!isset(\$logfile)) if(!isset(\$loglevels)) if(!isset(\$request\_\-id)) \hyper
 \hypertarget{log_8inc_8php_a0d59d693ca96c65b67de4b197954ce60}{
 \index{log.inc.php@{log.inc.php}!log\_\-msg@{log\_\-msg}}
 \index{log\_\-msg@{log\_\-msg}!log.inc.php@{log.inc.php}}
-\subsubsection[{log\_\-msg}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$logfile)) if (!isset(\$loglevels)) if (!isset(\$request\_\-id)) log\_\-msg (
-\begin{DoxyParamCaption}
-\item[{\$}]{level, }
-\item[{\$}]{msg}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{log\_\-msg}]{\setlength{\rightskip}{0pt plus 5cm}if (!isset(\$logfile)) if (!isset(\$loglevels)) if (!isset(\$request\_\-id)) log\_\-msg (\$ {\em level}, \/  \$ {\em msg})}}
 \label{log_8inc_8php_a0d59d693ca96c65b67de4b197954ce60}
 log a message to file
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$level} & can be error, warn, info or debug \\
-\hline
-string & {\em \$msg} & message \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$level can be error, warn, info or debug \item[{\em string}]\$msg message \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 bool true if successful, false if not 
 \end{DoxyReturn}

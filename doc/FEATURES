@@ -529,6 +529,9 @@ REVISIONS BROWSER
 
   * the page browser can be accessed through the "page" menu or by navigating 
   to the base url appended with "?pagename/revisions" (without quotes)
+
+  * ctrl-z (typical undo keybinding) triggers a dialog window which suggests
+  to use revisions in place of undo.
   
   * using the controls in the window's lower right corner you can navigate 
   between all revisions of the page
@@ -543,3 +546,17 @@ SHORT URLS
 
   * when the htaccess-dist file got renamed into .htaccess (and you host supports 
   this as well) you are able to leave out the question mark in the urls above.
+
+CODE EDITOR
+
+  * code editor can be accessed by navigating to the base url appended with
+  "?pagename/code" (no quotes) for per-page code or "/?code" for 
+  per-site code.
+  * two textarea fields allow for insertion of custom HTML, CSS or JavaScript 
+  code into the source of the page.
+  * the code is appended to the very end of respectful sections of the page - 
+  <head></head> and <body></body>.
+  * inserted code and resulting objects or DOM elements can not be manipulated
+  via the standard HOTGLUE interface.
+  * server-side code (PHP) expressions are not evaluated. 
+

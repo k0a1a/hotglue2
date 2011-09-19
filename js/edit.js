@@ -1859,7 +1859,7 @@ $(document).ready(function() {
 			return false;
 		} else if (e.ctrlKey && e.which == 90) {
 			// ctrl+z: show revisions browser to suggest using resisions inplace of undo
-			if (confirm('Would you like to undo?\nHOTGLUE keeps a record of your edits - it\'s called "revisions".\nWould you like to browse through the revisions of this page?')) {
+			if (confirm('Looking for undo option?\nHOTGLUE keeps record of your recent edits - it\'s called "revisions".\nWould you like to browse through the revisions of this page?')) {
 				window.location = $.glue.base_url+'?'+$.glue.page+'/revisions';
 				return false;
 			}

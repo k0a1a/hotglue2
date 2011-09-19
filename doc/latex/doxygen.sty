@@ -7,52 +7,7 @@
 \RequirePackage{calc}
 \RequirePackage{color}
 \RequirePackage{fancyhdr}
-\RequirePackage{longtable}
 \RequirePackage{verbatim}
-\RequirePackage{ifthen}
-\RequirePackage[table]{xcolor}
-
-% Use helvetica font instead of times roman
-\RequirePackage{helvet}
-\RequirePackage{sectsty}
-\RequirePackage{tocloft}
-\allsectionsfont{\usefont{OT1}{phv}{bc}{n}\selectfont}
-\providecommand{\cftchapfont}{%
-  \fontsize{11}{13}\usefont{OT1}{phv}{bc}{n}\selectfont
-}
-\providecommand{\cftchappagefont}{%
-  \fontsize{11}{13}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsecfont}{%
-  \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsecpagefont}{%
-  \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsubsecfont}{%
-  \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsubsecpagefont}{%
-  \fontsize{10}{12}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsubsubsecfont}{%
-  \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftsubsubsecpagefont}{%
-  \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftparafont}{%
-  \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cftparapagefont}{%
-  \fontsize{9}{11}\usefont{OT1}{phv}{c}{n}\selectfont
-}
-\providecommand{\cfttoctitlefont}{%
-  \fontsize{20}{22}\usefont{OT1}{phv}{b}{n}\selectfont
-}
-\providecommand{\rmdefault}{phv}
-\providecommand{\bfdefault}{bc}
-
 
 % Setup fancy headings
 \pagestyle{fancyplain}
@@ -65,18 +20,18 @@
 \renewcommand{\sectionmark}[1]{%
   \markright{\thesection\ #1}%
 }
-\fancyhead[LE]{\fancyplain{}{\bfseries\thepage}}
-\fancyhead[CE]{\fancyplain{}{}}
-\fancyhead[RE]{\fancyplain{}{\bfseries\leftmark}}
-\fancyhead[LO]{\fancyplain{}{\bfseries\rightmark}}
-\fancyhead[CO]{\fancyplain{}{}}
-\fancyhead[RO]{\fancyplain{}{\bfseries\thepage}}
-\fancyfoot[LE]{\fancyplain{}{}}
-\fancyfoot[CE]{\fancyplain{}{}}
-\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Generated on Tue May 17 2011 14:19:32 for hotglue by Doxygen }}
-\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Generated on Tue May 17 2011 14:19:32 for hotglue by Doxygen }}
-\fancyfoot[CO]{\fancyplain{}{}}
-\fancyfoot[RO]{\fancyplain{}{}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{%
+  \fancyplain{}{\bfseries\rightmark}%
+}
+\rhead[\fancyplain{}{\bfseries\leftmark}]{%
+  \fancyplain{}{\bfseries\thepage}%
+}
+\rfoot[\fancyplain{}{\bfseries\scriptsize%
+  Generated on Mon Sep 19 04:23:57 2011 for hotglue by Doxygen }]{}
+\lfoot[]{\fancyplain{}{\bfseries\scriptsize%
+  Generated on Mon Sep 19 04:23:57 2011 for hotglue by Doxygen }}
+\cfoot{}
+
 %---------- Internal commands used in this style file ----------------
 
 % Generic environment used by all paragraph-based environments defined
@@ -289,52 +244,19 @@
 }
 
 % Used by parameter lists
-\newenvironment{DoxyParams}[2][]{%
-  \begin{DoxyDesc}{#2}%
+\newenvironment{DoxyParams}[1]{%
+  \begin{DoxyDesc}{#1}%
     \begin{description}%
-      \item[] \hspace{\fill} \vspace{-25pt}%
-      \definecolor{tableShade}{HTML}{F8F8F8}%
-      \rowcolors{1}{white}{tableShade}%
-      \arrayrulecolor{gray}%
-      \setlength{\tabcolsep}{0.01\textwidth}%
-      \ifthenelse{\equal{#1}{}}
-      {\begin{longtable}{|>{\raggedleft\hspace{0pt}}p{0.15\textwidth}|%
-                          p{0.87\textwidth}|}}%
-      {\ifthenelse{\equal{#1}{1}}%
-       {\begin{longtable}{|>{\centering}p{0.10\textwidth}|%
-                          >{\raggedleft\hspace{0pt}}p{0.15\textwidth}|%
-                          p{0.75\textwidth}|}}%
-       {\begin{longtable}{|>{\centering}p{0.10\textwidth}|%
-                          >{\centering\hspace{0pt}}p{0.15\textwidth}|%
-                          >{\raggedleft\hspace{0pt}}p{0.15\textwidth}|%
-                          p{0.58\textwidth}|}}%
-       }\hline%
 }{%
-      \end{longtable}%
     \end{description}%
   \end{DoxyDesc}%
-}
-
-% is used for parameters within a detailed function description
-\newenvironment{DoxyParamCaption}{%
-  \renewcommand{\item}[2][]{##1 {\em ##2}}%
-  }{%
 }
 
 % Used by return value lists
 \newenvironment{DoxyRetVals}[1]{%
   \begin{DoxyDesc}{#1}%
     \begin{description}%
-      \item[] \hspace{\fill} \vspace{-25pt}%
-      \definecolor{tableShade}{HTML}{F8F8F8}%
-      \rowcolors{1}{white}{tableShade}%
-      \arrayrulecolor{gray}%
-      \setlength{\tabcolsep}{0.01\textwidth}%
-      \begin{longtable}{|>{\raggedleft\hspace{0pt}}p{0.25\textwidth}|%
-                          p{0.77\textwidth}|}%
-      \hline%
 }{%
-      \end{longtable}%
     \end{description}%
   \end{DoxyDesc}%
 }
@@ -343,16 +265,7 @@
 \newenvironment{DoxyExceptions}[1]{%
   \begin{DoxyDesc}{#1}%
     \begin{description}%
-      \item[] \hspace{\fill} \vspace{-25pt}%
-      \definecolor{tableShade}{HTML}{F8F8F8}%
-      \rowcolors{1}{white}{tableShade}%
-      \arrayrulecolor{gray}%
-      \setlength{\tabcolsep}{0.01\textwidth}%
-      \begin{longtable}{|>{\raggedleft\hspace{0pt}}p{0.25\textwidth}|%
-                          p{0.77\textwidth}|}%
-      \hline%
 }{%
-      \end{longtable}%
     \end{description}%
   \end{DoxyDesc}%
 }
@@ -361,16 +274,7 @@
 \newenvironment{DoxyTemplParams}[1]{%
   \begin{DoxyDesc}{#1}%
     \begin{description}%
-      \item[] \hspace{\fill} \vspace{-25pt}%
-      \definecolor{tableShade}{HTML}{F8F8F8}%
-      \rowcolors{1}{white}{tableShade}%
-      \arrayrulecolor{gray}%
-      \setlength{\tabcolsep}{0.01\textwidth}%
-      \begin{longtable}{|>{\raggedleft\hspace{0pt}}p{0.25\textwidth}|%
-                          p{0.77\textwidth}|}%
-      \hline%
 }{%
-      \end{longtable}%
     \end{description}%
   \end{DoxyDesc}%
 }
@@ -423,6 +327,7 @@
 \setlength{\parindent}{0cm}
 \setlength{\parskip}{0.2cm}
 \addtocounter{secnumdepth}{1}
+\sloppy
 \usepackage[T1]{fontenc}
 \makeatletter
 \renewcommand{\paragraph}{\@startsection{paragraph}{4}{0ex}%
