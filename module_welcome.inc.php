@@ -52,7 +52,8 @@ function welcome_render_page_late($args)
 	body_append(tab().'<span id="text"><b>3.</b> Double-click on the canvas will give you a menu of options to change preferences, show a grid, make new pages, set background picture and more!</span>'.nl());
 	body_append(tab().'<span id="text"><b>4.</b> Remove "'.(SHORT_URLS ? '' : '?').'edit" from the address of the page (the URL) to see the "view-only" version. That\'s how your page will look to everyone else!</span>'.nl());
 	body_append(tab().'<span id="text"><b>5.</b> To get back to editing mode add "'.(SHORT_URLS ? '' : '?').'edit" to the URL of the page.<br>(for example: '.base_url().'<b>'.(SHORT_URLS ? '' : '?').'edit</b>)</span></span>'.nl());
-	body_append(tab().'<p>You can find more information on how to work with HOTGLUE on our <a href="http://hotglue.me" target="_blank">web-site</a>. Make sure to checkout "<a href="http://hotglue.me/what" target="_blank">What is HOTGLUE?</a>" and "<a href="http://hotglue.me/how" target="_blank">How to HOTGLUE?</a>" pages!'.nl());
+	body_append(tab().'<p>We recommend you to use <a href="http://firefox.com" target="_blank">Mozilla Firefox</a> browser when editing in HOTGLUE. Firefox is a very reliable and modern web-browser, it is our favorite!'.nl());
+body_append(tab().'<p>You can find more information on how to work with HOTGLUE on our <a href="http://hotglue.me" target="_blank">web-site</a>. Make sure to checkout "<a href="http://hotglue.me/what" target="_blank">What is HOTGLUE?</a>" and "<a href="http://hotglue.me/how" target="_blank">How to HOTGLUE?</a>" pages!'.nl());
 	body_append(tab().'<p>Enjoy! <span id="welcome-light">[click this message to make it go away]</span></p>'.nl());
 	body_append('</div>'.nl());
 	return true;
