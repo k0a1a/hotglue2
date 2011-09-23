@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>hotglue: /var-www-hotglue/hotglue.org-test/dev/module_image.inc.php File Reference</title>
+<title>hotglue: /var-www-hotglue/src.git-dev/module_image.inc.php File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="doxygen.css" rel="stylesheet" type="text/css"/>
 </head>
@@ -23,7 +23,7 @@
   </div>
 </div>
 <div class="contents">
-<h1>/var-www-hotglue/hotglue.org-test/dev/module_image.inc.php File Reference</h1>
+<h1>/var-www-hotglue/src.git-dev/module_image.inc.php File Reference</h1>
 <p><a href="module__image_8inc_8php_source.html">Go to the source code of this file.</a></p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions</h2></td></tr>
@@ -35,6 +35,7 @@
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#a0bef6164f5eafe368d251639cf6fe298">image_has_reference</a> ($args)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#a4fadded2a225d1b5ea73404a84597620">image_render_object</a> ($args)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#a8266a74a11a86a73e2aa3709388fd43f">image_render_page_early</a> ($args)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#aba67b6eaafc9c80c5b19a9cda9604830">is_ani</a> ($filename)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#a9e03a71310133176236ae0bd4a0241e0">image_resize</a> ($args)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#ac26ea1448f0b7ed835907cf7c22b60ca">image_save_state</a> ($args)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="module__image_8inc_8php.html#abb6646bfaa6a012e620cdaaa0bc3c807">image_serve_resource</a> ($args)</td></tr>
@@ -244,7 +245,7 @@
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>array response true if the client is advised to reload the image, false if not </dd></dl>
 
-<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00338">338</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00360">360</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
 
 </div>
 </div>
@@ -265,7 +266,7 @@
 <div class="memdoc">
 <p>implements save_state </p>
 
-<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00498">498</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00524">524</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
 
 </div>
 </div>
@@ -286,7 +287,7 @@
 <div class="memdoc">
 <p>implements serve_resource </p>
 
-<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00540">540</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00566">566</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
 
 </div>
 </div>
@@ -308,7 +309,7 @@
 <p>implements snapshot_symlink</p>
 <p>see <a class="el" href="module__glue_8inc_8php.html#a5d3ad02088eee566589cd47fe0dc889a">snapshot()</a> in <a class="el" href="module__glue_8inc_8php.html">module_glue.inc.php</a> </p>
 
-<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00595">595</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00621">621</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
 
 </div>
 </div>
@@ -329,12 +330,35 @@
 <div class="memdoc">
 <p>implements upload </p>
 
-<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00657">657</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00683">683</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="aba67b6eaafc9c80c5b19a9cda9604830"></a><!-- doxytag: member="module_image.inc.php::is_ani" ref="aba67b6eaafc9c80c5b19a9cda9604830" args="($filename)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">is_ani </td>
+          <td>(</td>
+          <td class="paramtype">$&nbsp;</td>
+          <td class="paramname"> <em>filename</em></td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+<p>determine if file is animated gif</p>
+<p>function takes filename and returns 'true' if the file header contains multiple frames: * a static 4-byte sequence () * 4 variable bytes * a static 2-byte sequence () (some variants may use  ?)</p>
+<p>based on: <a href="http://www.php.net/manual/en/function.imagecreatefromgif.php#104473">http://www.php.net/manual/en/function.imagecreatefromgif.php#104473</a> </p>
+
+<p>Definition at line <a class="el" href="module__image_8inc_8php_source.html#l00335">335</a> of file <a class="el" href="module__image_8inc_8php_source.html">module_image.inc.php</a>.</p>
 
 </div>
 </div>
 </div>
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Mon Sep 19 08:14:14 2011 for hotglue by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Fri Sep 23 15:35:08 2011 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>

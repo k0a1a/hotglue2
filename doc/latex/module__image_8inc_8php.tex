@@ -1,6 +1,6 @@
 \hypertarget{module__image_8inc_8php}{
-\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php File Reference}
-\label{module__image_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php}}
+\section{/var-\/www-\/hotglue/src.git-\/dev/module\_\-image.inc.php File Reference}
+\label{module__image_8inc_8php}\index{/var-\/www-\/hotglue/src.git-\/dev/module\_\-image.inc.php@{/var-\/www-\/hotglue/src.git-\/dev/module\_\-image.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -20,6 +20,8 @@
 \hyperlink{module__image_8inc_8php_a4fadded2a225d1b5ea73404a84597620}{image\_\-render\_\-object} (\$args)
 \item 
 \hyperlink{module__image_8inc_8php_a8266a74a11a86a73e2aa3709388fd43f}{image\_\-render\_\-page\_\-early} (\$args)
+\item 
+\hyperlink{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}{is\_\-ani} (\$filename)
 \item 
 \hyperlink{module__image_8inc_8php_a9e03a71310133176236ae0bd4a0241e0}{image\_\-resize} (\$args)
 \item 
@@ -138,7 +140,7 @@ array response true if the client is advised to reload the image, false if not
 \end{DoxyReturn}
 
 
-Definition at line 338 of file module\_\-image.inc.php.
+Definition at line 360 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_ac26ea1448f0b7ed835907cf7c22b60ca}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-save\_\-state@{image\_\-save\_\-state}}
@@ -147,7 +149,7 @@ Definition at line 338 of file module\_\-image.inc.php.
 \label{module__image_8inc_8php_ac26ea1448f0b7ed835907cf7c22b60ca}
 implements save\_\-state 
 
-Definition at line 498 of file module\_\-image.inc.php.
+Definition at line 524 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_abb6646bfaa6a012e620cdaaa0bc3c807}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-serve\_\-resource@{image\_\-serve\_\-resource}}
@@ -156,7 +158,7 @@ Definition at line 498 of file module\_\-image.inc.php.
 \label{module__image_8inc_8php_abb6646bfaa6a012e620cdaaa0bc3c807}
 implements serve\_\-resource 
 
-Definition at line 540 of file module\_\-image.inc.php.
+Definition at line 566 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_a65d33fafe2da58d0f87f2df1fedbbe62}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-snapshot\_\-symlink@{image\_\-snapshot\_\-symlink}}
@@ -167,7 +169,7 @@ implements snapshot\_\-symlink
 
 see \hyperlink{module__glue_8inc_8php_a5d3ad02088eee566589cd47fe0dc889a}{snapshot()} in \hyperlink{module__glue_8inc_8php}{module\_\-glue.inc.php} 
 
-Definition at line 595 of file module\_\-image.inc.php.
+Definition at line 621 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_a37dee9de60e2852c0631d8e60e58585c}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-upload@{image\_\-upload}}
@@ -176,5 +178,18 @@ Definition at line 595 of file module\_\-image.inc.php.
 \label{module__image_8inc_8php_a37dee9de60e2852c0631d8e60e58585c}
 implements upload 
 
-Definition at line 657 of file module\_\-image.inc.php.
+Definition at line 683 of file module\_\-image.inc.php.
+
+\hypertarget{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!is\_\-ani@{is\_\-ani}}
+\index{is\_\-ani@{is\_\-ani}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{is\_\-ani}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-ani (\$ {\em filename})}}
+\label{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}
+determine if file is animated gif
+
+function takes filename and returns 'true' if the file header contains multiple frames: $\ast$ a static 4-\/byte sequence () $\ast$ 4 variable bytes $\ast$ a static 2-\/byte sequence () (some variants may use  ?)
+
+based on: \href{http://www.php.net/manual/en/function.imagecreatefromgif.php#104473}{\tt http://www.php.net/manual/en/function.imagecreatefromgif.php\#104473} 
+
+Definition at line 335 of file module\_\-image.inc.php.
 

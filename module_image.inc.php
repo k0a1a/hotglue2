@@ -321,6 +321,28 @@ function image_render_page_early($args)
 	}
 }
 
+/**
+ *	determine if file is animated gif
+ *	
+ *	function takes filename and returns 'true' if the file header contains
+ *	multiple frames:
+ *	* a static 4-byte sequence (\x00\x21\xF9\x04)
+ *	* 4 variable bytes
+ *	* a static 2-byte sequence (\x00\x2C) (some variants may use \x00\x21 ?)
+ *	
+ *	based on: http://www.php.net/manual/en/function.imagecreatefromgif.php#104473
+ */
+function is_ani($filename) {
+	if(!($fh = @fopen($filename, 'rb')))
+		return false;
+	$count = 0;
+	while(!feof($fh) && $count < 2) {
+		$chunk = fread($fh, 1024 * 100); //read 100kb at a time
+		$count += preg_match_all('#\x00\x21\xF9\x04.{4}\x00(\x2C|\x21)#s', $chunk, $matches);
+	}
+	fclose($fh);
+	return $count > 1;
+}
 
 /**
  *	resize an image object
@@ -420,6 +442,10 @@ function image_resize($args)
 	} elseif ($obj['image-file-mime'] == 'image/png' || $ext == 'png') {
 		$orig = @imagecreatefrompng($fn);
 		$dest_ext = 'png';
+	} elseif (is_ani($fn)) {
+		// animated images shall not be resized
+		log_msg('debug', 'image_resize: animated image, not resizing');
+		return response(true);
 	} elseif ($obj['image-file-mime'] == 'image/gif' || $ext == 'gif') {
 		$orig = @imagecreatefromgif($fn);
 		// save gifs as png
