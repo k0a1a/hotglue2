@@ -64,6 +64,9 @@ function object_alter_render_late($args)
 		// add links only for viewing
 		if (!empty($obj['object-link'])) {
 			$link = $obj['object-link'];
+			if(!empty($obj['object-target'])) {
+				$target = $obj['object-target'];
+			}
 			// resolve any aliases
 			$link = resolve_aliases($link, $obj['name']);
 			if (!is_url($link) && substr($link, 0, 1) != '#') {
@@ -78,7 +81,12 @@ function object_alter_render_late($args)
 			if (substr($html, -1) == "\n") {
 				$html = substr($html, 0, -1);
 			}
-			$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
+			// if target is specified use it in link
+			if ($target) {
+				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" target="'.htmlspecialchars($target, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
+			} else {
+				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
+			}
 			return true;
 		}
 	}

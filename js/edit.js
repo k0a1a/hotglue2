@@ -259,28 +259,40 @@ $.glue.contextmenu = function()
 					$.glue.contextmenu.hide();
 				}
 			}
-			for (var cls in m) {
-				if ($(obj).hasClass(cls)) {
-					var target;
-					// add to left or top
-					if (cls == 'object') {
-						target = left;
-					} else {
-						target = top;
-					}
-					// sort by priority ascending
-					for (var i=0; i < m[cls].length; i++) {
-						var added = false;
-						for (var j=0; j < target.length; j++) {
-							if (m[cls][i].prio < target[j].prio) {
-								target.splice(j, 0, m[cls][i]);
-								added = true;
-								break;
+			// unless object is locked construct default menus
+			if (!$(obj).hasClass('locked')) {
+				for (var cls in m) {
+					if ($(obj).hasClass(cls)) {
+						var target;
+						// add to left or top
+						if (cls == 'object') {
+							target = left;
+						} else {
+							target = top;
+						}
+						// sort by priority ascending
+						for (var i=0; i < m[cls].length; i++) {
+							var added = false;
+							for (var j=0; j < target.length; j++) {
+								if (m[cls][i].prio < target[j].prio) {
+									target.splice(j, 0, m[cls][i]);
+									added = true;
+									break;
+								}
+							}
+							if (!added) {
+								target.push(m[cls][i]);
 							}
 						}
-						if (!added) {
-							target.push(m[cls][i]);
-						}
+					}
+				}
+			// if object is locked show only 'object-lock' in object menu
+			} else {
+				var target = left;
+				// find out position of 'object-lock' module in module array
+				for (var i=0; i < m['object'].length; i++) {
+					if (m['object'][i]['name'] == 'object-lock') {
+						target.push(m['object'][i]);
 					}
 				}
 			}
@@ -946,7 +958,7 @@ $.glue.sel = function()
 			// only prevent scrolling here
 			return false;
 		} else if (34 == e.which && e.shiftKey && $('.glue-selected').length) {
-			// shift+pageup: move objects to bottom of stack
+			// shift+pagedown: move objects to bottom of stack
 			return false;
 		} else if (37 <= e.which && e.which <= 40 && $('.glue-selected').length) {
 			// move selected elements with arrow keys
@@ -967,7 +979,7 @@ $.glue.sel = function()
 				add_x *= $.glue.grid.x();
 				add_y *= $.glue.grid.y();
 			}
-			$('.glue-selected').each(function() {
+			$('.glue-selected').not('.locked').each(function() {
 				var p = $(this).position();
 				// prevent elements from going completely offscreen
 				if (1 < p.left+add_x+$(this).outerWidth()) {
@@ -1001,15 +1013,20 @@ $.glue.sel = function()
 			}
 			// trigger event (once, cleared in keyup)
 			if (!key_moving) {
-				$('.glue-selected').trigger('glue-movestart');
+				$('.glue-selected').not('.locked').trigger('glue-movestart');
 				key_moving = true;
 			}
 			// prevent window scrolling
 			return false;
 		} else if (e.ctrlKey && e.which == 65) {
-			// select all objects
-			$('.object').not('.glue-selected').each(function() {
+			// select all objects not locked objects
+			// selected locked objects will be unselected
+			$('.object').not('.glue-selected').not('.locked').each(function() {
 				$.glue.sel.select($(this));
+			});
+			// exclude locked objects from selection
+			$('.locked.glue-selected').each(function() {
+				$.glue.sel.deselect($(this));
 			});
 			return false;
 		} else if (e.ctrlKey && e.which == 68) {
@@ -1018,7 +1035,7 @@ $.glue.sel = function()
 			return false;
 		} else if (e.ctrlKey && e.which == 73) {
 			// invert selection
-			var next = $('.object').not('.glue-selected');
+			var next = $('.object').not('.glue-selected').not('.locked');
 			$.glue.sel.none();
 			$(next).each(function() {
 				$.glue.sel.select($(this));
@@ -1033,7 +1050,7 @@ $.glue.sel = function()
 	$('html').bind('keyup', function(e) {
 		if (33 == e.which && e.shiftKey && $('.glue-selected').length) {
 			// shift+pageup: move objects to top of stack
-			$('.glue-selected').each(function() {
+			$('.glue-selected').not('.locked').each(function() {
 				$.glue.stack.to_top($(this));
 				$.glue.object.save($(this));
 			});
@@ -1041,7 +1058,7 @@ $.glue.sel = function()
 			return false;
 		} else if (34 == e.which && e.shiftKey && $('.glue-selected').length) {
 			// shift+pagedown: move objects to bottom of stack
-			$('.glue-selected').each(function() {
+			$('.glue-selected').not('.locked').each(function() {
 				$.glue.stack.to_bottom($(this));
 				$.glue.object.save($(this));
 			});
@@ -1049,13 +1066,13 @@ $.glue.sel = function()
 			return false;
 		} else if (37 <= e.which && e.which <= 40 && $('.glue-selected').length) {
 			// move selected elements with arrow keys
-			$('.glue-selected').trigger('glue-movestop');
+			$('.glue-selected').not('.locked').trigger('glue-movestop');
 			key_moving = false;
 			return false;
 		} else if (e.which == 46 && $('.glue-selected').length) {
 			// delete selected objects
 			// this is pretty much copied from object-edit.js
-			var objs = $('.glue-selected');
+			var objs = $('.glue-selected').not('.locked');
 			$(objs).each(function() {
 				var id = $(this).attr('id');
 				$.glue.object.unregister($(this));
@@ -1197,9 +1214,14 @@ $.glue.sel = function()
 		}
 		if (e.shiftKey && $(this).hasClass('glue-selected')) {
 			$.glue.sel.deselect($(this));
+		} 
+		// shift clicking involving locked object will result in no action
+		else if (e.shiftKey && $(this).hasClass('locked') || $('.glue-selected').hasClass('locked')) {
+			return;
 		} else {
 			$.glue.sel.select($(this));
 		}
+
 	});
 	
 	$('.object').live('glue-movestop', function(e) {
@@ -1321,7 +1343,7 @@ $.glue.stack = function()
 			var min = max_z+1;
 			var shift = 0;
 			// get min and max z of all objects
-			$('.object').each(function() {
+			$('.object').not('.locked').each(function() {
 				var z = parseInt($(this).css('z-index'));
 				if (isNaN(z)) {
 					return;
@@ -1338,7 +1360,7 @@ $.glue.stack = function()
 				// for each z-index level
 				// check if there is an object in this level
 				var found = false;
-				$('.object').each(function() {
+				$('.object').not('.locked').each(function() {
 					var z = parseInt($(this).css('z-index'));
 					if (isNaN(z)) {
 						return;
@@ -1351,7 +1373,7 @@ $.glue.stack = function()
 					// DEBUG
 					//console.log('compressing level '+i);
 					max--;
-					$('.object').each(function() {
+					$('.object').not('.locked').each(function() {
 						var z = parseInt($(this).css('z-index'));
 						if (isNaN(z)) {
 							return;
@@ -1387,7 +1409,7 @@ $.glue.stack = function()
 		to_bottom: function(obj) {
 			var local_min_z = max_z+1;
 			var old_z = parseInt($(obj).css('z-index'));
-			$('.object').each(function() {
+			$('.object').not('.locked').each(function() {
 				if (this == $(obj).get(0)) {
 					return;
 				}
@@ -1420,7 +1442,7 @@ $.glue.stack = function()
 		to_top: function(obj) {
 			var local_max_z = min_z-1;
 			var old_z = parseInt($(obj).css('z-index'));
-			$('.object').each(function() {
+			$('.object').not('.locked').each(function() {
 				if (this == $(obj).get(0)) {
 					return;
 				}
