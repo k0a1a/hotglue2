@@ -425,6 +425,11 @@ function delete_page($args)
 	
 	// finally try the shared directory and page directory
 	$a = expl('.', $args['page']);
+	// force remove shared, files might have remained there due to beeing referenced
+	// we don't really care since any referencing files (revisions or head) were already deleted
+	if (!rm_recursive(CONTENT_DIR.'/'.$a[0].'/shared')) {
+		log_msg('error', 'delete_page: error deleting '.$a.'/shared');
+	}
 	@rmdir(CONTENT_DIR.'/'.$a[0].'/shared');
 	if (@rmdir(CONTENT_DIR.'/'.$a[0])) {
 		log_msg('info', 'delete_page: parent page directory empty, removing '.quot($a[0]));
@@ -925,6 +930,74 @@ function rename_page($args)
 
 register_service('glue.rename_page', 'rename_page', array('auth'=>true));
 register_hook('rename_page', 'invoked when a page has been renamed');
+
+
+/**
+ *	copy a page
+ *	original page revisions are left out 
+ *	@param array $args arguments
+ *		key 'old' old page (i.e. page1.rev)
+ *		key 'new' new page (i.e. page2.rev)
+ *	@return array response
+ */
+function copy_page($args)
+{
+	if (empty($args['old'])) {
+		return response('Required argument "old" missing or empty', 400);
+	}
+	$pns = pagenames(array());
+	$pns = $pns['#data'];
+	if (!in_array($args['old'], $pns)) {
+		return response('Page name '.quot($args['old']).' does not exist', 404);
+	}
+	if (empty($args['new'])) {
+		return response('Required argument "new" missing or empty', 400);
+	}
+	if (in_array($args['new'], $pns)) {
+		return response('Page name '.quot($args['new']).' already exists', 400);
+	}
+	if (!valid_pagename($args['new'].'.head')) {
+		return response('Invalid page name '.quot($args['new']), 400);
+	}
+
+	$src = CONTENT_DIR.'/'.$args['old'];
+	$dest = CONTENT_DIR.'/'.$args['new'];
+
+	$dirs = scandir($src);
+	foreach ($dirs as $d) {
+		// skip root '.', top '..' and revisions 'auto-*'
+		if ($d == '.' || $d == '..' || substr($d, 0, 5) == 'auto-') {
+			continue;
+		// we should only have directories in source
+		} elseif (is_dir($src.'/'.$d)) {
+			$m = umask(0000);
+			if (!@mkdir($dest.'/'.$d, 0777, true)) {
+				umask($m);
+				return response('Error creating directory '.quot($dest.'/'.$d), 500);
+			}
+			umask($m);
+			$files = scandir($src.'/'.$d);
+			foreach ($files as $f) {
+				if ($f == '.' || $f == '..') {
+					continue;
+				} elseif (is_file($src.'/'.$d.'/'.$f)) {
+					// copy file
+					$m = umask(0111);
+					if (!@copy($src.'/'.$d.'/'.$f, $dest.'/'.$d.'/'.$f)) {
+						log_msg('error', 'copy: error copying '.quot($src.'/'.$d.'/'.$f).' to '.quot($dest.'/'.$d.'/'.$f).', skipping file');
+					}
+					umask($m);
+				}
+			}
+		}
+	}
+	log_msg('info', 'copy_page: copied '.quot($args['old']).' to '.quot($args['new']));
+	invoke_hook('copy_page', array('pagename'=>$args['new']));
+	return response(true);
+}
+
+register_service('glue.copy_page', 'copy_page', array('auth'=>true));
+register_hook('copy_page', 'invoked when a page has been copied');
 
 
 /**

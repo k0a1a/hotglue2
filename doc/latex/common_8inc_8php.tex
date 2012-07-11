@@ -1,6 +1,6 @@
 \hypertarget{common_8inc_8php}{
-\section{/var-\/www-\/hotglue/src.git-\/dev/common.inc.php File Reference}
-\label{common_8inc_8php}\index{/var-\/www-\/hotglue/src.git-\/dev/common.inc.php@{/var-\/www-\/hotglue/src.git-\/dev/common.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/common.inc.php File Reference}
+\label{common_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/common.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/common.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -26,6 +26,8 @@
 \hyperlink{common_8inc_8php_a31ed04b0c90ac3077e71743c307d45f8}{page\_\-canonical} (\&\$s)
 \item 
 \hyperlink{common_8inc_8php_aa71868111dd5b8af98df9cc9c968e523}{page\_\-exists} (\$s)
+\item 
+\hyperlink{common_8inc_8php_a75a714d369e1abc7ee1a15ca74c98124}{page\_\-reserved} (\$s)
 \item 
 \hyperlink{common_8inc_8php_ada968adfb989aa09adaf29867208f1ab}{page\_\-short} (\$s)
 \item 
@@ -210,6 +212,23 @@ bool
 
 Definition at line 401 of file common.inc.php.
 
+\hypertarget{common_8inc_8php_a75a714d369e1abc7ee1a15ca74c98124}{
+\index{common.inc.php@{common.inc.php}!page\_\-reserved@{page\_\-reserved}}
+\index{page\_\-reserved@{page\_\-reserved}!common.inc.php@{common.inc.php}}
+\subsubsection[{page\_\-reserved}]{\setlength{\rightskip}{0pt plus 5cm}page\_\-reserved (\$ {\em s})}}
+\label{common_8inc_8php_a75a714d369e1abc7ee1a15ca74c98124}
+check if a page name is reserved
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em \$s}]page \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+bool 
+\end{DoxyReturn}
+
+
+Definition at line 418 of file common.inc.php.
+
 \hypertarget{common_8inc_8php_ada968adfb989aa09adaf29867208f1ab}{
 \index{common.inc.php@{common.inc.php}!page\_\-short@{page\_\-short}}
 \index{page\_\-short@{page\_\-short}!common.inc.php@{common.inc.php}}
@@ -225,7 +244,7 @@ string
 \end{DoxyReturn}
 
 
-Definition at line 418 of file common.inc.php.
+Definition at line 436 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a80c23c9d8ac02159151d6368506b1b54}{
 \index{common.inc.php@{common.inc.php}!prompt\_\-auth@{prompt\_\-auth}}
@@ -239,7 +258,7 @@ prompt user for authentication
 \item[{\em bool}]\$header\_\-only only send header information this function does not return. \end{DoxyParams}
 
 
-Definition at line 439 of file common.inc.php.
+Definition at line 457 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a78992fdfae6cd9d7d4e8053d004d1709}{
 \index{common.inc.php@{common.inc.php}!resolve\_\-aliases@{resolve\_\-aliases}}
@@ -256,7 +275,7 @@ string resolved string
 \end{DoxyReturn}
 
 
-Definition at line 462 of file common.inc.php.
+Definition at line 480 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a81eb70073067db81ab43829870f15e6d}{
 \index{common.inc.php@{common.inc.php}!resolve\_\-relative\_\-urls@{resolve\_\-relative\_\-urls}}
@@ -273,7 +292,7 @@ string resolved string
 \end{DoxyReturn}
 
 
-Definition at line 499 of file common.inc.php.
+Definition at line 517 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_aac90387dcab722e243df2d083f8d6a00}{
 \index{common.inc.php@{common.inc.php}!serve\_\-cached@{serve\_\-cached}}
@@ -290,7 +309,7 @@ true if successful, false if not
 \end{DoxyReturn}
 
 
-Definition at line 536 of file common.inc.php.
+Definition at line 554 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a0a3ee1e9beca572266648f17b9c4c75f}{
 \index{common.inc.php@{common.inc.php}!startpage@{startpage}}
@@ -304,7 +323,7 @@ string
 \end{DoxyReturn}
 
 
-Definition at line 554 of file common.inc.php.
+Definition at line 572 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a4659077c34b709eec75f9897ea07e55a}{
 \index{common.inc.php@{common.inc.php}!upload\_\-file@{upload\_\-file}}
@@ -321,7 +340,7 @@ filename inside the shared directory or false in case of error
 \end{DoxyReturn}
 
 
-Definition at line 580 of file common.inc.php.
+Definition at line 598 of file common.inc.php.
 
 \hypertarget{common_8inc_8php_a0ef613d233a6e62f7e631b8dfcd710bf}{
 \index{common.inc.php@{common.inc.php}!valid\_\-pagename@{valid\_\-pagename}}
@@ -338,5 +357,5 @@ bool
 \end{DoxyReturn}
 
 
-Definition at line 639 of file common.inc.php.
+Definition at line 657 of file common.inc.php.
 

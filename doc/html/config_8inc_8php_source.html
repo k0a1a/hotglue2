@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>hotglue: /var-www-hotglue/src.git-dev/config.inc.php Source File</title>
+<title>hotglue: /var-www-hotglue/hotglue.org-test/dev/config.inc.php Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="doxygen.css" rel="stylesheet" type="text/css"/>
 </head>
@@ -21,7 +21,7 @@
       <li><a href="globals.html"><span>File&nbsp;Members</span></a></li>
     </ul>
   </div>
-<h1>/var-www-hotglue/src.git-dev/config.inc.php</h1><a href="config_8inc_8php.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 &lt;?php
+<h1>/var-www-hotglue/hotglue.org-test/dev/config.inc.php</h1><a href="config_8inc_8php.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 &lt;?php
 <a name="l00002"></a>00002 
 <a name="l00003"></a>00003 
 <a name="l00004"></a>00004 <span class="comment">/*</span>
@@ -40,81 +40,88 @@
 <a name="l00017"></a>00017 <span class="comment">// otherwise fall back to these defaults</span>
 <a name="l00018"></a><a class="code" href="config_8inc_8php.html#af7115c186e2e18cb1839aed9d163b31a">00018</a> @define(<span class="stringliteral">&#39;ALWAYS_PROMPT_CREATE_PAGE&#39;</span>, <span class="keyword">false</span>);    <span class="comment">// invoke the &quot;create page&quot; controller when trying to access a non-existing page even if the user is not logged in yet (otherwise they receive a 404)</span>
 <a name="l00019"></a><a class="code" href="config_8inc_8php.html#a2ee7e30fa45253c5e303994703d3293f">00019</a> @define(<span class="stringliteral">&#39;AUTH_METHOD&#39;</span>, <span class="stringliteral">&#39;digest&#39;</span>);                       <span class="comment">// can be digest, basic or none</span>
-<a name="l00020"></a><a class="code" href="config_8inc_8php.html#a7d3a74ff015a9f789a5a2e554a9fa956">00020</a> @define(<span class="stringliteral">&#39;AUTH_USER&#39;</span>, <span class="stringliteral">&#39;admin&#39;</span>);
-<a name="l00021"></a><a class="code" href="config_8inc_8php.html#adf2112da607b39714ba9cca31b42a93a">00021</a> @define(<span class="stringliteral">&#39;AUTH_PASSWORD&#39;</span>, <span class="stringliteral">&#39;changeme&#39;</span>);
-<a name="l00022"></a><a class="code" href="config_8inc_8php.html#a16548ab75ed30cbddce178d56d26dbb8">00022</a> @define(<span class="stringliteral">&#39;BASE_URL&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                                        <span class="comment">// auto-detected if empty (don&#39;t use BASE_URL in custom code but rather base_url() below)</span>
-<a name="l00023"></a><a class="code" href="config_8inc_8php.html#afc454c0433a87811735836800fe3350b">00023</a> @define(<span class="stringliteral">&#39;CACHE_TIME&#39;</span>, 60*60);                           <span class="comment">// cache time in seconds (zero to disable)</span>
-<a name="l00024"></a><a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">00024</a> @define(<span class="stringliteral">&#39;CONTENT_DIR&#39;</span>, <span class="stringliteral">&#39;content&#39;</span>);                      <span class="comment">// content directory, must be writable</span>
-<a name="l00025"></a><a class="code" href="config_8inc_8php.html#a4208e17d37801abf0982b2d1e625a8f2">00025</a> @define(<span class="stringliteral">&#39;DEFAULT_PAGE&#39;</span>, <span class="stringliteral">&#39;start&#39;</span>);
-<a name="l00026"></a><a class="code" href="config_8inc_8php.html#a3b22c0132666a0112334ed38a21de8ce">00026</a> @define(<span class="stringliteral">&#39;DEFAULT_TO_EDIT&#39;</span>, <span class="keyword">false</span>);                      <span class="comment">// edit pages by default</span>
-<a name="l00027"></a><a class="code" href="config_8inc_8php.html#afd55d95ee6651060397404533516882a">00027</a> @define(<span class="stringliteral">&#39;FAVICON&#39;</span>, <span class="stringliteral">&#39;img/favicon.ico&#39;</span>);          <span class="comment">// can be empty or an absolute url</span>
-<a name="l00028"></a><a class="code" href="config_8inc_8php.html#a7c35565a4692ae46fd1c04340f4f1ca9">00028</a> @define(<span class="stringliteral">&#39;HOTGLUE_VERSION&#39;</span>, <span class="stringliteral">&#39;1.0.3pre&#39;</span>);         <span class="comment">// expected api.version.patchlevel</span>
-<a name="l00029"></a><a class="code" href="config_8inc_8php.html#a1d76a949b348522c90864da5df468d51">00029</a> @define(<span class="stringliteral">&#39;IE8_COMPAT&#39;</span>, <span class="keyword">true</span>);                            <span class="comment">// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)</span>
-<a name="l00030"></a><a class="code" href="config_8inc_8php.html#a5c2fff7e41a0380fb7872627e3a14a29">00030</a> @define(<span class="stringliteral">&#39;JQUERY&#39;</span>, <span class="stringliteral">&#39;js/jquery-1.5.2.min.js&#39;</span>);<span class="comment">// can be an absolute url</span>
-<a name="l00031"></a><a class="code" href="config_8inc_8php.html#a924ae40271cc363050158e36b3823407">00031</a> @define(<span class="stringliteral">&#39;LOCK_TIME&#39;</span>, 5000);                                     <span class="comment">// maximum time in ms to wait for an object lock</span>
-<a name="l00032"></a><a class="code" href="config_8inc_8php.html#a6de83433b64b24349644a4c2d839dcb7">00032</a> @define(<span class="stringliteral">&#39;LOG_FILE&#39;</span>, <span class="stringliteral">&#39;content/log.txt&#39;</span>);         <span class="comment">// log file, must be writable</span>
-<a name="l00033"></a><a class="code" href="config_8inc_8php.html#aa5a9053636a30269210c54e734e0d583">00033</a> @define(<span class="stringliteral">&#39;LOG_LEVEL&#39;</span>, <span class="stringliteral">&#39;error&#39;</span>);                          <span class="comment">// minimum log level (can be error, warn, info, debug)</span>
-<a name="l00034"></a><a class="code" href="config_8inc_8php.html#a377ac3321785e25215435e8d9802bc34">00034</a> @define(<span class="stringliteral">&#39;SHORT_URLS&#39;</span>, <span class="keyword">false</span>);                           <span class="comment">// use short urls internally</span>
-<a name="l00035"></a><a class="code" href="config_8inc_8php.html#a71022f94adb600e3984795805fe7f8d0">00035</a> @define(<span class="stringliteral">&#39;SHOW_FRONTEND_ERRORS&#39;</span>, <span class="keyword">true</span>);
-<a name="l00036"></a><a class="code" href="config_8inc_8php.html#a38f8e1265350d7091b55f4cffe629f3a">00036</a> @define(<span class="stringliteral">&#39;SITE_NAME&#39;</span>, <span class="stringliteral">&#39;hotglue 1.0&#39;</span>);
-<a name="l00037"></a><a class="code" href="config_8inc_8php.html#aa9c8d739795b1000f6ea105992a4e488">00037</a> @define(<span class="stringliteral">&#39;SNAPSHOT_MAX_AGE&#39;</span>, 60*60*24*7);        <span class="comment">// auto- revisions are automatically deleted after n seconds (zero to disable)</span>
-<a name="l00038"></a><a class="code" href="config_8inc_8php.html#a7fb94ff6aaa61e964fe2f90f738d5cb3">00038</a> @define(<span class="stringliteral">&#39;SNAPSHOT_MIN_AGE&#39;</span>, 60*60);                     <span class="comment">// auto- revisions are created every n seconds (zero to disable)</span>
-<a name="l00039"></a><a class="code" href="config_8inc_8php.html#a4be2ca4abd0486feb76708f3cf7e671d">00039</a> @define(<span class="stringliteral">&#39;USE_HOTGLUE_ERRORS&#39;</span>, <span class="keyword">true</span>);            <span class="comment">// use hotglue theming for error pages</span>
-<a name="l00040"></a><a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">00040</a> @define(<span class="stringliteral">&#39;USE_MIN_FILES&#39;</span>, <span class="keyword">true</span>);                         <span class="comment">// use minified files if possible (see also JQUERY define)</span>
-<a name="l00041"></a>00041 <span class="comment">// default modules</span>
-<a name="l00042"></a><a class="code" href="config_8inc_8php.html#af27e0280ef96e9b1d2d968a0d2d208ff">00042</a> @define(<span class="stringliteral">&#39;IMAGE_JPEG_QUAL&#39;</span>, 80);                         <span class="comment">// quality for jpeg resizing (0 &lt; 100)</span>
-<a name="l00043"></a><a class="code" href="config_8inc_8php.html#a3e161cc5c717f2e23d89b69ec297af9b">00043</a> @define(<span class="stringliteral">&#39;IMAGE_PNG_QUAL&#39;</span>, 5);                           <span class="comment">// quality for png resizing (9 &lt; 0)</span>
-<a name="l00044"></a><a class="code" href="config_8inc_8php.html#a0654894e46ca07417a6e85e091ed7d1d">00044</a> @define(<span class="stringliteral">&#39;IMAGE_RESIZING&#39;</span>, <span class="keyword">true</span>);                        <span class="comment">// resize uploaded images on the server (needs gd installed)</span>
-<a name="l00045"></a><a class="code" href="config_8inc_8php.html#a009a803b2fcec74eb8fd6b90dfebd680">00045</a> @define(<span class="stringliteral">&#39;IMAGE_UPLOAD_RESIZE_LARGER&#39;</span>, <span class="stringliteral">&#39;120%&#39;</span>);  <span class="comment">// automatically resize uploaded image when larger than n% of window width or height (set to 0% to disable)</span>
-<a name="l00046"></a><a class="code" href="config_8inc_8php.html#a86484d4f8051155268e7c23ac4d1f5f4">00046</a> @define(<span class="stringliteral">&#39;IMAGE_UPLOAD_RESIZE_TO&#39;</span>, <span class="stringliteral">&#39;80%&#39;</span>);               <span class="comment">// target size in n% of window width or height</span>
-<a name="l00047"></a><a class="code" href="config_8inc_8php.html#a3e205a45d91d7ef191e53487b6b48b3b">00047</a> @define(<span class="stringliteral">&#39;OBJECT_DEFAULT_COLORS&#39;</span>, <span class="stringliteral">&#39;#61b9cf #ff00ff #ffff00&#39;</span>);            <span class="comment">// default colors for new objects (space-separated string)</span>
-<a name="l00048"></a><a class="code" href="config_8inc_8php.html#abc1c54acdbce897c718854b663517cf9">00048</a> @define(<span class="stringliteral">&#39;PAGE_DEFAULT_GRID_X&#39;</span>, 50);                     <span class="comment">// default grid x spacing in px</span>
-<a name="l00049"></a><a class="code" href="config_8inc_8php.html#ab93c5dcea5ef58747b80594c3d9304d7">00049</a> @define(<span class="stringliteral">&#39;PAGE_DEFAULT_GRID_Y&#39;</span>, 50);                     <span class="comment">// default grid y spacing in px</span>
-<a name="l00050"></a><a class="code" href="config_8inc_8php.html#a81167deb206874270a59273141919fe5">00050</a> @define(<span class="stringliteral">&#39;PAGE_GUIDES_X&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                           <span class="comment">// show a grid line after n horizontal px (space-separated string)</span>
-<a name="l00051"></a><a class="code" href="config_8inc_8php.html#a3f78eb981e05f649bfff403c0e595d0b">00051</a> @define(<span class="stringliteral">&#39;PAGE_GUIDES_Y&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                           <span class="comment">// show a grid line after n vertical px (space-separated string)</span>
-<a name="l00052"></a><a class="code" href="config_8inc_8php.html#a11f5534165e1764860b16cc7215b2141">00052</a> @define(<span class="stringliteral">&#39;PAGES_NEED_AUTH&#39;</span>, <span class="keyword">true</span>);                       <span class="comment">// page browser needs authentication</span>
-<a name="l00053"></a><a class="code" href="config_8inc_8php.html#a67b9479d334a4e6c33c0bc3505b3eb5e">00053</a> @define(<span class="stringliteral">&#39;REVISIONS_NEED_AUTH&#39;</span>, <span class="keyword">true</span>);           <span class="comment">// revisions browser needs authentication</span>
-<a name="l00054"></a><a class="code" href="config_8inc_8php.html#a6f581226f389510394c592491ebedc0b">00054</a> @define(<span class="stringliteral">&#39;TEXT_AUTO_BR&#39;</span>, <span class="keyword">true</span>);                          <span class="comment">// automatically add &lt;br&gt; elements for newlines</span>
-<a name="l00055"></a><a class="code" href="config_8inc_8php.html#aca83853e44d4952801b133bf687a1056">00055</a> @define(<span class="stringliteral">&#39;TEXT_USE_WOFF_FONTS&#39;</span>, <span class="keyword">false</span>);          <span class="comment">// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)</span>
-<a name="l00056"></a><a class="code" href="config_8inc_8php.html#ae1e42e1baa41f003453356a3747f9fee">00056</a> @define(<span class="stringliteral">&#39;VIDEO_START_ON_CLICK&#39;</span>, <span class="keyword">true</span>);          <span class="comment">// start video on click when autoplay is off</span>
-<a name="l00057"></a>00057 
-<a name="l00058"></a>00058 
-<a name="l00059"></a>00059 <span class="comment"></span>
-<a name="l00060"></a>00060 <span class="comment">/**</span>
-<a name="l00061"></a>00061 <span class="comment"> *      use this function to get the site&#39;s base url</span>
-<a name="l00062"></a>00062 <span class="comment"> *</span>
-<a name="l00063"></a>00063 <span class="comment"> *      @return string base url (not html-encoded)</span>
-<a name="l00064"></a>00064 <span class="comment"> */</span>
-<a name="l00065"></a><a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">00065</a> function <a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>()
-<a name="l00066"></a>00066 {
-<a name="l00067"></a>00067         global $base_url_cached;
-<a name="l00068"></a>00068 
-<a name="l00069"></a>00069         $temp = <a class="code" href="config_8inc_8php.html#a16548ab75ed30cbddce178d56d26dbb8">BASE_URL</a>;
-<a name="l00070"></a>00070         <span class="keywordflow">if</span> (!empty($temp)) {
-<a name="l00071"></a>00071                 <span class="keywordflow">return</span> $temp;
-<a name="l00072"></a>00072         } <a class="code" href="json_8php.html#affd32ec1771cd364116738727d3a1ed8">elseif</a> (!isset($base_url_cached)) {
-<a name="l00073"></a>00073                 <span class="keywordflow">if</span> (empty($_SERVER[<span class="stringliteral">&#39;HTTPS&#39;</span>])) {
-<a name="l00074"></a>00074                         $base_url_cached = <span class="stringliteral">&#39;http://&#39;</span>.$_SERVER[<span class="stringliteral">&#39;HTTP_HOST&#39;</span>];
-<a name="l00075"></a>00075                         <span class="keywordflow">if</span> ($_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>] != <span class="stringliteral">&#39;80&#39;</span>) {
-<a name="l00076"></a>00076                                 $base_url_cached .= $_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>];
-<a name="l00077"></a>00077                         }
-<a name="l00078"></a>00078                 } <span class="keywordflow">else</span> {
-<a name="l00079"></a>00079                         $base_url_cached = <span class="stringliteral">&#39;https://&#39;</span>.$_SERVER[<span class="stringliteral">&#39;HTTP_HOST&#39;</span>];
-<a name="l00080"></a>00080                         <span class="keywordflow">if</span> ($_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>] != <span class="stringliteral">&#39;443&#39;</span>) {
-<a name="l00081"></a>00081                                 $base_url_cached .= $_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>];
-<a name="l00082"></a>00082                         }
-<a name="l00083"></a>00083                 }
-<a name="l00084"></a>00084                 $base_url_cached .= dirname($_SERVER[<span class="stringliteral">&#39;PHP_SELF&#39;</span>]);
-<a name="l00085"></a>00085                 <span class="comment">// make sure we have a trailing slash at the end</span>
-<a name="l00086"></a>00086                 <span class="keywordflow">if</span> (substr($base_url_cached, -1) != <span class="charliteral">&#39;/&#39;</span>) {
-<a name="l00087"></a>00087                         $base_url_cached .= <span class="charliteral">&#39;/&#39;</span>;
-<a name="l00088"></a>00088                 }
-<a name="l00089"></a>00089         }
-<a name="l00090"></a>00090 
-<a name="l00091"></a>00091         <span class="keywordflow">return</span> $base_url_cached;
-<a name="l00092"></a>00092 }
+<a name="l00020"></a>00020 
+<a name="l00021"></a>00021 <span class="comment">// DON&#39;T set username and password here!</span>
+<a name="l00022"></a>00022 <span class="comment">// instead rename file user-config.inc.php-dist to user-config.inc.php</span>
+<a name="l00023"></a>00023 <span class="comment">// and set you credentials there</span>
+<a name="l00024"></a><a class="code" href="config_8inc_8php.html#a7d3a74ff015a9f789a5a2e554a9fa956">00024</a> @define(<span class="stringliteral">&#39;AUTH_USER&#39;</span>, <span class="stringliteral">&#39;admin&#39;</span>);
+<a name="l00025"></a><a class="code" href="config_8inc_8php.html#adf2112da607b39714ba9cca31b42a93a">00025</a> @define(<span class="stringliteral">&#39;AUTH_PASSWORD&#39;</span>, <span class="stringliteral">&#39;changeme&#39;</span>);
+<a name="l00026"></a>00026 
+<a name="l00027"></a><a class="code" href="config_8inc_8php.html#a16548ab75ed30cbddce178d56d26dbb8">00027</a> @define(<span class="stringliteral">&#39;BASE_URL&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                                        <span class="comment">// auto-detected if empty (don&#39;t use BASE_URL in custom code but rather base_url() below)</span>
+<a name="l00028"></a><a class="code" href="config_8inc_8php.html#afc454c0433a87811735836800fe3350b">00028</a> @define(<span class="stringliteral">&#39;CACHE_TIME&#39;</span>, 60*60);                           <span class="comment">// cache time in seconds (zero to disable)</span>
+<a name="l00029"></a>00029 <span class="comment">//@define(&#39;CACHE_TIME&#39;, 0);                             // cache time in seconds (zero to disable)</span>
+<a name="l00030"></a><a class="code" href="config_8inc_8php.html#a9949c9013641bf07cd112607d200d6ff">00030</a> @define(<span class="stringliteral">&#39;CONTENT_DIR&#39;</span>, <span class="stringliteral">&#39;content&#39;</span>);                      <span class="comment">// content directory, must be writable</span>
+<a name="l00031"></a><a class="code" href="config_8inc_8php.html#a4208e17d37801abf0982b2d1e625a8f2">00031</a> @define(<span class="stringliteral">&#39;DEFAULT_PAGE&#39;</span>, <span class="stringliteral">&#39;start&#39;</span>);
+<a name="l00032"></a><a class="code" href="config_8inc_8php.html#a3b22c0132666a0112334ed38a21de8ce">00032</a> @define(<span class="stringliteral">&#39;DEFAULT_TO_EDIT&#39;</span>, <span class="keyword">false</span>);                      <span class="comment">// edit pages by default</span>
+<a name="l00033"></a><a class="code" href="config_8inc_8php.html#afd55d95ee6651060397404533516882a">00033</a> @define(<span class="stringliteral">&#39;FAVICON&#39;</span>, <span class="stringliteral">&#39;img/favicon.ico&#39;</span>);          <span class="comment">// can be empty or an absolute url</span>
+<a name="l00034"></a><a class="code" href="config_8inc_8php.html#a7c35565a4692ae46fd1c04340f4f1ca9">00034</a> @define(<span class="stringliteral">&#39;HOTGLUE_VERSION&#39;</span>, <span class="stringliteral">&#39;1.0.4pre&#39;</span>);         <span class="comment">// expected api.version.patchlevel</span>
+<a name="l00035"></a><a class="code" href="config_8inc_8php.html#a1d76a949b348522c90864da5df468d51">00035</a> @define(<span class="stringliteral">&#39;IE8_COMPAT&#39;</span>, <span class="keyword">true</span>);                            <span class="comment">// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)</span>
+<a name="l00036"></a><a class="code" href="config_8inc_8php.html#a5c2fff7e41a0380fb7872627e3a14a29">00036</a> @define(<span class="stringliteral">&#39;JQUERY&#39;</span>, <span class="stringliteral">&#39;js/jquery-1.5.2.min.js&#39;</span>);<span class="comment">// can be an absolute url</span>
+<a name="l00037"></a><a class="code" href="config_8inc_8php.html#a924ae40271cc363050158e36b3823407">00037</a> @define(<span class="stringliteral">&#39;LOCK_TIME&#39;</span>, 5000);                                     <span class="comment">// maximum time in ms to wait for an object lock</span>
+<a name="l00038"></a><a class="code" href="config_8inc_8php.html#a6de83433b64b24349644a4c2d839dcb7">00038</a> @define(<span class="stringliteral">&#39;LOG_FILE&#39;</span>, <span class="stringliteral">&#39;content/log.txt&#39;</span>);         <span class="comment">// log file, must be writable</span>
+<a name="l00039"></a><a class="code" href="config_8inc_8php.html#aa5a9053636a30269210c54e734e0d583">00039</a> @define(<span class="stringliteral">&#39;LOG_LEVEL&#39;</span>, <span class="stringliteral">&#39;error&#39;</span>);                          <span class="comment">// minimum log level (can be error, warn, info, debug)</span>
+<a name="l00040"></a><a class="code" href="config_8inc_8php.html#a377ac3321785e25215435e8d9802bc34">00040</a> @define(<span class="stringliteral">&#39;SHORT_URLS&#39;</span>, <span class="keyword">false</span>);                           <span class="comment">// use short urls internally</span>
+<a name="l00041"></a><a class="code" href="config_8inc_8php.html#a71022f94adb600e3984795805fe7f8d0">00041</a> @define(<span class="stringliteral">&#39;SHOW_FRONTEND_ERRORS&#39;</span>, <span class="keyword">true</span>);
+<a name="l00042"></a><a class="code" href="config_8inc_8php.html#a38f8e1265350d7091b55f4cffe629f3a">00042</a> @define(<span class="stringliteral">&#39;SITE_NAME&#39;</span>, <span class="stringliteral">&#39;hotglue 1.0&#39;</span>);
+<a name="l00043"></a><a class="code" href="config_8inc_8php.html#aa9c8d739795b1000f6ea105992a4e488">00043</a> @define(<span class="stringliteral">&#39;SNAPSHOT_MAX_AGE&#39;</span>, 60*60*24*7);        <span class="comment">// auto- revisions are automatically deleted after n seconds (zero to disable)</span>
+<a name="l00044"></a><a class="code" href="config_8inc_8php.html#a7fb94ff6aaa61e964fe2f90f738d5cb3">00044</a> @define(<span class="stringliteral">&#39;SNAPSHOT_MIN_AGE&#39;</span>, 60*60);                     <span class="comment">// auto- revisions are created every n seconds (zero to disable)</span>
+<a name="l00045"></a><a class="code" href="config_8inc_8php.html#a4be2ca4abd0486feb76708f3cf7e671d">00045</a> @define(<span class="stringliteral">&#39;USE_HOTGLUE_ERRORS&#39;</span>, <span class="keyword">true</span>);            <span class="comment">// use hotglue theming for error pages</span>
+<a name="l00046"></a><a class="code" href="config_8inc_8php.html#a98806af9de0ea41a958d26c7e06b26a9">00046</a> @define(<span class="stringliteral">&#39;USE_MIN_FILES&#39;</span>, <span class="keyword">true</span>);                         <span class="comment">// use minified files if possible (see also JQUERY define)</span>
+<a name="l00047"></a>00047 <span class="comment">// default modules</span>
+<a name="l00048"></a><a class="code" href="config_8inc_8php.html#af27e0280ef96e9b1d2d968a0d2d208ff">00048</a> @define(<span class="stringliteral">&#39;IMAGE_JPEG_QUAL&#39;</span>, 90);                         <span class="comment">// quality for jpeg resizing (0 &lt; 100)</span>
+<a name="l00049"></a><a class="code" href="config_8inc_8php.html#a3e161cc5c717f2e23d89b69ec297af9b">00049</a> @define(<span class="stringliteral">&#39;IMAGE_PNG_QUAL&#39;</span>, 7);                           <span class="comment">// quality for png resizing (9 &lt; 0)</span>
+<a name="l00050"></a><a class="code" href="config_8inc_8php.html#a0654894e46ca07417a6e85e091ed7d1d">00050</a> @define(<span class="stringliteral">&#39;IMAGE_RESIZING&#39;</span>, <span class="keyword">true</span>);                        <span class="comment">// resize uploaded images on the server (needs gd installed)</span>
+<a name="l00051"></a><a class="code" href="config_8inc_8php.html#a009a803b2fcec74eb8fd6b90dfebd680">00051</a> @define(<span class="stringliteral">&#39;IMAGE_UPLOAD_RESIZE_LARGER&#39;</span>, <span class="stringliteral">&#39;120%&#39;</span>);  <span class="comment">// automatically resize uploaded image when larger than n% of window width or height (set to 0% to disable)</span>
+<a name="l00052"></a><a class="code" href="config_8inc_8php.html#a86484d4f8051155268e7c23ac4d1f5f4">00052</a> @define(<span class="stringliteral">&#39;IMAGE_UPLOAD_RESIZE_TO&#39;</span>, <span class="stringliteral">&#39;80%&#39;</span>);               <span class="comment">// target size in n% of window width or height</span>
+<a name="l00053"></a><a class="code" href="config_8inc_8php.html#a3e205a45d91d7ef191e53487b6b48b3b">00053</a> @define(<span class="stringliteral">&#39;OBJECT_DEFAULT_COLORS&#39;</span>, <span class="stringliteral">&#39;#61b9cf #ff00ff #ffff00&#39;</span>);            <span class="comment">// default colors for new objects (space-separated string)</span>
+<a name="l00054"></a><a class="code" href="config_8inc_8php.html#a9b61a7295e29797458d957ae0640c601">00054</a> @define(<span class="stringliteral">&#39;RESERVED_PAGE_NAMES&#39;</span>, <span class="stringliteral">&#39;code edit pages&#39;</span>);      <span class="comment">// page names used internaly and thus unavailable</span>
+<a name="l00055"></a><a class="code" href="config_8inc_8php.html#abc1c54acdbce897c718854b663517cf9">00055</a> @define(<span class="stringliteral">&#39;PAGE_DEFAULT_GRID_X&#39;</span>, 50);                     <span class="comment">// default grid x spacing in px</span>
+<a name="l00056"></a><a class="code" href="config_8inc_8php.html#ab93c5dcea5ef58747b80594c3d9304d7">00056</a> @define(<span class="stringliteral">&#39;PAGE_DEFAULT_GRID_Y&#39;</span>, 50);                     <span class="comment">// default grid y spacing in px</span>
+<a name="l00057"></a><a class="code" href="config_8inc_8php.html#a81167deb206874270a59273141919fe5">00057</a> @define(<span class="stringliteral">&#39;PAGE_GUIDES_X&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                           <span class="comment">// show a grid line after n horizontal px (space-separated string)</span>
+<a name="l00058"></a><a class="code" href="config_8inc_8php.html#a3f78eb981e05f649bfff403c0e595d0b">00058</a> @define(<span class="stringliteral">&#39;PAGE_GUIDES_Y&#39;</span>, <span class="stringliteral">&#39;&#39;</span>);                           <span class="comment">// show a grid line after n vertical px (space-separated string)</span>
+<a name="l00059"></a><a class="code" href="config_8inc_8php.html#a11f5534165e1764860b16cc7215b2141">00059</a> @define(<span class="stringliteral">&#39;PAGES_NEED_AUTH&#39;</span>, <span class="keyword">true</span>);                       <span class="comment">// page browser needs authentication</span>
+<a name="l00060"></a><a class="code" href="config_8inc_8php.html#a67b9479d334a4e6c33c0bc3505b3eb5e">00060</a> @define(<span class="stringliteral">&#39;REVISIONS_NEED_AUTH&#39;</span>, <span class="keyword">true</span>);           <span class="comment">// revisions browser needs authentication</span>
+<a name="l00061"></a><a class="code" href="config_8inc_8php.html#a6f581226f389510394c592491ebedc0b">00061</a> @define(<span class="stringliteral">&#39;TEXT_AUTO_BR&#39;</span>, <span class="keyword">true</span>);                          <span class="comment">// automatically add &lt;br&gt; elements for newlines</span>
+<a name="l00062"></a><a class="code" href="config_8inc_8php.html#aca83853e44d4952801b133bf687a1056">00062</a> @define(<span class="stringliteral">&#39;TEXT_USE_WOFF_FONTS&#39;</span>, <span class="keyword">false</span>);          <span class="comment">// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)</span>
+<a name="l00063"></a><a class="code" href="config_8inc_8php.html#ae1e42e1baa41f003453356a3747f9fee">00063</a> @define(<span class="stringliteral">&#39;VIDEO_START_ON_CLICK&#39;</span>, <span class="keyword">true</span>);          <span class="comment">// start video on click when autoplay is off</span>
+<a name="l00064"></a>00064 
+<a name="l00065"></a>00065 
+<a name="l00066"></a>00066 <span class="comment"></span>
+<a name="l00067"></a>00067 <span class="comment">/**</span>
+<a name="l00068"></a>00068 <span class="comment"> *      use this function to get the site&#39;s base url</span>
+<a name="l00069"></a>00069 <span class="comment"> *</span>
+<a name="l00070"></a>00070 <span class="comment"> *      @return string base url (not html-encoded)</span>
+<a name="l00071"></a>00071 <span class="comment"> */</span>
+<a name="l00072"></a><a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">00072</a> function <a class="code" href="config_8inc_8php.html#a8fdfb46e432b25bbdad23971a23a26b5">base_url</a>()
+<a name="l00073"></a>00073 {
+<a name="l00074"></a>00074         global $base_url_cached;
+<a name="l00075"></a>00075 
+<a name="l00076"></a>00076         $temp = <a class="code" href="config_8inc_8php.html#a16548ab75ed30cbddce178d56d26dbb8">BASE_URL</a>;
+<a name="l00077"></a>00077         <span class="keywordflow">if</span> (!empty($temp)) {
+<a name="l00078"></a>00078                 <span class="keywordflow">return</span> $temp;
+<a name="l00079"></a>00079         } <a class="code" href="json_8php.html#affd32ec1771cd364116738727d3a1ed8">elseif</a> (!isset($base_url_cached)) {
+<a name="l00080"></a>00080                 <span class="keywordflow">if</span> (empty($_SERVER[<span class="stringliteral">&#39;HTTPS&#39;</span>])) {
+<a name="l00081"></a>00081                         $base_url_cached = <span class="stringliteral">&#39;http://&#39;</span>.$_SERVER[<span class="stringliteral">&#39;HTTP_HOST&#39;</span>];
+<a name="l00082"></a>00082                         <span class="keywordflow">if</span> ($_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>] != <span class="stringliteral">&#39;80&#39;</span>) {
+<a name="l00083"></a>00083                                 $base_url_cached .= $_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>];
+<a name="l00084"></a>00084                         }
+<a name="l00085"></a>00085                 } <span class="keywordflow">else</span> {
+<a name="l00086"></a>00086                         $base_url_cached = <span class="stringliteral">&#39;https://&#39;</span>.$_SERVER[<span class="stringliteral">&#39;HTTP_HOST&#39;</span>];
+<a name="l00087"></a>00087                         <span class="keywordflow">if</span> ($_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>] != <span class="stringliteral">&#39;443&#39;</span>) {
+<a name="l00088"></a>00088                                 $base_url_cached .= $_SERVER[<span class="stringliteral">&#39;SERVER_PORT&#39;</span>];
+<a name="l00089"></a>00089                         }
+<a name="l00090"></a>00090                 }
+<a name="l00091"></a>00091                 $base_url_cached .= dirname($_SERVER[<span class="stringliteral">&#39;PHP_SELF&#39;</span>]);
+<a name="l00092"></a>00092                 <span class="comment">// make sure we have a trailing slash at the end</span>
+<a name="l00093"></a>00093                 <span class="keywordflow">if</span> (substr($base_url_cached, -1) != <span class="charliteral">&#39;/&#39;</span>) {
+<a name="l00094"></a>00094                         $base_url_cached .= <span class="charliteral">&#39;/&#39;</span>;
+<a name="l00095"></a>00095                 }
+<a name="l00096"></a>00096         }
+<a name="l00097"></a>00097 
+<a name="l00098"></a>00098         <span class="keywordflow">return</span> $base_url_cached;
+<a name="l00099"></a>00099 }
 </pre></div></div>
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Fri Sep 23 15:35:08 2011 for hotglue by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Wed Jul 11 19:43:16 2012 for hotglue by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>

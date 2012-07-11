@@ -40,7 +40,7 @@ function controller_pages($args)
 	foreach ($pns as $pn) {
 		body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"><span class="page_browser_pagename"><a href="'.base_url().'?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
 		if ($pn.'.head' == startpage()) {
-			body_append('<span id="page_browser_startpage">the start page</span> ');
+			body_append('<span id="page_browser_startpage">[startpage]</span> ');
 		}
 		body_append('</div>');
 	}

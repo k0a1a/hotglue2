@@ -410,6 +410,24 @@ function page_exists($s)
 
 
 /**
+ *	check if a page name is reserved
+ *
+ *	@param $s page
+ *	@return bool
+ */
+function page_reserved($s)
+{
+	$a = expl('.', $s);
+	$r = expl(' ', RESERVED_PAGE_NAMES);
+	if (in_array($a[0], $r)) {		
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+/**
  *	return the short pagename if possible, otherwise the long one
  *
  *	@param $s page

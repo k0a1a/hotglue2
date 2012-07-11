@@ -1,5 +1,11 @@
+# useful for debugging taugh cases
+# php_flag display_errors on
+
 # make sure MultiViews is disabled
 Options -MultiViews
+
+# disable listing of directories
+Options -Indexes
 
 RewriteEngine on
 

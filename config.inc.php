@@ -17,15 +17,21 @@
 // otherwise fall back to these defaults
 @define('ALWAYS_PROMPT_CREATE_PAGE', false);	// invoke the "create page" controller when trying to access a non-existing page even if the user is not logged in yet (otherwise they receive a 404)
 @define('AUTH_METHOD', 'digest');			// can be digest, basic or none
+
+// DON'T set username and password here!
+// instead rename file user-config.inc.php-dist to user-config.inc.php
+// and set you credentials there
 @define('AUTH_USER', 'admin');
 @define('AUTH_PASSWORD', 'changeme');
+
 @define('BASE_URL', '');					// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
 @define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
+//@define('CACHE_TIME', 0);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
-@define('HOTGLUE_VERSION', '1.0.3pre');		// expected api.version.patchlevel
+@define('HOTGLUE_VERSION', '1.0.4pre');		// expected api.version.patchlevel
 @define('IE8_COMPAT', true);				// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)
 @define('JQUERY', 'js/jquery-1.5.2.min.js');// can be an absolute url
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
@@ -39,12 +45,13 @@
 @define('USE_HOTGLUE_ERRORS', true);		// use hotglue theming for error pages
 @define('USE_MIN_FILES', true);				// use minified files if possible (see also JQUERY define)
 // default modules
-@define('IMAGE_JPEG_QUAL', 80);				// quality for jpeg resizing (0 < 100)
-@define('IMAGE_PNG_QUAL', 5);				// quality for png resizing (9 < 0)
+@define('IMAGE_JPEG_QUAL', 90);				// quality for jpeg resizing (0 < 100)
+@define('IMAGE_PNG_QUAL', 7);				// quality for png resizing (9 < 0)
 @define('IMAGE_RESIZING', true);			// resize uploaded images on the server (needs gd installed)
 @define('IMAGE_UPLOAD_RESIZE_LARGER', '120%');	// automatically resize uploaded image when larger than n% of window width or height (set to 0% to disable)
 @define('IMAGE_UPLOAD_RESIZE_TO', '80%');		// target size in n% of window width or height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
+@define('RESERVED_PAGE_NAMES', 'code edit pages');	// page names used internaly and thus unavailable
 @define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
 @define('PAGE_DEFAULT_GRID_Y', 50);			// default grid y spacing in px
 @define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)

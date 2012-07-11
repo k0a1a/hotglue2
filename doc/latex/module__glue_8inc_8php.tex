@@ -1,6 +1,6 @@
 \hypertarget{module__glue_8inc_8php}{
-\section{/var-\/www-\/hotglue/src.git-\/dev/module\_\-glue.inc.php File Reference}
-\label{module__glue_8inc_8php}\index{/var-\/www-\/hotglue/src.git-\/dev/module\_\-glue.inc.php@{/var-\/www-\/hotglue/src.git-\/dev/module\_\-glue.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-glue.inc.php File Reference}
+\label{module__glue_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-glue.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-glue.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -42,6 +42,8 @@
 \hyperlink{module__glue_8inc_8php_aab1981a767de519c6c4afb946d748d0a}{render\_\-page} (\$args)
 \item 
 \hyperlink{module__glue_8inc_8php_acd08b36587528b6f088cafb7d1d6bd29}{rename\_\-page} (\$args)
+\item 
+\hyperlink{module__glue_8inc_8php_a9260da20bb88d89a3beebd98b9194441}{copy\_\-page} (\$args)
 \item 
 \hyperlink{module__glue_8inc_8php_ae69e25beb40feedc02d3b850587d20cc}{revert} (\$args)
 \item 
@@ -148,6 +150,21 @@ array response string name of new object if successful
 
 Definition at line 194 of file module\_\-glue.inc.php.
 
+\hypertarget{module__glue_8inc_8php_a9260da20bb88d89a3beebd98b9194441}{
+\index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!copy\_\-page@{copy\_\-page}}
+\index{copy\_\-page@{copy\_\-page}!module_glue.inc.php@{module\_\-glue.inc.php}}
+\subsubsection[{copy\_\-page}]{\setlength{\rightskip}{0pt plus 5cm}copy\_\-page (\$ {\em args})}}
+\label{module__glue_8inc_8php_a9260da20bb88d89a3beebd98b9194441}
+copy a page original page revisions are left out 
+\begin{DoxyParams}{Parameters}
+\item[{\em array}]\$args arguments key 'old' old page (i.e. page1.rev) key 'new' new page (i.e. page2.rev) \end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+array response 
+\end{DoxyReturn}
+
+
+Definition at line 943 of file module\_\-glue.inc.php.
+
 \hypertarget{module__glue_8inc_8php_a12aa18f28f86274d770ba90aa88e2c3e}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!create\_\-object@{create\_\-object}}
 \index{create\_\-object@{create\_\-object}!module_glue.inc.php@{module\_\-glue.inc.php}}
@@ -231,7 +248,7 @@ array response true if the file got deleted for good, false if not
 \end{DoxyReturn}
 
 
-Definition at line 454 of file module\_\-glue.inc.php.
+Definition at line 459 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a5dd5e5f68b79a78901c25ce850b3eacf}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!get\_\-startpage@{get\_\-startpage}}
@@ -248,7 +265,7 @@ array response string
 \end{DoxyReturn}
 
 
-Definition at line 495 of file module\_\-glue.inc.php.
+Definition at line 500 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_ac6b5ed5ff055ccb4d07ad17cf78d5a11}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!load\_\-object@{load\_\-object}}
@@ -265,7 +282,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 515 of file module\_\-glue.inc.php.
+Definition at line 520 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_aa9618d306b7ee5bd9e5d6a0be268ed44}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!object\_\-get\_\-symlink@{object\_\-get\_\-symlink}}
@@ -282,7 +299,7 @@ array response key 'data' either has the target as object name, an empty string 
 \end{DoxyReturn}
 
 
-Definition at line 582 of file module\_\-glue.inc.php.
+Definition at line 587 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a14e6da411df5aa9ff38e2d4ea27dd077}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!object\_\-make\_\-symlink@{object\_\-make\_\-symlink}}
@@ -299,7 +316,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 612 of file module\_\-glue.inc.php.
+Definition at line 617 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_ae16d748c2d933978daec8bf11acdc34b}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!object\_\-remove\_\-attr@{object\_\-remove\_\-attr}}
@@ -316,7 +333,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 685 of file module\_\-glue.inc.php.
+Definition at line 690 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a354fc85f928484ae3b316bbf0065d9bd}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!pagenames@{pagenames}}
@@ -333,7 +350,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 737 of file module\_\-glue.inc.php.
+Definition at line 742 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_acd08b36587528b6f088cafb7d1d6bd29}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!rename\_\-page@{rename\_\-page}}
@@ -348,7 +365,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 891 of file module\_\-glue.inc.php.
+Definition at line 896 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_ae9103a74e4b40e88536fbc0a52d1c72f}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!render\_\-object@{render\_\-object}}
@@ -365,7 +382,7 @@ array response html
 \end{DoxyReturn}
 
 
-Definition at line 775 of file module\_\-glue.inc.php.
+Definition at line 780 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_aab1981a767de519c6c4afb946d748d0a}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!render\_\-page@{render\_\-page}}
@@ -382,7 +399,7 @@ array response html
 \end{DoxyReturn}
 
 
-Definition at line 828 of file module\_\-glue.inc.php.
+Definition at line 833 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_ae69e25beb40feedc02d3b850587d20cc}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!revert@{revert}}
@@ -399,7 +416,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 938 of file module\_\-glue.inc.php.
+Definition at line 1011 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a27d90d2ed1b4142554bc4e0e47e9ba0c}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!revisions@{revisions}}
@@ -416,7 +433,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 1004 of file module\_\-glue.inc.php.
+Definition at line 1077 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a1dc65b69a920ac4ebc8f7c1df305060b}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!revisions\_\-info@{revisions\_\-info}}
@@ -433,7 +450,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 1043 of file module\_\-glue.inc.php.
+Definition at line 1116 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_ab294f21c7f6fed0932b65167f180c78c}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!save\_\-object@{save\_\-object}}
@@ -450,7 +467,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 1089 of file module\_\-glue.inc.php.
+Definition at line 1162 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a60d03d7a0d8783e926835f0aa6cff698}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!save\_\-state@{save\_\-state}}
@@ -467,7 +484,7 @@ array response true if successful
 \end{DoxyReturn}
 
 
-Definition at line 1145 of file module\_\-glue.inc.php.
+Definition at line 1218 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_aafa7a8fa046ff6119cb7506d68edf787}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!set\_\-startpage@{set\_\-startpage}}
@@ -484,7 +501,7 @@ array response true if successful
 \end{DoxyReturn}
 
 
-Definition at line 1201 of file module\_\-glue.inc.php.
+Definition at line 1274 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a5d3ad02088eee566589cd47fe0dc889a}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!snapshot@{snapshot}}
@@ -501,7 +518,7 @@ array response (holding the page of the newly created revision if successful)
 \end{DoxyReturn}
 
 
-Definition at line 1231 of file module\_\-glue.inc.php.
+Definition at line 1304 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a4aed316adcde13b40c9fc1b35e6537a4}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!update\_\-object@{update\_\-object}}
@@ -518,7 +535,7 @@ array response
 \end{DoxyReturn}
 
 
-Definition at line 1329 of file module\_\-glue.inc.php.
+Definition at line 1402 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a43746135e67f614d79317029aced064b}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!upload\_\-files@{upload\_\-files}}
@@ -535,7 +552,7 @@ array response array of rendered, newly created objects
 \end{DoxyReturn}
 
 
-Definition at line 1369 of file module\_\-glue.inc.php.
+Definition at line 1442 of file module\_\-glue.inc.php.
 
 \hypertarget{module__glue_8inc_8php_a2099347b9bdf5a5973a13e5f7a4be933}{
 \index{module\_\-glue.inc.php@{module\_\-glue.inc.php}!upload\_\-references@{upload\_\-references}}
@@ -552,5 +569,5 @@ array response array of objects (i.e. page.rev.obj)
 \end{DoxyReturn}
 
 
-Definition at line 1452 of file module\_\-glue.inc.php.
+Definition at line 1525 of file module\_\-glue.inc.php.
 
