@@ -425,11 +425,6 @@ function delete_page($args)
 	
 	// finally try the shared directory and page directory
 	$a = expl('.', $args['page']);
-	// force remove shared, files might have remained there due to beeing referenced
-	// we don't really care since any referencing files (revisions or head) were already deleted
-	// if (!rm_recursive(CONTENT_DIR.'/'.$a[0].'/shared')) {
-	//	log_msg('error', 'delete_page: error deleting '.$a.'/shared');
-	// }
 	@rmdir(CONTENT_DIR.'/'.$a[0].'/shared');
 	if (@rmdir(CONTENT_DIR.'/'.$a[0])) {
 		log_msg('info', 'delete_page: parent page directory empty, removing '.quot($a[0]));
