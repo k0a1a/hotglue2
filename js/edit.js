@@ -323,8 +323,22 @@ $.glue.contextmenu = function()
 				var target;
 				var cur_left = $(obj).position().left;
 				var cur_top = $(obj).position().top;
+				var offset = 48; // menu offset (when can't calculate height or width)
 				if (i == 0) {
 					target = top;
+					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
+					// TODO (later): can be improved
+					if (left.length) {
+						if (cur_left-$(left[0].elem).outerWidth(true) < 0) {
+							cur_left = $(left[0].elem).outerWidth(true) + offset;
+						}
+					// if left menu is empty shift top menu right by 48px (to make fisrt icon visible)
+					// TODO: calculate offset dynamically
+					} else {
+						if (cur_left-offset < 0) {
+							cur_left = offset;
+						}
+					}
 				} else {
 					target = left;
 					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
@@ -333,10 +347,9 @@ $.glue.contextmenu = function()
 						if (cur_top-$(top[0].elem).outerHeight(true) < 0) {
 							cur_top = $(top[0].elem).outerHeight(true);
 						}
-					// if top menu is empty shift bottom menu by 48px (to make fisrt icon visible)
+					// if top menu is empty shift left menu down by 48px (to make fisrt icon visible)
 					// TODO: calculate offset dynamically
 					} else {
-						var offset = 48;
 						if (cur_top-offset < 0) {
 							cur_top = offset;
 						}
