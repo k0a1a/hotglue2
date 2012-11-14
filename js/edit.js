@@ -329,16 +329,18 @@ $.glue.contextmenu = function()
 					target = left;
 					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
 					// TODO (later): can be improved
-						if (top.length) {
-							if (cur_top-$(top[0].elem).outerHeight(true) < 0) {
-								cur_top = $(top[0].elem).outerHeight(true);
-							}
-						// if top menu is empty shift bottom menu by 48px (to make fisrt icon visible)
-						} else {
-							if (cur_top-48 < 0) {
-								cur_top = 48;
-							}
+					if (top.length) {
+						if (cur_top-$(top[0].elem).outerHeight(true) < 0) {
+							cur_top = $(top[0].elem).outerHeight(true);
 						}
+					// if top menu is empty shift bottom menu by 48px (to make fisrt icon visible)
+					// TODO: calculate offset dynamically
+					} else {
+						var offset = 48;
+						if (cur_top-offset < 0) {
+							cur_top = offset;
+						}
+					}
 				}
 				// add items to dom
 				for (var j=0; j < target.length; j++) {
