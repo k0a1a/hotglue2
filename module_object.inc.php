@@ -82,7 +82,7 @@ function object_alter_render_late($args)
 				$html = substr($html, 0, -1);
 			}
 			// if target is specified use it in link
-			if ($target) {
+			if (isset($target)) {
 				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" target="'.htmlspecialchars($target, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 			} else {
 				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
