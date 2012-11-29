@@ -59,7 +59,6 @@ function object_alter_render_late($args)
 	if (!elem_has_class($args['elem'], 'object')) {
 		return false;
 	}
-	
 	if (!$args['edit']) {
 		// add links only for viewing
 		if (!empty($obj['object-link'])) {
@@ -72,10 +71,16 @@ function object_alter_render_late($args)
 			if (!is_url($link) && substr($link, 0, 1) != '#') {
 				// add base url for relative links that are not directed towards anchors
 				if (SHORT_URLS) {
-					$link = base_url().urlencode($link);
+				//	$link = base_url().urlencode($link);
+					$link = urlencode($link);
 				} else {
-					$link = base_url().'?'.urlencode($link);
+				//	$link = base_url().'?'.urlencode($link);
+					$link = '?'.urlencode($link);
 				}
+			} else {
+				// remove base_url from local links
+				// to suport multi-homed sites
+				$link =	str_ireplace(base_url(), '', $link);
 			}
 			// <a> can include block elements in html5
 			if (substr($html, -1) == "\n") {
@@ -85,7 +90,12 @@ function object_alter_render_late($args)
 			if (isset($target)) {
 				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" target="'.htmlspecialchars($target, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 			} else {
-				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
+				if (is_url($link)) {
+					$target = '_blank';
+				} else {
+					$target = '_parent';
+				}
+				$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" target="'.htmlspecialchars($target, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 			}
 			return true;
 		}
