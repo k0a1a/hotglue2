@@ -79,4 +79,8 @@ input[type='submit'], input[type='button'] {
 	width: 270px; 
 }
 
-
+input[type='submit']:hover, input[type='button']:hover {
+	border: solid 2px black;
+	background-color: #ccc;
+	cursor: pointer;
+}
