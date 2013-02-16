@@ -60,7 +60,7 @@
 @define('TEXT_AUTO_BR', true);				// automatically add <br> elements for newlines
 @define('TEXT_USE_WOFF_FONTS', false);		// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
-@define('VIEW_NEEDS_AUTH', true);			// viewing pages requires authentication
+@define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 
 
 /**
