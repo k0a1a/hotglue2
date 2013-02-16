@@ -232,7 +232,12 @@ function controller_show($args)
 		log_msg('info', 'controller_show: page '.quot($page).' not found, serving 404');
 		hotglue_error(404);
 	}
-	
+
+	// if viewing is restricted ask to authenticate
+	if (!is_auth() && VIEW_NEEDS_AUTH) {
+		prompt_auth();
+	}
+
 	// serve from page if possible
 	if (0 < CACHE_TIME && is_cached('page', $page, CACHE_TIME)) {
 		serve_cached('page', $page);
