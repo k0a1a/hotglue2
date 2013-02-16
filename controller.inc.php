@@ -234,7 +234,7 @@ function controller_show($args)
 	}
 
 	// if viewing is restricted ask to authenticate
-	if (!is_auth() && VIEW_NEEDS_AUTH) {
+	if (VIEW_NEEDS_AUTH && !is_auth()) {
 		prompt_auth();
 	}
 
