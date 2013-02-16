@@ -26,7 +26,6 @@
 
 @define('BASE_URL', '');					// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
 @define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
-//@define('CACHE_TIME', 0);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
@@ -61,7 +60,7 @@
 @define('TEXT_AUTO_BR', true);				// automatically add <br> elements for newlines
 @define('TEXT_USE_WOFF_FONTS', false);		// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
-
+@define('VIEW_NEEDS_AUTH', true);			// viewing pages requires authentication
 
 
 /**
