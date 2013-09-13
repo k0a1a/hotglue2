@@ -15,6 +15,7 @@ RewriteEngine on
 # RewriteBase /bar
 
 # this seems to be needed for authentication if php is working in cgi mode
+# in that case it is also nessesary to set 'AUTH_METHOD','basic' in config.inc.php
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # shortcut for json

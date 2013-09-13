@@ -279,6 +279,9 @@ function is_auth()
 		log_msg('debug', 'common: auth success (auth_method none)');
 		return true;
 	} elseif (AUTH_METHOD == 'basic') {
+		if (isset($_SERVER['Authorization'])) {
+			list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
+		}
 		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 			if ($_SERVER['PHP_AUTH_USER'] == AUTH_USER && $_SERVER['PHP_AUTH_PW'] == AUTH_PASSWORD) {
 				log_msg('debug', 'common: auth success (auth_method basic)');
