@@ -37,7 +37,19 @@ $(document).ready(function() {
 	
 		$(obj).transform({reflectX: true, matrix: ''+o+''}, {forceMatrix: true});
 */
-		if ($(obj).css('-webkit-transform') != '') {
+		if ($(obj).css('-moz-transform') != '') {
+			var val = $(obj).css('-moz-transform');
+			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
+				$(obj).css('-moz-transform', 'matrix(1, 0, 0, -1, 0, 0)');
+			} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
+				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+			} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
+				$(obj).css('-moz-transform', '');
+			} else {
+				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+			}
+		}
+		else if ($(obj).css('-webkit-transform') != '') {
 			var val = $(obj).css('-webkit-transform');
 			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
 				$(obj).css('-webkit-transform', 'matrix(1, 0, 0, -1, 0, 0)');
@@ -47,18 +59,6 @@ $(document).ready(function() {
 				$(obj).css('-webkit-transform', '');
 			} else {
 				$(obj).css('-webkit-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
-			}
-		}
-		else if ($(obj).css('-moz-transform') != '') {
-			var val = $(obj).css('-moz-transform');
-			if (val == 'matrix(-1, 0, 0, -1, 0px, 0px)') {
-				$(obj).css('-moz-transform', 'matrix(1, 0, 0, -1, 0px, 0px)');
-			} else if (val == 'matrix(1, 0, 0, -1, 0px, 0px)') {
-				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, 1, 0px, 0px)');
-			} else if (val == 'matrix(-1, 0, 0, 1, 0px, 0px)') {
-				$(obj).css('-moz-transform', '');
-			} else {
-				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, -1, 0px, 0px)');
 			}
 		}
 		$.glue.object.save(obj);

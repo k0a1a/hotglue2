@@ -53,8 +53,8 @@ function transform_alter_save($args)
 	if (elem_css($elem, '-webkit-transform') !== NULL) {
 		$obj['transform-flip'] = elem_css($elem, '-webkit-transform');
 	}	
-	else if (elem_css($elem, '-moz-transform') !== NULL) {
-		$moz_transform = elem_css($elem, '-moz-transform');
+	else if (elem_css($elem, 'transform') !== NULL) {
+		$moz_transform = elem_css($elem, 'transform');
 		$moz_transform = str_replace("px", "", $moz_transform);
 		$moz_transform = str_replace("pt", "", $moz_transform);
 		$obj['transform-flip'] = $moz_transform;
