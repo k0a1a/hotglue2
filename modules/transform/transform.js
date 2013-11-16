@@ -49,7 +49,7 @@ $(document).ready(function() {
 				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
 			}
 		}
-		else if ($(obj).css('-webkit-transform') != '') {
+		if ($(obj).css('-webkit-transform') != '') {
 			var val = $(obj).css('-webkit-transform');
 			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
 				$(obj).css('-webkit-transform', 'matrix(1, 0, 0, -1, 0, 0)');

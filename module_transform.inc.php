@@ -35,7 +35,6 @@ function transform_alter_render_early($args)
 		elem_css($elem, '-moz-transform', $all_transform);
 		elem_css($elem, '-o-transform', $all_transform);
 		elem_css($elem, '-ms-transform', $all_transform);
-
 	}
 	
 	return true;
