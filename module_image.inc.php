@@ -713,6 +713,7 @@ function image_upload($args)
 	
 	// render object and return html
 	$ret = render_object(array('name'=>$obj['name'], 'edit'=>true));
+	log_msg('debug', 'image_upload: '.print_r($ret, 1));
 	if ($ret['#error']) {
 		return false;
 	} else {

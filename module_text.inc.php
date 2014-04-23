@@ -131,6 +131,12 @@ function _woff_fonts()
 {
 	// use a hardcoded array of woff fonts for now
 	return array(
+		'LatinModern' => array(
+			'normal' => 'lmsans10-regular-webfont.woff',
+			'italic' => 'lmsans10-oblique-webfont.woff',
+			'bold' => 'lmsans10-bold-webfont.woff',
+			'bolditalic' => 'lmsans10-boldoblique-webfont.woff'
+		),
 		'DejaVuSans' => array(
 			'normal' => 'dejavusans-webfont.woff',
 			'italic' => 'dejavusans-oblique-webfont.woff',

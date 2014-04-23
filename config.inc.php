@@ -16,7 +16,7 @@
 
 // otherwise fall back to these defaults
 @define('ALWAYS_PROMPT_CREATE_PAGE', false);	// invoke the "create page" controller when trying to access a non-existing page even if the user is not logged in yet (otherwise they receive a 404)
-@define('AUTH_METHOD', 'digest');			// can be digest, basic or none
+@define('AUTH_METHOD', 'basic');			// can be digest, basic or none
 
 // DON'T set username and password here!
 // instead rename file user-config.inc.php-dist to user-config.inc.php
@@ -25,7 +25,8 @@
 @define('AUTH_PASSWORD', 'changeme');
 
 @define('BASE_URL', '');					// auto-detected if empty (don't use BASE_URL in custom code but rather base_url() below)
-@define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
+@define('CACHE_TIME', 0);				// cache time in seconds (zero to disable)
+//@define('CACHE_TIME', 60*60);				// cache time in seconds (zero to disable)
 @define('CONTENT_DIR', 'content');			// content directory, must be writable
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
@@ -42,7 +43,7 @@
 @define('SNAPSHOT_MAX_AGE', 60*60*24*7);	// auto- revisions are automatically deleted after n seconds (zero to disable)
 @define('SNAPSHOT_MIN_AGE', 60*60);			// auto- revisions are created every n seconds (zero to disable)
 @define('USE_HOTGLUE_ERRORS', true);		// use hotglue theming for error pages
-@define('USE_MIN_FILES', true);				// use minified files if possible (see also JQUERY define)
+@define('USE_MIN_FILES', false);				// use minified files if possible (see also JQUERY define)
 // default modules
 @define('IMAGE_JPEG_QUAL', 90);				// quality for jpeg resizing (0 < 100)
 @define('IMAGE_PNG_QUAL', 7);				// quality for png resizing (9 < 0)
@@ -58,7 +59,7 @@
 @define('PAGES_NEED_AUTH', true);			// page browser needs authentication
 @define('REVISIONS_NEED_AUTH', true);		// revisions browser needs authentication
 @define('TEXT_AUTO_BR', true);				// automatically add <br> elements for newlines
-@define('TEXT_USE_WOFF_FONTS', false);		// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)
+@define('TEXT_USE_WOFF_FONTS', true);		// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 
