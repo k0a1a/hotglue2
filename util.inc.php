@@ -508,7 +508,7 @@ function serve_file($fn, $dl, $mime = '')
 		// these are taken from the php documentation (on readfile())
 		header('Content-Description: File Transfer');
 		header('Content-Type: application/octet-stream');
-		header('Content-Disposition: attachment; filename='.basename($fn));
+		header('Content-Disposition: attachment; filename="'.basename($fn).'"');
 		header('Content-Transfer-Encoding: binary');
 	} else {
 		header('Content-Type: '.$mime);
