@@ -9,7 +9,7 @@
  */
 
 
-// error_reporting(E_ALL);						// see php documentation
+error_reporting(E_ALL & ~E_STRICT);						// see php documentation
 
 // try to include user configuration
 @include('user-config.inc.php');
