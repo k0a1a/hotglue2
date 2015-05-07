@@ -44,7 +44,7 @@ function welcome_render_page_late($args)
 	html_add_css(base_url().'modules/welcome/welcome-edit.css');
 	html_add_js(base_url().'modules/welcome/welcome.js');
 	body_append('<div id="welcome-msg">'.nl());
-	body_append(tab().'<span id="welcome-first"><img style="float:left; margin:5px 10px 0 5px" src="modules/welcome/gun32.gif">Welcome to HOTGLUE!</span><br>'.nl());
+	body_append(tab().'<span id="welcome-first"><img style="float:left; margin:5px 10px 0 5px" src="'.base_url().'modules/welcome/gun32.gif">Welcome to HOTGLUE!</span><br>'.nl());
 	body_append(tab().'Your Content Manipulation System is ready to go!'.nl());
 	body_append(tab().'<p>A short intro before you start:</p>'.nl());
 	body_append(tab().'<span id="cont"><span id="text"><b>1.</b> Right now you are in <u>editing mode</u>. You can use single and double click to access the menus - they will appear next to the mouse pointer.</span>'.nl());
