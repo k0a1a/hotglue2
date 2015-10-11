@@ -27,15 +27,27 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?$1
 
 # disallow access to a bunch of static files
+# Apache 2.4, see below for Apache 2.2 section
 <Files COPYING>
-	order deny,allow
-	deny from all
+  Require all denied
 </Files>
 <Files INSTALL>
-	order deny,allow
-	deny from all
+  Require all denied
 </Files>
 <Files README>
-	order deny,allow
-	deny from all
+  Require all denied
 </Files>
+
+# Apache 2.2
+#<Files COPYING>
+#	order deny,allow
+#	deny from all
+#</Files>
+#<Files INSTALL>
+#	order deny,allow
+#	deny from all
+#</Files>
+#<Files README>
+#	order deny,allow
+#	deny from all
+#</Files>
