@@ -86,6 +86,13 @@ function iframe_alter_render_early($args)
 	elem_css($i, 'width', '100%');
 	// url
 	if (!empty($obj['iframe-url'])) {
+		//if (empty($_SERVER['HTTPS'])) {
+		//	$url = 'http://';
+		//} else {
+		//	$url = 'https://';
+		//}
+    //$url .= str_replace(parse_url($obj['iframe-url'], PHP_URL_SCHEME) . '://', '', $obj['iframe-url']);
+
 		elem_attr($i, 'src', $obj['iframe-url']);
 	} else {
 		elem_attr($i, 'src', '');
