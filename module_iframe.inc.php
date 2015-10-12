@@ -44,7 +44,8 @@ function iframe_alter_save($args)
 	
 	// url
 	if (elem_attr($i, 'src') !== NULL) {
-		$obj['iframe-url'] = elem_attr($i, 'src');
+    // strip schema from url
+		$obj['iframe-url'] = strstr(elem_attr($i, 'src'), '//');
 	} else {
 		unset($obj['iframe-url']);
 	}
@@ -86,14 +87,9 @@ function iframe_alter_render_early($args)
 	elem_css($i, 'width', '100%');
 	// url
 	if (!empty($obj['iframe-url'])) {
-		//if (empty($_SERVER['HTTPS'])) {
-		//	$url = 'http://';
-		//} else {
-		//	$url = 'https://';
-		//}
-    //$url .= str_replace(parse_url($obj['iframe-url'], PHP_URL_SCHEME) . '://', '', $obj['iframe-url']);
-
-		elem_attr($i, 'src', $obj['iframe-url']);
+    // use protocol relative url
+		//elem_attr($i, 'src', $obj['iframe-url']);
+		elem_attr($i, 'src', strstr($obj['iframe-url'], '//'));
 	} else {
 		elem_attr($i, 'src', '');
 	}
