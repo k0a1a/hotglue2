@@ -63,6 +63,24 @@ error_reporting(E_ALL & ~E_STRICT);						// see php documentation
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 
+/**
+ * use this function to determine if we should serve HTTPS URLs
+ *
+ * @return bool
+ */
+function is_base_url_secure()
+{
+	if (!empty($_SERVER['HTTPS'])) {
+		return true;
+	}
+
+	// A front-end server or load balancer is transferring us a request to serve HTTPS to the client.
+	if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+		return true;
+	}
+
+	return false;
+}
 
 /**
  *	use this function to get the site's base url
@@ -77,14 +95,14 @@ function base_url()
 	if (!empty($temp)) {
 		return $temp;
 	} elseif (!isset($base_url_cached)) {
-		if (empty($_SERVER['HTTPS'])) {
+		if (!is_base_url_secure()) {
 			$base_url_cached = 'http://'.$_SERVER['HTTP_HOST'];
 			if ($_SERVER['SERVER_PORT'] != '80') {
 				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
 			}
 		} else {
 			$base_url_cached = 'https://'.$_SERVER['HTTP_HOST'];
-			if ($_SERVER['SERVER_PORT'] != '443') {
+			if ($_SERVER['SERVER_PORT'] != '443' && $_SERVER['SERVER_PORT'] != '80') {
 				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
 			}
 		}
