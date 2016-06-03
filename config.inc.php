@@ -80,12 +80,12 @@ function base_url()
 		if (empty($_SERVER['HTTPS'])) {
 			$base_url_cached = 'http://'.$_SERVER['HTTP_HOST'];
 			if ($_SERVER['SERVER_PORT'] != '80') {
-				$base_url_cached .= $_SERVER['SERVER_PORT'];
+				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
 			}
 		} else {
 			$base_url_cached = 'https://'.$_SERVER['HTTP_HOST'];
 			if ($_SERVER['SERVER_PORT'] != '443') {
-				$base_url_cached .= $_SERVER['SERVER_PORT'];
+				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
 			}
 		}
 		$base_url_cached .= dirname($_SERVER['PHP_SELF']);
