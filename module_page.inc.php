@@ -46,7 +46,7 @@ function page_clear_background_img($args)
 	
 	if (!empty($obj['page-background-file'])) {
 		// delete file
-		delete_upload(array('pagename'=>array_shift(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		delete_upload(array('pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
 		// and remove attributes
 		return object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('page-background-file', 'page-background-mime')));
 	} else {
@@ -71,7 +71,7 @@ function page_delete_page($args)
 	// check if there is a background-image
 	if (!empty($obj['page-background-file'])) {
 		// delete it
-		delete_upload(array('pagename'=>array_shift(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		delete_upload(array('pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
 		return true;
 	} else {
 		return false;
@@ -189,7 +189,7 @@ function page_serve_resource($args)
 	if (array_pop(expl('.', $obj['name'])) != 'page') {
 		return false;
 	}
-	$pn = array_shift(expl('.', $obj['name']));
+	$pn = get_first_item(expl('.', $obj['name']));
 	
 	if (!empty($obj['page-background-file'])) {
 		$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['page-background-file'];
@@ -252,7 +252,7 @@ function page_upload($args)
 	if (!$obj['#error']) {
 		$obj = $obj['#data'];
 		if (!empty($obj['page-background-file'])) {
-			delete_upload(array('pagename'=>array_shift(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+			delete_upload(array('pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
 		}
 	}
 	

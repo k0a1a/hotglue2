@@ -126,7 +126,7 @@ function webvideo_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	if (array_shift(elem_classes($elem)) != 'webvideo') {
+	if (get_first_item(elem_classes($elem)) != 'webvideo') {
 		return false;
 	}
 	

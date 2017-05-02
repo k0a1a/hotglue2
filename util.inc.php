@@ -253,6 +253,24 @@ function filext($s)
 
 
 /**
+ *	select the first element of an array, or other Traversable
+ *
+ *	@param Traversable|array $iterable the array where to pick the first value
+ *	@return mixed
+ */
+function get_first_item($iterable)
+{
+	if (!is_iterable($iterable)) {
+		throw new InvalidArgumentException("Argument isn't iterable.");
+	}
+
+	foreach ($iterable as $item) {
+		return $item;
+	}
+}
+
+
+/**
  *	return a http error message to the client
  *
  *	if $header_only is false (the default), the function doesn't 
@@ -400,6 +418,20 @@ function is_url($s)
 		return true;
 	} else {
 		return false;
+	}
+}
+
+if (!function_exists('is_iterable'))
+{
+	/**
+	 * determine if a variable is iterable (already implemented in PHP 7.1+)
+	 *
+	 * @param mixed $var the variable to check
+	 * @return bool
+	 */
+	function is_iterable($var)
+	{
+		return is_array($var) || $var instanceof Traversable;
 	}
 }
 
