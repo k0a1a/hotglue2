@@ -496,14 +496,14 @@ function resolve_aliases($s, $name = '')
 		$s = str_replace('$PAGE$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
 		$s = str_replace('$page$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
 		// pagename
-		$s = str_replace('$PAGENAME$', array_shift(expl('.', $name)), $s);
-		$s = str_replace('$pagename$', array_shift(expl('.', $name)), $s);
+		$s = str_replace('$PAGENAME$', get_first_item(expl('.', $name)), $s);
+		$s = str_replace('$pagename$', get_first_item(expl('.', $name)), $s);
 		// protocol used
 		$s = str_replace('$PROT$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
 		$s = str_replace('$prot$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
 		// revision
-		$s = str_replace('$REV$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
-		$s = str_replace('$rev$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
+		$s = str_replace('$REV$', get_first_item(array_slice(expl('.', $name), 1, 1)), $s);
+		$s = str_replace('$rev$', get_first_item(array_slice(expl('.', $name), 1, 1)), $s);
 	}
 	return $s;
 }

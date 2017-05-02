@@ -160,7 +160,7 @@ function iframe_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	if (array_shift(elem_classes($elem)) != 'iframe') {
+	if (get_first_item(elem_classes($elem)) != 'iframe') {
 		return false;
 	}
 	
