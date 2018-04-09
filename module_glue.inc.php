@@ -1100,7 +1100,7 @@ register_service('glue.revisions', 'revisions');
 
 
 /**
- *	return an array with informations about all revisions of a page
+ *	return an array with information about all revisions of a page
  *
  *	@param array $args arguments
  *		key 'pagename' is the pagename (i.e. page)
