@@ -3,6 +3,6 @@
 /*
  *	module_user_css.inc.php
  *	this is a placeholder for obsoleted file.
- *	functionaly is replaced by module_user_code.inc.php
+ *	functionally is replaced by module_user_code.inc.php
  */
 
