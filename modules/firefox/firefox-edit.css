@@ -1,0 +1,29 @@
+#firefox-msg {
+	background-color: yellow;
+	color: #111;
+	position: absolute;
+	top: 0px;
+	width: 100%;
+	padding:0;
+	margin:0;
+	display: none;
+	z-index:10000;
+}
+
+#firefox-text {
+	display:block;
+	margin:5px;
+}
+
+#firefox-text a {
+	text-decoration: underline;
+}
+
+#firefox-dismiss {
+	background-color: gray;
+	color: white;
+	font-size: 80%;
+	margin-left: 10px;
+	padding: 2px;
+	cursor: pointer;
+}

@@ -356,9 +356,9 @@ function delete_object($args)
 		return response('Error deleting object '.quot($args['name']), 500);
 	} else {
 		log_msg('info', 'delete_object: deleted '.quot($args['name']));
-		// drop the object's page from cache
-		$a = expl('.', $args['name']);
-		drop_cache('page', $a[0].'.'.$a[1]);
+		// drop the all pages from the cache (since the object could have been 
+		// symlinked)
+		drop_cache('page');
 		return response(true);
 	}
 }
@@ -928,6 +928,74 @@ register_hook('rename_page', 'invoked when a page has been renamed');
 
 
 /**
+ *	copy a page
+ *	original page revisions are left out 
+ *	@param array $args arguments
+ *		key 'old' old page (i.e. page1.rev)
+ *		key 'new' new page (i.e. page2.rev)
+ *	@return array response
+ */
+function copy_page($args)
+{
+	if (empty($args['old'])) {
+		return response('Required argument "old" missing or empty', 400);
+	}
+	$pns = pagenames(array());
+	$pns = $pns['#data'];
+	if (!in_array($args['old'], $pns)) {
+		return response('Page name '.quot($args['old']).' does not exist', 404);
+	}
+	if (empty($args['new'])) {
+		return response('Required argument "new" missing or empty', 400);
+	}
+	if (in_array($args['new'], $pns)) {
+		return response('Page name '.quot($args['new']).' already exists', 400);
+	}
+	if (!valid_pagename($args['new'].'.head')) {
+		return response('Invalid page name '.quot($args['new']), 400);
+	}
+
+	$src = CONTENT_DIR.'/'.$args['old'];
+	$dest = CONTENT_DIR.'/'.$args['new'];
+
+	$dirs = scandir($src);
+	foreach ($dirs as $d) {
+		// skip root '.', top '..' and revisions 'auto-*'
+		if ($d == '.' || $d == '..' || substr($d, 0, 5) == 'auto-') {
+			continue;
+		// we should only have directories in source
+		} elseif (is_dir($src.'/'.$d)) {
+			$m = umask(0000);
+			if (!@mkdir($dest.'/'.$d, 0777, true)) {
+				umask($m);
+				return response('Error creating directory '.quot($dest.'/'.$d), 500);
+			}
+			umask($m);
+			$files = scandir($src.'/'.$d);
+			foreach ($files as $f) {
+				if ($f == '.' || $f == '..') {
+					continue;
+				} elseif (is_file($src.'/'.$d.'/'.$f)) {
+					// copy file
+					$m = umask(0111);
+					if (!@copy($src.'/'.$d.'/'.$f, $dest.'/'.$d.'/'.$f)) {
+						log_msg('error', 'copy: error copying '.quot($src.'/'.$d.'/'.$f).' to '.quot($dest.'/'.$d.'/'.$f).', skipping file');
+					}
+					umask($m);
+				}
+			}
+		}
+	}
+	log_msg('info', 'copy_page: copied '.quot($args['old']).' to '.quot($args['new']));
+	invoke_hook('copy_page', array('pagename'=>$args['new']));
+	return response(true);
+}
+
+register_service('glue.copy_page', 'copy_page', array('auth'=>true));
+register_hook('copy_page', 'invoked when a page has been copied');
+
+
+/**
  *	revert to a specific revision of a page
  *
  *	this function makes the revision the page's new head revision by copying it.
@@ -1032,7 +1100,7 @@ register_service('glue.revisions', 'revisions');
 
 
 /**
- *	return an array with informations about all revisions of a page
+ *	return an array with information about all revisions of a page
  *
  *	@param array $args arguments
  *		key 'pagename' is the pagename (i.e. page)
@@ -1124,11 +1192,8 @@ function save_object($args)
 	}
 	
 	fclose($f);
-	// drop the page from cache
-	// TODO (later): also drop related caches if object is a symlink or target 
-	// of a symlink
-	$a = expl('.', $args['name']);
-	drop_cache('page', $a[0].'.'.$a[1]);
+	// drop all pages from cache (since the object could be symlinked)
+	drop_cache('page');
 	
 	return response(true);
 }

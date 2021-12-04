@@ -213,7 +213,7 @@ function elem_finalize($elem)
 		unset($elem['class']);
 	}
 	foreach ($elem as $key=>$val) {
-		if ($key == 'tag' || $key == 'id' || $key == 'class' || $key == 'val') {
+		if ($key == 'tag' || $key == 'id' || $key == 'class' || $key == 'val' || $key == 'body_inline') {
 			continue;
 		} elseif ($key == 'style') {
 			$ret .= ' style="';
@@ -419,7 +419,35 @@ function html_add_css_inline($rule, $prio = 5)
 	$html['header']['css_inline'][] = array('rule'=>$rule, 'prio'=>$prio);
 }
 
+/**
+ *	add head definitions to the html header
+ *
+ *	@param string $def heade definition
+ *	@param int $prio when to insert code (0 - very early to 9 - late)
+ */
+function html_add_head_inline($def, $prio = 5)
+{
+	global $html;
+	if (!@is_array($html['header']['head_inline'])) {
+		$html['header']['head_inline'] = array();
+	}
+	$html['header']['head_inline'][] = array('def'=>$def, 'prio'=>$prio);
+}
 
+/**
+ *	add body definitions to the html body
+ *
+ *	@param string $def heade definition
+ *	@param int $prio when to insert code (0 - very early to 9 - late)
+ */
+function html_add_body_inline($def, $prio = 5)
+{
+	global $html;
+	if (!@is_array($html['body']['body_inline'])) {
+		$html['body']['body_inline'] = array();
+	}
+	$html['body']['body_inline'][] = array('def'=>$def, 'prio'=>$prio);
+}
 /**
  *	add a reference to a javascript file to the html header
  *
@@ -628,7 +656,39 @@ function html_finalize(&$cache = false)
 			}
 		}
 	}
+	if (@is_array($html['header']['head_inline'])) {
+		_array_sort_by_prio($html['header']['head_inline']);
+		if (0 < count($html['header']['head_inline'])) {
+			$ret .= '<!-- user HEAD definitions -->'.nl();
+		}
+		foreach ($html['header']['head_inline'] as $c) {
+			$def = $c['def'];
+			// if the definition ends with a newline character, remove it
+			if (substr($def, -1) == "\n") {
+				$def = substr($def, 0, -1);
+			}
+			// $rule = str_replace("\n", "\n\t", $def);
+			$ret .= $def.nl();
+		}
+	}
 	$ret .= '</head>'.nl();
+	// load user body definitions
+	if (@is_array($html['body']['body_inline'])) {
+		_array_sort_by_prio($html['body']['body_inline']);
+		if (0 < count($html['body']['body_inline'])) {
+			$user_body = '<!-- user BODY definitions -->'.nl();
+		}
+		foreach ($html['body']['body_inline'] as $c) {
+			$def = $c['def'];
+			// if the definition ends with a newline character, remove it
+			if (substr($def, -1) == "\n") {
+				$def = substr($def, 0, -1);
+			}
+			$rule = str_replace("\n", "\n\t", $def);
+			$user_body .= $def.nl();
+		}
+		body_append($user_body);
+	}
 	$ret .= elem_finalize($html['body']);
 	$ret .= '</html>';
 	

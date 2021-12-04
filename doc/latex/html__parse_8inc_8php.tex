@@ -1,6 +1,6 @@
 \hypertarget{html__parse_8inc_8php}{
-\section{/srv/www/hotglue/html\_\-parse.inc.php File Reference}
-\label{html__parse_8inc_8php}\index{/srv/www/hotglue/html\_\-parse.inc.php@{/srv/www/hotglue/html\_\-parse.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/html\_\-parse.inc.php File Reference}
+\label{html__parse_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/html\_\-parse.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/html\_\-parse.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -17,19 +17,13 @@
 \hypertarget{html__parse_8inc_8php_a7eda4037f4b2576b3bcd97408ff95bd5}{
 \index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-encode\_\-str\_\-smart@{html\_\-encode\_\-str\_\-smart}}
 \index{html\_\-encode\_\-str\_\-smart@{html\_\-encode\_\-str\_\-smart}!html_parse.inc.php@{html\_\-parse.inc.php}}
-\subsubsection[{html\_\-encode\_\-str\_\-smart}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-encode\_\-str\_\-smart (
-\begin{DoxyParamCaption}
-\item[{\$}]{html}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{html\_\-encode\_\-str\_\-smart}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-encode\_\-str\_\-smart (\$ {\em html})}}
 \label{html__parse_8inc_8php_a7eda4037f4b2576b3bcd97408ff95bd5}
 try to turn a mixture of html code an plain text into valid html
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$html} & input \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$html input \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string encoded output 
 \end{DoxyReturn}
@@ -40,22 +34,13 @@ Definition at line 23 of file html\_\-parse.inc.php.
 \hypertarget{html__parse_8inc_8php_a1003b146f08aef5a3a78d75a3538a4d7}{
 \index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-parse@{html\_\-parse}}
 \index{html\_\-parse@{html\_\-parse}!html_parse.inc.php@{html\_\-parse.inc.php}}
-\subsubsection[{html\_\-parse}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse (
-\begin{DoxyParamCaption}
-\item[{\$}]{html, }
-\item[{\$}]{recursive = {\ttfamily false}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{html\_\-parse}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse (\$ {\em html}, \/  \$ {\em recursive} = {\ttfamily false})}}
 \label{html__parse_8inc_8php_a1003b146f08aef5a3a78d75a3538a4d7}
 parse a string containing html elements
 
 this function decodes html's special characters except for the content (when it too is not being parsed). this function is more fragile than \hyperlink{html__parse_8inc_8php_a6d9c21ee610953fb5b5b64fae3f74ed3}{html\_\-parse\_\-elem()} when it comes to malformatted input. 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$html} & input string \\
-\hline
-bool & {\em \$recursive} & also parse children elements \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$html input string \item[{\em bool}]\$recursive also parse children elements \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array parsed representation 
 \end{DoxyReturn}
@@ -66,22 +51,13 @@ Definition at line 226 of file html\_\-parse.inc.php.
 \hypertarget{html__parse_8inc_8php_a6d9c21ee610953fb5b5b64fae3f74ed3}{
 \index{html\_\-parse.inc.php@{html\_\-parse.inc.php}!html\_\-parse\_\-elem@{html\_\-parse\_\-elem}}
 \index{html\_\-parse\_\-elem@{html\_\-parse\_\-elem}!html_parse.inc.php@{html\_\-parse.inc.php}}
-\subsubsection[{html\_\-parse\_\-elem}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse\_\-elem (
-\begin{DoxyParamCaption}
-\item[{\$}]{html, }
-\item[{\$}]{recursive = {\ttfamily false}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{html\_\-parse\_\-elem}]{\setlength{\rightskip}{0pt plus 5cm}html\_\-parse\_\-elem (\$ {\em html}, \/  \$ {\em recursive} = {\ttfamily false})}}
 \label{html__parse_8inc_8php_a6d9c21ee610953fb5b5b64fae3f74ed3}
 parse exactly one html element
 
 this function decodes html's special characters except for the content (when it too is not being parsed). this function is less fragile than \hyperlink{html__parse_8inc_8php_a1003b146f08aef5a3a78d75a3538a4d7}{html\_\-parse()} when it comes to malformatted input. 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$html} & input string (must start and end with the element's tag) \\
-\hline
-bool & {\em \$recursive} & also parse children elements \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$html input string (must start and end with the element's tag) \item[{\em bool}]\$recursive also parse children elements \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array parsed representation 
 \end{DoxyReturn}

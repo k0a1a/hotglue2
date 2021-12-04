@@ -1,7 +1,7 @@
-Hotglue 1.0
+Hotglue 1.0.4
 
 developed by Gottfried Haider and Danja Vasiliev
-and the people from WORM (wormweb.nl)
+and the people from WORM (worm.org)
 with support from the Mondriaan Foundation
 made for you
 
@@ -35,9 +35,11 @@ KNOWN ISSUES
     to preserve compatibility with upcoming releases though.
 
   * On certain shared hosts we have seen issues with digest authentication (see AUTH_METHOD configuration option). For those hosts basic authentication has to be used.
-  
+
   * On certain hosts or configurations it might be required to explicitly set RewriteBase in .htaccess when using short URLs. This has been observed on hosts using mod_rewrite even before the request hits the Hotglue directory. If you experience unexpected blank pages after installation or can't manage to log in, this might be worth trying.
 
+	* On certain (cheap) hosts the use of .htaccess file is disallowed. If you are experiencing strange errors like ERROR 500 try renaming .htaccess file back to htaccess-dist and see if that helps. Sometimes you might be able to request .htaccess functionality from your webhosting provider. 
+  
   * Native JSON decoding seems to be broken in early versions of PHP 5.2. This can result in error messages such as "Error saving state as class 'object' is not set". Make sure you are using PHP 5.2.6 or later.
 
   * Support for supporting hosts that have PHP installed as a (Fast-)CGI binary is still worked on. For now it is recommended to use mod_php, although success with FastCGI has been reported as well.

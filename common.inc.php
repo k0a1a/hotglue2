@@ -119,15 +119,29 @@ function default_html($add_glue)
 /**
  *	remove a page from the cache
  *
+ *	If no name is given, all pages of the category are being removed.
  *	@param string $category cache category (e.g. 'page')
- *	@param string $name item name
+ *	@param string $name item name (optional)
  */
-function drop_cache($category, $name)
+function drop_cache($category, $name = '')
 {
-	// TODO (later): make name optional
-	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
-	if (@unlink($f)) {
-		log_msg('debug', 'common: dropped cache of '.$category.' '.quot($name));
+	if (empty($name)) {
+		$d = @scandir(CONTENT_DIR.'/cache/'.$category);
+		if ($d === false) {
+			return;
+		}
+	} else {
+		$d = array($name);
+	}
+	
+	foreach ($d as $f) {
+		if ($f == '.' || $f == '..') {
+			continue;
+		}
+		$fn = CONTENT_DIR.'/cache/'.$category.'/'.$f;
+		if (@unlink($fn)) {
+			log_msg('debug', 'common: dropped cache of '.$category.' '.quot($f));
+		}
 	}
 }
 
@@ -265,6 +279,9 @@ function is_auth()
 		log_msg('debug', 'common: auth success (auth_method none)');
 		return true;
 	} elseif (AUTH_METHOD == 'basic') {
+		if (isset($_SERVER['Authorization'])) {
+			list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
+		}
 		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 			if ($_SERVER['PHP_AUTH_USER'] == AUTH_USER && $_SERVER['PHP_AUTH_PW'] == AUTH_PASSWORD) {
 				log_msg('debug', 'common: auth success (auth_method basic)');
@@ -396,6 +413,24 @@ function page_exists($s)
 
 
 /**
+ *	check if a page name is reserved
+ *
+ *	@param $s page
+ *	@return bool
+ */
+function page_reserved($s)
+{
+	$a = expl('.', $s);
+	$r = expl(' ', RESERVED_PAGE_NAMES);
+	if (in_array($a[0], $r)) {		
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+/**
  *	return the short pagename if possible, otherwise the long one
  *
  *	@param $s page
@@ -461,14 +496,14 @@ function resolve_aliases($s, $name = '')
 		$s = str_replace('$PAGE$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
 		$s = str_replace('$page$', implode('.', array_slice(expl('.', $name), 0, 2)), $s);
 		// pagename
-		$s = str_replace('$PAGENAME$', array_shift(expl('.', $name)), $s);
-		$s = str_replace('$pagename$', array_shift(expl('.', $name)), $s);
+		$s = str_replace('$PAGENAME$', get_first_item(expl('.', $name)), $s);
+		$s = str_replace('$pagename$', get_first_item(expl('.', $name)), $s);
 		// protocol used
 		$s = str_replace('$PROT$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
 		$s = str_replace('$prot$', empty($_SERVER['HTTPS']) ? 'http' : 'https', $s);
 		// revision
-		$s = str_replace('$REV$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
-		$s = str_replace('$rev$', array_shift(array_slice(expl('.', $name), 1, 1)), $s);
+		$s = str_replace('$REV$', get_first_item(array_slice(expl('.', $name), 1, 1)), $s);
+		$s = str_replace('$rev$', get_first_item(array_slice(expl('.', $name), 1, 1)), $s);
 	}
 	return $s;
 }

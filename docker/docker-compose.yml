@@ -1,0 +1,13 @@
+version: '3'
+services:
+  hotglue:
+    build: .
+    networks:
+     - world
+    volumes:
+     - app:/app/:rw
+
+   
+networks:
+  world:
+     external: true

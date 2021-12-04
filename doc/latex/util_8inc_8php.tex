@@ -1,6 +1,6 @@
 \hypertarget{util_8inc_8php}{
-\section{/srv/www/hotglue/util.inc.php File Reference}
-\label{util_8inc_8php}\index{/srv/www/hotglue/util.inc.php@{/srv/www/hotglue/util.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/util.inc.php File Reference}
+\label{util_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/util.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/util.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -51,19 +51,13 @@
 \hypertarget{util_8inc_8php_a61d3b2881d9368741c71509017724bc8}{
 \index{util.inc.php@{util.inc.php}!array\_\-to\_\-js@{array\_\-to\_\-js}}
 \index{array\_\-to\_\-js@{array\_\-to\_\-js}!util.inc.php@{util.inc.php}}
-\subsubsection[{array\_\-to\_\-js}]{\setlength{\rightskip}{0pt plus 5cm}array\_\-to\_\-js (
-\begin{DoxyParamCaption}
-\item[{\$}]{container}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{array\_\-to\_\-js}]{\setlength{\rightskip}{0pt plus 5cm}array\_\-to\_\-js (\$ {\em container})}}
 \label{util_8inc_8php_a61d3b2881d9368741c71509017724bc8}
 convert an associative array to a javascript block
 
 
-\begin{DoxyParams}[1]{Parameters}
-array & {\em \$container} & container array \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em array}]\$container container array \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -74,22 +68,13 @@ Definition at line 18 of file util.inc.php.
 \hypertarget{util_8inc_8php_a4647462c98447c6c2842f70d8c313f85}{
 \index{util.inc.php@{util.inc.php}!array\_\-unique\_\-element@{array\_\-unique\_\-element}}
 \index{array\_\-unique\_\-element@{array\_\-unique\_\-element}!util.inc.php@{util.inc.php}}
-\subsubsection[{array\_\-unique\_\-element}]{\setlength{\rightskip}{0pt plus 5cm}array\_\-unique\_\-element (
-\begin{DoxyParamCaption}
-\item[{\&\$}]{a, }
-\item[{\$}]{key}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{array\_\-unique\_\-element}]{\setlength{\rightskip}{0pt plus 5cm}array\_\-unique\_\-element (\&\$ {\em a}, \/  \$ {\em key})}}
 \label{util_8inc_8php_a4647462c98447c6c2842f70d8c313f85}
 make an array off associative array unique in a certain key-\/value
 
 
-\begin{DoxyParams}[1]{Parameters}
-array & {\em \&\$a} & reference to array \\
-\hline
-mixed & {\em \$key} & key whose value we compare \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em array}]\&\$a reference to array \item[{\em mixed}]\$key key whose value we compare \end{DoxyParams}
 
 
 Definition at line 51 of file util.inc.php.
@@ -97,25 +82,13 @@ Definition at line 51 of file util.inc.php.
 \hypertarget{util_8inc_8php_a7f3e06b0a6f405290cb4d7990b8ac5c6}{
 \index{util.inc.php@{util.inc.php}!dir\_\-has\_\-same\_\-file@{dir\_\-has\_\-same\_\-file}}
 \index{dir\_\-has\_\-same\_\-file@{dir\_\-has\_\-same\_\-file}!util.inc.php@{util.inc.php}}
-\subsubsection[{dir\_\-has\_\-same\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}dir\_\-has\_\-same\_\-file (
-\begin{DoxyParamCaption}
-\item[{\$}]{dir, }
-\item[{\$}]{fn, }
-\item[{\$}]{orig\_\-fn = {\ttfamily ''}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{dir\_\-has\_\-same\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}dir\_\-has\_\-same\_\-file (\$ {\em dir}, \/  \$ {\em fn}, \/  \$ {\em orig\_\-fn} = {\ttfamily ''})}}
 \label{util_8inc_8php_a7f3e06b0a6f405290cb4d7990b8ac5c6}
 check if a directory already contains a file (based on its content)
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$dir} & directory to check \\
-\hline
-string & {\em \$fn} & file to look for \\
-\hline
-string & {\em \$orig\_\-fn} & first check this filename (optional) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$dir directory to check \item[{\em string}]\$fn file to look for \item[{\em string}]\$orig\_\-fn first check this filename (optional) \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 (basename) filename of identical file in \$dir or false if there is none 
 \end{DoxyReturn}
@@ -126,22 +99,13 @@ Definition at line 78 of file util.inc.php.
 \hypertarget{util_8inc_8php_a6309f576f2611237288d0dd3eed09db3}{
 \index{util.inc.php@{util.inc.php}!dir\_\-is\_\-different@{dir\_\-is\_\-different}}
 \index{dir\_\-is\_\-different@{dir\_\-is\_\-different}!util.inc.php@{util.inc.php}}
-\subsubsection[{dir\_\-is\_\-different}]{\setlength{\rightskip}{0pt plus 5cm}dir\_\-is\_\-different (
-\begin{DoxyParamCaption}
-\item[{\$}]{a, }
-\item[{\$}]{b}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{dir\_\-is\_\-different}]{\setlength{\rightskip}{0pt plus 5cm}dir\_\-is\_\-different (\$ {\em a}, \/  \$ {\em b})}}
 \label{util_8inc_8php_a6309f576f2611237288d0dd3eed09db3}
 check if two directories are different
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$a} & filename \\
-\hline
-string & {\em \$b} & filename \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$a filename \item[{\em string}]\$b filename \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 bool 
 \end{DoxyReturn}
@@ -152,22 +116,13 @@ Definition at line 117 of file util.inc.php.
 \hypertarget{util_8inc_8php_aafce787d4b725ac62be6306ff3e352e7}{
 \index{util.inc.php@{util.inc.php}!expl@{expl}}
 \index{expl@{expl}!util.inc.php@{util.inc.php}}
-\subsubsection[{expl}]{\setlength{\rightskip}{0pt plus 5cm}expl (
-\begin{DoxyParamCaption}
-\item[{\$}]{delimiter, }
-\item[{\$}]{string}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{expl}]{\setlength{\rightskip}{0pt plus 5cm}expl (\$ {\em delimiter}, \/  \$ {\em string})}}
 \label{util_8inc_8php_aafce787d4b725ac62be6306ff3e352e7}
 split a string by string
 
 like php's explode() but handles empty strings better. 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$delimiter} & boundary string \\
-\hline
-string & {\em \$string} & input string \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$delimiter boundary string \item[{\em string}]\$string input string \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array 
 \end{DoxyReturn}
@@ -178,22 +133,13 @@ Definition at line 159 of file util.inc.php.
 \hypertarget{util_8inc_8php_a1d2500a5e237e59956b03cbea845c95a}{
 \index{util.inc.php@{util.inc.php}!expl\_\-whitesp@{expl\_\-whitesp}}
 \index{expl\_\-whitesp@{expl\_\-whitesp}!util.inc.php@{util.inc.php}}
-\subsubsection[{expl\_\-whitesp}]{\setlength{\rightskip}{0pt plus 5cm}expl\_\-whitesp (
-\begin{DoxyParamCaption}
-\item[{\$}]{s, }
-\item[{\$}]{honor\_\-quot = {\ttfamily false}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{expl\_\-whitesp}]{\setlength{\rightskip}{0pt plus 5cm}expl\_\-whitesp (\$ {\em s}, \/  \$ {\em honor\_\-quot} = {\ttfamily false})}}
 \label{util_8inc_8php_a1d2500a5e237e59956b03cbea845c95a}
 explode a string splitting it by whitespace characters
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & input string \\
-\hline
-bool & {\em \$honor\_\-quot} & don't split inside quotation marks \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s input string \item[{\em bool}]\$honor\_\-quot don't split inside quotation marks \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array of strings 
 \end{DoxyReturn}
@@ -204,22 +150,13 @@ Definition at line 177 of file util.inc.php.
 \hypertarget{util_8inc_8php_a9c9a81ec9dba8b2870cbb365f8139866}{
 \index{util.inc.php@{util.inc.php}!file\_\-is\_\-different@{file\_\-is\_\-different}}
 \index{file\_\-is\_\-different@{file\_\-is\_\-different}!util.inc.php@{util.inc.php}}
-\subsubsection[{file\_\-is\_\-different}]{\setlength{\rightskip}{0pt plus 5cm}file\_\-is\_\-different (
-\begin{DoxyParamCaption}
-\item[{\$}]{a, }
-\item[{\$}]{b}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{file\_\-is\_\-different}]{\setlength{\rightskip}{0pt plus 5cm}file\_\-is\_\-different (\$ {\em a}, \/  \$ {\em b})}}
 \label{util_8inc_8php_a9c9a81ec9dba8b2870cbb365f8139866}
 check if two files are different
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$a} & filename \\
-\hline
-string & {\em \$b} & filename \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$a filename \item[{\em string}]\$b filename \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 bool 
 \end{DoxyReturn}
@@ -230,19 +167,13 @@ Definition at line 225 of file util.inc.php.
 \hypertarget{util_8inc_8php_a6d9392e51344c2e8720a0c1982ebea21}{
 \index{util.inc.php@{util.inc.php}!filext@{filext}}
 \index{filext@{filext}!util.inc.php@{util.inc.php}}
-\subsubsection[{filext}]{\setlength{\rightskip}{0pt plus 5cm}filext (
-\begin{DoxyParamCaption}
-\item[{\$}]{s}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{filext}]{\setlength{\rightskip}{0pt plus 5cm}filext (\$ {\em s})}}
 \label{util_8inc_8php_a6d9392e51344c2e8720a0c1982ebea21}
 get the extension of a file
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & filename \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s filename \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -253,35 +184,16 @@ Definition at line 244 of file util.inc.php.
 \hypertarget{util_8inc_8php_aff065fbc9f3abbf9c5a0ebfba22acbf7}{
 \index{util.inc.php@{util.inc.php}!http\_\-digest\_\-check@{http\_\-digest\_\-check}}
 \index{http\_\-digest\_\-check@{http\_\-digest\_\-check}!util.inc.php@{util.inc.php}}
-\subsubsection[{http\_\-digest\_\-check}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-digest\_\-check (
-\begin{DoxyParamCaption}
-\item[{\$}]{users, }
-\item[{\$}]{realm = {\ttfamily ''}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{http\_\-digest\_\-check}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-digest\_\-check (\$ {\em users}, \/  \$ {\em realm} = {\ttfamily ''})}}
 \label{util_8inc_8php_aff065fbc9f3abbf9c5a0ebfba22acbf7}
 check if the user is http digest authenticated
 
 
-\begin{DoxyParams}[1]{Parameters}
-array & {\em \$users} & array of possible users (usernames as keys, password as values) \\
-\hline
-string & {\em \$realm} & realm (e.g. name of the site) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em array}]\$users array of possible users (usernames as keys, password as values) \item[{\em string}]\$realm realm (e.g. name of the site) \end{DoxyParams}
 
 \begin{DoxyRetVals}{Return values}
-{\em 0} & authenticated \\
-\hline
-{\em -\/1} & user did not request authentication \\
-\hline
-{\em -\/2} & parts of the response are missing \\
-\hline
-{\em -\/3} & unknown username \\
-\hline
-{\em -\/4} & invalid password \\
-\hline
-\end{DoxyRetVals}
+\item[{\em 0}]authenticated \item[{\em -\/1}]user did not request authentication \item[{\em -\/2}]parts of the response are missing \item[{\em -\/3}]unknown username \item[{\em -\/4}]invalid password \end{DoxyRetVals}
 
 
 Definition at line 303 of file util.inc.php.
@@ -289,19 +201,13 @@ Definition at line 303 of file util.inc.php.
 \hypertarget{util_8inc_8php_a95d221746e2d296434b0d63f78cedf57}{
 \index{util.inc.php@{util.inc.php}!http\_\-digest\_\-prompt@{http\_\-digest\_\-prompt}}
 \index{http\_\-digest\_\-prompt@{http\_\-digest\_\-prompt}!util.inc.php@{util.inc.php}}
-\subsubsection[{http\_\-digest\_\-prompt}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-digest\_\-prompt (
-\begin{DoxyParamCaption}
-\item[{\$}]{realm = {\ttfamily ''}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{http\_\-digest\_\-prompt}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-digest\_\-prompt (\$ {\em realm} = {\ttfamily ''})}}
 \label{util_8inc_8php_a95d221746e2d296434b0d63f78cedf57}
 prompt the user for http digest authentication
 
 make sure the script stops execution after calling this function. 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$realm} & realm (e.g. name of the site) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$realm realm (e.g. name of the site) \end{DoxyParams}
 
 
 Definition at line 383 of file util.inc.php.
@@ -309,22 +215,13 @@ Definition at line 383 of file util.inc.php.
 \hypertarget{util_8inc_8php_ae51039516309f10d5be73220f351e808}{
 \index{util.inc.php@{util.inc.php}!http\_\-error@{http\_\-error}}
 \index{http\_\-error@{http\_\-error}!util.inc.php@{util.inc.php}}
-\subsubsection[{http\_\-error}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-error (
-\begin{DoxyParamCaption}
-\item[{\$}]{code, }
-\item[{\$}]{header\_\-only = {\ttfamily false}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{http\_\-error}]{\setlength{\rightskip}{0pt plus 5cm}http\_\-error (\$ {\em code}, \/  \$ {\em header\_\-only} = {\ttfamily false})}}
 \label{util_8inc_8php_ae51039516309f10d5be73220f351e808}
 return a http error message to the client
 
 if \$header\_\-only is false (the default), the function doesn't return if successful. 
-\begin{DoxyParams}[1]{Parameters}
-int & {\em \$code} & error code \\
-\hline
-bool & {\em \$header\_\-only} & only output the header and return \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em int}]\$code error code \item[{\em bool}]\$header\_\-only only output the header and return \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 bool true if successful (only if \$header\_\-only is true), false if not 
 \end{DoxyReturn}
@@ -335,19 +232,13 @@ Definition at line 265 of file util.inc.php.
 \hypertarget{util_8inc_8php_a0da48011cb68c039aec396c23cb04295}{
 \index{util.inc.php@{util.inc.php}!is\_\-url@{is\_\-url}}
 \index{is\_\-url@{is\_\-url}!util.inc.php@{util.inc.php}}
-\subsubsection[{is\_\-url}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-url (
-\begin{DoxyParamCaption}
-\item[{\$}]{s}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{is\_\-url}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-url (\$ {\em s})}}
 \label{util_8inc_8php_a0da48011cb68c039aec396c23cb04295}
 check if a string is a url
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 bool 
 \end{DoxyReturn}
@@ -358,19 +249,13 @@ Definition at line 397 of file util.inc.php.
 \hypertarget{util_8inc_8php_a9f9eeab2eb9a39518e80609fc7f83842}{
 \index{util.inc.php@{util.inc.php}!nl@{nl}}
 \index{nl@{nl}!util.inc.php@{util.inc.php}}
-\subsubsection[{nl}]{\setlength{\rightskip}{0pt plus 5cm}nl (
-\begin{DoxyParamCaption}
-\item[{\$}]{count = {\ttfamily 1}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{nl}]{\setlength{\rightskip}{0pt plus 5cm}nl (\$ {\em count} = {\ttfamily 1})}}
 \label{util_8inc_8php_a9f9eeab2eb9a39518e80609fc7f83842}
 return a number of newline characters
 
 
-\begin{DoxyParams}[1]{Parameters}
-int & {\em \$count} & count (one is default) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em int}]\$count count (one is default) \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -381,25 +266,13 @@ Definition at line 413 of file util.inc.php.
 \hypertarget{util_8inc_8php_a37ef346387afe0af2cf86a8bea887173}{
 \index{util.inc.php@{util.inc.php}!pad@{pad}}
 \index{pad@{pad}!util.inc.php@{util.inc.php}}
-\subsubsection[{pad}]{\setlength{\rightskip}{0pt plus 5cm}pad (
-\begin{DoxyParamCaption}
-\item[{\$}]{s, }
-\item[{\$}]{num, }
-\item[{\$}]{chr = {\ttfamily '~'}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{pad}]{\setlength{\rightskip}{0pt plus 5cm}pad (\$ {\em s}, \/  \$ {\em num}, \/  \$ {\em chr} = {\ttfamily '~'})}}
 \label{util_8inc_8php_a37ef346387afe0af2cf86a8bea887173}
 pad a string to have at least \$num characters
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & string to operate on \\
-\hline
-int & {\em \$num} & number of characters desired \\
-\hline
-string & {\em \$chr} & character to pad the string with \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s string to operate on \item[{\em int}]\$num number of characters desired \item[{\em string}]\$chr character to pad the string with \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -410,19 +283,13 @@ Definition at line 431 of file util.inc.php.
 \hypertarget{util_8inc_8php_a3c7d87c658499c1559a6b98cac06f58d}{
 \index{util.inc.php@{util.inc.php}!quot@{quot}}
 \index{quot@{quot}!util.inc.php@{util.inc.php}}
-\subsubsection[{quot}]{\setlength{\rightskip}{0pt plus 5cm}quot (
-\begin{DoxyParamCaption}
-\item[{\$}]{s}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{quot}]{\setlength{\rightskip}{0pt plus 5cm}quot (\$ {\em s})}}
 \label{util_8inc_8php_a3c7d87c658499c1559a6b98cac06f58d}
 return a string with double quotation marks wrapped around
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & string \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s string \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -433,19 +300,13 @@ Definition at line 446 of file util.inc.php.
 \hypertarget{util_8inc_8php_aea325eb074a103f961fdabadbc5e4fb6}{
 \index{util.inc.php@{util.inc.php}!rm\_\-recursive@{rm\_\-recursive}}
 \index{rm\_\-recursive@{rm\_\-recursive}!util.inc.php@{util.inc.php}}
-\subsubsection[{rm\_\-recursive}]{\setlength{\rightskip}{0pt plus 5cm}rm\_\-recursive (
-\begin{DoxyParamCaption}
-\item[{\$}]{f}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{rm\_\-recursive}]{\setlength{\rightskip}{0pt plus 5cm}rm\_\-recursive (\$ {\em f})}}
 \label{util_8inc_8php_aea325eb074a103f961fdabadbc5e4fb6}
 delete a file or directory
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$f} & file name \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$f file name \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 true if successful, false if not 
 \end{DoxyReturn}
@@ -456,25 +317,13 @@ Definition at line 458 of file util.inc.php.
 \hypertarget{util_8inc_8php_a43278b320bd522e46bd7abdd3a2f6fb0}{
 \index{util.inc.php@{util.inc.php}!serve\_\-file@{serve\_\-file}}
 \index{serve\_\-file@{serve\_\-file}!util.inc.php@{util.inc.php}}
-\subsubsection[{serve\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-file (
-\begin{DoxyParamCaption}
-\item[{\$}]{fn, }
-\item[{\$}]{dl, }
-\item[{\$}]{mime = {\ttfamily ''}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{serve\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}serve\_\-file (\$ {\em fn}, \/  \$ {\em dl}, \/  \$ {\em mime} = {\ttfamily ''})}}
 \label{util_8inc_8php_a43278b320bd522e46bd7abdd3a2f6fb0}
 serve a file to the client
 
 this function only returns on errors. 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$fn} & filename \\
-\hline
-bool & {\em \$dl} & download file \\
-\hline
-string & {\em \$mime} & mime type \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$fn filename \item[{\em bool}]\$dl download file \item[{\em string}]\$mime mime type \end{DoxyParams}
 
 
 Definition at line 491 of file util.inc.php.
@@ -482,19 +331,13 @@ Definition at line 491 of file util.inc.php.
 \hypertarget{util_8inc_8php_a74e38925e7162356a2ea14db32664c37}{
 \index{util.inc.php@{util.inc.php}!tab@{tab}}
 \index{tab@{tab}!util.inc.php@{util.inc.php}}
-\subsubsection[{tab}]{\setlength{\rightskip}{0pt plus 5cm}tab (
-\begin{DoxyParamCaption}
-\item[{\$}]{count = {\ttfamily 1}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{tab}]{\setlength{\rightskip}{0pt plus 5cm}tab (\$ {\em count} = {\ttfamily 1})}}
 \label{util_8inc_8php_a74e38925e7162356a2ea14db32664c37}
 return a number of tab characters
 
 
-\begin{DoxyParams}[1]{Parameters}
-int & {\em \$count} & count (one is default) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em int}]\$count count (one is default) \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}
@@ -505,22 +348,13 @@ Definition at line 529 of file util.inc.php.
 \hypertarget{util_8inc_8php_a187670bae118aa2d4864c513a21e712d}{
 \index{util.inc.php@{util.inc.php}!unique\_\-filename@{unique\_\-filename}}
 \index{unique\_\-filename@{unique\_\-filename}!util.inc.php@{util.inc.php}}
-\subsubsection[{unique\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}unique\_\-filename (
-\begin{DoxyParamCaption}
-\item[{\$}]{dir, }
-\item[{\$}]{orig\_\-fn}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{unique\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}unique\_\-filename (\$ {\em dir}, \/  \$ {\em orig\_\-fn})}}
 \label{util_8inc_8php_a187670bae118aa2d4864c513a21e712d}
 find a unique filename for copying a file to destination directory
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$dir} & destination directory \\
-\hline
-string & {\em \$orig\_\-fn} & original filename \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$dir destination directory \item[{\em string}]\$orig\_\-fn original filename \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string (basename) proposed filename 
 \end{DoxyReturn}
@@ -531,19 +365,13 @@ Definition at line 546 of file util.inc.php.
 \hypertarget{util_8inc_8php_aa5cc9d5f8a0b5bb76dfe3d15796e5940}{
 \index{util.inc.php@{util.inc.php}!var\_\-dump\_\-inl@{var\_\-dump\_\-inl}}
 \index{var\_\-dump\_\-inl@{var\_\-dump\_\-inl}!util.inc.php@{util.inc.php}}
-\subsubsection[{var\_\-dump\_\-inl}]{\setlength{\rightskip}{0pt plus 5cm}var\_\-dump\_\-inl (
-\begin{DoxyParamCaption}
-\item[{\$}]{var}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{var\_\-dump\_\-inl}]{\setlength{\rightskip}{0pt plus 5cm}var\_\-dump\_\-inl (\$ {\em var})}}
 \label{util_8inc_8php_aa5cc9d5f8a0b5bb76dfe3d15796e5940}
 print human-\/readable information about a variable in inline format
 
 
-\begin{DoxyParams}[1]{Parameters}
-mixed & {\em \$var} & variable \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em mixed}]\$var variable \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 string 
 \end{DoxyReturn}

@@ -253,6 +253,24 @@ function filext($s)
 
 
 /**
+ *	select the first element of an array, or other Traversable
+ *
+ *	@param Traversable|array $iterable the array where to pick the first value
+ *	@return mixed
+ */
+function get_first_item($iterable)
+{
+	if (!is_iterable($iterable)) {
+		throw new InvalidArgumentException("Argument isn't iterable.");
+	}
+
+	foreach ($iterable as $item) {
+		return $item;
+	}
+}
+
+
+/**
  *	return a http error message to the client
  *
  *	if $header_only is false (the default), the function doesn't 
@@ -403,6 +421,20 @@ function is_url($s)
 	}
 }
 
+if (!function_exists('is_iterable'))
+{
+	/**
+	 * determine if a variable is iterable (already implemented in PHP 7.1+)
+	 *
+	 * @param mixed $var the variable to check
+	 * @return bool
+	 */
+	function is_iterable($var)
+	{
+		return is_array($var) || $var instanceof Traversable;
+	}
+}
+
 
 /**
  *	return a number of newline characters
@@ -508,7 +540,7 @@ function serve_file($fn, $dl, $mime = '')
 		// these are taken from the php documentation (on readfile())
 		header('Content-Description: File Transfer');
 		header('Content-Type: application/octet-stream');
-		header('Content-Disposition: attachment; filename='.basename($fn));
+		header('Content-Disposition: attachment; filename="'.basename($fn).'"');
 		header('Content-Transfer-Encoding: binary');
 	} else {
 		header('Content-Type: '.$mime);

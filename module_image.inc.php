@@ -321,6 +321,28 @@ function image_render_page_early($args)
 	}
 }
 
+/**
+ *	determine if file is animated gif
+ *	
+ *	function takes filename and returns 'true' if the file header contains
+ *	multiple frames:
+ *	* a static 4-byte sequence (\x00\x21\xF9\x04)
+ *	* 4 variable bytes
+ *	* a static 2-byte sequence (\x00\x2C) (some variants may use \x00\x21 ?)
+ *	
+ *	based on: http://www.php.net/manual/en/function.imagecreatefromgif.php#104473
+ */
+function is_ani($filename) {
+	if(!($fh = @fopen($filename, 'rb')))
+		return false;
+	$count = 0;
+	while(!feof($fh) && $count < 2) {
+		$chunk = fread($fh, 1024 * 100); //read 100kb at a time
+		$count += preg_match_all('#\x00\x21\xF9\x04.{4}\x00(\x2C|\x21)#s', $chunk, $matches);
+	}
+	fclose($fh);
+	return $count > 1;
+}
 
 /**
  *	resize an image object
@@ -368,7 +390,7 @@ function image_resize($args)
 		return response('Original dimensions are not available', 500);
 	}
 	// set pagename
-	$pn = array_shift(expl('.', $obj['name']));
+	$pn = get_first_item(expl('.', $obj['name']));
 	
 	// resizing might not be necessary at all
 	if (!empty($obj['image-resized-file']) && @intval($obj['image-resized-width']) == $width && @intval($obj['image-resized-height'] == $height)) {
@@ -420,6 +442,10 @@ function image_resize($args)
 	} elseif ($obj['image-file-mime'] == 'image/png' || $ext == 'png') {
 		$orig = @imagecreatefrompng($fn);
 		$dest_ext = 'png';
+	} elseif (is_ani($fn)) {
+		// animated images shall not be resized
+		log_msg('debug', 'image_resize: animated image, not resizing');
+		return response(true);
 	} elseif ($obj['image-file-mime'] == 'image/gif' || $ext == 'gif') {
 		$orig = @imagecreatefromgif($fn);
 		// save gifs as png
@@ -500,7 +526,7 @@ function image_save_state($args)
 	$elem = $args['elem'];
 	$obj = $args['obj'];
 	// only take responsibility for the element when we are its main class
-	if (array_shift(elem_classes($elem)) != 'image') {
+	if (get_first_item(elem_classes($elem)) != 'image') {
 		return false;
 	}
 	
@@ -545,7 +571,7 @@ function image_serve_resource($args)
 	}
 	// we don't have to care about symlinks here as they are being resolved 
 	// before this hook is called
-	$pn = array_shift(expl('.', $obj['name']));
+	$pn = get_first_item(expl('.', $obj['name']));
 	
 	if (!empty($obj['image-resized-file']) && !$args['dl']) {
 		// we have a resized file and don't want to download the original
@@ -612,8 +638,8 @@ function image_snapshot_symlink($args)
 	// shared directory in page a to the one on page b, this happens in this 
 	// hook
 	
-	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
-	$src_dir = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared';
+	$dest_dir = CONTENT_DIR.'/'.get_first_item(expl('.', $obj['name'])).'/shared';
+	$src_dir = CONTENT_DIR.'/'.get_first_item(expl('.', $args['origin'])).'/shared';
 	
 	// we do this for image-file and image-resized-file
 	// .. to add a bit of complexity ;)
@@ -687,6 +713,7 @@ function image_upload($args)
 	
 	// render object and return html
 	$ret = render_object(array('name'=>$obj['name'], 'edit'=>true));
+	log_msg('debug', 'image_upload: '.print_r($ret, 1));
 	if ($ret['#error']) {
 		return false;
 	} else {
