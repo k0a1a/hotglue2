@@ -82,7 +82,8 @@ function page_delete_page($args)
 function page_has_reference($args)
 {
 	$obj = $args['obj'];
-	if (array_pop(expl('.', $obj['name'])) != 'page') {
+	$tmp = expl('.', $obj['name']);
+	if (array_pop($tmp) != 'page') {
 		return false;
 	}
 	
@@ -186,10 +187,11 @@ function page_render_page_early($args)
 function page_serve_resource($args)
 {
 	$obj = $args['obj'];
-	if (array_pop(expl('.', $obj['name'])) != 'page') {
+	$tmp = expl('.', $obj['name']);
+	if (array_pop($tmp) != 'page') {
 		return false;
 	}
-	$pn = get_first_item(expl('.', $obj['name']));
+	$pn = get_first_item($tmp);
 	
 	if (!empty($obj['page-background-file'])) {
 		$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['page-background-file'];
