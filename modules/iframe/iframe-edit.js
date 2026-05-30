@@ -17,6 +17,8 @@ $(document).ready(function() {
 		if (!url) {
 			return;
 		}
+    // use protocol relative url
+    url = '//' + url.split('//')[1];
 		// create new object
 		$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
 			var elem = $('<div class="iframe resizable object" style="position: absolute;"></div>');
@@ -50,10 +52,12 @@ $(document).ready(function() {
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		var child = $(obj).children('iframe').first();
-		var url = prompt('Enter the URL to show', $(child).attr('src'));
+		var url = prompt('Enter the URL to show', window.location.protocol + $(child).attr('src'));
 		if (!url) {
 			return;
 		}
+    // use protocol relative url
+    url = '//' + url.split('//')[1];
 		$(child).attr('src', url);
 		$.glue.object.save(obj);
 	});

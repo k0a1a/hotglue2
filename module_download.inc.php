@@ -152,7 +152,7 @@ function download_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	if (array_shift(elem_classes($elem)) != 'download') {
+	if (get_first_item(elem_classes($elem)) != 'download') {
 		return false;
 	}
 	
@@ -207,8 +207,8 @@ function download_snapshot_symlink($args)
 		return false;
 	}
 	
-	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
-	$src_file = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared/'.$obj['download-file'];
+	$dest_dir = CONTENT_DIR.'/'.get_first_item(expl('.', $obj['name'])).'/shared';
+	$src_file = CONTENT_DIR.'/'.get_first_item(expl('.', $args['origin'])).'/shared/'.$obj['download-file'];
 	
 	if (($f = dir_has_same_file($dest_dir, $src_file)) !== false) {
 		$obj['download-file'] = $f;

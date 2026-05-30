@@ -16,9 +16,9 @@
 }
 
 #glue-contextmenu-iframe-scroll.glue-menu-disabled {
-	background-image: url(iframe-scroll-off.png);
+	background-image: url(iframe-scroll.png);
 }
 
 #glue-contextmenu-iframe-scroll.glue-menu-enabled {
-	background-image: url(iframe-scroll-on.png);
+	background-image: url(iframe-scroll.png);
 }

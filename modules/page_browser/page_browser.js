@@ -10,16 +10,17 @@
 $(document).ready(function() {
 	var span = false;
 	
-	$('.page_browser_entry').bind('mouseenter', function(e) {
+	$('.page_browser_entry').live('mouseenter', function(e) {
 		if (span) {
 			$(span).remove();
 		}
-		var html = '<span>';
-		html += '<a href="'+$.glue.base_url+'?'+$(this).attr('id')+'/edit">edit</a> ';
-		html += '<a href="#" class="page_browser_rename">rename</a> ';
-		html += '<a href="#" class="page_browser_delete">delete</a> ';
+		var html = '<span class="page_browser_actions">';
+		html += '<a href="'+$.glue.base_url+'?'+$(this).attr('id')+'/edit">edit</a> | ';
+		html += '<a href="#" class="page_browser_copy">copy</a> | ';
+		html += '<a href="#" class="page_browser_rename">rename</a> | ';
+		html += '<a href="#" class="page_browser_delete">delete</a>';
 		if ($(this).attr('id')+'.head' != $.glue.conf.page.startpage) {
-			html += '<a href="#" class="page_browser_set_startpage">as startpage</a> ';
+			html += ' | <a href="#" class="page_browser_set_startpage">startpage</a>';
 		}
 		html += '</span>';
 		
@@ -47,6 +48,22 @@ $(document).ready(function() {
 		return false;
 	});
 	
+	$('.page_browser_copy').live('click', function(e) {
+		var entry = $(this).parents('.page_browser_entry');
+		var old = $(entry).attr('id');
+		var pn = prompt('Specify a name', old+'-copy');
+		if (pn != null && pn != old) {
+			$.glue.backend({ method: 'glue.copy_page', 'old': old, 'new': pn }, function(data) {
+				copy = $(entry).clone();
+				$(copy).attr('id', pn);
+				$(copy).find('span.page_browser_pagename').siblings().remove();
+				$(copy).children('.page_browser_pagename').html('<a href="'+$.glue.base_url+'?'+pn+'">'+pn+'</a>');
+				$(entry).after(copy);
+			});
+		}
+		return false;
+	});
+
 	$('.page_browser_delete').live('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var pn = $(entry).attr('id');
@@ -78,7 +95,7 @@ $(document).ready(function() {
 		var pn = $(entry).attr('id');
 		$.glue.backend({ method: 'glue.set_startpage', page: pn+'.head' }, function(data) {
 			$('#page_browser_startpage').remove();
-			$(entry).children('.page_browser_pagename').after(' <span id="page_browser_startpage">the start page</span>');
+			$(entry).children('.page_browser_pagename').after(' <span id="page_browser_startpage">[startpage]</span>');
 			$.glue.conf.page.startpage = pn+'.head';
 			if (span) {
 				$(entry).trigger('mouseenter');

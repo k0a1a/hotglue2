@@ -16,6 +16,8 @@ $(document).ready(function() {
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		$.glue.backend({ method: 'glue.clone_object', name: $(obj).attr('id') }, function(data) {
+			// deselect current object
+			$.glue.sel.none();
 			var clone = $(obj).clone();
 			// set new id
 			$(clone).attr('id', data);
@@ -27,12 +29,11 @@ $(document).ready(function() {
 			$(clone).trigger('glue-pre-clone');
 			$.glue.object.register(clone);
 			// select new object
-			$.glue.sel.none();
 			$.glue.sel.select(clone);
 			$.glue.object.save(clone);
 		});
 	});
-	$.glue.contextmenu.register('object', 'object-clone', elem);
+	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/object/object-transparency.png" alt="btn" title="change transparency" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
@@ -64,7 +65,7 @@ $(document).ready(function() {
 		});
 		return false;
 	});
-	$.glue.contextmenu.register('object', 'object-transparency', elem);
+	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/object/object-zindex.png" alt="btn" title="bring object to foreground or background" width="32" height="32">');
 	$(elem).bind('mousedown', function(e) {
@@ -94,7 +95,7 @@ $(document).ready(function() {
 		});
 		return false;
 	});
-	$.glue.contextmenu.register('object', 'object-zindex', elem);
+	$.glue.contextmenu.register('object', 'object-zindex', elem, 3);
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/object/object-link.png" alt="btn" title="make the object a link" width="32" height="32">');
 	$(elem).bind('click', function(e) {
@@ -108,27 +109,43 @@ $(document).ready(function() {
 				if (data['#data']['object-link'] !== undefined) {
 					old_link = data['#data']['object-link'];
 				}
-				var link = prompt('Enter link (e.g. http://disney.com/, somepage, #someanchor)', old_link);
-				if (link === null || link == old_link) {
+				var old_target = '';
+				if (data['#data']['object-target'] !== undefined) {
+					old_target = data['#data']['object-target'];
+				}
+				old_linkdata = (old_target == '') ? old_link : old_link + ' ' + old_target;
+				var linkdata = prompt('Enter link (e.g. http://hotglue.me or pagename or anchor name).\nTo add target specify its name after a space (e.g. http://hotglue.me _blank)', old_linkdata);
+				if (linkdata === null || linkdata == old_link + ' ' + old_target) {
 					return;
 				}
-				if (link == '') {
-					// delete link
+				t = linkdata.split(' '); // if there is no space split() returns the string
+				link = t[0];
+				target = t[1];
+				
+				if (link == undefined) {
 					$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'object-link' });
 				} else {
 					// set link
 					$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'object-link': link });
+					if (target !== undefined) {
+						// set target
+						$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'object-target': target });
+					}
+				}
+				if (old_target !== '' && (target == '' || target == undefined)) {
+					// delete target
+					$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'object-target' });
 				}
 			}
 		}, false);
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
-	
+
 	elem = $('<img src="'+$.glue.base_url+'modules/object/object-target.png" alt="btn" title="get the name of this object (for linking to it)" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var obj = $(this).data('owner');
 		var name = $(obj).attr('id').split('.').pop();
-		prompt('You can link to this object by copying and pasting this string', '#$page$.'+name);
+		prompt('You can link to this object by copying and pasting this string', $.glue.page+'.'+name);
 	});
 	$.glue.contextmenu.register('object', 'object-target', elem);
 	
@@ -150,5 +167,5 @@ $(document).ready(function() {
 		// update canvas
 		$.glue.canvas.update();
 	});
-	$.glue.contextmenu.register('object', 'object-delete', elem);
+	$.glue.contextmenu.register('object', 'object-delete', elem, 20);
 });

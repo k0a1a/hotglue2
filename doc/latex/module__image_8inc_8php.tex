@@ -1,6 +1,6 @@
 \hypertarget{module__image_8inc_8php}{
-\section{/srv/www/hotglue/module\_\-image.inc.php File Reference}
-\label{module__image_8inc_8php}\index{/srv/www/hotglue/module\_\-image.inc.php@{/srv/www/hotglue/module\_\-image.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php File Reference}
+\label{module__image_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-image.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -21,6 +21,8 @@
 \item 
 \hyperlink{module__image_8inc_8php_a8266a74a11a86a73e2aa3709388fd43f}{image\_\-render\_\-page\_\-early} (\$args)
 \item 
+\hyperlink{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}{is\_\-ani} (\$filename)
+\item 
 \hyperlink{module__image_8inc_8php_a9e03a71310133176236ae0bd4a0241e0}{image\_\-resize} (\$args)
 \item 
 \hyperlink{module__image_8inc_8php_ac26ea1448f0b7ed835907cf7c22b60ca}{image\_\-save\_\-state} (\$args)
@@ -37,11 +39,7 @@
 \hypertarget{module__image_8inc_8php_a574d6d760e50b88ffa815cab30a5e634}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!\_\-gd\_\-available@{\_\-gd\_\-available}}
 \index{\_\-gd\_\-available@{\_\-gd\_\-available}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{\_\-gd\_\-available}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-available (
-\begin{DoxyParamCaption}
-{}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-gd\_\-available}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-available ()}}
 \label{module__image_8inc_8php_a574d6d760e50b88ffa815cab30a5e634}
 return if GD image functions are available
 
@@ -55,19 +53,13 @@ Definition at line 24 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a3c76028c34273e722c9691243377a208}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!\_\-gd\_\-get\_\-imagesize@{\_\-gd\_\-get\_\-imagesize}}
 \index{\_\-gd\_\-get\_\-imagesize@{\_\-gd\_\-get\_\-imagesize}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{\_\-gd\_\-get\_\-imagesize}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-get\_\-imagesize (
-\begin{DoxyParamCaption}
-\item[{\$}]{f}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-gd\_\-get\_\-imagesize}]{\setlength{\rightskip}{0pt plus 5cm}\_\-gd\_\-get\_\-imagesize (\$ {\em f})}}
 \label{module__image_8inc_8php_a3c76028c34273e722c9691243377a208}
 return the width and height of an image file
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$f} & filename\\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$f filename\end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array with width and height in pixels 
 \end{DoxyReturn}
@@ -78,11 +70,7 @@ Definition at line 37 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_ab52d6b71a5c26dbb7e86653652a23251}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-alter\_\-render\_\-early@{image\_\-alter\_\-render\_\-early}}
 \index{image\_\-alter\_\-render\_\-early@{image\_\-alter\_\-render\_\-early}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-alter\_\-render\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-alter\_\-render\_\-early (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-alter\_\-render\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-alter\_\-render\_\-early (\$ {\em args})}}
 \label{module__image_8inc_8php_ab52d6b71a5c26dbb7e86653652a23251}
 implements alter\_\-render\_\-early
 
@@ -93,11 +81,7 @@ Definition at line 53 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a93578776fb38b10d47bc711cc3469ae9}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-alter\_\-save@{image\_\-alter\_\-save}}
 \index{image\_\-alter\_\-save@{image\_\-alter\_\-save}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-alter\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-alter\_\-save (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-alter\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-alter\_\-save (\$ {\em args})}}
 \label{module__image_8inc_8php_a93578776fb38b10d47bc711cc3469ae9}
 implements alter\_\-save
 
@@ -108,11 +92,7 @@ Definition at line 176 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a7cbcf6138ccff16a8b733cfd6f0f1666}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-delete\_\-object@{image\_\-delete\_\-object}}
 \index{image\_\-delete\_\-object@{image\_\-delete\_\-object}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-delete\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-delete\_\-object (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-delete\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-delete\_\-object (\$ {\em args})}}
 \label{module__image_8inc_8php_a7cbcf6138ccff16a8b733cfd6f0f1666}
 implements delete\_\-object 
 
@@ -121,11 +101,7 @@ Definition at line 214 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a0bef6164f5eafe368d251639cf6fe298}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-has\_\-reference@{image\_\-has\_\-reference}}
 \index{image\_\-has\_\-reference@{image\_\-has\_\-reference}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-has\_\-reference}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-has\_\-reference (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-has\_\-reference}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-has\_\-reference (\$ {\em args})}}
 \label{module__image_8inc_8php_a0bef6164f5eafe368d251639cf6fe298}
 implements has\_\-reference 
 
@@ -134,11 +110,7 @@ Definition at line 240 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a4fadded2a225d1b5ea73404a84597620}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-render\_\-object@{image\_\-render\_\-object}}
 \index{image\_\-render\_\-object@{image\_\-render\_\-object}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-object (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-object (\$ {\em args})}}
 \label{module__image_8inc_8php_a4fadded2a225d1b5ea73404a84597620}
 implements render\_\-object 
 
@@ -147,11 +119,7 @@ Definition at line 266 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a8266a74a11a86a73e2aa3709388fd43f}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-render\_\-page\_\-early@{image\_\-render\_\-page\_\-early}}
 \index{image\_\-render\_\-page\_\-early@{image\_\-render\_\-page\_\-early}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-page\_\-early (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-render\_\-page\_\-early (\$ {\em args})}}
 \label{module__image_8inc_8php_a8266a74a11a86a73e2aa3709388fd43f}
 implements render\_\-page\_\-early 
 
@@ -160,77 +128,68 @@ Definition at line 305 of file module\_\-image.inc.php.
 \hypertarget{module__image_8inc_8php_a9e03a71310133176236ae0bd4a0241e0}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-resize@{image\_\-resize}}
 \index{image\_\-resize@{image\_\-resize}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-resize}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-resize (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-resize}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-resize (\$ {\em args})}}
 \label{module__image_8inc_8php_a9e03a71310133176236ae0bd4a0241e0}
 resize an image object
 
 this function drops the reference to any currently resized version, saves the resized image together with the original image in the page's shared folder and updates the object file to use the resized version. 
-\begin{DoxyParams}[1]{Parameters}
-array & {\em \$args} & arguments key 'name' name of the objects key 'width' width in px key 'height' height in px \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em array}]\$args arguments key 'name' name of the objects key 'width' width in px key 'height' height in px \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 array response true if the client is advised to reload the image, false if not 
 \end{DoxyReturn}
 
 
-Definition at line 338 of file module\_\-image.inc.php.
+Definition at line 360 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_ac26ea1448f0b7ed835907cf7c22b60ca}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-save\_\-state@{image\_\-save\_\-state}}
 \index{image\_\-save\_\-state@{image\_\-save\_\-state}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-save\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-save\_\-state (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-save\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-save\_\-state (\$ {\em args})}}
 \label{module__image_8inc_8php_ac26ea1448f0b7ed835907cf7c22b60ca}
 implements save\_\-state 
 
-Definition at line 498 of file module\_\-image.inc.php.
+Definition at line 524 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_abb6646bfaa6a012e620cdaaa0bc3c807}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-serve\_\-resource@{image\_\-serve\_\-resource}}
 \index{image\_\-serve\_\-resource@{image\_\-serve\_\-resource}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-serve\_\-resource (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-serve\_\-resource}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-serve\_\-resource (\$ {\em args})}}
 \label{module__image_8inc_8php_abb6646bfaa6a012e620cdaaa0bc3c807}
 implements serve\_\-resource 
 
-Definition at line 540 of file module\_\-image.inc.php.
+Definition at line 566 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_a65d33fafe2da58d0f87f2df1fedbbe62}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-snapshot\_\-symlink@{image\_\-snapshot\_\-symlink}}
 \index{image\_\-snapshot\_\-symlink@{image\_\-snapshot\_\-symlink}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-snapshot\_\-symlink}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-snapshot\_\-symlink (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-snapshot\_\-symlink}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-snapshot\_\-symlink (\$ {\em args})}}
 \label{module__image_8inc_8php_a65d33fafe2da58d0f87f2df1fedbbe62}
 implements snapshot\_\-symlink
 
 see \hyperlink{module__glue_8inc_8php_a5d3ad02088eee566589cd47fe0dc889a}{snapshot()} in \hyperlink{module__glue_8inc_8php}{module\_\-glue.inc.php} 
 
-Definition at line 595 of file module\_\-image.inc.php.
+Definition at line 621 of file module\_\-image.inc.php.
 
 \hypertarget{module__image_8inc_8php_a37dee9de60e2852c0631d8e60e58585c}{
 \index{module\_\-image.inc.php@{module\_\-image.inc.php}!image\_\-upload@{image\_\-upload}}
 \index{image\_\-upload@{image\_\-upload}!module_image.inc.php@{module\_\-image.inc.php}}
-\subsubsection[{image\_\-upload}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-upload (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{image\_\-upload}]{\setlength{\rightskip}{0pt plus 5cm}image\_\-upload (\$ {\em args})}}
 \label{module__image_8inc_8php_a37dee9de60e2852c0631d8e60e58585c}
 implements upload 
 
-Definition at line 657 of file module\_\-image.inc.php.
+Definition at line 683 of file module\_\-image.inc.php.
+
+\hypertarget{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}{
+\index{module\_\-image.inc.php@{module\_\-image.inc.php}!is\_\-ani@{is\_\-ani}}
+\index{is\_\-ani@{is\_\-ani}!module_image.inc.php@{module\_\-image.inc.php}}
+\subsubsection[{is\_\-ani}]{\setlength{\rightskip}{0pt plus 5cm}is\_\-ani (\$ {\em filename})}}
+\label{module__image_8inc_8php_aba67b6eaafc9c80c5b19a9cda9604830}
+determine if file is animated gif
+
+function takes filename and returns 'true' if the file header contains multiple frames: $\ast$ a static 4-\/byte sequence () $\ast$ 4 variable bytes $\ast$ a static 2-\/byte sequence () (some variants may use  ?)
+
+based on: \href{http://www.php.net/manual/en/function.imagecreatefromgif.php#104473}{\tt http://www.php.net/manual/en/function.imagecreatefromgif.php\#104473} 
+
+Definition at line 335 of file module\_\-image.inc.php.
 

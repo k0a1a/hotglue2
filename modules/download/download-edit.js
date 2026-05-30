@@ -5,6 +5,7 @@
  *	Copyright Gottfried Haider, Danja Vasiliev 2010.
  *	This source code is licensed under the GNU General Public License.
  *	See the file COPYING for more details.
+ * 
  */
 
 $('.download').live('glue-upload-dynamic-early', function(e, mode, target_x, target_y) {

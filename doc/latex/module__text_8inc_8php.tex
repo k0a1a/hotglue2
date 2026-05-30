@@ -1,6 +1,6 @@
 \hypertarget{module__text_8inc_8php}{
-\section{/srv/www/hotglue/module\_\-text.inc.php File Reference}
-\label{module__text_8inc_8php}\index{/srv/www/hotglue/module\_\-text.inc.php@{/srv/www/hotglue/module\_\-text.inc.php}}
+\section{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-text.inc.php File Reference}
+\label{module__text_8inc_8php}\index{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-text.inc.php@{/var-\/www-\/hotglue/hotglue.org-\/test/dev/module\_\-text.inc.php}}
 }
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -29,22 +29,13 @@
 \hypertarget{module__text_8inc_8php_a1cee3a7df743730d3e13919dede62d85}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!\_\-include\_\-woff\_\-font@{\_\-include\_\-woff\_\-font}}
 \index{\_\-include\_\-woff\_\-font@{\_\-include\_\-woff\_\-font}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{\_\-include\_\-woff\_\-font}]{\setlength{\rightskip}{0pt plus 5cm}\_\-include\_\-woff\_\-font (
-\begin{DoxyParamCaption}
-\item[{\$}]{font\_\-family, }
-\item[{\$}]{style\_\-to\_\-include = {\ttfamily ''}}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-include\_\-woff\_\-font}]{\setlength{\rightskip}{0pt plus 5cm}\_\-include\_\-woff\_\-font (\$ {\em font\_\-family}, \/  \$ {\em style\_\-to\_\-include} = {\ttfamily ''})}}
 \label{module__text_8inc_8php_a1cee3a7df743730d3e13919dede62d85}
 include the font-\/face css for a woff-\/font
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$font\_\-family} & font family to include \\
-\hline
-string & {\em \$style\_\-to\_\-include} & style to include (normal, italic, bold, bolditalic) (default: include all styles) \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$font\_\-family font family to include \item[{\em string}]\$style\_\-to\_\-include style to include (normal, italic, bold, bolditalic) (default: include all styles) \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 true if successful, false if not 
 \end{DoxyReturn}
@@ -55,19 +46,13 @@ Definition at line 32 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_a270432cf0918807ddfc6b698539d02e3}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!\_\-is\_\-woff\_\-font@{\_\-is\_\-woff\_\-font}}
 \index{\_\-is\_\-woff\_\-font@{\_\-is\_\-woff\_\-font}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{\_\-is\_\-woff\_\-font}]{\setlength{\rightskip}{0pt plus 5cm}\_\-is\_\-woff\_\-font (
-\begin{DoxyParamCaption}
-\item[{\$}]{font\_\-family}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-is\_\-woff\_\-font}]{\setlength{\rightskip}{0pt plus 5cm}\_\-is\_\-woff\_\-font (\$ {\em font\_\-family})}}
 \label{module__text_8inc_8php_a270432cf0918807ddfc6b698539d02e3}
 return if the font-\/family includes a woff-\/font
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$font\_\-family} & font family \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$font\_\-family font family \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 true if there is a woff-\/font, false if not 
 \end{DoxyReturn}
@@ -78,22 +63,13 @@ Definition at line 87 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_a0586b5e177a15f5904d49b8b3aaf19ee}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!\_\-text\_\-render\_\-content@{\_\-text\_\-render\_\-content}}
 \index{\_\-text\_\-render\_\-content@{\_\-text\_\-render\_\-content}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{\_\-text\_\-render\_\-content}]{\setlength{\rightskip}{0pt plus 5cm}\_\-text\_\-render\_\-content (
-\begin{DoxyParamCaption}
-\item[{\$}]{s, }
-\item[{\$}]{name}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-text\_\-render\_\-content}]{\setlength{\rightskip}{0pt plus 5cm}\_\-text\_\-render\_\-content (\$ {\em s}, \/  \$ {\em name})}}
 \label{module__text_8inc_8php_a0586b5e177a15f5904d49b8b3aaf19ee}
 helper function for rendering the content of a text object for use in editing (outside the textarea) and viewing
 
 
-\begin{DoxyParams}[1]{Parameters}
-string & {\em \$s} & content \\
-\hline
-string & {\em \$name} & object name \\
-\hline
-\end{DoxyParams}
+\begin{DoxyParams}{Parameters}
+\item[{\em string}]\$s content \item[{\em string}]\$name object name \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 html-\/encoded content 
 \end{DoxyReturn}
@@ -104,11 +80,7 @@ Definition at line 106 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_a579e502fadfb1146d8470c8f409916fd}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!\_\-woff\_\-fonts@{\_\-woff\_\-fonts}}
 \index{\_\-woff\_\-fonts@{\_\-woff\_\-fonts}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{\_\-woff\_\-fonts}]{\setlength{\rightskip}{0pt plus 5cm}\_\-woff\_\-fonts (
-\begin{DoxyParamCaption}
-{}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{\_\-woff\_\-fonts}]{\setlength{\rightskip}{0pt plus 5cm}\_\-woff\_\-fonts ()}}
 \label{module__text_8inc_8php_a579e502fadfb1146d8470c8f409916fd}
 return an array of all available woff-\/fonts
 
@@ -122,11 +94,7 @@ Definition at line 130 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_ac57835ba072c7df9367b2c277d2f5bd7}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!text\_\-alter\_\-render\_\-early@{text\_\-alter\_\-render\_\-early}}
 \index{text\_\-alter\_\-render\_\-early@{text\_\-alter\_\-render\_\-early}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{text\_\-alter\_\-render\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-alter\_\-render\_\-early (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{text\_\-alter\_\-render\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-alter\_\-render\_\-early (\$ {\em args})}}
 \label{module__text_8inc_8php_ac57835ba072c7df9367b2c277d2f5bd7}
 
 
@@ -135,11 +103,7 @@ Definition at line 259 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_aaee0a89ba2b213f761b05ca2d6460910}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!text\_\-alter\_\-save@{text\_\-alter\_\-save}}
 \index{text\_\-alter\_\-save@{text\_\-alter\_\-save}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{text\_\-alter\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-alter\_\-save (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{text\_\-alter\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-alter\_\-save (\$ {\em args})}}
 \label{module__text_8inc_8php_aaee0a89ba2b213f761b05ca2d6460910}
 
 
@@ -148,11 +112,7 @@ Definition at line 156 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_a8e9b1db22ff6cb0f3d20815da6aae6ce}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!text\_\-render\_\-object@{text\_\-render\_\-object}}
 \index{text\_\-render\_\-object@{text\_\-render\_\-object}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{text\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-render\_\-object (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{text\_\-render\_\-object}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-render\_\-object (\$ {\em args})}}
 \label{module__text_8inc_8php_a8e9b1db22ff6cb0f3d20815da6aae6ce}
 
 
@@ -161,11 +121,7 @@ Definition at line 362 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_aaaa8b8407d795f6dba9d258f1457ade8}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!text\_\-render\_\-page\_\-early@{text\_\-render\_\-page\_\-early}}
 \index{text\_\-render\_\-page\_\-early@{text\_\-render\_\-page\_\-early}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{text\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-render\_\-page\_\-early (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{text\_\-render\_\-page\_\-early}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-render\_\-page\_\-early (\$ {\em args})}}
 \label{module__text_8inc_8php_aaaa8b8407d795f6dba9d258f1457ade8}
 
 
@@ -174,11 +130,7 @@ Definition at line 384 of file module\_\-text.inc.php.
 \hypertarget{module__text_8inc_8php_a7fa0ea2ee517914595d7eda355177289}{
 \index{module\_\-text.inc.php@{module\_\-text.inc.php}!text\_\-save\_\-state@{text\_\-save\_\-state}}
 \index{text\_\-save\_\-state@{text\_\-save\_\-state}!module_text.inc.php@{module\_\-text.inc.php}}
-\subsubsection[{text\_\-save\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-save\_\-state (
-\begin{DoxyParamCaption}
-\item[{\$}]{args}
-\end{DoxyParamCaption}
-)}}
+\subsubsection[{text\_\-save\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}text\_\-save\_\-state (\$ {\em args})}}
 \label{module__text_8inc_8php_a7fa0ea2ee517914595d7eda355177289}
 
 

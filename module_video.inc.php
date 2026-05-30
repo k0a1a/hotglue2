@@ -79,7 +79,7 @@ function video_delete_object($args)
 	
 	load_modules('glue');
 	if (!empty($obj['video-file'])) {
-		$pn = array_shift(expl('.', $obj['name']));
+		$pn = get_first_item(expl('.', $obj['name']));
 		delete_upload(array('pagename'=>$pn, 'file'=>$obj['video-file'], 'max_cnt'=>1));
 	}
 }
@@ -204,7 +204,7 @@ function video_save_state($args)
 {
 	$elem = $args['elem'];
 	$obj = $args['obj'];
-	if (array_shift(elem_classes($elem)) != 'video') {
+	if (get_first_item(elem_classes($elem)) != 'video') {
 		return false;
 	}
 	
@@ -234,7 +234,7 @@ function video_serve_resource($args)
 	}
 	
 	if (!empty($obj['video-file'])) {
-		$pn = array_shift(expl('.', $obj['name']));
+		$pn = get_first_item(expl('.', $obj['name']));
 		if (empty($obj['video-file-mime'])) {
 			$obj['video-file-mime'] = '';
 		}
@@ -252,8 +252,8 @@ function video_snapshot_symlink($args)
 		return false;
 	}
 	
-	$dest_dir = CONTENT_DIR.'/'.array_shift(expl('.', $obj['name'])).'/shared';
-	$src_file = CONTENT_DIR.'/'.array_shift(expl('.', $args['origin'])).'/shared/'.$obj['video-file'];
+	$dest_dir = CONTENT_DIR.'/'.get_first_item(expl('.', $obj['name'])).'/shared';
+	$src_file = CONTENT_DIR.'/'.get_first_item(expl('.', $args['origin'])).'/shared/'.$obj['video-file'];
 	
 	if (($f = dir_has_same_file($dest_dir, $src_file)) !== false) {
 		$obj['video-file'] = $f;

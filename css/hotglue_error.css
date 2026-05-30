@@ -42,7 +42,7 @@ html, body {
 
 #main {
 	float: right;
-	font-size: 90%;
+	font-size: 100%;
 	width: 450px;
 }
 
@@ -55,6 +55,8 @@ p {
 	clear: both;
 }
 
+div#main p { padding-bottom:20px; }
+
 a#home {
 	color: #00324e;
 	font-weight: bold;
@@ -62,4 +64,23 @@ a#home {
 
 a#home:hover {
 	color: #eb1551;
+}
+
+input, select {
+	font-family:"Courier New", Courier, serif;
+	font-weight:600;
+	font-size:14pt;
+	padding-left: 2px;
+}
+
+input[type='submit'], input[type='button'] {
+	border: solid 2px gray;
+	margin-left: 0;
+	width: 270px; 
+}
+
+input[type='submit']:hover, input[type='button']:hover {
+	border: solid 2px black;
+	background-color: #ccc;
+	cursor: pointer;
 }

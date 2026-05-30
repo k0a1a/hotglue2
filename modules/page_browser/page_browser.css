@@ -22,3 +22,12 @@
 #page_browser_startpage {
 	color: darkgrey;
 }
+
+.page_browser_actions {
+	color: darkgrey;
+	padding-left: 10px;
+}
+
+.page_browser_actions > a:hover{
+	color: black;
+}
