@@ -44,7 +44,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
 	//	break;
 	case 'POST':
 		foreach ($_POST as $key=>$val) {
-			if (get_magic_quotes_gpc()) {
+			if (false) {
 				$val = stripslashes($val);
 			}
 			$dec = @json_decode($val, true);
