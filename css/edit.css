@@ -19,11 +19,25 @@
 
 .moveable-control {
 	/* Moveable's default resize handle is a 14px blue circle with a white
-	   border - restyled to a plain square backdrop matching the look of
-	   the context-menu/toolbar icon PNGs (light grey, semi-transparent) */
+	   border - restyled to a square outline with a light grey, semi-
+	   transparent backdrop and a smaller white square (see ::after below)
+	   centered inside it, matching the toolbar icon PNGs' look */
 	background: rgba(204, 204, 204, 0.5) !important;
-	border: none !important;
+	border: 1px solid #000 !important;
 	border-radius: 0 !important;
+}
+
+.moveable-control::after {
+	/* the smaller white square centered inside the handle */
+	content: '';
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	background: #fff;
+	border: 1px solid #000;
+	box-sizing: border-box;
 }
 
 #glue-colorpicker {
