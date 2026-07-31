@@ -16,6 +16,13 @@ console.error = console.error || function(){};
 console.warn = console.warn || function(){};
 console.info = console.info || function(){};
 
+// $ used to be jQuery's global function, which also served as a convenient
+// namespace object for $.glue.* (a common jQuery-plugin pattern). Now that
+// jQuery is gone, define our own bare namespace object in its place - $ is
+// never called as a function anywhere in this codebase, only used for
+// property access ($.glue.*)
+window.$ = window.$ || {};
+
 $.glue = {};
 
 // communication with the backend
@@ -86,43 +93,7 @@ $.glue.error = function()
 // native replacements for jQuery's deprecated .live()/.trigger(), used
 // throughout for the glue-* custom event bus. Defined here rather than in
 // edit.js since some modules using them (e.g. page_browser.js) load on
-// pages that never load edit.js. jQuery's own .bind()-registered handlers
-// still work unchanged and don't need touching: verified that a native
-// dispatchEvent(CustomEvent) does reach jQuery .bind() handlers (jQuery
-// wires those up via a real addEventListener), but jQuery's .live()
-// delegation is entirely internal to jQuery and never sees natively-
-// dispatched events - so .live() and .trigger() have to be replaced
-// together, as two halves of the same mechanism
-$.fn.glueLive = function(eventName, handler) {
-	// relies on jQuery still tracking the selector used to build this
-	// object (true through jQuery 1.x), same as .live() itself did
-	var selector = this.selector;
-	document.addEventListener(eventName, function(e) {
-		var matched = $(e.target).closest(selector);
-		if (matched.length) {
-			// preserve .trigger(name, [extra, args]) => handler(e, extra, args)
-			var args = [e];
-			if (e.detail !== undefined && e.detail !== null) {
-				args = args.concat(e.detail);
-			}
-			handler.apply(matched.get(0), args);
-		}
-	}, false);
-	return this;
-};
-
-$.fn.glueTrigger = function(eventName, data) {
-	this.each(function() {
-		this.dispatchEvent(new CustomEvent(eventName, { bubbles: true, cancelable: true, detail: data }));
-	});
-	return this;
-};
-
-// jQuery-free equivalents of the two above, for modules converted away from
-// jQuery. Both mechanisms are just addEventListener/dispatchEvent under the
-// hood, so old ($.fn.glueLive) and new ($.glue.live) listeners interoperate
-// freely during the file-by-file jQuery removal - it doesn't matter which
-// side registered the listener vs. which side dispatched the event.
+// pages that never load edit.js.
 $.glue.live = function(selector, eventName, handler) {
 	document.addEventListener(eventName, function(e) {
 		var matched = e.target.closest ? e.target.closest(selector) : null;
@@ -143,7 +114,7 @@ $.glue.trigger = function(target, eventName, data) {
 	} else if (target instanceof Element) {
 		elems = [target];
 	} else {
-		// array-like (NodeList, Array, jQuery object)
+		// array-like (NodeList, Array)
 		elems = target;
 	}
 	for (var i=0; i<elems.length; i++) {
@@ -178,12 +149,6 @@ $.glue.owner = function()
 // icon element, since Alpine expressions are evaluated as strings and can't
 // close over local function references directly
 $.glue.toggle_button = function(elem, sync_fn, toggle_fn, enabled_title, disabled_title) {
-	// accepts either a raw DOM element or a jQuery-wrapped one (not-yet-
-	// converted callers still pass jQuery objects during the jQuery
-	// removal), always returns a raw element
-	if (elem.jquery) {
-		elem = elem.get(0);
-	}
 	elem.setAttribute('x-data', '{ enabled: false }');
 	elem.setAttribute('x-bind:class', "enabled ? 'glue-menu-enabled' : 'glue-menu-disabled'");
 	elem.setAttribute('x-bind:title', 'enabled ? '+JSON.stringify(enabled_title)+' : '+JSON.stringify(disabled_title));

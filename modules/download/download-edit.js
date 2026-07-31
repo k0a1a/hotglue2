@@ -77,9 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('download', 'download-public', elem);
 
 	// make sure we don't send to much over the wire for every save
-	// (obj here is edit.js's still-jQuery-wrapped save clone - kept as
-	// jQuery until edit.js's save() is converted)
 	$.glue.object.register_alter_pre_save('download', function(obj, orig) {
-		$(obj).children('.download-ext').remove();
+		var ext = obj.querySelector(':scope > .download-ext');
+		if (ext) {
+			ext.remove();
+		}
 	});
 });

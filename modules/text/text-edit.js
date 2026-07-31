@@ -853,24 +853,22 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('text', 'text-text-padding', elem);
 
 	// make sure we don't send to much over the wire for every save
-	// (obj here is edit.js's still-jQuery-wrapped save clone - kept as
-	// jQuery until edit.js's save() and the other register_alter_pre_save
-	// consumers (download/iframe/webvideo) convert together in one pass)
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {
+		var input = obj.querySelector(':scope > .glue-text-input');
 		// clear the textarea's background-image that Chrome sends along
-		$(obj).children('.glue-text-input').css('background-image', '');
+		input.style.backgroundImage = '';
 		// the textarea's content is automatically not included
 		// we can read it out using
-		// $(orig).children('.glue-text-input').val()
+		// orig.querySelector(':scope > .glue-text-input').value
 		// and even set it using
-		// $(obj).children('.glue-text-input').get(0).innerHTML
+		// obj.querySelector(':scope > .glue-text-input').innerHTML
 		// but later on (when turning the element into a string) the content of the
 		// textarea get's magically encoded
 		// a la:
 		// &lt;a href="asd"&gt;test&lt;/a&gt;
 		// for this reason we update the object's content not through
 		// $.glue.object.update
-		$(obj).children('.glue-text-input').remove();
-		$(obj).children('.glue-text-render').remove();
+		input.remove();
+		obj.querySelector(':scope > .glue-text-render').remove();
 	});
 });

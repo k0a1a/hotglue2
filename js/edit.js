@@ -7,14 +7,6 @@
  *	See the file COPYING for more details.
  */
 
-// text-edit.js hasn't been converted away from jQuery yet and still passes
-// jQuery-wrapped elements into several of these public $.glue.* functions -
-// unwrap defensively so both call styles work during the transition; safe
-// to remove once text-edit.js is converted
-function glue_unwrap(x) {
-	return (x && x.jquery) ? x[0] : x;
-}
-
 // jQuery's outerWidth/outerHeight(true) (dimensions including margin), used
 // repeatedly for menu/context-menu layout math
 function outer_width(elem, with_margin) {
@@ -60,7 +52,7 @@ $.glue.canvas = function()
 			if (elem === undefined) {
 				elems = document.querySelectorAll('.object');
 			} else {
-				elems = [glue_unwrap(elem)];
+				elems = [elem];
 			}
 			var max_x = 0;
 			var max_y = 0;
@@ -317,7 +309,6 @@ $.glue.contextmenu = function()
 			}
 		},
 		register: function(cls, name, elem, prio) {
-			elem = glue_unwrap(elem);
 			if (!m[cls]) {
 				m[cls] = [];
 			}
@@ -348,7 +339,6 @@ $.glue.contextmenu = function()
 			return false;
 		},
 		show: function(obj) {
-			obj = glue_unwrap(obj);
 			if (owner) {
 				if (obj == owner) {
 					return;
@@ -762,7 +752,6 @@ $.glue.menu = function()
 		// elem .. element to add
 		// prio .. priority (ascending) - optional
 		register: function(menu, elem, prio) {
-			elem = glue_unwrap(elem);
 			if (!m[menu]) {
 				m[menu] = [];
 			}
@@ -915,28 +904,22 @@ $.glue.object = function()
 	});
 
 	document.addEventListener('DOMContentLoaded', function() {
-		// the clone (first arg) is still a jQuery object here - save()
-		// below keeps using jQuery's .clone() since several modules'
-		// register_alter_pre_save callbacks (download/iframe/webvideo/text)
-		// still expect a jQuery-wrapped element; converts once text-edit.js
-		// (the last remaining jQuery-dependent module) does
 		$.glue.object.register_alter_pre_save('glue-selected', function(obj, orig) {
-			var border = $(orig).outerHeight()-$(orig).innerHeight();
-			var p = $(orig).position();
+			var border = orig.offsetHeight-orig.clientHeight;
+			var p = { left: orig.offsetLeft, top: orig.offsetTop };
 			// remove class
-			$(obj).removeClass('glue-selected');
+			obj.classList.remove('glue-selected');
 			// and remove border offset
-			$(obj).css('left', (p.left+border/2)+'px');
-			$(obj).css('top', (p.top+border/2)+'px');
-			//$(obj).css('width', ($(orig).width()+border)+'px');
-			//$(obj).css('height', ($(orig).height()+border)+'px');
+			obj.style.left = (p.left+border/2)+'px';
+			obj.style.top = (p.top+border/2)+'px';
+			//obj.style.width = (orig.offsetWidth+border)+'px';
+			//obj.style.height = (orig.offsetHeight+border)+'px';
 		});
 	});
 
 	return {
 		// obj .. element
 		register: function(obj) {
-			obj = glue_unwrap(obj);
 			// prevent double registration
 			if (reg_objs[obj.id]) {
 				return false;
@@ -1099,14 +1082,8 @@ $.glue.object = function()
 			// to. Kept for backward compatibility with existing callers.
 		},
 		save: function(obj) {
-			obj = glue_unwrap(obj);
-			// kept as a jQuery clone (not obj.cloneNode(true)) because
-			// several modules' register_alter_pre_save callbacks (download/
-			// iframe/webvideo/text) still expect a jQuery-wrapped element -
-			// converts once text-edit.js does
-			var elem = $(obj).clone();
-			var raw = elem.get(0);
-			var elem_cls = Array.from(raw.classList);
+			var elem = obj.cloneNode(true);
+			var elem_cls = Array.from(elem.classList);
 			for (var i=0; i < elem_cls.length; i++) {
 				if (typeof alter_pre_save[elem_cls[i]] == 'function') {
 					alter_pre_save[elem_cls[i]](elem, obj);
@@ -1114,9 +1091,9 @@ $.glue.object = function()
 			}
 			// trim element content
 			// necessary, otherwise we'd be sending \n\t back again
-			raw.innerHTML = raw.innerHTML.trim();
+			elem.innerHTML = elem.innerHTML.trim();
 			// convert to string
-			var html = raw.outerHTML;
+			var html = elem.outerHTML;
 			// DEBUG
 			//console.log(html);
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
@@ -1126,10 +1103,9 @@ $.glue.object = function()
 		// undefined - used by modules (e.g. lock.js) that need to toggle
 		// draggable/resizable directly
 		moveable_of: function(obj) {
-			return moveables.get(glue_unwrap(obj));
+			return moveables.get(obj);
 		},
 		unregister: function(obj) {
-			obj = glue_unwrap(obj);
 			var m = moveables.get(obj);
 			if (m) {
 				m.destroy();
@@ -1387,7 +1363,6 @@ $.glue.sel = function()
 		// deselect an object
 		// obj .. element
 		deselect: function(obj) {
-			obj = glue_unwrap(obj);
 			if (obj.classList.contains('glue-selected')) {
 				var border = obj.offsetHeight-obj.clientHeight;
 				obj.classList.remove('glue-selected');
@@ -1410,7 +1385,6 @@ $.glue.sel = function()
 		// select an object
 		// obj .. element
 		select: function(obj) {
-			obj = glue_unwrap(obj);
 			// TODO (later): handle more than one obj (and change callers)
 			if (!obj.classList.contains('glue-selected')) {
 				obj.classList.add('glue-selected');
@@ -1433,7 +1407,7 @@ $.glue.sel = function()
 		// return if an object is selected
 		// obj .. element
 		selected: function(obj) {
-			return glue_unwrap(obj).classList.contains('glue-selected');
+			return obj.classList.contains('glue-selected');
 		}
 	};
 }();
@@ -1557,7 +1531,6 @@ $.glue.stack = function()
 			return default_z;
 		},
 		to_bottom: function(obj) {
-			obj = glue_unwrap(obj);
 			var local_min_z = max_z+1;
 			var old_z = parseInt(getComputedStyle(obj).zIndex);
 			document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
@@ -1592,7 +1565,6 @@ $.glue.stack = function()
 			return false;
 		},
 		to_top: function(obj) {
-			obj = glue_unwrap(obj);
 			var local_max_z = min_z-1;
 			var old_z = parseInt(getComputedStyle(obj).zIndex);
 			document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
@@ -1759,7 +1731,6 @@ $.glue.upload = function()
 		//				error => function called when an error occured
 		//				finish => function called after the upload has completed
 		button: function(elem, data, options) {
-			elem = glue_unwrap(elem);
 			// add a file input to the element
 			if (!options) {
 				options = {};

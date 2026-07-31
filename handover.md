@@ -1,7 +1,9 @@
 # Handover: Hotglue jQuery Removal & PHP Modernization
 
-**Status:** Assessment complete (2026-07-30). No implementation has started —
-this is a planning handover for whoever picks up the work next.
+**Status:** Complete (2026-07-31). All phases below (0 through jQuery-core
+removal) have been implemented and jQuery/jQuery UI have been fully removed
+from the editor frontend. This file is kept as historical planning context;
+see the git log for the actual commit-by-commit implementation.
 
 **Full detail:** see `MODERNIZATION.md` in this same directory. This file is a
 short pointer/checklist version of it.

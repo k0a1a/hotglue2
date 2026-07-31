@@ -97,12 +97,6 @@ function default_html($add_glue)
 		html_add_css(base_url().'css/glue.css', 4);
 	}
 	if ($add_glue) {
-		$jquery = JQUERY;
-		if (is_url($jquery)) {
-			html_add_js($jquery, 1);
-		} else {
-			html_add_js(base_url().$jquery, 1);
-		}
 		// 2 can be used for third-party components
 		if (USE_MIN_FILES) {
 			html_add_js(base_url().'js/glue.min.js', 3);

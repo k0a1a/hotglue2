@@ -203,10 +203,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('webvideo', 'webvideo-loop', elem);
 
 	// make sure we don't send to much over the wire for every save
-	// (obj here is edit.js's still-jQuery-wrapped save clone - kept as
-	// jQuery until edit.js's save() is converted)
 	$.glue.object.register_alter_pre_save('webvideo', function(obj, orig) {
-		$(obj).children('iframe').html('');
-		$(obj).children('.glue-webvideo-handle').remove();
+		var child = obj.querySelector(':scope > iframe');
+		if (child) {
+			child.innerHTML = '';
+		}
+		var handle = obj.querySelector(':scope > .glue-webvideo-handle');
+		if (handle) {
+			handle.remove();
+		}
 	});
 });

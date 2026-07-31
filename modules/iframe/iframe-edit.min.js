@@ -130,10 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('iframe', 'iframe-scroll', elem);
 
 	// make sure we don't send to much over the wire for every save
-	// (obj here is edit.js's still-jQuery-wrapped save clone - kept as
-	// jQuery until edit.js's save() is converted)
 	$.glue.object.register_alter_pre_save('iframe', function(obj, orig) {
-		$(obj).children('iframe').html('');
-		$(obj).children('.glue-iframe-shield').remove();
+		var child = obj.querySelector(':scope > iframe');
+		if (child) {
+			child.innerHTML = '';
+		}
+		var shield = obj.querySelector(':scope > .glue-iframe-shield');
+		if (shield) {
+			shield.remove();
+		}
 	});
 });

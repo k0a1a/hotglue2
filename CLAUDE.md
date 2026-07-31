@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Hotglue is a PHP web application for building free-form, drag-and-drop web pages in the browser. It does not use a database and stores everything as flat files under `content/`. The project targets PHP 8 compatibility and includes jQuery-based frontend JS/CSS in the `js/` and `css/` directories.
+Hotglue is a PHP web application for building free-form, drag-and-drop web pages in the browser. It does not use a database and stores everything as flat files under `content/`. The project targets PHP 8 compatibility, and the editor frontend in `js/` and `css/` is vanilla JS (no jQuery — see below).
 
 ## Common Commands
 
@@ -70,13 +70,11 @@ All settings are defined as constants in `config.inc.php`. Overrides should be p
 - **`tests/UtilTest.php`**: PHPUnit test for `util.inc.php`.
 
 ### Editor Frontend (`js/edit.js`)
-`js/edit.js` is not a page script but a bespoke plugin/event-bus framework under the `$.glue.*` namespace (`canvas`/`sel`/`object`/`stack`/`menu`/`contextmenu`/`slider`/`colorpicker`/`upload`/`grid`), which ~40 other editor-only JS files (`modules/*/*-edit.js`) depend on as an API contract. jQuery/jQuery UI/Farbtastic/xcolor are loaded only inside this authenticated editor (gated by `$add_glue` in `common.inc.php`'s `default_html()`) and never ship to published/public pages.
+`js/edit.js` is not a page script but a bespoke plugin/event-bus framework under the `$.glue.*` namespace (`canvas`/`sel`/`object`/`stack`/`menu`/`contextmenu`/`slider`/`colorpicker`/`upload`/`grid`), which ~40 other editor-only JS files (`modules/*/*-edit.js`) depend on as an API contract. It's loaded only inside this authenticated editor (gated by `$add_glue` in `common.inc.php`'s `default_html()`) and never ships to published/public pages. The editor was originally built on jQuery/jQuery UI/Farbtastic/xcolor; all of that has since been removed in favor of vanilla DOM APIs (Moveable for drag/resize, Alpine.js for a handful of reactive context-menu icons) — see `MODERNIZATION.md` for the full history, decisions, and per-file notes from that migration.
 
 Two contracts to know before touching this code:
 - `$.glue.object.save()` serializes DOM objects to literal HTML strings that are the **on-disk storage format** for every existing page — changing serialization risks corrupting stored pages.
-- `.data('owner', obj)`, set once in `edit.js`, is read at ~47 call sites across ~15 module files — an undocumented but load-bearing convention.
-
-A jQuery-removal/PHP-modernization effort has been scoped (not yet implemented, as of 2026-07-30) — see `handover.md` for the short checklist and `MODERNIZATION.md` for the full audit, decisions, and per-file landmines before making changes to `js/edit.js`, per-module `*-edit.js` files, or the PHP global-state modules (`html.inc.php`/`modules.inc.php`).
+- `$.glue.owner(elem[, obj])`, a WeakMap-backed getter/setter set once in `edit.js`, is read at ~50 call sites across ~15 module files — an undocumented but load-bearing convention (replaces the old jQuery `.data('owner', obj)`).
 
 ## Additional Notes
 
