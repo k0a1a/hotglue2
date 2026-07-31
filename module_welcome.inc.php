@@ -35,7 +35,7 @@ function welcome_render_page_late($args)
 	// we only display the information when there are no other pages in the 
 	// content directory except the current one
 	load_modules('glue');
-	$pns = pagenames(array());
+	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	if (1 < count($pns)) {
 		return false;

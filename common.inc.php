@@ -125,7 +125,7 @@ function drop_cache($category, $name = '')
 			return;
 		}
 	} else {
-		$d = array($name);
+		$d = [$name];
 	}
 	
 	foreach ($d as $f) {
@@ -148,7 +148,7 @@ function drop_cache($category, $name = '')
 function glue_version()
 {
 	$a = expl('.', HOTGLUE_VERSION);
-	$ret = array(0, 0, 0);
+	$ret = [0, 0, 0];
 	for ($i=0; $i < count($a); $i++) {
 		$ret[$i] = intval($a[$i]);
 	}
@@ -167,7 +167,7 @@ function handle_updates()
 	if (($s = @file_get_contents(CONTENT_DIR.'/version')) !== false) {
 		// parse version
 		$a = expl('.', $s);
-		$old = array(0, 0, 0);
+		$old = [0, 0, 0];
 		for ($i=0; $i < count($a); $i++) {
 			$old[$i] = $a[$i];
 		}
@@ -175,7 +175,7 @@ function handle_updates()
 		if ($old != $new) {
 			log_msg('info', 'common: detected hotglue update from version '.implode('.', $old).' to '.implode('.', $new));
 			// hook
-			invoke_hook('glue_update', array('old'=>$old, 'new'=>$new));
+			invoke_hook('glue_update', ['old'=>$old, 'new'=>$new]);
 			$write_file = true;
 		}
 	} else {
@@ -274,7 +274,7 @@ function is_auth()
 		return true;
 	} elseif (AUTH_METHOD == 'basic') {
 		if (isset($_SERVER['Authorization'])) {
-			list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
+			[$_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']] = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
 		}
 		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 			if ($_SERVER['PHP_AUTH_USER'] == AUTH_USER && $_SERVER['PHP_AUTH_PW'] == AUTH_PASSWORD) {
@@ -295,7 +295,7 @@ function is_auth()
 	} elseif (AUTH_METHOD == 'digest') {
 		if (isset($_SERVER['PHP_AUTH_DIGEST'])) {
 			log_msg('debug', 'common: auth digest '.var_dump_inl($_SERVER['PHP_AUTH_DIGEST']));
-			$res = http_digest_check(array(AUTH_USER=>AUTH_PASSWORD), SITE_NAME);
+			$res = http_digest_check([AUTH_USER=>AUTH_PASSWORD], SITE_NAME);
 			if ($res == 0) {
 				log_msg('debug', 'common: auth success (auth_method digest)');
 				return true;
@@ -339,11 +339,7 @@ function is_cached($category, $name, $max_age)
 		return false;
 	}
 	// check the file's age
-	if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
-		clearstatcache(true, realpath($f));
-	} else {
-		clearstatcache();
-	}
+	clearstatcache(true, realpath($f));
 	$age = filemtime($f);
 	if ($max_age < abs(time()-$age)) {
 		return false;
@@ -513,7 +509,7 @@ function resolve_aliases($s, $name = '')
  */
 function resolve_relative_urls($s)
 {
-	$attrs = array('href', 'src');
+	$attrs = ['href', 'src'];
 	
 	foreach ($attrs as $attr) {
 		$start = 0;
@@ -658,7 +654,7 @@ function valid_pagename($s)
 		return false;
 	} elseif (empty($a[0]) || empty($a[1])) {
 		return false;
-	} elseif (in_array($a[0], array('cache', 'shared'))) {
+	} elseif (in_array($a[0], ['cache', 'shared'])) {
 		// reserved page names
 		// TODO (later): we're missing the log file here
 		// TODO (later): we're also missing $arg0 of controllers here
@@ -666,7 +662,7 @@ function valid_pagename($s)
 		// content directory here (this might not be an issue on all 
 		// os)
 		return false;
-	} elseif (in_array($a[1], array('shared'))) {
+	} elseif (in_array($a[1], ['shared'])) {
 		// reserved revision names
 		return false;
 	} elseif (is_file($a[0]) || is_dir($a[0]) || is_link($a[0])) {

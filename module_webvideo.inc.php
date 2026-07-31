@@ -101,9 +101,9 @@ function webvideo_render_object($args)
 	elem_add_class($e, 'object');
 	
 	// hooks
-	invoke_hook_first('alter_render_early', 'webvideo', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'webvideo', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
-	invoke_hook_last('alter_render_late', 'webvideo', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'webvideo', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	return $html;
 }
@@ -135,7 +135,7 @@ function webvideo_save_state($args)
 	$obj['module'] = 'webvideo';
 	
 	// hook
-	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
 	
 	load_modules('glue');
 	$ret = save_object($obj);

@@ -46,7 +46,7 @@ function controller_user_code_stylesheet($args)
 	}
 	$bdy = &body();
 	// create array with names of code elements
-	$code = array('head'=>'','body'=>'');
+	$code = ['head'=>'','body'=>''];
 	elem_attr($bdy, 'id', 'user_code');
 	if ($page === false) {
 		body_append('<h1>Global code</h1>'.nl());
@@ -61,7 +61,7 @@ function controller_user_code_stylesheet($args)
 		body_append('<h1>"'.htmlspecialchars(substr($page, 0, strpos($page, '.')), ENT_NOQUOTES, 'UTF-8').'" page code</h1>'.nl());
 		load_modules('glue');
 		foreach ($code as $x => $v) {
-			$obj = load_object(array('name'=>$page.'.user'.$x));
+			$obj = load_object(['name'=>$page.'.user'.$x]);
 			if ($obj['#error']) {
 				$code[$x] = '';
 			} else {
@@ -95,8 +95,8 @@ function controller_user_code_stylesheet($args)
 	echo html_finalize();
 }
 
-register_controller('code', '', 'controller_user_code_stylesheet', array('auth'=>true));
-register_controller('*', 'code', 'controller_user_code_stylesheet', array('auth'=>true));
+register_controller('code', '', 'controller_user_code_stylesheet', ['auth'=>true]);
+register_controller('*', 'code', 'controller_user_code_stylesheet', ['auth'=>true]);
 
 
 function user_code_render_object($args)
@@ -119,7 +119,7 @@ function user_code_render_object($args)
 function user_code_render_page_early($args)
 {
 	// include the global usercode if it exists
-	foreach (array('head','body') as $x) {
+	foreach (['head','body'] as $x) {
 		if (@is_file(CONTENT_DIR.'/user'.$x)) {
 			$func = 'html_add_'.$x.'_inline'; 
 			$func(@file_get_contents(CONTENT_DIR.'/user'.$x), 5);
@@ -159,7 +159,7 @@ function user_code_set_code($args)
 
 	if ($args['page'] === false) {
 		drop_cache('page');
-		foreach (array('head','body') as $x) {
+		foreach (['head','body'] as $x) {
 			if (empty($args[$x])) {
 				@unlink(CONTENT_DIR.'/user'.$x);
 			} else {
@@ -176,16 +176,16 @@ function user_code_set_code($args)
 	} else {
 		drop_cache('page', $args['page']);
 		load_modules('glue');
-		foreach (array('head','body') as $x) {
+		foreach (['head','body'] as $x) {
 			if (empty($args[$x])) {
-				delete_object(array('name'=>$args['page'].'.user'.$x));
+				delete_object(['name'=>$args['page'].'.user'.$x]);
 
 			} else {
-				update_object(array('name'=>$args['page'].'.user'.$x, 'type'=>'user'.$x, 'module'=>'user_code', 'content'=>$args[$x]));
+				update_object(['name'=>$args['page'].'.user'.$x, 'type'=>'user'.$x, 'module'=>'user_code', 'content'=>$args[$x]]);
 			}
 		}
 		return response(true);
 	}
 }
 
-register_service('user_code.set_code', 'user_code_set_code', array('auth'=>true));
+register_service('user_code.set_code', 'user_code_set_code', ['auth'=>true]);

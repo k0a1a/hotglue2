@@ -80,7 +80,7 @@ function video_delete_object($args)
 	load_modules('glue');
 	if (!empty($obj['video-file'])) {
 		$pn = get_first_item(expl('.', $obj['name']));
-		delete_upload(array('pagename'=>$pn, 'file'=>$obj['video-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>$pn, 'file'=>$obj['video-file'], 'max_cnt'=>1]);
 	}
 }
 
@@ -179,9 +179,9 @@ function video_render_object($args)
 	elem_add_class($e, 'object');
 	
 	// hooks
-	invoke_hook_first('alter_render_early', 'video', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'video', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
-	invoke_hook_last('alter_render_late', 'video', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'video', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	return $html;
 }
@@ -213,7 +213,7 @@ function video_save_state($args)
 	$obj['module'] = 'video';
 	
 	// hook
-	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
 	
 	load_modules('glue');
 	$ret = save_object($obj);
@@ -314,7 +314,7 @@ function video_upload($args)
 	$obj['video-file-mime'] = $mime;
 	save_object($obj);
 	
-	$ret = render_object(array('name'=>$obj['name'], 'edit'=>true));
+	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
 	if ($ret['#error']) {
 		return false;
 	} else {

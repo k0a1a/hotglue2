@@ -33,7 +33,7 @@ function controller_revisions($args)
 	// get all revisions of page and determine the current revision's index
 	load_modules('glue');
 	$a = expl('.', $page);
-	$revs = revisions_info(array('pagename'=>$a[0], 'sort'=>'time'));
+	$revs = revisions_info(['pagename'=>$a[0], 'sort'=>'time']);
 	$revs = $revs['#data'];
 	$cur_rev = false;
 	for ($i=0; $i < count($revs); $i++) {
@@ -57,7 +57,7 @@ function controller_revisions($args)
 	html_add_js_var('$.glue.page', $page);
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'revisions');
-	render_page(array('page'=>$page, 'edit'=>false));
+	render_page(['page'=>$page, 'edit'=>false]);
 	body_append('<div id="revisions_browser_ctrl">');
 	body_append('<div id="revisions_browser_prev">');
 	if ($cur_rev+1 < count($revs)) {
@@ -84,7 +84,7 @@ function controller_revisions($args)
 	echo html_finalize();
 }
 
-register_controller('*', 'revisions', 'controller_revisions', array('auth'=>REVISIONS_NEED_AUTH));
+register_controller('*', 'revisions', 'controller_revisions', ['auth'=>REVISIONS_NEED_AUTH]);
 
 
 function revisions_browser_render_page_early($args)

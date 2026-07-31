@@ -36,7 +36,7 @@ function page_clear_background_img($args)
 	}
 	
 	load_modules('glue');
-	$obj = load_object(array('name'=>$args['page'].'.page'));
+	$obj = load_object(['name'=>$args['page'].'.page']);
 	if ($obj['#error']) {
 		// page object does not exist, hence no background image to clear
 		return response(true);
@@ -46,15 +46,15 @@ function page_clear_background_img($args)
 	
 	if (!empty($obj['page-background-file'])) {
 		// delete file
-		delete_upload(array('pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
 		// and remove attributes
-		return object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('page-background-file', 'page-background-mime')));
+		return object_remove_attr(['name'=>$obj['name'], 'attr'=>['page-background-file', 'page-background-mime']]);
 	} else {
 		return response(true);
 	}
 }
 
-register_service('page.clear_background_img', 'page_clear_background_img', array('auth'=>true));
+register_service('page.clear_background_img', 'page_clear_background_img', ['auth'=>true]);
 
 
 function page_delete_page($args)
@@ -62,7 +62,7 @@ function page_delete_page($args)
 	$page = $args['page'];
 	
 	// check if there is a page object
-	$obj = load_object(array('name'=>$page.'.page'));
+	$obj = load_object(['name'=>$page.'.page']);
 	if ($obj['#error']) {
 		return false;
 	} else {
@@ -71,7 +71,7 @@ function page_delete_page($args)
 	// check if there is a background-image
 	if (!empty($obj['page-background-file'])) {
 		// delete it
-		delete_upload(array('pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
 		return true;
 	} else {
 		return false;
@@ -106,9 +106,9 @@ function page_get_grid($args)
 {
 	if (($s = @file_get_contents(CONTENT_DIR.'/grid')) !== false) {
 		$a = expl(' ', $s);
-		return response(array('x'=>intval($a[0]), 'y'=>intval($a[1])));
+		return response(['x'=>intval($a[0]), 'y'=>intval($a[1])]);
 	} else {
-		return response(array('x'=>PAGE_DEFAULT_GRID_X, 'y'=>PAGE_DEFAULT_GRID_Y));
+		return response(['x'=>PAGE_DEFAULT_GRID_X, 'y'=>PAGE_DEFAULT_GRID_Y]);
 	}
 }
 
@@ -161,7 +161,7 @@ function page_render_page_early($args)
 		html_add_css(base_url().'modules/page/page-edit.css');
 		
 		// set default grid
-		$grid = page_get_grid(array());
+		$grid = page_get_grid([]);
 		$grid = $grid['#data'];
 		html_add_js_var('$.glue.conf.page.default_grid_x', $grid['x']);
 		html_add_js_var('$.glue.conf.page.default_grid_y', $grid['y']);
@@ -235,7 +235,7 @@ function page_set_grid($args)
 	}
 }
 
-register_service('page.set_grid', 'page_set_grid', array('auth'=>true));
+register_service('page.set_grid', 'page_set_grid', ['auth'=>true]);
 
 
 function page_upload($args)
@@ -245,21 +245,21 @@ function page_upload($args)
 		return false;
 	}
 	// check if supported file
-	if (!in_array($args['mime'], array('image/jpeg', 'image/png', 'image/gif')) || ($args['mime'] == '' && !in_array(filext($args['file']), array('jpg', 'jpeg', 'png', 'gif')))) {
+	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
 		return false;
 	}
 	
 	// check if there is already a background-image and delete it
-	$obj = load_object(array('name'=>$args['page'].'.page'));
+	$obj = load_object(['name'=>$args['page'].'.page']);
 	if (!$obj['#error']) {
 		$obj = $obj['#data'];
 		if (!empty($obj['page-background-file'])) {
-			delete_upload(array('pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1));
+			delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
 		}
 	}
 	
 	// set as background-image in page object
-	$obj = array();
+	$obj = [];
 	$obj['name'] = $args['page'].'.page';
 	$obj['page-background-file'] = $args['file'];
 	$obj['page-background-mime'] = $args['mime'];

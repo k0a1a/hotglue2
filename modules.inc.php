@@ -13,13 +13,13 @@
 require_once('log.inc.php');
 
 if (!isset($hooks)) {
-	$hooks = array();
+	$hooks = [];
 }
 if (!isset($modules)) {
-	$modules = array();
+	$modules = [];
 }
 if (!isset($services)) {
-	$services = array();
+	$services = [];
 }
 
 
@@ -77,11 +77,11 @@ function get_service($service)
  *	@param string $last_module last module to call (optional)
  *	@return array of results (module=>result)
  */
-function invoke_hook($hook, $args = array(), $first_module = '', $last_module = '')
+function invoke_hook($hook, $args = [], $first_module = '', $last_module = '')
 {
 	global $modules;
 	
-	$ret = array();
+	$ret = [];
 	// make sure all modules are loaded
 	load_modules();
 	
@@ -130,7 +130,7 @@ function invoke_hook($hook, $args = array(), $first_module = '', $last_module = 
  *	@param array $args arguments-array (can include references)
  *	@return array of results (module=>result)
  */
-function invoke_hook_first($hook, $first_module, $args = array())
+function invoke_hook_first($hook, $first_module, $args = [])
 {
 	return invoke_hook($hook, $args, $first_module, '');
 }
@@ -145,7 +145,7 @@ function invoke_hook_first($hook, $first_module, $args = array())
  *	@param array $args arguments-array (can include references)
  *	@return array of results (module=>result)
  */
-function invoke_hook_last($hook, $last_module, $args = array())
+function invoke_hook_last($hook, $last_module, $args = [])
 {
 	return invoke_hook($hook, $args, '', $last_module);
 }
@@ -160,7 +160,7 @@ function invoke_hook_last($hook, $last_module, $args = array())
  *	@param array $args arguments-array
  *	@return array with result (module=>result) or empty result if there was none
  */
-function invoke_hook_while($hook, $while, $args = array())
+function invoke_hook_while($hook, $while, $args = [])
 {
 	global $modules;
 	
@@ -174,7 +174,7 @@ function invoke_hook_while($hook, $while, $args = array())
 			log_msg('debug', 'modules: invoking hook '.$hook.', calling '.$func);
 			$cur = $func($args);
 			if ($cur !== $while) {
-				$ret = array($m=>$cur);
+				$ret = [$m=>$cur];
 				// DEBUG
 				//log_msg('debug', 'modules: invoke_hook_while on '.$hook.' returned '.var_dump_inl($ret));
 				return $ret;
@@ -182,8 +182,8 @@ function invoke_hook_while($hook, $while, $args = array())
 		}
 	}
 
-	log_msg('debug', 'modules: invoke_hook_while on '.$hook.' returned '.var_dump_inl(array()));
-	return array();
+	log_msg('debug', 'modules: invoke_hook_while on '.$hook.' returned '.var_dump_inl([]));
+	return [];
 }
 
 
@@ -256,11 +256,11 @@ function load_modules($search = '', $optional = false)
  *	@param string $func function name
  *	@param array $args optional arguments
  */
-function register_service($service, $func, $args = array())
+function register_service($service, $func, $args = [])
 {
 	global $services;
 	$trace = debug_backtrace();
-	$services[$service] = array_merge(array('args'=>array()), array_merge($args, array('func'=>$func, 'file'=>basename($trace[0]['file']), 'line'=>$trace[0]['line'])));
+	$services[$service] = array_merge(['args'=>[]], array_merge($args, ['func'=>$func, 'file'=>basename($trace[0]['file']), 'line'=>$trace[0]['line']]));
 	log_msg('debug', 'modules: '.basename($trace[0]['file']).':'.$trace[0]['line'].' registered service '.quot($service));
 }
 
@@ -277,7 +277,7 @@ function register_hook($hook, $info = '')
 {
 	global $hooks;
 	$trace = debug_backtrace();
-	$hooks[$hook] = array('file'=>basename($trace[0]['file']), 'line'=>$trace[0]['line'], 'info'=>$info);
+	$hooks[$hook] = ['file'=>basename($trace[0]['file']), 'line'=>$trace[0]['line'], 'info'=>$info];
 	log_msg('debug', 'modules: '.basename($trace[0]['file']).':'.$trace[0]['line'].' registered hook '.quot($hook));
 }
 
@@ -292,7 +292,7 @@ function register_hook($hook, $info = '')
  */
 function response($data, $error = false)
 {
-	$ret = array();
+	$ret = [];
 	if ($error === false) {
 		$ret['#error'] = false;
 	} else {
@@ -316,7 +316,7 @@ function response($data, $error = false)
  *	@return return value of the service function or a response-array 
  *	in case of an error
  */
-function run_service($service, $args = array())
+function run_service($service, $args = [])
 {
 	global $services;
 	

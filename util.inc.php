@@ -20,7 +20,7 @@ function array_to_js($container)
 	$ret = '<script type="text/javascript">'.nl();
 	// sort container by keys
 	ksort($container);
-	$exists = array();
+	$exists = [];
 	foreach ($container as $key=>$val) {
 		// make sure the keys exist
 		$objs = expl('.', $key);
@@ -160,7 +160,7 @@ function expl($delimiter, $string)
 {
 	$ret = explode($delimiter, $string);
 	if (count($ret) == 1 && empty($ret[0])) {
-		return array();
+		return [];
 	} else {
 		return $ret;
 	}
@@ -177,9 +177,9 @@ function expl($delimiter, $string)
 function expl_whitesp($s, $honor_quot = false)
 {
 	// same characters as trim() uses
-	$whitesp = array(' ', "\t", "\n", "\r", "\0", "\x0B");
-	$quot = array('"', "'");
-	$ret = array();
+	$whitesp = [' ', "\t", "\n", "\r", "\0", "\x0B"];
+	$quot = ['"', "'"];
+	$ret = [];
 
 	$prev = -1;
 	$cur_quot = false;
@@ -328,7 +328,7 @@ function http_digest_check($users, $realm = '')
 	}
 	
 	// taken from one of the comments
-	$data = array();
+	$data = [];
 	preg_match("/username=\"([^\"]+)\"/i", $auth, $match);
 	if (isset($match[1])) {
 		$data['username'] = $match[1];
@@ -421,19 +421,6 @@ function is_url($s)
 	}
 }
 
-if (!function_exists('is_iterable'))
-{
-	/**
-	 * determine if a variable is iterable (already implemented in PHP 7.1+)
-	 *
-	 * @param mixed $var the variable to check
-	 * @return bool
-	 */
-	function is_iterable($var)
-	{
-		return is_array($var) || $var instanceof Traversable;
-	}
-}
 
 
 /**

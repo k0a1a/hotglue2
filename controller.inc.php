@@ -18,7 +18,7 @@ require_once('modules.inc.php');
 require_once('util.inc.php');
 
 if (!isset($controllers)) {
-	$controllers = array();
+	$controllers = [];
 }
 
 
@@ -71,7 +71,7 @@ function controller_create_page($args)
 	echo html_finalize();
 }
 
-register_controller('*', 'create_page', 'controller_create_page', array('auth'=>true));
+register_controller('*', 'create_page', 'controller_create_page', ['auth'=>true]);
 
 
 /**
@@ -113,14 +113,14 @@ function controller_edit($args)
 	} else {
 		html_add_js(base_url().'js/edit.js', 4);
 	}
-	render_page(array('page'=>$page, 'edit'=>true));
+	render_page(['page'=>$page, 'edit'=>true]);
 	echo html_finalize();
 	
 	log_msg('debug', 'controller_edit: invoking check_auto_snapshot');
-	check_auto_snapshot(array('page'=>$page));
+	check_auto_snapshot(['page'=>$page]);
 }
 
-register_controller('*', 'edit', 'controller_edit', array('auth'=>true));
+register_controller('*', 'edit', 'controller_edit', ['auth'=>true]);
 
 
 /**
@@ -242,7 +242,7 @@ function controller_show($args)
 	load_modules('glue');
 	default_html(false);
 	$cache_page = true;
-	render_page(array('page'=>$page, 'edit'=>false));
+	render_page(['page'=>$page, 'edit'=>false]);
 	// the $cache_page parameter is set by the html_finalize()
 	$html = html_finalize($cache_page);
 	echo $html;
@@ -270,9 +270,9 @@ function invoke_controller($args)
 	
 	// change query-arguments so that we always have a arg0 and arg1
 	if (!isset($args[0])) {
-		$args[0] = array('', '');
+		$args[0] = ['', ''];
 	} elseif (is_string($args[0])) {
-		$args[0] = array($args[0], '');
+		$args[0] = [$args[0], ''];
 	}
 	
 	// load all modules
@@ -339,9 +339,9 @@ function parse_query_string()
 {
 	// QUERY_STRING per se seems not to be affected by magic quotes, only 
 	// the derived $_GET, $_POST etc
-	$q = $_SERVER['QUERY_STRING'];
-	$args = array();
-	$num_args = array();
+	$q = $_SERVER['QUERY_STRING'] ?? '';
+	$args = [];
+	$num_args = [];
 	// strip a tailing slash
 	if (substr($q, -1) == '/') {
 		$q = substr($q, 0, -1);
@@ -377,10 +377,10 @@ function parse_query_string()
  *	@param string $func function name
  *	@param array $args optional arguments
  */
-function register_controller($arg0, $arg1, $func, $args = array())
+function register_controller($arg0, $arg1, $func, $args = [])
 {
 	global $controllers;
-	$controllers[$arg0.'-'.$arg1] = array_merge($args, array('func'=>$func));
+	$controllers[$arg0.'-'.$arg1] = array_merge($args, ['func'=>$func]);
 	log_msg('debug', 'controller: registered controller '.quot($arg0.'/'.$arg1).' => '.$func);
 }
 
@@ -398,20 +398,20 @@ function serve_resource($s, $dl)
 	load_modules('glue');
 	
 	// resolve symlinks
-	$ret = object_get_symlink(array('name'=>$s));
+	$ret = object_get_symlink(['name'=>$s]);
 	if ($ret['#error'] == false && $ret['#data'] !== false) {
 		log_msg('debug', 'controller: resolved resource '.quot($s).' into '.quot($ret['#data']));
 		$s = $ret['#data'];
 	}
 	
-	$obj = load_object(array('name'=>$s));
+	$obj = load_object(['name'=>$s]);
 	if ($obj['#error']) {
 		return false;
 	} else {
 		$obj = $obj['#data'];
 	}
 	
-	$ret = invoke_hook_while('serve_resource', false, array('obj'=>$obj, 'dl'=>$dl));
+	$ret = invoke_hook_while('serve_resource', false, ['obj'=>$obj, 'dl'=>$dl]);
 	// this is probably not needed as the module will most likely call 
 	// serve_file() on success, which does not return
 	foreach ($ret as $key=>$val) {

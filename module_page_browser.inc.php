@@ -35,7 +35,7 @@ function controller_pages($args)
 	elem_attr($bdy, 'id', 'pages');
 	body_append('<h1>All pages</h1>');
 	load_modules('glue');
-	$pns = pagenames(array());
+	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	foreach ($pns as $pn) {
 		// display only pages with 'head'
@@ -50,7 +50,7 @@ function controller_pages($args)
 	echo html_finalize();
 }
 
-register_controller('pages', '', 'controller_pages', array('auth'=>PAGES_NEED_AUTH));
+register_controller('pages', '', 'controller_pages', ['auth'=>PAGES_NEED_AUTH]);
 
 
 function page_browser_render_page_early($args)

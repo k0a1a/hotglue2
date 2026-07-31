@@ -31,7 +31,7 @@ require_once('util.inc.php');
  */
 function _include_woff_font($font_family, $style_to_include = '')
 {
-	static $already_included = array();
+	static $already_included = [];
 	
 	// strip quotation marks
 	// TODO (later): do proper parsing of font-family string
@@ -70,7 +70,7 @@ function _include_woff_font($font_family, $style_to_include = '')
 		html_add_css_inline($rule, 5);
 		// add to list of already included font styles
 		if (!isset($already_included[$font_family])) {
-			$already_included[$font_family] = array();
+			$already_included[$font_family] = [];
 		}
 		$already_included[$font_family][$style] = true;
 	}
@@ -130,32 +130,32 @@ function _text_render_content($s, $name)
 function _woff_fonts()
 {
 	// use a hardcoded array of woff fonts for now
-	return array(
-		'LatinModern' => array(
+	return [
+		'LatinModern' => [
 			'normal' => 'lmsans10-regular-webfont.woff',
 			'italic' => 'lmsans10-oblique-webfont.woff',
 			'bold' => 'lmsans10-bold-webfont.woff',
 			'bolditalic' => 'lmsans10-boldoblique-webfont.woff'
-		),
-		'DejaVuSans' => array(
+		],
+		'DejaVuSans' => [
 			'normal' => 'dejavusans-webfont.woff',
 			'italic' => 'dejavusans-oblique-webfont.woff',
 			'bold' => 'dejavusans-bold-webfont.woff',
 			'bolditalic' => 'dejavusans-boldoblique-webfont.woff'
-		),
-		'DejaVuSerif' => array(
+		],
+		'DejaVuSerif' => [
 			'normal' => 'dejavuserif-webfont.woff',
 			'italic' => 'dejavuserif-italic-webfont.woff',
 			'bold' => 'dejavuserif-bold-webfont.woff',
 			'bolditalic' => 'dejavuserif-bolditalic-webfont.woff'
-		),
-		'DejaVuSansMono' => array(
+		],
+		'DejaVuSansMono' => [
 			'normal' => 'dejavusansmono-webfont.woff',
 			'italic' => 'dejavusansmono-oblique-webfont.woff',
 			'bold' => 'dejavusansmono-bold-webfont.woff',
 			'bolditalic' => 'dejavusansmono-boldoblique-webfont.woff'
-		)
-	);
+		]
+	];
 }
 
 
@@ -379,9 +379,9 @@ function text_render_object($args)
 	elem_add_class($e, 'object');
 	
 	// hooks
-	invoke_hook_first('alter_render_early', 'text', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'text', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
-	invoke_hook_last('alter_render_late', 'text', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'text', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	return $html;
 }
@@ -427,7 +427,7 @@ function text_save_state($args)
 	$obj['module'] = 'text';
 	
 	// hook
-	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
 	
 	load_modules('glue');
 	$ret = save_object($obj);

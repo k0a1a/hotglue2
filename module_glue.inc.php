@@ -138,7 +138,7 @@ function check_auto_snapshot($args)
 	}
 	
 	$a = expl('.', $args['page']);
-	$revs = revisions_info(array('pagename'=>$a[0], 'sort'=>'time'));
+	$revs = revisions_info(['pagename'=>$a[0], 'sort'=>'time']);
 	$revs = $revs['#data'];
 	
 	if ($a[1] == 'head' && SNAPSHOT_MIN_AGE != 0) {
@@ -171,7 +171,7 @@ function check_auto_snapshot($args)
 		for ($i=count($revs)-1; 0 <= $i; $i--) {
 			if (substr($revs[$i]['revision'], 0, 5) == 'auto-' && SNAPSHOT_MAX_AGE < time()-$revs[$i]['time']) {
 				log_msg('info', 'check_auto_snapshot: deleting an old snapshot');
-				delete_page(array('page'=>$revs[$i]['page']));
+				delete_page(['page'=>$revs[$i]['page']]);
 				$i--;
 			}
 		}
@@ -180,7 +180,7 @@ function check_auto_snapshot($args)
 	return response(true);
 }
 
-register_service('glue.check_auto_snapshot', 'check_auto_snapshot', array('auth'=>true));
+register_service('glue.check_auto_snapshot', 'check_auto_snapshot', ['auth'=>true]);
 
 
 /**
@@ -203,7 +203,7 @@ function clone_object($args)
 	
 	// create new object
 	$a = expl('.', $old['name']);
-	$new = create_object(array('page'=>$a[0].'.'.$a[1]));
+	$new = create_object(['page'=>$a[0].'.'.$a[1]]);
 	if ($new['#error']) {
 		return $new;
 	} else {
@@ -221,7 +221,7 @@ function clone_object($args)
 	}
 }
 
-register_service('glue.clone_object', 'clone_object', array('auth'=>true));
+register_service('glue.clone_object', 'clone_object', ['auth'=>true]);
 
 
 /**
@@ -259,11 +259,11 @@ function create_object($args)
 	} else {
 		fclose($f);
 		log_msg('info', 'create_object: created '.quot($name));
-		return response(array('name'=>$name));
+		return response(['name'=>$name]);
 	}
 }
 
-register_service('glue.create_object', 'create_object', array('auth'=>true));
+register_service('glue.create_object', 'create_object', ['auth'=>true]);
 
 
 /**
@@ -307,11 +307,11 @@ function create_page($args)
 	}
 
 	log_msg('info', 'create_page: created '.quot($args['page']));
-	invoke_hook('create_page', array('page'=>$args['page']));
+	invoke_hook('create_page', ['page'=>$args['page']]);
 	return response(true);
 }
 
-register_service('glue.create_page', 'create_page', array('auth'=>true));
+register_service('glue.create_page', 'create_page', ['auth'=>true]);
 register_hook('create_page', 'invoked when a page has been created');
 
 
@@ -349,7 +349,7 @@ function delete_object($args)
 		} else {
 			$obj = $obj['#data'];
 		}
-		invoke_hook('delete_object', array('obj'=>$obj));
+		invoke_hook('delete_object', ['obj'=>$obj]);
 	}
 	
 	if (!@unlink(CONTENT_DIR.'/'.str_replace('.', '/', $args['name']))) {
@@ -363,7 +363,7 @@ function delete_object($args)
 	}
 }
 
-register_service('glue.delete_object', 'delete_object', array('auth'=>true));
+register_service('glue.delete_object', 'delete_object', ['auth'=>true]);
 register_hook('delete_object', 'invoked when an object is going to be deleted, should be used for deleting referenced resources');
 
 
@@ -384,7 +384,7 @@ function delete_page($args)
 	}
 	
 	log_msg('info', 'delete_page: deleting '.quot($args['page']));
-	invoke_hook('delete_page', array('page'=>$args['page']));
+	invoke_hook('delete_page', ['page'=>$args['page']]);
 	
 	// TODO (later): make it possible to delete all revisions at once 
 	// (optimization for frontend)
@@ -407,7 +407,7 @@ function delete_page($args)
 			}
 		} else {
 			// and everything else through delete_object
-			$ret = delete_object(array('name'=>$args['page'].'.'.$f));
+			$ret = delete_object(['name'=>$args['page'].'.'.$f]);
 			if ($ret['#error']) {
 				log_msg('error', 'delete_object: '.$ret['#data']);
 			}
@@ -433,7 +433,7 @@ function delete_page($args)
 	return response(true);
 }
 
-register_service('glue.delete_page', 'delete_page', array('auth'=>true));
+register_service('glue.delete_page', 'delete_page', ['auth'=>true]);
 register_hook('delete_page', 'invoked when a page is going to be deleted');
 register_hook('has_reference', 'used for deleting referenced resources');
 
@@ -459,7 +459,7 @@ function delete_upload($args)
 		$max_cnt = 0;
 	}
 	
-	$refs = upload_references(array_merge($args, array('stop_after'=>$max_cnt+1)));
+	$refs = upload_references(array_merge($args, ['stop_after'=>$max_cnt+1]));
 	if ($refs['#error']) {
 		return $refs;
 	} else {
@@ -482,7 +482,7 @@ function delete_upload($args)
 	}
 }
 
-register_service('glue.delete_upload', 'delete_upload', array('auth'=>true));
+register_service('glue.delete_upload', 'delete_upload', ['auth'=>true]);
 
 
 /**
@@ -525,7 +525,7 @@ function load_object($args)
 	
 	// set the name attribute
 	// TODO (later): declaring arrays like this is probably unnecessary
-	$ret = array();
+	$ret = [];
 	$ret['name'] = $args['name'];
 	
 	// read lines and fill object array
@@ -566,7 +566,7 @@ function load_object($args)
 	return response($ret);
 }
 
-register_service('glue.load_object', 'load_object', array('auth'=>true));
+register_service('glue.load_object', 'load_object', ['auth'=>true]);
 
 
 /**
@@ -599,7 +599,7 @@ function object_get_symlink($args)
 	}
 }
 
-register_service('glue.object_get_symlink', 'object_get_symlink', array('auth'=>true));
+register_service('glue.object_get_symlink', 'object_get_symlink', ['auth'=>true]);
 
 
 /**
@@ -627,13 +627,13 @@ function object_make_symlink($args)
 		$target = '../../'.str_replace('.', '/', $ret);
 		// skip both the original object's pagename and the new target's pagename
 		$a_target = expl('.', $ret);
-		$skip_pns = array($a[0], $a_target[0]);
+		$skip_pns = [$a[0], $a_target[0]];
 	} else {
 		$target = '../../'.str_replace('.', '/', $args['name']);
-		$skip_pns = array($a[0]);
+		$skip_pns = [$a[0]];
 	}
 	
-	$pns = pagenames(array());
+	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	// for every pagename
 	foreach ($pns as $pn) {
@@ -647,7 +647,7 @@ function object_make_symlink($args)
 				// delete objects with the same name
 				// these should have been created when shapshotting and the 
 				// revision has later been reverted to
-				delete_object(array('name'=>$pn.'.head.'.$a[2]));
+				delete_object(['name'=>$pn.'.head.'.$a[2]]);
 			} elseif (is_link($link) && !is_file($link) && !is_dir($link)) {
 				// delete dangling symlinks too
 				if (@unlink($link)) {
@@ -669,7 +669,7 @@ function object_make_symlink($args)
 	return response(true);
 }
 
-register_service('glue.object_make_symlink', 'object_make_symlink', array('auth'=>true));
+register_service('glue.object_make_symlink', 'object_make_symlink', ['auth'=>true]);
 
 
 /**
@@ -725,7 +725,7 @@ function object_remove_attr($args)
 	return $ret;
 }
 
-register_service('glue.object_remove_attr', 'object_remove_attr', array('auth'=>true));
+register_service('glue.object_remove_attr', 'object_remove_attr', ['auth'=>true]);
 
 
 /**
@@ -738,7 +738,7 @@ function pagenames($args)
 {
 	if (is_dir(CONTENT_DIR)) {
 		$files = @scandir(CONTENT_DIR);
-		$ret = array();
+		$ret = [];
 		foreach ($files as $f) {
 			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared') {
 				continue;
@@ -754,7 +754,7 @@ function pagenames($args)
 		}
 		return response($ret);
 	} else {
-		return response(array());
+		return response([]);
 	}
 }
 
@@ -792,7 +792,7 @@ function render_object($args)
 	}
 	
 	log_msg('debug', 'render_object: rendering '.quot($args['name']));
-	$ret = invoke_hook_while('render_object', false, array('obj'=>$obj, 'edit'=>$args['edit']));
+	$ret = invoke_hook_while('render_object', false, ['obj'=>$obj, 'edit'=>$args['edit']]);
 	if (empty($ret)) {
 		log_msg('warn', 'render_object: nobody claimed '.quot($obj['name']));
 		return response('');
@@ -848,7 +848,7 @@ function render_page($args)
 	$bdy = &body();
 	elem_add_class($bdy, 'page');
 	elem_attr($bdy, 'id', $args['page']);
-	invoke_hook('render_page_early', array('page'=>$args['page'], 'edit'=>$args['edit']));
+	invoke_hook('render_page_early', ['page'=>$args['page'], 'edit'=>$args['edit']]);
 	
 	// for every file in the page directory
 	$files = @scandir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']));
@@ -866,10 +866,10 @@ function render_page($args)
 			continue;
 		}
 		// render object
-		render_object(array('name'=>$args['page'].'.'.$f, 'edit'=>$args['edit']));
+		render_object(['name'=>$args['page'].'.'.$f, 'edit'=>$args['edit']]);
 	}
 	
-	invoke_hook('render_page_late', array('page'=>$args['page'], 'edit'=>$args['edit']));
+	invoke_hook('render_page_late', ['page'=>$args['page'], 'edit'=>$args['edit']]);
 	log_msg('debug', 'render_page: finished '.quot($args['page']));
 	
 	// return the body element as html-string as well
@@ -893,7 +893,7 @@ function rename_page($args)
 	if (empty($args['old'])) {
 		return response('Required argument "old" missing or empty', 400);
 	}
-	$pns = pagenames(array());
+	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	if (!in_array($args['old'], $pns)) {
 		return response('Page name '.quot($args['old']).' does not exist', 404);
@@ -913,17 +913,17 @@ function rename_page($args)
 	} else {
 		log_msg('info', 'rename_page: renamed '.quot($args['old']).' to '.quot($args['new']));
 		// clean up cache as well
-		$revs = revisions(array('pagename'=>$args['new']));
+		$revs = revisions(['pagename'=>$args['new']]);
 		$revs = $revs['#data'];
 		foreach ($revs as $rev) {
 			drop_cache('page', $args['old'].'.'.$rev);
 		}
-		invoke_hook('rename_page', array('pagename'=>$args['new']));
+		invoke_hook('rename_page', ['pagename'=>$args['new']]);
 		return response(true);
 	}
 }
 
-register_service('glue.rename_page', 'rename_page', array('auth'=>true));
+register_service('glue.rename_page', 'rename_page', ['auth'=>true]);
 register_hook('rename_page', 'invoked when a page has been renamed');
 
 
@@ -940,7 +940,7 @@ function copy_page($args)
 	if (empty($args['old'])) {
 		return response('Required argument "old" missing or empty', 400);
 	}
-	$pns = pagenames(array());
+	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	if (!in_array($args['old'], $pns)) {
 		return response('Page name '.quot($args['old']).' does not exist', 404);
@@ -987,11 +987,11 @@ function copy_page($args)
 		}
 	}
 	log_msg('info', 'copy_page: copied '.quot($args['old']).' to '.quot($args['new']));
-	invoke_hook('copy_page', array('pagename'=>$args['new']));
+	invoke_hook('copy_page', ['pagename'=>$args['new']]);
 	return response(true);
 }
 
-register_service('glue.copy_page', 'copy_page', array('auth'=>true));
+register_service('glue.copy_page', 'copy_page', ['auth'=>true]);
 register_hook('copy_page', 'invoked when a page has been copied');
 
 
@@ -1021,7 +1021,7 @@ function revert($args)
 	// delete current head revision
 	// TODO (later): create a snapshot of it before doing so?
 	if (page_exists($a[0].'.head')) {
-		$ret = delete_page(array('page'=>$a[0].'.head'));
+		$ret = delete_page(['page'=>$a[0].'.head']);
 		if ($ret['#error']) {
 			return $ret;
 		}
@@ -1053,12 +1053,12 @@ function revert($args)
 	}
 	
 	log_msg('info', 'revert: reverted to '.quot($args['page']));
-	invoke_hook('revert', array('page'=>$args['page']));
+	invoke_hook('revert', ['page'=>$args['page']]);
 	
 	return response(true);
 }
 
-register_service('glue.revert', 'revert', array('auth'=>true));
+register_service('glue.revert', 'revert', ['auth'=>true]);
 register_hook('revert', 'invoked after a page has been reverted to');
 
 
@@ -1079,7 +1079,7 @@ function revisions($args)
 	}
 	
 	$files = @scandir(CONTENT_DIR.'/'.$args['pagename']);
-	$ret = array();
+	$ret = [];
 	foreach ($files as $f) {
 		if ($f == '.' || $f == '..' || $f == 'shared') {
 			continue;
@@ -1115,10 +1115,10 @@ function revisions_info($args)
 		return $revs;
 	}
 	
-	$ret = array();
+	$ret = [];
 	foreach ($revs['#data'] as $r) {
 		$d = CONTENT_DIR.'/'.$args['pagename'].'/'.$r;
-		$ret[] = array('revision'=>$r, 'time'=>@filemtime($d), 'num_objs'=>count(@scandir($d))-2, 'page'=>$args['pagename'].'.'.$r);
+		$ret[] = ['revision'=>$r, 'time'=>@filemtime($d), 'num_objs'=>count(@scandir($d))-2, 'page'=>$args['pagename'].'.'.$r];
 	}
 	
 	if (isset($args['sort']) && $args['sort'] == 'time') {
@@ -1133,7 +1133,7 @@ function revisions_info($args)
 		}
 		usort($ret, '_cmp_time');
 		if ($head !== false) {
-			$ret = array_merge(array($head), $ret);
+			$ret = array_merge([$head], $ret);
 		}
 	}
 	
@@ -1198,7 +1198,7 @@ function save_object($args)
 	return response(true);
 }
 
-register_service('glue.save_object', 'save_object', array('auth'=>true));
+register_service('glue.save_object', 'save_object', ['auth'=>true]);
 
 
 /**
@@ -1231,7 +1231,7 @@ function save_state($args)
 	if ($L === false) {
 		return response('Could not acquire lock to '.quot($args['name']).' in '.LOCK_TIME.'ms', 500);
 	}
-	$obj = load_object(array('name'=>elem_attr($elem, 'id')));
+	$obj = load_object(['name'=>elem_attr($elem, 'id')]);
 	if ($obj['#error']) {
 		// UNLOCK
 		_obj_unlock($L);
@@ -1239,7 +1239,7 @@ function save_state($args)
 	} else {
 		$obj = $obj['#data'];
 	}
-	$ret = invoke_hook_while('save_state', false, array('elem'=>$elem, 'obj'=>$obj));
+	$ret = invoke_hook_while('save_state', false, ['elem'=>$elem, 'obj'=>$obj]);
 	// UNLOCK
 	_obj_unlock($L);
 	if (count($ret) == 0) {
@@ -1251,7 +1251,7 @@ function save_state($args)
 	}
 }
 
-register_service('glue.save_state', 'save_state', array('auth'=>true));
+register_service('glue.save_state', 'save_state', ['auth'=>true]);
 // modules handling this hook need to make sure that they are not calling 
 // either update_object() or object_remove_attr(), but rather save_object() 
 // directly
@@ -1282,7 +1282,7 @@ function set_startpage($args)
 	}
 }
 
-register_service('glue.set_startpage', 'set_startpage', array('auth'=>true));
+register_service('glue.set_startpage', 'set_startpage', ['auth'=>true]);
 
 
 /**
@@ -1348,20 +1348,20 @@ function snapshot($args)
 			// load the newly created snapshot and give modules a chance to 
 			// copy referenced files as well
 			$dest_name = $a[0].'.'.$args['rev'].'.'.$f;
-			$dest_obj = load_object(array('name'=>$dest_name));
+			$dest_obj = load_object(['name'=>$dest_name]);
 			if ($dest_obj['#error']) {
 				log_msg('error', 'snapshot: error loading snapshotted object '.quot($dest_name).', skipping hook');
 			} else {
 				$dest_obj = $dest_obj['#data'];
 				// get the source object's target
 				$src_name = $args['page'].'.'.$f;
-				$src_target = object_get_symlink(array('name'=>$src_name));
+				$src_target = object_get_symlink(['name'=>$src_name]);
 				if ($src_target['#error']) {
 					log_msg('error', 'snapshot: error getting the symlink target of source object '.quot($src_name).', skipping hook');
 				} else {
 					$src_target = $src_target['#data'];
 					// hook
-					invoke_hook('snapshot_symlink', array('obj'=>$dest_obj, 'origin'=>implode('.', array_slice(expl('.', $src_target), 0, 2))));
+					invoke_hook('snapshot_symlink', ['obj'=>$dest_obj, 'origin'=>implode('.', array_slice(expl('.', $src_target), 0, 2))]);
 				}
 			}
 		} elseif (is_file($src.'/'.$f)) {
@@ -1378,7 +1378,7 @@ function snapshot($args)
 	return response($a[0].'.'.$args['rev']);
 }
 
-register_service('glue.snapshot', 'snapshot', array('auth'=>true));
+register_service('glue.snapshot', 'snapshot', ['auth'=>true]);
 register_hook('snapshot_symlink', 'invoked when a symlink is part of a page that gets snapshotted; the module in question is supposed to copy all referenced files to the shared directory of the destination page');
 
 
@@ -1409,7 +1409,7 @@ function update_object($args)
 	}
 	$old = load_object($args);
 	if ($old['#error']) {
-		$old = array();
+		$old = [];
 	} else {
 		$old = $old['#data'];
 	}
@@ -1421,7 +1421,7 @@ function update_object($args)
 	return $ret;
 }
 
-register_service('glue.update_object', 'update_object', array('auth'=>true));
+register_service('glue.update_object', 'update_object', ['auth'=>true]);
 
 
 /**
@@ -1443,7 +1443,7 @@ function upload_files($args)
 		return response('Page '.quot($args['page']).' does not exist', 404);
 	}
 	
-	$ret = array();
+	$ret = [];
 	
 	log_msg('debug', 'upload_files: $_FILES is '.var_dump_inl($_FILES));
 	foreach ($_FILES as $f) {
@@ -1452,7 +1452,7 @@ function upload_files($args)
 		if ($fn === false) {
 			continue;
 		} else {
-			$args = array_merge($args, array('file'=>$fn, 'mime'=>$f['type'], 'size'=>$f['size']));
+			$args = array_merge($args, ['file'=>$fn, 'mime'=>$f['type'], 'size'=>$f['size']]);
 			// clear mime type if set to default application/octet-stream
 			if ($args['mime'] == 'application/octet-stream') {
 				$args['mime'] = '';
@@ -1506,7 +1506,7 @@ function upload_files($args)
 	return response($ret);
 }
 
-register_service('glue.upload_files', 'upload_files', array('auth'=>true));
+register_service('glue.upload_files', 'upload_files', ['auth'=>true]);
 
 
 /**
@@ -1537,7 +1537,7 @@ function upload_references($args)
 		$stop_after = 0;
 	}
 	
-	$ret = array();
+	$ret = [];
 	
 	// for each revision
 	foreach ($revs as $rev) {
@@ -1547,7 +1547,7 @@ function upload_references($args)
 			if ($f == '.' || $f == '..') {
 				continue;
 			}
-			$obj = load_object(array('name'=>$args['pagename'].'.'.$rev.'.'.$f));
+			$obj = load_object(['name'=>$args['pagename'].'.'.$rev.'.'.$f]);
 			if ($obj['#error']) {
 				continue;
 			} else {
@@ -1555,7 +1555,7 @@ function upload_references($args)
 			}
 			// and handle the object to our modules
 			log_msg('debug', 'upload_references: checking '.quot($obj['name']));
-			$revs = invoke_hook_while('has_reference', false, array('file'=>$args['file'], 'obj'=>$obj));
+			$revs = invoke_hook_while('has_reference', false, ['file'=>$args['file'], 'obj'=>$obj]);
 			if (count($revs)) {
 				$ret[] = $args['pagename'].'.'.$rev.'.'.$f;
 				if (count($ret) == $stop_after) {
@@ -1569,5 +1569,5 @@ function upload_references($args)
 	return response($ret);
 }
 
-register_service('glue.upload_references', 'upload_references', array('auth'=>true));
+register_service('glue.upload_references', 'upload_references', ['auth'=>true]);
 register_hook('has_reference', 'check if an object references an uploaded file');

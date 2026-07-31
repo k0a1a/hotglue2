@@ -9,10 +9,6 @@ class UtilTest extends TestCase
 
 	function testIsIterable()
 	{
-		if (version_compare(PHP_VERSION, '7.1', '>=')) {
-			$this->markTestSkipped("This test is only for PHP 7.1-");
-		}
-
 		$this->assertTrue(is_iterable([4]));
 		$this->assertFalse(is_iterable(4));
 		$this->assertFalse(is_iterable(new \stdClass));
@@ -28,11 +24,9 @@ class UtilTest extends TestCase
 	}
 
 
-	/**
-	 * @expectedException \InvalidArgumentException
-	 */
 	function testGetFirstitemWithNonIterable()
 	{
+		$this->expectException(\InvalidArgumentException::class);
 		get_first_item(new \stdClass);
 	}
 

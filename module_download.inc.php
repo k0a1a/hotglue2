@@ -77,7 +77,7 @@ function download_delete_object($args)
 	
 	load_modules('glue');
 	$a = expl('.', $obj['name']);
-	$ret = delete_upload(array('pagename'=>$a[0], 'file'=>$obj['download-file'], 'max_cnt'=>1));
+	$ret = delete_upload(['pagename'=>$a[0], 'file'=>$obj['download-file'], 'max_cnt'=>1]);
 	if ($ret['#error']) {
 		log_msg('error', 'upload_delete_object: delete_upload returned '.quot($ret['#error']));
 	}
@@ -117,9 +117,9 @@ function download_render_object($args)
 	elem_add_class($e, 'object');
 	
 	// hooks
-	invoke_hook_first('alter_render_early', 'download', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'download', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
-	invoke_hook_last('alter_render_late', 'download', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'download', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	if (!$args['edit']) {
 		// put link to file around the element
@@ -161,7 +161,7 @@ function download_save_state($args)
 	$obj['module'] = 'download';
 	
 	// hook
-	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
 	
 	// make width and height only be determined by the css
 	if (isset($obj['object-width'])) {
@@ -252,7 +252,7 @@ function download_upload_fallback($args)
 	$obj['download-file-mime'] = $args['mime'];
 	save_object($obj);
 	
-	$ret = render_object(array('name'=>$obj['name'], 'edit'=>true));
+	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
 	if ($ret['#error']) {
 		return false;
 	} else {

@@ -38,9 +38,9 @@ function _gd_get_imagesize($f)
 {
 	$ret = @getimagesize($f);
 	if ($ret === false) {
-		return array(0, 0);
+		return [0, 0];
 	} else {
-		return array($ret[0], $ret[1]);
+		return [$ret[0], $ret[1]];
 	}
 }
 
@@ -224,12 +224,12 @@ function image_delete_object($args)
 	// delete original file
 	if (!empty($obj['image-file'])) {
 		$a = expl('.', $obj['name']);
-		delete_upload(array('pagename'=>$a[0], 'file'=>$obj['image-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>$a[0], 'file'=>$obj['image-file'], 'max_cnt'=>1]);
 	}
 	// and resized one
 	if (!empty($obj['image-resized-file'])) {
 		$a = expl('.', $obj['name']);
-		delete_upload(array('pagename'=>$a[0], 'file'=>$obj['image-resized-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>$a[0], 'file'=>$obj['image-resized-file'], 'max_cnt'=>1]);
 	}
 }
 
@@ -286,11 +286,11 @@ function image_render_object($args)
 	// elem is passed as reference here
 	// it is suggested that we first call our own function before any others 
 	// that might want to modify the element that is being set up
-	invoke_hook_first('alter_render_early', 'image', array('obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']));
+	invoke_hook_first('alter_render_early', 'image', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
 	// html is passed as reference here
 	// it is suggested that we call our own function after all others
-	invoke_hook_last('alter_render_late', 'image', array('obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']));
+	invoke_hook_last('alter_render_late', 'image', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	return $html;
 }
@@ -402,12 +402,12 @@ function image_resize($args)
 	// else remove any currently resized file
 	if (!empty($obj['image-resized-file'])) {
 		log_msg('info', 'image_resize: dropping reference to previous resized file '.quot($obj['image-resized-file']));
-		delete_upload(array('pagename'=>$pn, 'file'=>$obj['image-resized-file'], 'max_cnt'=>1));
+		delete_upload(['pagename'=>$pn, 'file'=>$obj['image-resized-file'], 'max_cnt'=>1]);
 		unset($obj['image-resized-file']);
 		unset($obj['image-resized-width']);
 		unset($obj['image-resized-height']);
 		// update object file as well
-		$ret = object_remove_attr(array('name'=>$obj['name'], 'attr'=>array('image-resized-file', 'image-resized-width', 'image-resized-height')));
+		$ret = object_remove_attr(['name'=>$obj['name'], 'attr'=>['image-resized-file', 'image-resized-width', 'image-resized-height']]);
 		if ($ret['#error']) {
 			return $ret;
 		}
@@ -437,7 +437,7 @@ function image_resize($args)
 	// load source file
 	$ext = filext($obj['image-file']);
 	$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['image-file'];
-	if ($obj['image-file-mime'] == 'image/jpeg' || in_array($ext, array('jpg', 'jpeg'))) {
+	if ($obj['image-file-mime'] == 'image/jpeg' || in_array($ext, ['jpg', 'jpeg'])) {
 		$orig = @imagecreatefromjpeg($fn);
 		$dest_ext = 'jpg';
 	} elseif ($obj['image-file-mime'] == 'image/png' || $ext == 'png') {
@@ -503,7 +503,7 @@ function image_resize($args)
 	
 	// the code above can take a while, so read in the object anew via 
 	// update_object()
-	$update = array();
+	$update = [];
 	$update['name'] = $obj['name'];
 	$update['image-resized-file'] = basename($fn);
 	$update['image-resized-width'] = $width;
@@ -516,7 +516,7 @@ function image_resize($args)
 	return update_object($update);
 }
 
-register_service('image.resize', 'image_resize', array('auth'=>true));
+register_service('image.resize', 'image_resize', ['auth'=>true]);
 
 
 /**
@@ -542,7 +542,7 @@ function image_save_state($args)
 	// notice: obj is passed as reference here
 	// obj might be (almost) empty for newly created objects, so rely only 
 	// on $elem
-	invoke_hook('alter_save', array('obj'=>&$obj, 'elem'=>$elem));
+	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
 	// see image_alter_save() above
 	
 	// we could do some overriding here if we wanted to
@@ -644,7 +644,7 @@ function image_snapshot_symlink($args)
 	
 	// we do this for image-file and image-resized-file
 	// .. to add a bit of complexity ;)
-	foreach (array('image-file', 'image-resized-file') as $field) {
+	foreach (['image-file', 'image-resized-file'] as $field) {
 		if (empty($obj[$field])) {
 			continue;
 		} else {
@@ -684,7 +684,7 @@ function image_snapshot_symlink($args)
 function image_upload($args)
 {
 	// check if supported file
-	if (!in_array($args['mime'], array('image/jpeg', 'image/png', 'image/gif')) || ($args['mime'] == '' && !in_array(filext($args['file']), array('jpg', 'jpeg', 'png', 'gif')))) {
+	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
 		return false;
 	}
 	
@@ -713,7 +713,7 @@ function image_upload($args)
 	save_object($obj);
 	
 	// render object and return html
-	$ret = render_object(array('name'=>$obj['name'], 'edit'=>true));
+	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
 	log_msg('debug', 'image_upload: '.print_r($ret, 1));
 	if ($ret['#error']) {
 		return false;

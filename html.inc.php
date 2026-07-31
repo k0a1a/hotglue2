@@ -12,7 +12,7 @@
 @require_once('config.inc.php');
 require_once('util.inc.php');
 
-$single_tags = array('br', 'hr', 'img', 'input', 'link', 'meta', 'param');
+$single_tags = ['br', 'hr', 'img', 'input', 'link', 'meta', 'param'];
 
 if (!isset($html)) {
 	html_flush();
@@ -80,7 +80,7 @@ function body_append($c)
  */
 function elem($tag)
 {
-	return array('tag'=>$tag);
+	return ['tag'=>$tag];
 }
 
 
@@ -93,7 +93,7 @@ function elem($tag)
 function elem_add_class(&$elem, $c)
 {
 	if (!@is_array($elem['class'])) {
-		$elem['class'] = array();
+		$elem['class'] = [];
 	}
 	$elem['class'][] = $c;
 	$elem['class'] = array_unique($elem['class']);
@@ -111,14 +111,14 @@ function elem_append(&$elem, $c)
 {
 	if (!isset($elem['val'])) {
 		if (is_array($c)) {
-			$elem['val'] = array($c);
+			$elem['val'] = [$c];
 		} else {
 			$elem['val'] = $c;
 		}
 	} elseif (is_array($c) && is_array($elem['val'])) {
 		$elem['val'][] = $c;
 	} elseif (is_array($c) && is_string($elem['val'])) {
-		$elem['val'] = array($elem['val'], $c);
+		$elem['val'] = [$elem['val'], $c];
 	} elseif (is_string($c) && is_array($elem['val'])) {
 		$elem['val'][] = $c;
 	} elseif (is_string($c) && is_string($elem['val'])) {
@@ -159,7 +159,7 @@ function elem_classes($elem)
 	if (@is_array($elem['class'])) {
 		return $elem['class'];
 	} else {
-		return array();
+		return [];
 	}
 }
 
@@ -181,7 +181,7 @@ function elem_css(&$elem)
 		}
 	} elseif (2 < func_num_args()) {
 		if (!@is_array($elem['style'])) {
-			$elem['style'] = array();
+			$elem['style'] = [];
 		}
 		if (func_get_arg(2) === '') {
 			// clear css property
@@ -231,7 +231,7 @@ function elem_finalize($elem)
 	$ret .= '>';
 	
 	// make block elements have a newline after the opening tag
-	$block_tags = array('blockquote', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'script', 'ul');
+	$block_tags = ['blockquote', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'script', 'ul'];
 	if (in_array($elem['tag'], $block_tags)) {
 		$block_tag = true;
 		$ret .= nl();
@@ -381,9 +381,9 @@ function html_add_alternate($type, $url, $title)
 {
 	global $html;
 	if (!@is_array($html['header']['alternate'])) {
-		$html['header']['alternate'] = array();
+		$html['header']['alternate'] = [];
 	}
-	$html['header']['alternate'][] = array('type'=>$type, 'url'=>$url, 'title'=>$title);
+	$html['header']['alternate'][] = ['type'=>$type, 'url'=>$url, 'title'=>$title];
 }
 
 
@@ -398,9 +398,9 @@ function html_add_css($url, $prio = 5, $media = '')
 {
 	global $html;
 	if (!@is_array($html['header']['css'])) {
-		$html['header']['css'] = array();
+		$html['header']['css'] = [];
 	}
-	$html['header']['css'][] = array('url'=>$url, 'prio'=>$prio, 'media'=>$media);
+	$html['header']['css'][] = ['url'=>$url, 'prio'=>$prio, 'media'=>$media];
 }
 
 
@@ -414,9 +414,9 @@ function html_add_css_inline($rule, $prio = 5)
 {
 	global $html;
 	if (!@is_array($html['header']['css_inline'])) {
-		$html['header']['css_inline'] = array();
+		$html['header']['css_inline'] = [];
 	}
-	$html['header']['css_inline'][] = array('rule'=>$rule, 'prio'=>$prio);
+	$html['header']['css_inline'][] = ['rule'=>$rule, 'prio'=>$prio];
 }
 
 /**
@@ -429,9 +429,9 @@ function html_add_head_inline($def, $prio = 5)
 {
 	global $html;
 	if (!@is_array($html['header']['head_inline'])) {
-		$html['header']['head_inline'] = array();
+		$html['header']['head_inline'] = [];
 	}
-	$html['header']['head_inline'][] = array('def'=>$def, 'prio'=>$prio);
+	$html['header']['head_inline'][] = ['def'=>$def, 'prio'=>$prio];
 }
 
 /**
@@ -444,9 +444,9 @@ function html_add_body_inline($def, $prio = 5)
 {
 	global $html;
 	if (!@is_array($html['body']['body_inline'])) {
-		$html['body']['body_inline'] = array();
+		$html['body']['body_inline'] = [];
 	}
-	$html['body']['body_inline'][] = array('def'=>$def, 'prio'=>$prio);
+	$html['body']['body_inline'][] = ['def'=>$def, 'prio'=>$prio];
 }
 /**
  *	add a reference to a javascript file to the html header
@@ -459,9 +459,9 @@ function html_add_js($url, $prio = 5)
 {
 	global $html;
 	if (!@is_array($html['header']['js'])) {
-		$html['header']['js'] = array();
+		$html['header']['js'] = [];
 	}
-	$html['header']['js'][] = array('url'=>$url, 'prio'=>$prio);
+	$html['header']['js'][] = ['url'=>$url, 'prio'=>$prio];
 }
 
 
@@ -476,9 +476,9 @@ function html_add_js_inline($code, $prio = 5, $reason = '')
 {
 	global $html;
 	if (!@is_array($html['header']['js_inline'])) {
-		$html['header']['js_inline'] = array();
+		$html['header']['js_inline'] = [];
 	}
-	$html['header']['js_inline'][] = array('code'=>$code, 'prio'=>$prio, 'reason'=>$reason);
+	$html['header']['js_inline'][] = ['code'=>$code, 'prio'=>$prio, 'reason'=>$reason];
 }
 
 
@@ -492,7 +492,7 @@ function html_add_js_var($key, $val)
 {
 	global $html;
 	if (!@is_array($html['header']['js_var'])) {
-		$html['header']['js_var'] = array();
+		$html['header']['js_var'] = [];
 	}
 	$html['header']['js_var'][$key] = $val;
 }
@@ -515,7 +515,7 @@ function html_css($prop)
 		}
 	} elseif (1 < func_num_args()) {
 		if (!@is_array($html['header']['style'])) {
-			$html['header']['style'] = array();
+			$html['header']['style'] = [];
 		}
 		if (func_get_arg(1) === '') {
 			// clear css property
@@ -709,9 +709,9 @@ function html_finalize(&$cache = false)
 function html_flush()
 {
 	global $html;
-	$html = array();
-	$html['header'] = array('title'=>'');
-	$html['body'] = array('tag'=>'body');
+	$html = [];
+	$html['header'] = ['title'=>''];
+	$html['body'] = ['tag'=>'body'];
 	$html['cache'] = true;
 }
 

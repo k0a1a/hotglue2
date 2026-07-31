@@ -21,7 +21,7 @@ require_once('util.inc.php');
 header('Content-Type: application/json; charset=UTF-8');
 
 // get method and arguments
-$args = array();
+$args = [];
 switch ($_SERVER['REQUEST_METHOD']) {
 	// we don't use $_REQUEST here because this includes cookies as well
 	// disable support for GET to make cross site request forgery (xsrf) 
