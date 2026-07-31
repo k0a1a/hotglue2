@@ -271,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.object.save(obj);
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('image', 'image-pos', elem);

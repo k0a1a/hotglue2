@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			// update tooltip (see above) via Alpine's reactive opacity state
 			that.dispatchEvent(new CustomEvent('glue-menu-activate'));
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
@@ -110,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			$.glue.object.save(obj);
 			$.glue.stack.compress();
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-zindex', elem, 3);

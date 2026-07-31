@@ -19,11 +19,10 @@ $.glue.live('.download', 'glue-upload-dynamic-early', function(e, mode, target_x
 		this.style.left = target_x+'px';
 		this.style.top = target_y+'px';
 	}
-	// restore visibility (orig_visibility is stashed via jQuery .data() by
-	// edit.js's still-unconverted upload code - kept as jQuery here too
-	// until that side of the contract is converted)
-	$(this).css('visibility', $(this).data('orig_visibility'));
-	$(this).removeData('orig_visibility');
+	// restore visibility (orig_visibility is stashed by edit.js's upload
+	// code in a shared WeakMap, glue_orig_visibility)
+	this.style.visibility = glue_orig_visibility.get(this) || '';
+	glue_orig_visibility.delete(this);
 	// register object
 	$.glue.object.register(this);
 	// save object

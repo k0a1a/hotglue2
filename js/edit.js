@@ -7,35 +7,82 @@
  *	See the file COPYING for more details.
  */
 
+// text-edit.js hasn't been converted away from jQuery yet and still passes
+// jQuery-wrapped elements into several of these public $.glue.* functions -
+// unwrap defensively so both call styles work during the transition; safe
+// to remove once text-edit.js is converted
+function glue_unwrap(x) {
+	return (x && x.jquery) ? x[0] : x;
+}
+
+// jQuery's outerWidth/outerHeight(true) (dimensions including margin), used
+// repeatedly for menu/context-menu layout math
+function outer_width(elem, with_margin) {
+	var w = elem.offsetWidth;
+	if (with_margin) {
+		var cs = getComputedStyle(elem);
+		w += parseFloat(cs.marginLeft) + parseFloat(cs.marginRight);
+	}
+	return w;
+}
+function outer_height(elem, with_margin) {
+	var h = elem.offsetHeight;
+	if (with_margin) {
+		var cs = getComputedStyle(elem);
+		h += parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
+	}
+	return h;
+}
+
+// backs the orig_visibility handoff between this file (writer, in
+// $.glue.upload below) and download-edit.js/video-edit.js (readers) - a
+// WeakMap instead of jQuery .data() for the same reason $.glue.object's
+// moveables map uses one
+var glue_orig_visibility = new WeakMap();
+
+// jQuery's .fadeIn(duration) - restores display and animates opacity 0->1
+function fade_in(elem, duration) {
+	elem.style.opacity = '0';
+	elem.style.display = '';
+	requestAnimationFrame(function() {
+		requestAnimationFrame(function() {
+			elem.style.transition = 'opacity '+duration+'ms';
+			elem.style.opacity = '1';
+		});
+	});
+}
+
 $.glue.canvas = function()
 {
 	return {
 		update: function(elem) {
+			var elems;
 			if (elem === undefined) {
-				elem = $('.object');
+				elems = document.querySelectorAll('.object');
+			} else {
+				elems = [glue_unwrap(elem)];
 			}
 			var max_x = 0;
 			var max_y = 0;
-			$(elem).each(function() {
-				var p = $(this).position();
-				if (max_x < p.left+$(this).outerWidth()) {
-					max_x = p.left+$(this).outerWidth();
+			elems.forEach(function(e) {
+				if (max_x < e.offsetLeft+e.offsetWidth) {
+					max_x = e.offsetLeft+e.offsetWidth;
 				}
-				if (max_y < p.top+$(this).outerHeight()) {
-					max_y = p.top+$(this).outerHeight();
+				if (max_y < e.offsetTop+e.offsetHeight) {
+					max_y = e.offsetTop+e.offsetHeight;
 				}
 			});
-			// make body at least match the window width and height but don't 
+			// make body at least match the window width and height but don't
 			// send these values to the backend in any case
-			if (max_x < $(window).width()) {
-				max_x = $(window).width();
+			if (max_x < window.innerWidth) {
+				max_x = window.innerWidth;
 			}
-			if (max_y < $(window).height()) {
-				max_y = $(window).height();
+			if (max_y < window.innerHeight) {
+				max_y = window.innerHeight;
 			}
 			// resize body
-			$('body').css('width', max_x+'px');
-			$('body').css('height', max_y+'px');
+			document.body.style.width = max_x+'px';
+			document.body.style.height = max_y+'px';
 			// update grid
 			$.glue.grid.update();
 		}
@@ -49,7 +96,7 @@ $.glue.canvas = function()
 $.glue.color = function()
 {
 	var parse = function(str) {
-		str = $.trim(String(str)).toLowerCase();
+		str = String(str).trim().toLowerCase();
 		var m;
 		if (m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(str)) {
 			return {
@@ -124,13 +171,16 @@ $.glue.colorpicker = function()
 	// note: the "transparent" toggle farbtastic used to offer here was never
 	// actually used by any module (transparency is handled by a separate
 	// opacity slider on objects), so it's not carried over
-	var elem = $('<input type="color" id="glue-colorpicker" class="glue-ui">');
-	$(elem).bind('input', function(e) {
+	var elem = document.createElement('input');
+	elem.type = 'color';
+	elem.id = 'glue-colorpicker';
+	elem.className = 'glue-ui';
+	elem.addEventListener('input', function(e) {
 		if (typeof change_func == 'function') {
-			change_func($(elem).val());
+			change_func(elem.value);
 		}
 	});
-	$(elem).bind('change', function(e) {
+	elem.addEventListener('change', function(e) {
 		// the native picker has been dismissed/confirmed
 		$.glue.colorpicker.hide();
 	});
@@ -139,7 +189,7 @@ $.glue.colorpicker = function()
 		// close colorpicker when clicking outside of it or its children
 		// note: this handler is also being called right after colorpicker
 		// creation
-		if (!$(e.target).hasClass('glue-ui') && $(e.target).parents('.glue-ui').length == 0) {
+		if (!e.target.classList.contains('glue-ui') && !e.target.closest('.glue-ui')) {
 			// this also unregisters the event
 			$.glue.colorpicker.hide();
 			// prevent the menu from firing
@@ -153,14 +203,14 @@ $.glue.colorpicker = function()
 				if (!finished && (cancel === undefined || cancel == false)) {
 					finished = true;
 					if (typeof finish_func == 'function') {
-						finish_func($(elem).val());
+						finish_func(elem.value);
 					}
 				}
-				$(elem).detach();
+				elem.remove();
 				shown = false;
 			}
 			// unregister event
-			$('body').unbind('click', close_colorpicker);
+			document.body.removeEventListener('click', close_colorpicker);
 		},
 		is_shown: function() {
 			return shown;
@@ -173,7 +223,7 @@ $.glue.colorpicker = function()
 			if (rgb && rgb.a == 0) {
 				hex = '#ffffff';
 			}
-			$(elem).val(hex);
+			elem.value = hex;
 		},
 		show: function(def, transp, change, finish) {
 			if (shown) {
@@ -186,19 +236,19 @@ $.glue.colorpicker = function()
 
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
-				$(elem).val('#ff0000');
+				elem.value = '#ff0000';
 			} else {
 				$.glue.colorpicker.set_color(def);
 			}
 
 			// add to dom
-			$('body').append(elem);
+			document.body.appendChild(elem);
 			shown = true;
 			// register event
-			$('body').bind('click', close_colorpicker);
+			document.body.addEventListener('click', close_colorpicker);
 			// open the native picker right away, mirroring farbtastic's
 			// always-visible wheel
-			elem.get(0).click();
+			elem.click();
 		}
 	};
 }();
@@ -212,49 +262,49 @@ $.glue.contextmenu = function()
 	var prev_owner = false;
 	var top = [];
 	var veto = {};
-	
-	$('.object').glueLive('glue-deselect', function(e) {
+
+	$.glue.live('.object', 'glue-deselect', function(e) {
 		// hide menu when deselecting
 		$.glue.contextmenu.hide();
 	});
-	
-	$('.object').glueLive('glue-movestart', function(e) {
+
+	$.glue.live('.object', 'glue-movestart', function(e) {
 		// hide menu when moving the selected object
 		if (this == owner) {
 			prev_owner = owner;
 			$.glue.contextmenu.hide();
 		}
 	});
-	
-	$('.object').glueLive('glue-movestop', function(e) {
+
+	$.glue.live('.object', 'glue-movestop', function(e) {
 		// show menu again when we hid the menu because of movement
 		if (this == prev_owner) {
 			$.glue.contextmenu.show(prev_owner);
 			prev_owner = false;
 		}
 	});
-	
-	$('.object').glueLive('glue-select', function(e) {
+
+	$.glue.live('.object', 'glue-select', function(e) {
 		// show menu when one object is selected
-		if ($('.glue-selected').length == 1) {
+		if (document.querySelectorAll('.glue-selected').length == 1) {
 			$.glue.contextmenu.show(this);
 		} else {
 			$.glue.contextmenu.hide();
 		}
 	});
-	
+
 	return {
 		hide: function() {
 			if (owner) {
 				while (left.length) {
 					var item = left.shift();
-					$(item.elem).glueTrigger('glue-menu-deactivate');
-					$(item.elem).detach();
+					$.glue.trigger(item.elem, 'glue-menu-deactivate');
+					item.elem.remove();
 				}
 				while (top.length) {
 					var item = top.shift();
-					$(item.elem).glueTrigger('glue-menu-deactivate');
-					$(item.elem).detach();
+					$.glue.trigger(item.elem, 'glue-menu-deactivate');
+					item.elem.remove();
 				}
 				owner = false;
 			}
@@ -267,6 +317,7 @@ $.glue.contextmenu = function()
 			}
 		},
 		register: function(cls, name, elem, prio) {
+			elem = glue_unwrap(elem);
 			if (!m[cls]) {
 				m[cls] = [];
 			}
@@ -275,6 +326,10 @@ $.glue.contextmenu = function()
 			}
 			m[cls].push({ 'name': name, 'elem': elem, 'prio': prio });
 		},
+		// unreachable in practice (nothing in the codebase calls this) - kept
+		// for API compatibility. Note cloneNode(true) (unlike jQuery's
+		// .clone(true)) does not carry over event listeners; not worth
+		// solving for dead code
 		reuse: function(cls, name, as, prio) {
 			if (prio === undefined) {
 				prio = default_prio;
@@ -282,8 +337,8 @@ $.glue.contextmenu = function()
 			for (var cur_m in m) {
 				for (var i=0; i<m[cur_m].length; i++) {
 					if (m[cur_m][i].name == name) {
-						// clone element with data and events
-						var new_elem = $(m[cur_m][i].elem).clone(true);
+						// clone element (structure only, see note above)
+						var new_elem = m[cur_m][i].elem.cloneNode(true);
 						$.glue.contextmenu.register(cls, as, new_elem, prio);
 						// return new element
 						return new_elem;
@@ -293,6 +348,7 @@ $.glue.contextmenu = function()
 			return false;
 		},
 		show: function(obj) {
+			obj = glue_unwrap(obj);
 			if (owner) {
 				if (obj == owner) {
 					return;
@@ -301,9 +357,9 @@ $.glue.contextmenu = function()
 				}
 			}
 			// unless object is locked construct default menus
-			if (!$(obj).hasClass('locked')) {
+			if (!obj.classList.contains('locked')) {
 				for (var cls in m) {
-					if ($(obj).hasClass(cls)) {
+					if (obj.classList.contains(cls)) {
 						var target;
 						// add to left or top
 						if (cls == 'object') {
@@ -338,7 +394,7 @@ $.glue.contextmenu = function()
 				}
 			}
 			// remove specific menu items again
-			var obj_cls = $(obj).attr('class').replace(/\s+/, ' ').split(' ');
+			var obj_cls = Array.from(obj.classList);
 			for (var cls in veto) {
 				for (var i=0; i < obj_cls.length; i++) {
 					if (cls == obj_cls[i]) {
@@ -362,16 +418,16 @@ $.glue.contextmenu = function()
 			// position items
 			for (var i=0; i < 2; i++) {
 				var target;
-				var cur_left = $(obj).position().left;
-				var cur_top = $(obj).position().top;
+				var cur_left = obj.offsetLeft;
+				var cur_top = obj.offsetTop;
 				var offset = 48; // menu offset (when can't calculate height or width)
 				if (i == 0) {
 					target = top;
 					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
 					// TODO (later): can be improved
 					if (left.length) {
-						if (cur_left-$(left[0].elem).outerWidth(true) < 0) {
-							cur_left = $(left[0].elem).outerWidth(true) + offset;
+						if (cur_left-outer_width(left[0].elem, true) < 0) {
+							cur_left = outer_width(left[0].elem, true) + offset;
 						}
 					// if left menu is empty shift top menu right by 48px (to make fisrt icon visible)
 					// TODO: calculate offset dynamically
@@ -385,8 +441,8 @@ $.glue.contextmenu = function()
 					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
 					// TODO (later): can be improved
 					if (top.length) {
-						if (cur_top-$(top[0].elem).outerHeight(true) < 0) {
-							cur_top = $(top[0].elem).outerHeight(true);
+						if (cur_top-outer_height(top[0].elem, true) < 0) {
+							cur_top = outer_height(top[0].elem, true);
 						}
 					// if top menu is empty shift left menu down by 48px (to make fisrt icon visible)
 					// TODO: calculate offset dynamically
@@ -399,34 +455,34 @@ $.glue.contextmenu = function()
 				// add items to dom
 				for (var j=0; j < target.length; j++) {
 					// set crucial css properties
-					$(target[j].elem).attr('id', 'glue-contextmenu-'+target[j].name);
+					target[j].elem.id = 'glue-contextmenu-'+target[j].name;
 					if (target == left) {
-						$(target[j].elem).addClass('glue-contextmenu-left');
+						target[j].elem.classList.add('glue-contextmenu-left');
 					} else {
-						$(target[j].elem).addClass('glue-contextmenu-top');
+						target[j].elem.classList.add('glue-contextmenu-top');
 					}
-					$(target[j].elem).addClass('glue-ui');
-					$(target[j].elem).css('position', 'absolute');
-					$(target[j].elem).css('visibility', 'hidden');
-					$(target[j].elem).css('z-index', '201');
+					target[j].elem.classList.add('glue-ui');
+					target[j].elem.style.position = 'absolute';
+					target[j].elem.style.visibility = 'hidden';
+					target[j].elem.style.zIndex = '201';
 					// add to dom and move
-					$('body').append(target[j].elem);
+					document.body.appendChild(target[j].elem);
 					if (target == top) {
-						$(target[j].elem).css('left', cur_left+'px');
-						var temp_top = cur_top-$(target[j].elem).outerHeight(true);
+						target[j].elem.style.left = cur_left+'px';
+						var temp_top = cur_top-outer_height(target[j].elem, true);
 						if (temp_top < 0) {
 							temp_top = 0;
 						}
-						$(target[j].elem).css('top', temp_top+'px');
-						var cur_width = $(target[j].elem).outerWidth(true);
+						target[j].elem.style.top = temp_top+'px';
+						var cur_width = outer_width(target[j].elem, true);
 					} else {
-						var temp_left = cur_left-$(target[j].elem).outerWidth(true);
+						var temp_left = cur_left-outer_width(target[j].elem, true);
 						if (temp_left < 0) {
 							temp_left = 0;
 						}
-						$(target[j].elem).css('left', temp_left+'px');
-						$(target[j].elem).css('top', cur_top+'px');
-						var cur_height = $(target[j].elem).outerHeight(true);
+						target[j].elem.style.left = temp_left+'px';
+						target[j].elem.style.top = cur_top+'px';
+						var cur_height = outer_height(target[j].elem, true);
 					}
 					// set owner and trigger event
 					$.glue.owner(target[j].elem, obj);
@@ -439,11 +495,11 @@ $.glue.contextmenu = function()
 					// no-op on an already-initialized element, safe to call
 					// every time)
 					if (window.Alpine) {
-						Alpine.initTree($(target[j].elem).get(0));
+						Alpine.initTree(target[j].elem);
 					}
-					$(target[j].elem).glueTrigger('glue-menu-activate');
+					$.glue.trigger(target[j].elem, 'glue-menu-activate');
 					// check if we still want to show the icon ;)
-					if ($(target[j].elem).css('display') == 'none') {
+					if (getComputedStyle(target[j].elem).display == 'none') {
 						continue;
 					}
 					// show it for real
@@ -452,9 +508,9 @@ $.glue.contextmenu = function()
 					} else {
 						cur_left += cur_width;
 					}
-					$(target[j].elem).css('visibility', '');
-					$(target[j].elem).hide();
-					$(target[j].elem).fadeIn(333);
+					target[j].elem.style.visibility = '';
+					target[j].elem.style.display = 'none';
+					fade_in(target[j].elem, 333);
 				}
 			}
 			owner = obj;
@@ -482,22 +538,23 @@ $.glue.grid = function()
 	var grid_width = false;
 	var grid_x = 50;
 	var grid_y = 50;
-	
+
 	var draw = function() {
 		// bit 0 draws the grid and guides
-		// i'd have preferred to use the canvas element for this, but as it 
+		// i'd have preferred to use the canvas element for this, but as it
 		// would need to be on top it'd receive all the click events..
 		// TODO (later): there seem to be an off-by-one bug in Chrome when rendering the line over an object below
 		if ((grid_mode & 1)) {
-			if (grid_height !== $(document).height() || grid_width !== $(document).width()) {
+			if (grid_height !== document.documentElement.scrollHeight || grid_width !== document.documentElement.scrollWidth) {
 				// optimization: only redraw the grid when width & height changes
 				remove();
-				grid_height = $(document).height();
-				grid_width = $(document).width();
+				grid_height = document.documentElement.scrollHeight;
+				grid_width = document.documentElement.scrollWidth;
 				// get background color
 				var bg_color = '#ffffff';	// default to white
-				if ($('body').css('background-color').length) {
-					var bg_rgb = $.glue.color.parse($('body').css('background-color'));
+				var body_bg = getComputedStyle(document.body).backgroundColor;
+				if (body_bg.length) {
+					var bg_rgb = $.glue.color.parse(body_bg);
 					// doesn't handle the complementary of rgba(0, 0, 0, 0)
 					if (bg_rgb && bg_rgb.a != 0) {
 						bg_color = $.glue.color.to_hex(bg_rgb);
@@ -505,70 +562,70 @@ $.glue.grid = function()
 				}
 				// add grid lines
 				for (var x=grid_x; x <= grid_width; x+=grid_x) {
-					var elem = $('<div></div>');
+					var elem = document.createElement('div');
 					// set crucial css properties
-					$(elem).addClass('glue-grid-y');
-					$(elem).addClass('glue-grid');
-					$(elem).addClass('glue-ui');
+					elem.classList.add('glue-grid-y');
+					elem.classList.add('glue-grid');
+					elem.classList.add('glue-ui');
 					// use complementary color
-					$(elem).css('background-color', $.glue.color.complementary(bg_color));
-					$(elem).css('height', grid_height+'px');
-					$(elem).css('left', x+'px');
-					$(elem).css('position', 'absolute');
-					$(elem).css('top', '0px');
-					$(elem).css('width', '1px');
-					$(elem).css('z-index', '200');
+					elem.style.backgroundColor = $.glue.color.complementary(bg_color);
+					elem.style.height = grid_height+'px';
+					elem.style.left = x+'px';
+					elem.style.position = 'absolute';
+					elem.style.top = '0px';
+					elem.style.width = '1px';
+					elem.style.zIndex = '200';
 					// add to dom and list
-					$('body').append(elem);
+					document.body.appendChild(elem);
 					lines.push(elem);
 				}
 				for (var y=grid_y; y <= grid_height; y+=grid_y) {
-					var elem = $('<div></div>');
-					$(elem).addClass('glue-grid-x');
-					$(elem).addClass('glue-grid');
-					$(elem).addClass('glue-ui');
+					var elem = document.createElement('div');
+					elem.classList.add('glue-grid-x');
+					elem.classList.add('glue-grid');
+					elem.classList.add('glue-ui');
 					// use complementary color
-					$(elem).css('background-color', $.glue.color.complementary(bg_color));
-					$(elem).css('height', '1px');
-					$(elem).css('left', '0px');
-					$(elem).css('position', 'absolute');
-					$(elem).css('top', y+'px');
-					$(elem).css('width', grid_width+'px');
-					$(elem).css('z-index', '200');
-					$('body').append(elem);
+					elem.style.backgroundColor = $.glue.color.complementary(bg_color);
+					elem.style.height = '1px';
+					elem.style.left = '0px';
+					elem.style.position = 'absolute';
+					elem.style.top = y+'px';
+					elem.style.width = grid_width+'px';
+					elem.style.zIndex = '200';
+					document.body.appendChild(elem);
 					lines.push(elem);
 				}
 				// and guides
 				for (var i in guides_x) {
-					var elem = $('<div></div>');
-					$(elem).addClass('glue-guide-x');
-					$(elem).addClass('glue-guide');
-					$(elem).addClass('glue-ui');
+					var elem = document.createElement('div');
+					elem.classList.add('glue-guide-x');
+					elem.classList.add('glue-guide');
+					elem.classList.add('glue-ui');
 					// use a different color than background and grid lines
-					$(elem).css('background-color', $.glue.color.average($.glue.color.complementary(bg_color), bg_color));
-					$(elem).css('height', grid_height+'px');
-					$(elem).css('left', guides_x[i]+'px');
-					$(elem).css('position', 'absolute');
-					$(elem).css('top', '0px');
-					$(elem).css('width', '1px');
-					$(elem).css('z-index', '200');
-					$('body').append(elem);
+					elem.style.backgroundColor = $.glue.color.average($.glue.color.complementary(bg_color), bg_color);
+					elem.style.height = grid_height+'px';
+					elem.style.left = guides_x[i]+'px';
+					elem.style.position = 'absolute';
+					elem.style.top = '0px';
+					elem.style.width = '1px';
+					elem.style.zIndex = '200';
+					document.body.appendChild(elem);
 					guides.push(elem);
 				}
 				for (var i in guides_y) {
-					var elem = $('<div></div>');
-					$(elem).addClass('glue-guide-y');
-					$(elem).addClass('glue-guide');
-					$(elem).addClass('glue-ui');
+					var elem = document.createElement('div');
+					elem.classList.add('glue-guide-y');
+					elem.classList.add('glue-guide');
+					elem.classList.add('glue-ui');
 					// use a different color than background and grid lines
-					$(elem).css('background-color', $.glue.color.average($.glue.color.complementary(bg_color), bg_color));
-					$(elem).css('height', '1px');
-					$(elem).css('left', '0px');
-					$(elem).css('position', 'absolute');
-					$(elem).css('top', guides_y[i]+'px');
-					$(elem).css('width', grid_width+'px');
-					$(elem).css('z-index', '200');
-					$('body').append(elem);
+					elem.style.backgroundColor = $.glue.color.average($.glue.color.complementary(bg_color), bg_color);
+					elem.style.height = '1px';
+					elem.style.left = '0px';
+					elem.style.position = 'absolute';
+					elem.style.top = guides_y[i]+'px';
+					elem.style.width = grid_width+'px';
+					elem.style.zIndex = '200';
+					document.body.appendChild(elem);
 					guides.push(elem);
 				}
 			}
@@ -579,22 +636,22 @@ $.glue.grid = function()
 		// object's Moveable drag/resize handlers reading grid_mode()/x()/y()
 		// directly, rather than through a widget option here
 	};
-	
+
 	var remove = function() {
 		// remove lines
 		while (lines.length) {
 			var line = lines.shift();
-			$(line).remove();
+			line.remove();
 		}
 		// and guides
 		while (guides.length) {
 			var guide = guides.shift();
-			$(guide).remove();
+			guide.remove();
 		}
 		grid_height = false;
 		grid_width = false;
 	};
-	
+
 	return {
 		add_guide_x: function(y) {
 			guides_x.push(y);
@@ -643,40 +700,40 @@ $.glue.menu = function()
 	var m = {};
 	var prev_menu = '';
 	var spawn_coords = false;
-	
+
 	var close_menu = function(e) {
 		// close menu when clicking outside of an ui element
-		if (!$(e.target).hasClass('glue-ui') && $(e.target).parents('.glue-ui').length == 0) {
+		if (!e.target.classList.contains('glue-ui') && !e.target.closest('.glue-ui')) {
 			// this also unregisters the event
-			// when we close a menu like this we want to keep the name of the 
+			// when we close a menu like this we want to keep the name of the
 			// previous menu, hence false
 			$.glue.menu.hide(false);
 		}
 	};
-	
-	$('.object').glueLive('glue-select', function(e) {
+
+	$.glue.live('.object', 'glue-select', function(e) {
 		// hide any menu when an object gets selected
 		if (cur) {
 			$.glue.menu.hide();
 		}
 	});
-	
+
 	return {
 		// hide any currently shown menus
 		hide: function(reset_prev_menu) {
-			// reset the previous menu, so we can launch the same menu immediately 
+			// reset the previous menu, so we can launch the same menu immediately
 			// for almost all callers (except close_menu above)
 			if (reset_prev_menu === undefined || reset_prev_menu) {
 				prev_menu = '';
 			}
 			if (cur) {
 				for (var i=0; i < cur.length; i++) {
-					$(cur[i].elem).glueTrigger('glue-menu-deactivate');
-					$(cur[i].elem).detach();
+					$.glue.trigger(cur[i].elem, 'glue-menu-deactivate');
+					cur[i].elem.remove();
 				}
 				cur = false;
 			}
-			$('body').unbind('click', close_menu);
+			document.body.removeEventListener('click', close_menu);
 		},
 		// return whether or not a menu is shown
 		// menu .. menu name (if undefined, any menu)
@@ -705,6 +762,7 @@ $.glue.menu = function()
 		// elem .. element to add
 		// prio .. priority (ascending) - optional
 		register: function(menu, elem, prio) {
+			elem = glue_unwrap(elem);
 			if (!m[menu]) {
 				m[menu] = [];
 			}
@@ -738,10 +796,10 @@ $.glue.menu = function()
 			}
 			// default x & y coordinates
 			if (x === undefined) {
-				x = $(window).width()/2;
+				x = window.innerWidth/2;
 			}
 			if (y === undefined) {
-				y = $(window).height()/2;
+				y = window.innerHeight/2;
 			}
 			var max_w = 0;
 			var max_h = 0;
@@ -751,35 +809,35 @@ $.glue.menu = function()
 			for (var i=0; i < cur.length; i++) {
 				var elem = cur[i].elem;
 				// set crucial css properties
-				$(elem).addClass('glue-menu-'+menu);
-				$(elem).addClass('glue-menu');
-				$(elem).addClass('glue-ui');
-				$(elem).css('left', x+'px');
-				$(elem).css('position', 'fixed');
-				$(elem).css('top', y+'px');
-				$(elem).css('visibility', 'hidden');
-				$(elem).css('z-index', '201');
+				elem.classList.add('glue-menu-'+menu);
+				elem.classList.add('glue-menu');
+				elem.classList.add('glue-ui');
+				elem.style.left = x+'px';
+				elem.style.position = 'fixed';
+				elem.style.top = y+'px';
+				elem.style.visibility = 'hidden';
+				elem.style.zIndex = '201';
 				// add to dom
-				$('body').append(elem);
+				document.body.appendChild(elem);
 				// see the equivalent comment in $.glue.contextmenu.show()
 				if (window.Alpine) {
-					Alpine.initTree($(elem).get(0));
+					Alpine.initTree(elem);
 				}
 				// trigger event
-				$(elem).glueTrigger('glue-menu-activate');
+				$.glue.trigger(elem, 'glue-menu-activate');
 				// check if we still want to show the icon ;)
-				if ($(elem).css('display') == 'none') {
+				if (getComputedStyle(elem).display == 'none') {
 					continue;
 				} else {
 					num_shown++;
 				}
 				// calculate max width & height
 				// make sure you specify the width & height attribute for images etc
-				if (max_w < $(elem).outerWidth(true)) {
-					max_w = $(elem).outerWidth(true);
+				if (max_w < outer_width(elem, true)) {
+					max_w = outer_width(elem, true);
 				}
-				if (max_h < $(elem).outerHeight(true)) {
-					max_h = $(elem).outerHeight(true);
+				if (max_h < outer_height(elem, true)) {
+					max_h = outer_height(elem, true);
 				}
 			}
 			// position items
@@ -796,7 +854,7 @@ $.glue.menu = function()
 			for (var i=0; i < cur.length; i++) {
 				var elem = cur[i].elem;
 				// check if the icon is shown
-				if ($(elem).css('display') == 'none') {
+				if (getComputedStyle(elem).display == 'none') {
 					continue;
 				}
 				if (cur_col == num_cols) {
@@ -804,22 +862,27 @@ $.glue.menu = function()
 					cur_col = 0;
 				}
 				// make visible
-				$(elem).css('opacity', '0.0');
-				$(elem).css('visibility', '');
-				$(elem).animate({
-					left: (x-(num_rows*max_w)/2+cur_col*max_w)+'px',
-					opacity: 1.0,
-					top: (y-(num_rows*max_h)/2+cur_row*max_h)+'px'
-				}, 200);
+				elem.style.opacity = '0.0';
+				elem.style.visibility = '';
+				(function(elem, target_left, target_top) {
+					requestAnimationFrame(function() {
+						elem.style.transition = 'left 200ms, top 200ms, opacity 200ms';
+						requestAnimationFrame(function() {
+							elem.style.left = target_left;
+							elem.style.top = target_top;
+							elem.style.opacity = '1.0';
+						});
+					});
+				})(elem, (x-(num_rows*max_w)/2+cur_col*max_w)+'px', (y-(num_rows*max_h)/2+cur_row*max_h)+'px');
 				cur_col++;
 			}
 			// register close menu event and set prev_menu
-			$('body').bind('click', close_menu);
+			document.body.addEventListener('click', close_menu);
 			prev_menu = menu;
 			// convert x, y to page and save them
-			spawn_coords = {x: $(document).scrollLeft()+x, y: $(document).scrollTop()+y};
+			spawn_coords = {x: document.documentElement.scrollLeft+x, y: document.documentElement.scrollTop+y};
 			return true;
-		}, 
+		},
 		spawn_coords: function() {
 			return spawn_coords;
 		}
@@ -838,20 +901,25 @@ $.glue.object = function()
 	var moveables = new WeakMap();
 
 	// only show resize handles while an object is selected, not permanently
-	$('.object').glueLive('glue-select', function(e) {
+	$.glue.live('.object', 'glue-select', function(e) {
 		var m = moveables.get(this);
-		if (m && $(this).hasClass('resizable') && !$(this).hasClass('locked')) {
+		if (m && this.classList.contains('resizable') && !this.classList.contains('locked')) {
 			m.resizable = true;
 		}
 	});
-	$('.object').glueLive('glue-deselect', function(e) {
+	$.glue.live('.object', 'glue-deselect', function(e) {
 		var m = moveables.get(this);
 		if (m) {
 			m.resizable = false;
 		}
 	});
 
-	$(document).ready(function() {
+	document.addEventListener('DOMContentLoaded', function() {
+		// the clone (first arg) is still a jQuery object here - save()
+		// below keeps using jQuery's .clone() since several modules'
+		// register_alter_pre_save callbacks (download/iframe/webvideo/text)
+		// still expect a jQuery-wrapped element; converts once text-edit.js
+		// (the last remaining jQuery-dependent module) does
 		$.glue.object.register_alter_pre_save('glue-selected', function(obj, orig) {
 			var border = $(orig).outerHeight()-$(orig).innerHeight();
 			var p = $(orig).position();
@@ -868,18 +936,19 @@ $.glue.object = function()
 	return {
 		// obj .. element
 		register: function(obj) {
+			obj = glue_unwrap(obj);
 			// prevent double registration
-			if (reg_objs[$(obj).attr('id')]) {
+			if (reg_objs[obj.id]) {
 				return false;
 			} else {
-				reg_objs[$(obj).attr('id')] = true;
+				reg_objs[obj.id] = true;
 			}
 			// make sure everything has a z-index
-			if (isNaN(parseInt($(obj).css('z-index')))) {
-				$(obj).css('z-index', $.glue.stack.default_z());
+			if (isNaN(parseInt(getComputedStyle(obj).zIndex))) {
+				obj.style.zIndex = $.glue.stack.default_z();
 			}
 
-			var can_resize = $(obj).hasClass('resizable');
+			var can_resize = obj.classList.contains('resizable');
 			var m = new Moveable(document.body, {
 				target: obj,
 				container: document.body,
@@ -898,7 +967,7 @@ $.glue.object = function()
 				scrollThreshold: 40,
 				scrollThrottleTime: 30
 			});
-			moveables.set($(obj).get(0), m);
+			moveables.set(obj, m);
 			// Moveable's control box (drag/resize handles) stays
 			// visibility:hidden - and thus unclickable - until a second
 			// internal render pass completes; without user interaction that
@@ -921,8 +990,8 @@ $.glue.object = function()
 			m.on('dragStart', function(e) {
 				drag_started = false;
 				drag_axis = false;
-				drag_orig_left = $(obj).position().left;
-				drag_orig_top = $(obj).position().top;
+				drag_orig_left = obj.offsetLeft;
+				drag_orig_top = obj.offsetTop;
 				drag_mouse_start_x = e.clientX;
 				drag_mouse_start_y = e.clientY;
 			}).on('drag', function(e) {
@@ -931,12 +1000,12 @@ $.glue.object = function()
 						return;
 					}
 					drag_started = true;
-					if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
+					if (document.querySelectorAll('.glue-selected').length > 1 && obj.classList.contains('glue-selected')) {
 						drag_multi_prev_left = drag_orig_left;
 						drag_multi_prev_top = drag_orig_top;
-						$('.glue-selected').glueTrigger('glue-movestart');
+						$.glue.trigger('.glue-selected', 'glue-movestart');
 					} else {
-						$(obj).glueTrigger('glue-movestart');
+						$.glue.trigger(obj, 'glue-movestart');
 					}
 				}
 
@@ -968,17 +1037,16 @@ $.glue.object = function()
 					top = Math.round(top/$.glue.grid.y())*$.glue.grid.y();
 				}
 
-				$(obj).css('left', left+'px');
-				$(obj).css('top', top+'px');
+				obj.style.left = left+'px';
+				obj.style.top = top+'px';
 
-				if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
+				if (document.querySelectorAll('.glue-selected').length > 1 && obj.classList.contains('glue-selected')) {
 					// dragging multiple selected objects
 					var delta_left = left-drag_multi_prev_left;
 					var delta_top = top-drag_multi_prev_top;
-					$('.glue-selected').not(obj).each(function() {
-						var p = $(this).position();
-						$(this).css('left', (p.left+delta_left)+'px');
-						$(this).css('top', (p.top+delta_top)+'px');
+					Array.from(document.querySelectorAll('.glue-selected')).filter(function(el) { return el !== obj; }).forEach(function(el) {
+						el.style.left = (el.offsetLeft+delta_left)+'px';
+						el.style.top = (el.offsetTop+delta_top)+'px';
 					});
 					drag_multi_prev_left = left;
 					drag_multi_prev_top = top;
@@ -987,10 +1055,10 @@ $.glue.object = function()
 				if (!drag_started) {
 					return;
 				}
-				if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
-					$('.glue-selected').glueTrigger('glue-movestop');
+				if (document.querySelectorAll('.glue-selected').length > 1 && obj.classList.contains('glue-selected')) {
+					$.glue.trigger('.glue-selected', 'glue-movestop');
 				} else {
-					$(obj).glueTrigger('glue-movestop');
+					$.glue.trigger(obj, 'glue-movestop');
 				}
 			}).on('scroll', function(e) {
 				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
@@ -998,7 +1066,7 @@ $.glue.object = function()
 
 			if (can_resize) {
 				m.on('resizeStart', function(e) {
-					$(obj).glueTrigger('glue-resizestart');
+					$.glue.trigger(obj, 'glue-resizestart');
 				}).on('resize', function(e) {
 					var width = e.width;
 					var height = e.height;
@@ -1007,19 +1075,19 @@ $.glue.object = function()
 						width = Math.round(width/$.glue.grid.x())*$.glue.grid.x();
 						height = Math.round(height/$.glue.grid.y())*$.glue.grid.y();
 					}
-					$(obj).css('width', width+'px');
-					$(obj).css('height', height+'px');
-					$(obj).css('left', e.drag.left+'px');
-					$(obj).css('top', e.drag.top+'px');
-					$(obj).glueTrigger('glue-resize');
+					obj.style.width = width+'px';
+					obj.style.height = height+'px';
+					obj.style.left = e.drag.left+'px';
+					obj.style.top = e.drag.top+'px';
+					$.glue.trigger(obj, 'glue-resize');
 				}).on('resizeEnd', function(e) {
 					$.glue.object.save(obj);
-					$(obj).glueTrigger('glue-resizestop');
+					$.glue.trigger(obj, 'glue-resizestop');
 					$.glue.canvas.update(obj);
 				});
 			}
 
-			$(obj).glueTrigger('glue-register');
+			$.glue.trigger(obj, 'glue-register');
 			$.glue.canvas.update(obj);
 		},
 		register_alter_pre_save: function(cls, func) {
@@ -1031,8 +1099,14 @@ $.glue.object = function()
 			// to. Kept for backward compatibility with existing callers.
 		},
 		save: function(obj) {
+			obj = glue_unwrap(obj);
+			// kept as a jQuery clone (not obj.cloneNode(true)) because
+			// several modules' register_alter_pre_save callbacks (download/
+			// iframe/webvideo/text) still expect a jQuery-wrapped element -
+			// converts once text-edit.js does
 			var elem = $(obj).clone();
-			var elem_cls = $(elem).attr('class').replace(/\s+/, ' ').split(' ');
+			var raw = elem.get(0);
+			var elem_cls = Array.from(raw.classList);
 			for (var i=0; i < elem_cls.length; i++) {
 				if (typeof alter_pre_save[elem_cls[i]] == 'function') {
 					alter_pre_save[elem_cls[i]](elem, obj);
@@ -1040,9 +1114,9 @@ $.glue.object = function()
 			}
 			// trim element content
 			// necessary, otherwise we'd be sending \n\t back again
-			$(elem).html($.trim($(elem).html()));
+			raw.innerHTML = raw.innerHTML.trim();
 			// convert to string
-			var html = $('<div></div>').html(elem).html();
+			var html = raw.outerHTML;
 			// DEBUG
 			//console.log(html);
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
@@ -1052,15 +1126,16 @@ $.glue.object = function()
 		// undefined - used by modules (e.g. lock.js) that need to toggle
 		// draggable/resizable directly
 		moveable_of: function(obj) {
-			return moveables.get($(obj).get(0));
+			return moveables.get(glue_unwrap(obj));
 		},
 		unregister: function(obj) {
-			var m = moveables.get($(obj).get(0));
+			obj = glue_unwrap(obj);
+			var m = moveables.get(obj);
 			if (m) {
 				m.destroy();
-				moveables.delete($(obj).get(0));
+				moveables.delete(obj);
 			}
-			$(obj).glueTrigger('glue-unregister');
+			$.glue.trigger(obj, 'glue-unregister');
 			// can't update canvas here as object to be deleted is still in the
 			// dom
 		}
@@ -1070,11 +1145,11 @@ $.glue.object = function()
 $.glue.sel = function()
 {
 	var key_moving = false;
-	
+
 	// this could probably also be body
-	$('html').bind('click', function(e) {
-		if (e.target == $('body').get(0)) {
-			if ($('.glue-selected').length) {
+	document.documentElement.addEventListener('click', function(e) {
+		if (e.target == document.body) {
+			if (document.querySelectorAll('.glue-selected').length) {
 				// deselect when clicking on background
 				$.glue.sel.none();
 				// prevent the menu from firing
@@ -1082,53 +1157,61 @@ $.glue.sel = function()
 			}
 		}
 	});
-		
-	$('html').bind('keydown', function(e) {
+
+	document.documentElement.addEventListener('keydown', function(e) {
 		if (e.which == 9) {
 			// cycle through all objects with tab key
-			if ($('.glue-selected').length < 2) {
+			if (document.querySelectorAll('.glue-selected').length < 2) {
 				var next = false;
-				if ($('.glue-selected').next('.object').length) {
-					next = $('.glue-selected').next('.object');
-				} else {
-					next = $('.object').first();
+				var selectedEls = document.querySelectorAll('.glue-selected');
+				if (selectedEls.length == 1) {
+					var candidate = selectedEls[0].nextElementSibling;
+					if (candidate && candidate.classList.contains('object')) {
+						next = candidate;
+					}
+				}
+				if (!next) {
+					next = document.querySelector('.object');
 				}
 				if (next) {
 					$.glue.sel.none();
 					$.glue.sel.select(next);
 					// scroll to the selected objects if not currently visible
-					var window_min_x = $(document).scrollLeft();
-					var window_max_x = window_min_x+$(window).width();
-					var window_min_y = $(document).scrollTop();
-					var window_max_y = window_min_y+$(window).height();
-					var h = $(next).outerHeight();
-					var p = $(next).position();
-					var w = $(next).outerWidth();
+					var window_min_x = document.documentElement.scrollLeft;
+					var window_max_x = window_min_x+window.innerWidth;
+					var window_min_y = document.documentElement.scrollTop;
+					var window_max_y = window_min_y+window.innerHeight;
+					var h = outer_height(next);
+					var p = { left: next.offsetLeft, top: next.offsetTop };
+					var w = outer_width(next);
 					// fit the entire object on the screen
-					// TODO (later): scroll a bit more up/left for the any 
+					// TODO (later): scroll a bit more up/left for the any
 					// context menu to fit in there too
 					if (p.left < window_min_x) {
-						$(document).scrollLeft(p.left);
+						document.documentElement.scrollLeft = p.left;
 					} else if (window_max_x < p.left+w) {
-						$(document).scrollLeft(window_min_x+p.left+w-window_max_x);
+						document.documentElement.scrollLeft = window_min_x+p.left+w-window_max_x;
 					}
 					if (p.top < window_min_y) {
-						$(document).scrollTop(p.top);
+						document.documentElement.scrollTop = p.top;
 					} else if (window_max_y < p.top+h) {
-						$(document).scrollTop(window_min_y+p.top+h-window_max_y);
+						document.documentElement.scrollTop = window_min_y+p.top+h-window_max_y;
 					}
 				}
 			}
+			e.preventDefault();
 			return false;
-		} else if (33 == e.which && e.shiftKey && $('.glue-selected').length) {
+		} else if (33 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pageup: move objects to top of stack
 			// we can't use ctrl+page{up,down} as this cycles through tabs
 			// only prevent scrolling here
+			e.preventDefault();
 			return false;
-		} else if (34 == e.which && e.shiftKey && $('.glue-selected').length) {
+		} else if (34 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pagedown: move objects to bottom of stack
+			e.preventDefault();
 			return false;
-		} else if (37 <= e.which && e.which <= 40 && $('.glue-selected').length) {
+		} else if (37 <= e.which && e.which <= 40 && document.querySelectorAll('.glue-selected').length) {
 			// move selected elements with arrow keys
 			var add_x = 0;
 			var add_y = 0;
@@ -1147,140 +1230,147 @@ $.glue.sel = function()
 				add_x *= $.glue.grid.x();
 				add_y *= $.glue.grid.y();
 			}
-			$('.glue-selected').not('.locked').each(function() {
-				var p = $(this).position();
+			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
 				// prevent elements from going completely offscreen
-				if (1 < p.left+add_x+$(this).outerWidth()) {
-					$(this).css('left', (p.left+add_x)+'px');
+				if (1 < el.offsetLeft+add_x+el.offsetWidth) {
+					el.style.left = (el.offsetLeft+add_x)+'px';
 				}
-				if (1 < p.top+add_y+$(this).outerHeight()) {
-					$(this).css('top', (p.top+add_y)+'px');
+				if (1 < el.offsetTop+add_y+el.offsetHeight) {
+					el.style.top = (el.offsetTop+add_y)+'px';
 				}
 			});
 			// scroll window if neccessary
 			// TODO (later): implement for moving multiple objects
-			if ($('.glue-selected').length == 1) {
-				var window_min_x = $(document).scrollLeft();
-				var window_max_x = window_min_x+$(window).width();
-				var window_min_y = $(document).scrollTop();
-				var window_max_y = window_min_y+$(window).height();
-				var elem = $('.glue-selected');
-				var p = $(elem).position();
-				var w = $(elem).outerWidth();
-				var h = $(elem).outerHeight();
+			if (document.querySelectorAll('.glue-selected').length == 1) {
+				var window_min_x = document.documentElement.scrollLeft;
+				var window_max_x = window_min_x+window.innerWidth;
+				var window_min_y = document.documentElement.scrollTop;
+				var window_max_y = window_min_y+window.innerHeight;
+				var elem = document.querySelector('.glue-selected');
+				var p = { left: elem.offsetLeft, top: elem.offsetTop };
+				var w = outer_width(elem);
+				var h = outer_height(elem);
 				if (p.left < window_min_x) {
-					$(document).scrollLeft(p.left);
+					document.documentElement.scrollLeft = p.left;
 				} else if (window_max_x < p.left+w) {
-					$(document).scrollLeft(p.left+w);
+					document.documentElement.scrollLeft = p.left+w;
 				}
 				if (p.top < window_min_y) {
-					$(document).scrollTop(p.top);
+					document.documentElement.scrollTop = p.top;
 				} else if (window_max_y < p.top+h) {
-					$(document).scrollTop(p.top+h);
+					document.documentElement.scrollTop = p.top+h;
 				}
 			}
 			// trigger event (once, cleared in keyup)
 			if (!key_moving) {
-				$('.glue-selected').not('.locked').glueTrigger('glue-movestart');
+				$.glue.trigger('.glue-selected:not(.locked)', 'glue-movestart');
 				key_moving = true;
 			}
 			// prevent window scrolling
+			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 65) {
 			// select all objects not locked objects
 			// selected locked objects will be unselected
-			$('.object').not('.glue-selected').not('.locked').each(function() {
-				$.glue.sel.select($(this));
+			document.querySelectorAll('.object:not(.glue-selected):not(.locked)').forEach(function(el) {
+				$.glue.sel.select(el);
 			});
 			// exclude locked objects from selection
-			$('.locked.glue-selected').each(function() {
-				$.glue.sel.deselect($(this));
+			document.querySelectorAll('.locked.glue-selected').forEach(function(el) {
+				$.glue.sel.deselect(el);
 			});
+			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 68) {
 			// select none
 			$.glue.sel.none();
+			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 73) {
 			// invert selection
-			var next = $('.object').not('.glue-selected').not('.locked');
+			var next = document.querySelectorAll('.object:not(.glue-selected):not(.locked)');
 			$.glue.sel.none();
-			$(next).each(function() {
-				$.glue.sel.select($(this));
+			next.forEach(function(el) {
+				$.glue.sel.select(el);
 			});
+			e.preventDefault();
 			return false;
 		} else {
 			// DEBUG
 			//console.log('html keydown '+e.which);
 		}
 	});
-	
-	$('html').bind('keyup', function(e) {
-		if (33 == e.which && e.shiftKey && $('.glue-selected').length) {
+
+	document.documentElement.addEventListener('keyup', function(e) {
+		if (33 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pageup: move objects to top of stack
-			$('.glue-selected').not('.locked').each(function() {
-				$.glue.stack.to_top($(this));
-				$.glue.object.save($(this));
+			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
+				$.glue.stack.to_top(el);
+				$.glue.object.save(el);
 			});
 			$.glue.stack.compress();
+			e.preventDefault();
 			return false;
-		} else if (34 == e.which && e.shiftKey && $('.glue-selected').length) {
+		} else if (34 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pagedown: move objects to bottom of stack
-			$('.glue-selected').not('.locked').each(function() {
-				$.glue.stack.to_bottom($(this));
-				$.glue.object.save($(this));
+			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
+				$.glue.stack.to_bottom(el);
+				$.glue.object.save(el);
 			});
 			$.glue.stack.compress();
+			e.preventDefault();
 			return false;
-		} else if (37 <= e.which && e.which <= 40 && $('.glue-selected').length) {
+		} else if (37 <= e.which && e.which <= 40 && document.querySelectorAll('.glue-selected').length) {
 			// move selected elements with arrow keys
-			$('.glue-selected').not('.locked').glueTrigger('glue-movestop');
+			$.glue.trigger('.glue-selected:not(.locked)', 'glue-movestop');
 			key_moving = false;
+			e.preventDefault();
 			return false;
-		} else if (e.which == 46 && $('.glue-selected').length) {
+		} else if (e.which == 46 && document.querySelectorAll('.glue-selected').length) {
 			// delete selected objects
 			// this is pretty much copied from object-edit.js
-			var objs = $('.glue-selected').not('.locked');
-			$(objs).each(function() {
-				var id = $(this).attr('id');
-				$.glue.object.unregister($(this));
-				$(this).remove();
+			var objs = document.querySelectorAll('.glue-selected:not(.locked)');
+			objs.forEach(function(el) {
+				var id = el.id;
+				$.glue.object.unregister(el);
+				el.remove();
 				// delete in backend as well
 				$.glue.backend({ method: 'glue.delete_object', name: id });
 				// update canvas
 				$.glue.canvas.update();
 			});
+			e.preventDefault();
 			return false;
 		} else {
 			// DEBUG
 			//console.log('html keydown '+e.which);
 		}
 	});
-	
+
 	// note: drag/resize (including axis-constrain, grid-snap, and
 	// multi-select sync) are wired up per-object in $.glue.object.register()
 	// via Moveable's dragStart/drag/dragEnd instead of delegated handlers
 	// here, since Moveable doesn't emit jQuery-style 'drag'/'dragstart' DOM
 	// events the way jQuery UI's draggable() did
 
-	$('.object').glueLive('click', function(e) {
+	$.glue.live('.object', 'click', function(e) {
 		// TODO (later): moving objects after shift clicking on them does not seem to work right on Chrome, document and fill a bug upstream
-		if (!e.shiftKey && !$(this).hasClass('glue-selected')) {
+		if (!e.shiftKey && !this.classList.contains('glue-selected')) {
 			$.glue.sel.none();
 		}
-		if (e.shiftKey && $(this).hasClass('glue-selected')) {
-			$.glue.sel.deselect($(this));
-		} 
+		if (e.shiftKey && this.classList.contains('glue-selected')) {
+			$.glue.sel.deselect(this);
+		}
 		// shift clicking involving locked object will result in no action
-		else if (e.shiftKey && $(this).hasClass('locked') || $('.glue-selected').hasClass('locked')) {
+		else if (e.shiftKey && this.classList.contains('locked') || document.querySelector('.glue-selected.locked')) {
 			return;
 		} else {
-			$.glue.sel.select($(this));
+			$.glue.sel.select(this);
 		}
 
 	});
-	
-	$('.object').glueLive('glue-movestop', function(e) {
+
+	$.glue.live('.object', 'glue-movestop', function(e) {
 		// update tooltip
 		$.glue.object.resizable_update_tooltip(this);
 		// save object
@@ -1288,60 +1378,62 @@ $.glue.sel = function()
 		// update canvas
 		$.glue.canvas.update(this);
 	});
-	
-	$('.object').glueLive('glue-unregister', function(e) {
-		$.glue.sel.deselect($(this));
+
+	$.glue.live('.object', 'glue-unregister', function(e) {
+		$.glue.sel.deselect(this);
 	});
-	
+
 	return {
 		// deselect an object
 		// obj .. element
 		deselect: function(obj) {
-			if ($(obj).hasClass('glue-selected')) {
-				var border = $(obj).outerHeight()-$(obj).innerHeight();
-				$(obj).removeClass('glue-selected');
-				$(obj).glueTrigger('glue-deselect');
-				var p = $(obj).position();
-				$(obj).css('left', (p.left+border/2)+'px');
-				$(obj).css('top', (p.top+border/2)+'px');
-				//$(obj).css('width', ($(obj).width()+border)+'px');
-				//$(obj).css('height', ($(obj).height()+border)+'px');
+			obj = glue_unwrap(obj);
+			if (obj.classList.contains('glue-selected')) {
+				var border = obj.offsetHeight-obj.clientHeight;
+				obj.classList.remove('glue-selected');
+				$.glue.trigger(obj, 'glue-deselect');
+				var p = { left: obj.offsetLeft, top: obj.offsetTop };
+				obj.style.left = (p.left+border/2)+'px';
+				obj.style.top = (p.top+border/2)+'px';
+				//obj.style.width = (obj.offsetWidth+border)+'px';
+				//obj.style.height = (obj.offsetHeight+border)+'px';
 				// DEBUG
-				//console.log('deselected '+$(obj).attr('id'));
+				//console.log('deselected '+obj.id);
 			}
 		},
 		// select none
 		none: function() {
-			$('.glue-selected').each(function() {
-				$.glue.sel.deselect($(this));
+			document.querySelectorAll('.glue-selected').forEach(function(el) {
+				$.glue.sel.deselect(el);
 			});
 		},
 		// select an object
 		// obj .. element
 		select: function(obj) {
+			obj = glue_unwrap(obj);
 			// TODO (later): handle more than one obj (and change callers)
-			if (!$(obj).hasClass('glue-selected')) {
-				$(obj).addClass('glue-selected');
-				$(obj).glueTrigger('glue-select');
-				// TODO (later): the following code works for dashed borders but 
-				// not for solid ones - read out the border-style on the fly and 
-				// act accordingly (there seem to be a problem with getting the 
+			if (!obj.classList.contains('glue-selected')) {
+				obj.classList.add('glue-selected');
+				$.glue.trigger(obj, 'glue-select');
+				// TODO (later): the following code works for dashed borders but
+				// not for solid ones - read out the border-style on the fly and
+				// act accordingly (there seem to be a problem with getting the
 				// information through jQuery 1.4.3 however)
 				// also needs changes above and in register_alter_pre_save
-				var p = $(obj).position();
-				var border = $(obj).outerHeight()-$(obj).innerHeight();
-				$(obj).css('left', (p.left-border/2)+'px');
-				$(obj).css('top', (p.top-border/2)+'px');
-				//$(obj).css('width', ($(obj).width()-border)+'px');
-				//$(obj).css('height', ($(obj).height()-border)+'px');
+				var p = { left: obj.offsetLeft, top: obj.offsetTop };
+				var border = obj.offsetHeight-obj.clientHeight;
+				obj.style.left = (p.left-border/2)+'px';
+				obj.style.top = (p.top-border/2)+'px';
+				//obj.style.width = (obj.offsetWidth-border)+'px';
+				//obj.style.height = (obj.offsetHeight-border)+'px';
 				// DEBUG
-				//console.log('selected '+$(obj).attr('id'));
+				//console.log('selected '+obj.id);
 			}
 		},
 		// return if an object is selected
 		// obj .. element
 		selected: function(obj) {
-			return $(obj).hasClass('glue-selected');
+			return glue_unwrap(obj).classList.contains('glue-selected');
 		}
 	};
 }();
@@ -1354,21 +1446,21 @@ $.glue.slider = function()
 			if (typeof change == 'function') {
 				change(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
 			}
-			return false;
+			e.preventDefault();
 		};
 		var mouseup = function(e) {
-			$('html').unbind('mousemove', mousemove);
-			$('html').unbind('mouseup', mouseup);
+			document.documentElement.removeEventListener('mousemove', mousemove);
+			document.documentElement.removeEventListener('mouseup', mouseup);
 			if (typeof change == 'function') {
 				change(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
 			}
 			if (typeof stop == 'function') {
 				stop(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
 			}
-			return false;
+			e.preventDefault();
 		};
-		$('html').bind('mousemove', mousemove);
-		$('html').bind('mouseup', mouseup);	
+		document.documentElement.addEventListener('mousemove', mousemove);
+		document.documentElement.addEventListener('mouseup', mouseup);
 	};
 }();
 
@@ -1377,30 +1469,30 @@ $.glue.stack = function()
 	var default_z = 100;
 	var max_z = 199;
 	var min_z = 0;
-	
+
 	var intersecting = function(a, b) {
-		var a_h = $(a).outerHeight();
-		var a_p = $(a).position();
-		var a_w = $(a).outerWidth();
-		var b_h = $(b).outerHeight();
-		var b_p = $(b).position();
-		var b_w = $(b).outerWidth();
-		if ((a_p.left <= b_p.left+b_w && b_p.left <= a_p.left+a_w) && 
+		var a_h = outer_height(a);
+		var a_p = { left: a.offsetLeft, top: a.offsetTop };
+		var a_w = outer_width(a);
+		var b_h = outer_height(b);
+		var b_p = { left: b.offsetLeft, top: b.offsetTop };
+		var b_w = outer_width(b);
+		if ((a_p.left <= b_p.left+b_w && b_p.left <= a_p.left+a_w) &&
 			(a_p.top <= b_p.top+b_h && b_p.top <= a_p.top+a_h)) {
 			return true;
 		} else {
 			return false;
 		}
 	};
-	
+
 	return {
 		compress: function() {
 			var max = min_z-1;
 			var min = max_z+1;
 			var shift = 0;
 			// get min and max z of all objects
-			$('.object').not('.locked').each(function() {
-				var z = parseInt($(this).css('z-index'));
+			document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+				var z = parseInt(getComputedStyle(el).zIndex);
 				if (isNaN(z)) {
 					return;
 				}
@@ -1416,8 +1508,8 @@ $.glue.stack = function()
 				// for each z-index level
 				// check if there is an object in this level
 				var found = false;
-				$('.object').not('.locked').each(function() {
-					var z = parseInt($(this).css('z-index'));
+				document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+					var z = parseInt(getComputedStyle(el).zIndex);
 					if (isNaN(z)) {
 						return;
 					} else if (z == i) {
@@ -1429,13 +1521,13 @@ $.glue.stack = function()
 					// DEBUG
 					//console.log('compressing level '+i);
 					max--;
-					$('.object').not('.locked').each(function() {
-						var z = parseInt($(this).css('z-index'));
+					document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+						var z = parseInt(getComputedStyle(el).zIndex);
 						if (isNaN(z)) {
 							return;
 						} else if (i < z) {
-							$(this).css('z-index', --z);
-							$(this).addClass('need_save');
+							el.style.zIndex = --z;
+							el.classList.add('need_save');
 						}
 					});
 				}
@@ -1447,36 +1539,40 @@ $.glue.stack = function()
 			if (Math.abs(shift) < 20) {
 				shift = 0;
 			} else {
-				$('.object').addClass('need_save');
+				document.querySelectorAll('.object').forEach(function(el) {
+					el.classList.add('need_save');
+				});
 			}
 			// save objects
-			$('.need_save').each(function() {
-				var z = parseInt($(this).css('z-index'));
+			document.querySelectorAll('.need_save').forEach(function(el) {
+				var z = parseInt(getComputedStyle(el).zIndex);
 				if (!isNaN(z)) {
-					$(this).css('z-index', z+shift);
-					$.glue.object.save(this);
+					el.style.zIndex = z+shift;
+					$.glue.object.save(el);
 				}
-				$(this).removeClass('need_save');
+				el.classList.remove('need_save');
 			});
 		},
 		default_z: function() {
 			return default_z;
 		},
 		to_bottom: function(obj) {
+			obj = glue_unwrap(obj);
 			var local_min_z = max_z+1;
-			var old_z = parseInt($(obj).css('z-index'));
-			$('.object').not('.locked').each(function() {
-				if (this == $(obj).get(0)) {
+			var old_z = parseInt(getComputedStyle(obj).zIndex);
+			document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+				if (el == obj) {
 					return;
 				}
-				if (!intersecting(obj, this)) {
+				if (!intersecting(obj, el)) {
 					return;
 				} else {
 					// DEBUG
-					//console.log('object intersects '+$(this).attr('id'));
+					//console.log('object intersects '+el.id);
 				}
-				if ($(this).css('z-index').length) {
-					var z = parseInt($(this).css('z-index'));
+				var z_str = getComputedStyle(el).zIndex;
+				if (z_str.length) {
+					var z = parseInt(z_str);
 					if (!isNaN(z) && z < local_min_z) {
 						local_min_z = z;
 					}
@@ -1484,10 +1580,10 @@ $.glue.stack = function()
 			});
 			// check if we need to update the object
 			if (isNaN(old_z) || local_min_z <= old_z) {
-				// check if we really found an intersecting element (otherwise 
+				// check if we really found an intersecting element (otherwise
 				// local_min_z is max_z+1) and if we are inside min_z
 				if (local_min_z <= max_z && min_z < local_min_z) {
-					$(obj).css('z-index', local_min_z-1);
+					obj.style.zIndex = local_min_z-1;
 					// DEBUG
 					//console.log('set z-index to '+(local_min_z-1));
 					return true;
@@ -1496,20 +1592,22 @@ $.glue.stack = function()
 			return false;
 		},
 		to_top: function(obj) {
+			obj = glue_unwrap(obj);
 			var local_max_z = min_z-1;
-			var old_z = parseInt($(obj).css('z-index'));
-			$('.object').not('.locked').each(function() {
-				if (this == $(obj).get(0)) {
+			var old_z = parseInt(getComputedStyle(obj).zIndex);
+			document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+				if (el == obj) {
 					return;
 				}
-				if (!intersecting(obj, this)) {
+				if (!intersecting(obj, el)) {
 					return;
 				} else {
 					// DEBUG
-					//console.log('object intersects '+$(this).attr('id'));
+					//console.log('object intersects '+el.id);
 				}
-				if ($(this).css('z-index').length) {
-					var z = parseInt($(this).css('z-index'));
+				var z_str = getComputedStyle(el).zIndex;
+				if (z_str.length) {
+					var z = parseInt(z_str);
 					if (!isNaN(z) && local_max_z < z) {
 						local_max_z = z;
 					}
@@ -1517,10 +1615,10 @@ $.glue.stack = function()
 			});
 			// check if we need to update the object
 			if (isNaN(old_z) || old_z <= local_max_z) {
-				// check if we really found an intersecting element (otherwise 
+				// check if we really found an intersecting element (otherwise
 				// local_max_z is min_z-1) and if we are inside max_z
 				if (min_z <= local_max_z && local_max_z < max_z) {
-					$(obj).css('z-index', local_max_z+1);
+					obj.style.zIndex = local_max_z+1;
 					// DEBUG
 					//console.log('set z-index to '+(local_max_z+1));
 					return true;
@@ -1550,9 +1648,9 @@ $.glue.upload = function()
 				// remove status indicator if no file uploading anymore
 				uploading--;
 				if (uploading == 0) {
-					$(this.status).detach();
+					this.status.remove();
 				}
-				// e.target.status suggested in 
+				// e.target.status suggested in
 				// http://developer.mozilla.org/en/XMLHttpRequest/Using_XMLHttpRequest
 				if (e && e.target && e.target.status) {
 					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
@@ -1570,7 +1668,7 @@ $.glue.upload = function()
 				if (uploading == 0) {
 					// DEBUG
 					//console.log('no files uploading anymore, removing status indicator');
-					$(this.status).detach();
+					this.status.remove();
 				}
 				// handle response
 				$.glue.upload.handle_response(data, this.x, this.y);
@@ -1578,8 +1676,8 @@ $.glue.upload = function()
 			progress: function(e) {
 				// update status indicator
 				// TODO (later): values are off on Chrome when uploading multiple file, one after another (it jumps back and forth) (report)
-				$(this.status).children('.glue-upload-statusbar-done').css('width', (e.loaded/e.total*100)+'%');
-				$(this.status).attr('title', e.loaded+' of '+e.total+' bytes ('+(e.loaded/e.total*100).toFixed(1)+'%)');
+				this.status.querySelector('.glue-upload-statusbar-done').style.width = (e.loaded/e.total*100)+'%';
+				this.status.title = e.loaded+' of '+e.total+' bytes ('+(e.loaded/e.total*100).toFixed(1)+'%)';
 			},
 			start: function(e) {
 				// DEBUG
@@ -1587,40 +1685,60 @@ $.glue.upload = function()
 				$.glue.menu.hide();
 				uploading++;
 				// add status indicator to dom
-				$('body').append(this.status);
-				$(this.status).children('.glue-upload-statusbar-done').css('width', '0%');
-				$(this.status).css('left', (this.x-$(this.status).outerWidth()/2)+'px');
-				$(this.status).css('top', (this.y-$(this.status).outerHeight()/2)+'px');
+				document.body.appendChild(this.status);
+				this.status.querySelector('.glue-upload-statusbar-done').style.width = '0%';
+				this.status.style.left = (this.x-outer_width(this.status)/2)+'px';
+				this.status.style.top = (this.y-outer_height(this.status)/2)+'px';
 			},
-			status: $('<div class="glue-upload-statusbar glue-ui" style="position: absolute; z-index: 202;"><div class="glue-upload-statusbar-done"></div></div>'),
+			status: (function() {
+				var el = document.createElement('div');
+				el.className = 'glue-upload-statusbar glue-ui';
+				el.style.position = 'absolute';
+				el.style.zIndex = '202';
+				var inner = document.createElement('div');
+				inner.className = 'glue-upload-statusbar-done';
+				el.appendChild(inner);
+				return el;
+			})(),
 			x: orig_x,
 			y: orig_y
 		}
 	};
-	
-	$(document).ready(function() {
+
+	document.addEventListener('DOMContentLoaded', function() {
 		// generic upload button
-		var elem = $('<div style="height: 32px; max-height: 32px; max-width: 32px; overflow: hidden; width: 32px;"><img src="'+$.glue.base_url+'img/upload.png" alt="btn" width="32" height="32"></div>');
+		var elem = document.createElement('div');
+		elem.style.height = '32px';
+		elem.style.maxHeight = '32px';
+		elem.style.maxWidth = '32px';
+		elem.style.overflow = 'hidden';
+		elem.style.width = '32px';
+		var uploadImg = document.createElement('img');
+		uploadImg.src = $.glue.base_url+'img/upload.png';
+		uploadImg.alt = 'btn';
+		uploadImg.width = 32;
+		uploadImg.height = 32;
+		elem.appendChild(uploadImg);
 		var upload = default_upload_handling();
 		upload.multiple = true;
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
-		$(elem).bind('click', function(e) {
+		elem.addEventListener('click', function(e) {
 			// update x, y
 			var p = $.glue.menu.spawn_coords();
 			upload.x = p.x;
 			upload.y = p.y;
 		});
 		$.glue.menu.register('new', elem, 11);
-		
+
 		// handle drop events on body
 		// this is based on http://developer.mozilla.org/en/using_files_from_web_applications
 		// does not seem to be possible in jQuery at the moment
 		// we use html here as body doesn't get enlarged when zooming out e.g.
-		$('html').get(0).addEventListener('dragover', function(e) {
+		document.documentElement.addEventListener('dragover', function(e) {
 			e.stopPropagation();
 			e.preventDefault();
 		}, false);
-		$('html').get(0).addEventListener('drop', function(e) {
+		document.documentElement.addEventListener('drop', function(e) {
 			e.stopPropagation();
 			e.preventDefault();
 			// pageX, pageY are available in Firefox and Chrome
@@ -1629,7 +1747,7 @@ $.glue.upload = function()
 			$.glue.upload.files(e.dataTransfer.files, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		}, false);
 	});
-	
+
 	return {
 		// elem .. element to turn into a file button
 		// data .. other parameters to send to the service
@@ -1641,6 +1759,7 @@ $.glue.upload = function()
 		//				error => function called when an error occured
 		//				finish => function called after the upload has completed
 		button: function(elem, data, options) {
+			elem = glue_unwrap(elem);
 			// add a file input to the element
 			if (!options) {
 				options = {};
@@ -1648,12 +1767,21 @@ $.glue.upload = function()
 			if (!options.tooltip) {
 				options.tooltip = 'upload a file';
 			}
-			$(elem).prepend('<input type="file" title="'+options.tooltip+'" style="height: 100%; opacity: 0; position: absolute; width: 100%; z-index: 300;">');
+			var input = document.createElement('input');
+			input.type = 'file';
+			input.title = options.tooltip;
+			input.style.height = '100%';
+			input.style.opacity = '0';
+			input.style.position = 'absolute';
+			input.style.width = '100%';
+			input.style.zIndex = '300';
+			elem.insertBefore(input, elem.firstChild);
 			if (options.multiple) {
-				$(elem).children('input').first().attr('multiple', 'multiple');
+				input.setAttribute('multiple', 'multiple');
 			}
 			// add event handler
-			$(elem).children('input').first().bind('change', function(e) {
+			input.addEventListener('change', function(e) {
+				e.preventDefault();
 				if (!this.files || this.files.length == 0) {
 					if (typeof options.abort == 'function') {
 						options.abort();
@@ -1683,7 +1811,7 @@ $.glue.upload = function()
 			}
 			var xhr = new XMLHttpRequest();
 			if (typeof options.progress == 'function') {
-				// this is needed otherwise this is XMLHttpRequestUpload in the 
+				// this is needed otherwise this is XMLHttpRequestUpload in the
 				// progress handler
 				xhr.upload['onprogress'] = function(e) {
 					options.progress(e);
@@ -1692,7 +1820,7 @@ $.glue.upload = function()
 			if (typeof options.finish == 'function') {
 				xhr.onload = function(e) {
 					try {
-						options.finish($.parseJSON(e.target.responseText));	
+						options.finish(JSON.parse(e.target.responseText));
 					} catch (e) {
 						if (typeof options.error == 'function') {
 							options.error(e);
@@ -1746,89 +1874,106 @@ $.glue.upload = function()
 				// we're not selecting the new objects but at least clear the current selection
 				$.glue.sel.none();
 				for (var i=0; i < data['#data'].length; i++) {
-					var obj = $(data['#data'][i]);
-					
-					// load event handler
-					var content_loaded = function(e) {
-						// function scope bites us in the ass here
-						var mode = e.data.mode;
-						var target_x = e.data.target_x;
-						var target_y = e.data.target_y;
-						if ($(this).hasClass('object')) {
-							var obj = $(this);						
-						} else {
-							var obj = $(this).parents('.object').first();
-						}
-						// set default width and height
-						$(obj).css('width', $(obj).width()+'px');
-						$(obj).css('height', $(obj).height()+'px');
-						// DEBUG
-						//console.log('glue-upload-dynamic-late: '+$(obj).attr('id'));
-						// fire handler (can overwrite width and height)
-						$(obj).glueTrigger('glue-upload-dynamic-late', [ this ]);
-						// position object
-						if (mode == 'center') {
-							// move to the center of mouseclick
-							$(obj).css('left', (target_x-$(obj).outerWidth()/2)+'px');
-							$(obj).css('top', (target_y-$(obj).outerHeight()/2)+'px');
-						} else {
-							// move to stack
-							$(obj).css('left', (target_x+'px'));
-							$(obj).css('top', (target_y+'px'));
-						}
-						// restore visibility
-						$(obj).css('visibility', $(obj).data('orig_visibility'));
-						$(obj).removeData('orig_visibility');
-						// register object
-						$.glue.object.register(obj);
-						// save object
-						$.glue.object.save(obj);
-					}
-					
+					// data['#data'][i] is an HTML string - parse it into a
+					// real element via a detached template
+					var tmpl = document.createElement('template');
+					tmpl.innerHTML = data['#data'][i].trim();
+					var obj = tmpl.content.firstElementChild;
+
 					// set mode and target x, y
+					var mode, target_x, target_y;
 					if (data['#data'].length == 1) {
-						var mode = 'center';
-						var target_x = x;
-						var target_y = y;
+						mode = 'center';
+						target_x = x;
+						target_y = y;
 					} else {
-						var mode = 'stack';
-						var target_x = x+i*$.glue.grid.x();
-						var target_y = y+i*$.glue.grid.y();
+						mode = 'stack';
+						target_x = x+i*$.glue.grid.x();
+						target_y = y+i*$.glue.grid.y();
 					}
+
+					// load event handler - 'this' is whichever element the
+					// native 'load' event actually fired on (obj itself, or
+					// one of its descendants below), same as jQuery's .bind()
+					// which attaches directly to each element rather than
+					// delegating. mode/target_x/target_y are snapshotted as
+					// IIFE parameters (not just closed over) since they're
+					// var-scoped to this whole loop and 'load' fires later,
+					// asynchronously - by then a multi-file upload could have
+					// moved on to later iterations and overwritten them;
+					// jQuery's original .bind(event, eventData, handler) took
+					// a snapshot the same way, per element, at bind time
+					var content_loaded = (function(mode, target_x, target_y) {
+						return function(e) {
+							var obj;
+							if (this.classList.contains('object')) {
+								obj = this;
+							} else {
+								obj = this.closest('.object');
+							}
+							// set default width and height
+							obj.style.width = obj.offsetWidth+'px';
+							obj.style.height = obj.offsetHeight+'px';
+							// DEBUG
+							//console.log('glue-upload-dynamic-late: '+obj.id);
+							// fire handler (can overwrite width and height)
+							$.glue.trigger(obj, 'glue-upload-dynamic-late', [ this ]);
+							// position object
+							if (mode == 'center') {
+								// move to the center of mouseclick
+								obj.style.left = (target_x-outer_width(obj)/2)+'px';
+								obj.style.top = (target_y-outer_height(obj)/2)+'px';
+							} else {
+								// move to stack
+								obj.style.left = target_x+'px';
+								obj.style.top = target_y+'px';
+							}
+							// restore visibility
+							obj.style.visibility = glue_orig_visibility.get(obj) || '';
+							glue_orig_visibility.delete(obj);
+							// register object
+							$.glue.object.register(obj);
+							// save object
+							$.glue.object.save(obj);
+						};
+					})(mode, target_x, target_y);
+
 					// check if we have dimensions already
-					var width = parseInt($(obj).get(0).style.getPropertyValue('width'));
+					var width = parseInt(obj.style.getPropertyValue('width'));
 					if (isNaN(width) || width === 0) {
 						// bind load event handlers
-						$(obj).bind('load', { 'mode': mode, 'target_x': target_x, 'target_y': target_y }, content_loaded);
-						$(obj).find('*').bind('load', { 'mode': mode, 'target_x': target_x, 'target_y': target_y }, content_loaded);
+						obj.addEventListener('load', content_loaded);
+						obj.querySelectorAll('*').forEach(function(child) {
+							child.addEventListener('load', content_loaded);
+						});
 						// save initial visibility and make object invisible
-						$(obj).data('orig_visibility', $(obj).css('visibility'));
-						$(obj).css('visibility', 'hidden');
+						glue_orig_visibility.set(obj, getComputedStyle(obj).visibility);
+						obj.style.visibility = 'hidden';
 						// add to dom
-						$('body').append(obj);
+						document.body.appendChild(obj);
 						// DEBUG
-						//console.log('glue-upload-dynamic-early: '+$(obj).attr('id'));
+						//console.log('glue-upload-dynamic-early: '+obj.id);
 						// fire handler
-						$(obj).glueTrigger('glue-upload-dynamic-early', [ mode, target_x, target_y ]);
+						$.glue.trigger(obj, 'glue-upload-dynamic-early', [ mode, target_x, target_y ]);
 					} else {
 						// add to dom
-						$('body').append(obj);
+						document.body.appendChild(obj);
 						// position object
 						if (mode == 'center') {
 							// move to the center of mouseclick
-							$(obj).css('left', (target_x-$(obj).outerWidth()/2)+'px');
-							$(obj).css('top', (target_y-$(obj).outerHeight()/2)+'px');
+							obj.style.left = (target_x-outer_width(obj)/2)+'px';
+							obj.style.top = (target_y-outer_height(obj)/2)+'px';
 						} else {
 							// move to stack
-							$(obj).css('left', (target_x+'px'));
-							$(obj).css('top', (target_y+'px'));
+							obj.style.left = target_x+'px';
+							obj.style.top = target_y+'px';
 						}
 						// register object
 						$.glue.object.register(obj);
 						// DEBUG
-						//console.log('registered static upload: '+$(obj).attr('id'));
+						//console.log('registered static upload: '+obj.id);
 						// fire handler
-						$(obj).glueTrigger('glue-upload-static', [ mode ]);
+						$.glue.trigger(obj, 'glue-upload-static', [ mode ]);
 						// save object
 						$.glue.object.save(obj);
 					}
@@ -1838,44 +1983,44 @@ $.glue.upload = function()
 	};
 }();
 
-
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	// register all objects
-	$('.object').each(function() {
-		$.glue.object.register($(this));
+	document.querySelectorAll('.object').forEach(function(el) {
+		$.glue.object.register(el);
 	});
-	
+
 	// make sure we call enlarge body even if there are no objects
 	$.glue.canvas.update();
-	
+
 	// enlarge body when we resize the window
 	var resize_timer;
-	$(window).bind('resize', function(e) {
+	window.addEventListener('resize', function(e) {
 		clearTimeout(resize_timer);
 		resize_timer = setTimeout(function() {
 			$.glue.canvas.update();
 		}, 100);
 	});
-	
+
 	// trigger menus on click and doubleclick
 	var menu_dblclick_timeout = false;
-	$('html').bind('click', function(e) {
+	document.documentElement.addEventListener('click', function(e) {
 		// make sure no iframe has focus as this breaks keyboard shortcuts etc
 		window.focus();
-		// we use 'html' here to give the colorpicker et al a chance to stop the 
+		// we use 'html' here to give the colorpicker et al a chance to stop the
 		// propagation of the event in 'body'
-		if (e.target == $('body').get(0)) {
+		if (e.target == document.body) {
 			if (!$.glue.menu.is_shown()) {
 				if (menu_dblclick_timeout) {
 					clearTimeout(menu_dblclick_timeout);
 					menu_dblclick_timeout = false;
 					// show page menu
 					$.glue.menu.show('page', e.clientX, e.clientY);
+					e.preventDefault();
 					return false;
 				}
 				menu_dblclick_timeout = setTimeout(function() {
 					menu_dblclick_timeout = false;
-					// prevent the new menu from showing when the user wants to 
+					// prevent the new menu from showing when the user wants to
 					// simply clear any open menu
 					if ($.glue.menu.prev_menu() == '') {
 						// show new menu
@@ -1885,35 +2030,38 @@ $(document).ready(function() {
 			}
 		}
 	});
-	
+
 	// menu shortcuts
-	$('html').bind('keyup', function(e) {
+	document.documentElement.addEventListener('keyup', function(e) {
 		if (e.altKey && e.which == 79) {
 			// alt+o: show new object menu
 			$.glue.menu.show('new');
+			e.preventDefault();
 			return false;
 		} else if (e.altKey && e.which == 80) {
 			// alt+p: show page menu
 			$.glue.menu.show('page');
+			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 90) {
 			// ctrl+z: show revisions browser to suggest using revisions in place of undo
 			if (confirm('Looking for an "undo" option?\nHOTGLUE keeps record of your recent edits - it\'s called "revisions".\nWould you like to browse through the revisions of this page?')) {
 				window.location = $.glue.base_url+'?'+$.glue.page+'/revisions';
+				e.preventDefault();
 				return false;
 			}
 		}
 	});
-	
+
 	// I really don't know why, but when we don't handle the mousedown event here
 	// double-clicking the page does select some object (the first child of body
 	// on Firefox and the nearest element on Chrome)
 	// exclude Moveable's own controls: they need their mousedown to reach
 	// Moveable's handlers undisturbed to start a drag/resize
-	$('html').bind('mousedown', function(e) {
-		if ($(e.target).closest('.moveable-control, .moveable-line').length) {
+	document.documentElement.addEventListener('mousedown', function(e) {
+		if (e.target.closest('.moveable-control, .moveable-line')) {
 			return;
 		}
-		return false;
+		e.preventDefault();
 	});
 });

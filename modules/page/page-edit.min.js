@@ -287,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': getComputedStyle(document.documentElement).backgroundPosition });
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.menu.register('page', elem);
@@ -339,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			// close menu
 			$.glue.menu.hide();
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.menu.register('page', elem, 13);
