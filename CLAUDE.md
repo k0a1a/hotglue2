@@ -25,10 +25,12 @@ cp user-config.inc.php-dist user-config.inc.php
 ```
 
 ### Testing
-`tests/UtilTest.php` is a PHPUnit test case for `util.inc.php`. There is no `composer.json`/`vendor/` in this repo, so PHPUnit must be available separately (e.g. installed globally or as a phar). It cannot be run with plain `php`; run it with the `phpunit` binary:
+`tests/UtilTest.php` is a PHPUnit test case for `util.inc.php`. PHPUnit is pulled in via Composer (`composer.json` requires `phpunit/phpunit`); run `composer install` once, then use the local binary. It cannot be run with plain `php`:
 ```bash
-phpunit tests/UtilTest.php
+composer install
+vendor/bin/phpunit tests/UtilTest.php
 ```
+(A globally installed `phpunit` binary or phar also works if you prefer not to use the vendored copy.)
 
 ### Debugging
 Set `error_reporting(E_ALL);` in `user-config.inc.php` to enable detailed error messages.
@@ -66,6 +68,15 @@ All settings are defined as constants in `config.inc.php`. Overrides should be p
 - **`config.inc.php`**: Contains all configuration settings with inline doc comments.
 - **`user-config.inc.php`**: Used to override default configuration values.
 - **`tests/UtilTest.php`**: PHPUnit test for `util.inc.php`.
+
+### Editor Frontend (`js/edit.js`)
+`js/edit.js` is not a page script but a bespoke plugin/event-bus framework under the `$.glue.*` namespace (`canvas`/`sel`/`object`/`stack`/`menu`/`contextmenu`/`slider`/`colorpicker`/`upload`/`grid`), which ~40 other editor-only JS files (`modules/*/*-edit.js`) depend on as an API contract. jQuery/jQuery UI/Farbtastic/xcolor are loaded only inside this authenticated editor (gated by `$add_glue` in `common.inc.php`'s `default_html()`) and never ship to published/public pages.
+
+Two contracts to know before touching this code:
+- `$.glue.object.save()` serializes DOM objects to literal HTML strings that are the **on-disk storage format** for every existing page — changing serialization risks corrupting stored pages.
+- `.data('owner', obj)`, set once in `edit.js`, is read at ~47 call sites across ~15 module files — an undocumented but load-bearing convention.
+
+A jQuery-removal/PHP-modernization effort has been scoped (not yet implemented, as of 2026-07-30) — see `handover.md` for the short checklist and `MODERNIZATION.md` for the full audit, decisions, and per-file landmines before making changes to `js/edit.js`, per-module `*-edit.js` files, or the PHP global-state modules (`html.inc.php`/`modules.inc.php`).
 
 ## Additional Notes
 

@@ -97,22 +97,11 @@ function controller_edit($args)
 	load_modules('glue');
 	default_html(true);
 	html_add_js_var('$.glue.page', $page);
-	html_add_css(base_url().'css/farbtastic.css', 2);
 	html_add_css(base_url().'css/edit.css', 5);
 	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/jquery-ui-1.8.6.custom.min.js', 2);
 	} else {
 		html_add_js(base_url().'js/jquery-ui-1.8.6.custom.js', 2);
-	}
-	if (USE_MIN_FILES) {
-		html_add_js(base_url().'js/farbtastic.min.js', 2);
-	} else {
-		html_add_js(base_url().'js/farbtastic.js', 2);
-	}
-	if (USE_MIN_FILES) {
-		html_add_js(base_url().'js/jquery.xcolor-1.2.1.min.js', 2);
-	} else {
-		html_add_js(base_url().'js/jquery.xcolor-1.2.1.js', 2);
 	}
 	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/edit.min.js', 4);

@@ -90,7 +90,6 @@ function transform_render_page_early($args)
 			html_add_js(base_url().'modules/transform/transform.js');
 		}
 //		html_add_css(base_url().'modules/transform/transform.css');
-//		html_add_js(base_url().'modules/transform/jquery.transform-0.9.3.min.js');
 		return true;
 	} else {
 		return false;

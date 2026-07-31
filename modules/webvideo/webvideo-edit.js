@@ -176,7 +176,7 @@ $(document).ready(function() {
 	$.glue.contextmenu.register('webvideo', 'webvideo-loop', elem);
 	
 	// make sure we don't send to much over the wire for every save
-	$.glue.object.register_alter_pre_save('iframe', function(obj, orig) {
+	$.glue.object.register_alter_pre_save('webvideo', function(obj, orig) {
 		$(obj).children('iframe').html('');
 		$(obj).children('.glue-webvideo-handle').remove();
 	});

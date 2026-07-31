@@ -7,29 +7,6 @@
 	right: 20px;
 }
 
-#glue-colorpicker-transparent {
-	/* icon for transparency inside the colorpicker element */
-	background-image: url(../img/colorpicker-transparent.png);
-	border-style: solid;
-	border-width: 1px;
-	bottom: 6px;
-	cursor: pointer;
-	height: 10px;
-	position: absolute;
-	right: 215px;
-	width: 10px;
-}
-
-.glue-colorpicker-transparent-set {
-	/* set when color is set to transparent */
-	border-color: red;
-}
-
-.glue-colorpicker-transparent-notset {
-	/* set when color is set to all other colors */
-	border-color: white;
-}
-
 .glue-file-upload {
 	/* a file upload button */
 	width: 32px;

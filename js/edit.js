@@ -42,39 +42,102 @@ $.glue.canvas = function()
 	};
 }();
 
+// small CSS color parsing/math helper, replacing the jquery.xcolor/farbtastic
+// $.color dependency. Only needs to understand what computed styles
+// (rgb()/rgba()) and the "#rrggbb"/"#rgb" hex the color picker itself
+// produces look like - not the full CSS named-color table.
+$.glue.color = function()
+{
+	var parse = function(str) {
+		str = $.trim(String(str)).toLowerCase();
+		var m;
+		if (m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(str)) {
+			return {
+				r: parseInt(m[1]+m[1], 16),
+				g: parseInt(m[2]+m[2], 16),
+				b: parseInt(m[3]+m[3], 16),
+				a: 1
+			};
+		}
+		if (m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(str)) {
+			return {
+				r: parseInt(m[1], 16),
+				g: parseInt(m[2], 16),
+				b: parseInt(m[3], 16),
+				a: 1
+			};
+		}
+		if (m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([0-9.]+)\s*)?\)$/.exec(str)) {
+			return {
+				r: parseInt(m[1], 10),
+				g: parseInt(m[2], 10),
+				b: parseInt(m[3], 10),
+				a: m[4] !== undefined ? parseFloat(m[4]) : 1
+			};
+		}
+		if (str == 'transparent') {
+			return { r: 0, g: 0, b: 0, a: 0 };
+		}
+		return false;
+	};
+
+	var comp = function(v) {
+		v = Math.max(0, Math.min(255, Math.round(v)));
+		return (v < 16 ? '0' : '') + v.toString(16);
+	};
+
+	var to_hex = function(rgb) {
+		return '#'+comp(rgb.r)+comp(rgb.g)+comp(rgb.b);
+	};
+
+	return {
+		parse: parse,
+		to_hex: to_hex,
+		// opposite color on each channel, used for grid lines that need to
+		// stay visible against any background color
+		complementary: function(hex) {
+			var rgb = parse(hex);
+			if (!rgb) {
+				return hex;
+			}
+			return to_hex({ r: 255-rgb.r, g: 255-rgb.g, b: 255-rgb.b });
+		},
+		average: function(hex1, hex2) {
+			var a = parse(hex1);
+			var b = parse(hex2);
+			if (!a || !b) {
+				return hex1;
+			}
+			return to_hex({ r: (a.r+b.r)/2, g: (a.g+b.g)/2, b: (a.b+b.b)/2 });
+		}
+	};
+}();
+
 $.glue.colorpicker = function()
 {
 	var change_func = false;
-	var color = false;
 	var finish_func = false;
+	var finished = false;
 	var shown = false;
-	
+
 	// setup element
-	var elem = $('<div id="glue-colorpicker" class="glue-ui" style="z-index: 202;"><div id="glue-colorpicker-transparent" class="glue-ui"></div><div id="glue-colorpicker-wheel" style="height: 195px; width: 195px;" title="set transparent"></div></div>');
-	$(elem).children('#glue-colorpicker-wheel').farbtastic(function(col) {
-		if (col !== color) {
-			// update tooltip
-			$(elem).children('#glue-colorpicker-wheel').find('.marker').attr('title', col);
-			$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-set');
-			$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-notset');
-			if (typeof change_func == 'function') {
-				change_func(col);
-			}
-			color = col;
-		}
-	});
-	$(elem).children('#glue-colorpicker-transparent').bind('click', function(e) {
-		$(this).addClass('glue-colorpicker-transparent-set');
-		$(this).removeClass('glue-colorpicker-transparent-notset');
+	// note: the "transparent" toggle farbtastic used to offer here was never
+	// actually used by any module (transparency is handled by a separate
+	// opacity slider on objects), so it's not carried over
+	var elem = $('<input type="color" id="glue-colorpicker" class="glue-ui">');
+	$(elem).bind('input', function(e) {
 		if (typeof change_func == 'function') {
-			change_func('transparent');
+			change_func($(elem).val());
 		}
-		color = 'transparent';
 	});
-	
+	$(elem).bind('change', function(e) {
+		// the native picker has been dismissed/confirmed
+		$.glue.colorpicker.hide();
+	});
+
 	var close_colorpicker = function(e) {
 		// close colorpicker when clicking outside of it or its children
-		// note: this handler is also being called right after colorpicker 
+		// note: this handler is also being called right after colorpicker
 		// creation
 		if (!$(e.target).hasClass('glue-ui') && $(e.target).parents('.glue-ui').length == 0) {
 			// this also unregisters the event
@@ -83,13 +146,14 @@ $.glue.colorpicker = function()
 			e.stopImmediatePropagation();
 		}
 	};
-	
+
 	return {
 		hide: function(cancel) {
 			if (shown) {
-				if (cancel === undefined || cancel == false) {
+				if (!finished && (cancel === undefined || cancel == false)) {
+					finished = true;
 					if (typeof finish_func == 'function') {
-						finish_func(color);
+						finish_func($(elem).val());
 					}
 				}
 				$(elem).detach();
@@ -102,62 +166,39 @@ $.glue.colorpicker = function()
 			return shown;
 		},
 		set_color: function(col) {
-			$.color.setColor(col);
-			var rgba = $.color.getRGB();
-			var hex = $.color.getHex();
-			if ($(elem).children('#glue-colorpicker-transparent').css('display') == 'block') {
-				// showing transparency button
-				if (rgba.a == 0) {
-					$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-set');
-					$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-notset');
-					col = 'transparent';
-				} else {
-					$(elem).children('#glue-colorpicker-transparent').removeClass('glue-colorpicker-transparent-set');
-					$(elem).children('#glue-colorpicker-transparent').addClass('glue-colorpicker-transparent-notset');
-				}
-			} else {
-				// not showing transparency button
-				// a special case for color 'transparent'
-				if (rgba.r == 0 && rgba.g == 0 && rgba.b == 0 && rgba.a == 0) {
-					// set color to white
-					hex = '#ffffff';
-				}
+			var rgb = $.glue.color.parse(col);
+			var hex = rgb ? $.glue.color.to_hex(rgb) : '#ff0000';
+			// a special case for color 'transparent': show white rather than
+			// black, as native color inputs can't represent alpha
+			if (rgb && rgb.a == 0) {
+				hex = '#ffffff';
 			}
-			// set color wheel
-			$.farbtastic($(elem).children('#glue-colorpicker-wheel')).setColor(hex);
-			$(elem).children('#glue-colorpicker-wheel').find('.marker').attr('title', hex);
-			color = col;
+			$(elem).val(hex);
 		},
 		show: function(def, transp, change, finish) {
 			if (shown) {
 				$.glue.colorpicker.hide();
 			}
-			color = false;
-			
-			// set functions first, as $.farbtastic().setColor() immediately 
-			// triggers a change event
+
 			change_func = change;
 			finish_func = finish;
-			
-			if (transp) {
-				$(elem).children('#glue-colorpicker-transparent').css('display', 'block');
-			} else {
-				$(elem).children('#glue-colorpicker-transparent').css('display', 'none');
-			}
-			
+			finished = false;
+
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
-				$.farbtastic($(elem).children('#glue-colorpicker-wheel')).setColor('#ff0000');
-				$(elem).children('#glue-colorpicker-wheel').find('.marker').removeAttr('title');
+				$(elem).val('#ff0000');
 			} else {
 				$.glue.colorpicker.set_color(def);
 			}
-			
+
 			// add to dom
 			$('body').append(elem);
 			shown = true;
 			// register event
 			$('body').bind('click', close_colorpicker);
+			// open the native picker right away, mirroring farbtastic's
+			// always-visible wheel
+			elem.get(0).click();
 		}
 	};
 }();
@@ -445,11 +486,10 @@ $.glue.grid = function()
 				// get background color
 				var bg_color = '#ffffff';	// default to white
 				if ($('body').css('background-color').length) {
-					$.color.setColor($('body').css('background-color'));
-					var bg_a = $.color.getArray();
-					// xcolor doesn't handle the complementary of rgba(0, 0, 0, 0)
-					if (bg_a[3] != 0) {
-						bg_color = $.color.getHex();
+					var bg_rgb = $.glue.color.parse($('body').css('background-color'));
+					// doesn't handle the complementary of rgba(0, 0, 0, 0)
+					if (bg_rgb && bg_rgb.a != 0) {
+						bg_color = $.glue.color.to_hex(bg_rgb);
 					}
 				}
 				// add grid lines
@@ -460,7 +500,7 @@ $.glue.grid = function()
 					$(elem).addClass('glue-grid');
 					$(elem).addClass('glue-ui');
 					// use complementary color
-					$(elem).css('background-color', $.xcolor.complementary(bg_color));
+					$(elem).css('background-color', $.glue.color.complementary(bg_color));
 					$(elem).css('height', grid_height+'px');
 					$(elem).css('left', x+'px');
 					$(elem).css('position', 'absolute');
@@ -477,7 +517,7 @@ $.glue.grid = function()
 					$(elem).addClass('glue-grid');
 					$(elem).addClass('glue-ui');
 					// use complementary color
-					$(elem).css('background-color', $.xcolor.complementary(bg_color));
+					$(elem).css('background-color', $.glue.color.complementary(bg_color));
 					$(elem).css('height', '1px');
 					$(elem).css('left', '0px');
 					$(elem).css('position', 'absolute');
@@ -494,7 +534,7 @@ $.glue.grid = function()
 					$(elem).addClass('glue-guide');
 					$(elem).addClass('glue-ui');
 					// use a different color than background and grid lines
-					$(elem).css('background-color', $.xcolor.average($.xcolor.complementary(bg_color), bg_color));
+					$(elem).css('background-color', $.glue.color.average($.glue.color.complementary(bg_color), bg_color));
 					$(elem).css('height', grid_height+'px');
 					$(elem).css('left', guides_x[i]+'px');
 					$(elem).css('position', 'absolute');
@@ -510,7 +550,7 @@ $.glue.grid = function()
 					$(elem).addClass('glue-guide');
 					$(elem).addClass('glue-ui');
 					// use a different color than background and grid lines
-					$(elem).css('background-color', $.xcolor.average($.xcolor.complementary(bg_color), bg_color));
+					$(elem).css('background-color', $.glue.color.average($.glue.color.complementary(bg_color), bg_color));
 					$(elem).css('height', '1px');
 					$(elem).css('left', '0px');
 					$(elem).css('position', 'absolute');
@@ -1685,45 +1725,6 @@ $.glue.upload = function()
 					f.append('user_file'+i, files[i]);
 				}
 				xhr.send(f);
-				if (typeof options.start == 'function') {
-					options.start(files);
-				}
-				return true;
-			} else if (files[0] && files[0].getAsBinary) {
-				// DEBUG
-				//console.log('upload: using getAsBinary');
-				// build RFC2388 string
-				var boundary = '----multipartformboundary'+(new Date).getTime();
-				var builder = '';
-				// other parameters
-				for (var key in data) {
-					builder += '--'+boundary+'\r\n';
-					builder += 'Content-Disposition: form-data; name="'+key+'"'+'\r\n';
-					builder += '\r\n';
-					builder += JSON.stringify(data[key])+'\r\n';
-				}
-				// files
-				for (var i=0; i < files.length; i++) {
-					var file = files[i];
-					builder += '--'+boundary+'\r\n';
-					builder += 'Content-Disposition: form-data; name="user_file'+i+'"';
-					if (file.fileName) {
-						builder += '; filename="'+file.fileName+'"';
-					}
-					builder += '\r\n';
-					if (file.type) {
-						builder += 'Content-Type: '+file.type+'\r\n';
-					} else {
-						builder += 'Content-Type: application/octet-stream'+'\r\n';
-					}
-					builder += '\r\n';
-					builder += file.getAsBinary();
-					builder += '\r\n';
-				}
-				// mark end of request
-				builder += '--'+boundary+'--'+'\r\n';
-				xhr.setRequestHeader('Content-Type', 'multipart/form-data; boundary='+boundary);
-				xhr.sendAsBinary(builder);
 				if (typeof options.start == 'function') {
 					options.start(files);
 				}

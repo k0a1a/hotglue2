@@ -21,31 +21,30 @@ $.glue = {};
 // communication with the backend
 $.glue.backend = function()
 {
-	$(document).ready(function() {
-		$(this).ajaxError(function(e, xhr, options, err) {
-			if (xhr.readyState == 0 || xhr.status == 0) {
-				// not really an error
-				// these happen when navigating away while a ajax request is in flight
-				// see http://stackoverflow.com/questions/866771/jquery-ambiguous-ajax-error
-			} else {
-				$.glue.error('There was a problem communicating with the server (ready state '+xhr.readyState+', status '+ xhr.status+')');
-			}
-		});
-	});
-	
 	return function(param, func, print_errors) {
-		// ten seconds timeout
-		$.ajaxSetup({ timeout: 10000 });
-		// make sure parameters are json encoded
-		// otherwise we would get complaints from the php parser for empty 
-		// strings, arrays and thelike
-		for (p in param) {
-			param[p] = JSON.stringify(param[p]);
+		if (print_errors === undefined) {
+			print_errors = true;
 		}
-		$.post($.glue.base_url+'json.php', param, function(data) {
-			if (print_errors === undefined) {
-				print_errors = true;
+		// make sure parameters are json encoded
+		// otherwise we would get complaints from the php parser for empty
+		// strings, arrays and thelike
+		var body = new URLSearchParams();
+		for (var p in param) {
+			body.append(p, JSON.stringify(param[p]));
+		}
+		// ten seconds timeout
+		var controller = new AbortController();
+		var timeout = setTimeout(function() { controller.abort(); }, 10000);
+		fetch($.glue.base_url+'json.php', {
+			method: 'POST',
+			body: body,
+			signal: controller.signal
+		}).then(function(response) {
+			if (!response.ok) {
+				throw new Error('status '+response.status);
 			}
+			return response.json();
+		}).then(function(data) {
 			if (data === null) {
 				if (print_errors) {
 					$.glue.error('There was a problem communicating with the server');
@@ -61,7 +60,17 @@ $.glue.backend = function()
 			} else if (typeof func == 'function') {
 				func(data);
 			}
-		}, 'json');
+		}).catch(function(err) {
+			if (err.name == 'AbortError') {
+				// not really an error
+				// these happen when navigating away while a request is in flight, or on timeout
+				// see http://stackoverflow.com/questions/866771/jquery-ambiguous-ajax-error
+			} else {
+				$.glue.error('There was a problem communicating with the server ('+err.message+')');
+			}
+		}).finally(function() {
+			clearTimeout(timeout);
+		});
 	};
 }();
 
