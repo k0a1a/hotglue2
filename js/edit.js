@@ -1048,11 +1048,34 @@ $.glue.object = function()
 			});
 
 			if (can_resize) {
+				var resize_orig_aspect = 1;
+
 				m.on('resizeStart', function(e) {
+					resize_orig_aspect = obj.offsetWidth/obj.offsetHeight;
 					$.glue.trigger(obj, 'glue-resizestart');
 				}).on('resize', function(e) {
 					var width = e.width;
 					var height = e.height;
+					// shift: keep the aspect ratio the object had when the
+					// resize started. e/s/se are the only handles in use
+					// (renderDirections above), and none of them move the
+					// top-left anchor, so it's enough to just adjust
+					// whichever dimension the handle doesn't already drive
+					if (e.inputEvent.shiftKey) {
+						if (e.direction[0] != 0 && e.direction[1] != 0) {
+							// corner handle: let whichever dimension moved
+							// more this frame drive the other
+							if (Math.abs(width-obj.offsetWidth) > Math.abs(height-obj.offsetHeight)) {
+								height = width/resize_orig_aspect;
+							} else {
+								width = height*resize_orig_aspect;
+							}
+						} else if (e.direction[0] != 0) {
+							height = width/resize_orig_aspect;
+						} else if (e.direction[1] != 0) {
+							width = height*resize_orig_aspect;
+						}
+					}
 					// ignore grid when ctrl is pressed
 					if (!e.inputEvent.ctrlKey && ($.glue.grid.mode() & 4)) {
 						width = Math.round(width/$.glue.grid.x())*$.glue.grid.x();
