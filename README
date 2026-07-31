@@ -27,6 +27,29 @@ BUNDLED THIRD-PARTY CODE
   * the file icon has been taken from gnome-icon-theme (GPL licensed)
 
 
+RECENT CHANGES (2026-07)
+
+  * jQuery and jQuery UI have been removed entirely from the editor
+    frontend, which is now plain vanilla JavaScript. Drag/resize is handled
+    by Moveable, a handful of reactive context-menu icons use Alpine.js, and
+    the color picker is a native <input type="color">. See MODERNIZATION.md
+    and handover.md for the full write-up of the migration.
+
+  * Fixed a bug in json.php where an unconditional stripslashes() call
+    (added for PHP8 compatibility) corrupted every saved object containing
+    escaped quotes.
+
+  * Fixed a bug in module_download.inc.php that called an undefined
+    log_error() function, causing an error when deleting a page containing
+    a download object.
+
+  * Fixed a module-name typo in webvideo-edit.js's register_alter_pre_save()
+    call (was registered under 'iframe' instead of 'webvideo').
+
+  * Fixed a misplaced parenthesis in module_image.inc.php's image resize
+    comparison.
+
+
 KNOWN ISSUES
 
   * Hotglue 1.0 is not compatible with prior versions of the software. We aim 
