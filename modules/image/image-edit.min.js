@@ -79,7 +79,17 @@ $.glue.image = function() {
 
 			var width = obj.offsetWidth;
 			var height = obj.offsetHeight;
-			$.glue.backend({ method: 'image.resize', name: obj.id, 'width': width, 'height': height }, function(data) {
+			// request the resize at device-pixel resolution (capped) rather
+			// than CSS-pixel resolution, so the image the browser gets stays
+			// sharp instead of being upscaled on HiDPI/Retina displays -
+			// width/height (CSS pixels) below are left as-is for the preload
+			// clone's positioning and the cache-busting query string, since
+			// image_serve_resource() ignores those query params anyway and
+			// just serves whatever resized file image.resize() produced
+			var dpr = Math.min(window.devicePixelRatio || 1, $.glue.conf.image.resize_max_dpr);
+			var req_width = Math.round(width*dpr);
+			var req_height = Math.round(height*dpr);
+			$.glue.backend({ method: 'image.resize', name: obj.id, 'width': req_width, 'height': req_height }, function(data) {
 				if (!data) {
 					// DEBUG
 					console.error('image.resize returned null');

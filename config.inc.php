@@ -47,6 +47,7 @@ error_reporting(E_ALL & ~E_STRICT);						// see php documentation
 @define('IMAGE_JPEG_QUAL', 90);				// quality for jpeg resizing (0 < 100)
 @define('IMAGE_PNG_QUAL', 7);				// quality for png resizing (9 < 0)
 @define('IMAGE_RESIZING', true);			// resize uploaded images on the server (needs gd installed)
+@define('IMAGE_RESIZE_MAX_DPR', 2);			// cap on window.devicePixelRatio when requesting a server-side resize, so images stay sharp on HiDPI/Retina displays instead of being upscaled by the browser (1 disables this, higher values trade file size for extra sharpness on very-high-DPR devices)
 @define('IMAGE_UPLOAD_RESIZE_LARGER', '120%');	// automatically resize uploaded image when larger than n% of window width or height (set to 0% to disable)
 @define('IMAGE_UPLOAD_RESIZE_TO', '80%');		// target size in n% of window width or height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)

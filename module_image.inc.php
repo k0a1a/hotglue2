@@ -318,6 +318,7 @@ function image_render_page_early($args)
 		}
 		html_add_js_var('$.glue.conf.image.upload_resize_larger', IMAGE_UPLOAD_RESIZE_LARGER);
 		html_add_js_var('$.glue.conf.image.upload_resize_to', IMAGE_UPLOAD_RESIZE_TO);
+		html_add_js_var('$.glue.conf.image.resize_max_dpr', IMAGE_RESIZE_MAX_DPR);
 	}
 }
 
