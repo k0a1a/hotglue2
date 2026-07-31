@@ -99,11 +99,6 @@ function controller_edit($args)
 	html_add_js_var('$.glue.page', $page);
 	html_add_css(base_url().'css/edit.css', 5);
 	if (USE_MIN_FILES) {
-		html_add_js(base_url().'js/jquery-ui-1.8.6.custom.min.js', 2);
-	} else {
-		html_add_js(base_url().'js/jquery-ui-1.8.6.custom.js', 2);
-	}
-	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/moveable.min.js', 3);
 	} else {
 		html_add_js(base_url().'js/moveable.js', 3);
