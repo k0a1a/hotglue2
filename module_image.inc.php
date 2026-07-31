@@ -393,7 +393,7 @@ function image_resize($args)
 	$pn = get_first_item(expl('.', $obj['name']));
 	
 	// resizing might not be necessary at all
-	if (!empty($obj['image-resized-file']) && @intval($obj['image-resized-width']) == $width && @intval($obj['image-resized-height'] == $height)) {
+	if (!empty($obj['image-resized-file']) && @intval($obj['image-resized-width']) == $width && @intval($obj['image-resized-height']) == $height) {
 		log_msg('debug', 'image_resize: width and height match the current resized file, no resize necessary');
 		return response(false);
 	}
