@@ -9,19 +9,20 @@
 
 function text_font_size_sync(elem) {
 	var obj = $.glue.owner(elem);
-	Alpine.$data(elem).tip = 'drag to change font size ('+$(obj).css('font-size')+'), click to reset to default one';
+	Alpine.$data(elem).tip = 'drag to change font size ('+getComputedStyle(obj).fontSize+'), click to reset to default one';
 }
 
 function text_align_sync(elem) {
 	var obj = $.glue.owner(elem);
-	var val = $(obj).css('text-align');
+	var val = getComputedStyle(obj).textAlign;
 	var label = (val == 'center') ? 'center' : (val == 'right') ? 'right' : (val == 'justify') ? 'justify' : 'left';
 	Alpine.$data(elem).tip = 'change text alignment ('+label+')';
 }
 
 function text_padding_sync(elem) {
 	var obj = $.glue.owner(elem);
-	Alpine.$data(elem).tip = 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one';
+	var computed = getComputedStyle(obj);
+	Alpine.$data(elem).tip = 'change padding ('+computed.paddingLeft+', '+computed.paddingTop+'), click to reset to default one';
 }
 
 $.glue.text = function()
@@ -58,7 +59,7 @@ $.glue.text = function()
 		}
 		return s;
 	};
-	
+
 	return {
 		get_fonts: function(fonts, woff_fonts) {
 			// get all fonts
@@ -93,10 +94,10 @@ $.glue.text = function()
 					if (tmp != -1 && tmp < end) {
 						end = tmp-1;
 					}
-					fonts.push($.trim(text.substr(start, end-start+1)));
+					fonts.push(text.substr(start, end-start+1).trim());
 					if (rule.selectorText.substr(0, 15) == '.glue-font-woff') {
 						// also add to woff_fonts
-						woff_fonts.push($.trim(text.substr(start, end-start+1)));
+						woff_fonts.push(text.substr(start, end-start+1).trim());
 					}
 				}
 			}
@@ -104,7 +105,6 @@ $.glue.text = function()
 		insert_at_cursor: function(elem, s) {
 			// inspired from http://forumsblogswikis.com/2008/07/20/how-to-insert-tabs-in-a-textarea/
 			// this only includes the code for Firefox and Webkit though
-			var elem = $(elem).get(0);
 			var start = elem.selectionStart;
 			var end = elem.selectionEnd;
 			elem.value = elem.value.substring(0, start)+s+elem.value.substring(end, elem.value.length);
@@ -147,167 +147,203 @@ $.glue.text = function()
 			return s;
 		},
 		stop_editing: function(elem) {
+			var input = elem.querySelector(':scope > .glue-text-input');
+			var render = elem.querySelector(':scope > .glue-text-render');
 			// copy the rendered textarea value
-			$(elem).children('.glue-text-render').html($.glue.text.render_content($(elem).children('.glue-text-input').val(), $(elem).attr('id')));
-			$(elem).removeClass('glue-text-editing');
-			// disable links
-			$(elem).children('.glue-text-render').find('a').bind('click', function(e) {
-				return false;
-			});
-			$(elem).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
-			// resolve relative urls
-			$(elem).children('.glue-text-render').find('a').each(function() {
+			render.innerHTML = $.glue.text.render_content(input.value, elem.id);
+			elem.classList.remove('glue-text-editing');
+			// disable links, resolve relative urls
+			render.querySelectorAll('a').forEach(function(a) {
+				a.addEventListener('click', function(e) {
+					e.preventDefault();
+					return false;
+				});
+				a.title = 'this link is disabled for editing';
 				// check if scheme is set
-				var url = $(this).attr('href');
+				var url = a.getAttribute('href');
 				if (url && url.charAt(0) != '#' && url.indexOf('://') < 1) {
-					$(this).attr('href', $.glue.base_url+url);
+					a.setAttribute('href', $.glue.base_url+url);
 				}
 			});
 			// hide the text area again
-			$(elem).children('.glue-text-input').css('display', 'none');
-			$(elem).children('.glue-text-render').css('display', 'block');
-			// update the textarea's inner html as well (.val() seems to be 
+			input.style.display = 'none';
+			render.style.display = 'block';
+			// update the textarea's inner html as well (.val() seems to be
 			// different from .text(), at least with jquery 1.5.2 on chromium 12
-			$(elem).children('.glue-text-input').text($(elem).children('.glue-text-input').val());
+			input.textContent = input.value;
 			// update the content on the server
 			// see the comments in $.glue.object.register_alter_pre_save below
-			$.glue.backend({ method: 'glue.update_object', name: $(elem).attr('id'), 'content': $(elem).children('.glue-text-input').val() });
+			$.glue.backend({ method: 'glue.update_object', name: elem.id, 'content': input.value });
 		}
 	};
 }();
 
-$('.text').glueLive('glue-register', function(e) {
-	// prevent events from bubbling up while we're editing 
+$.glue.live('.text', 'glue-register', function(e) {
+	// prevent events from bubbling up while we're editing
 	// and handle a few keycodes
-	$(this).children('.glue-text-input').bind('mousedown', function(e) {
-		// without this selecting text in the textarea doesn't work because of 
+	var input = this.querySelector(':scope > .glue-text-input');
+	var render = this.querySelector(':scope > .glue-text-render');
+
+	input.addEventListener('mousedown', function(e) {
+		// without this selecting text in the textarea doesn't work because of
 		// a mousedown handler on body in edit.js
-		if ($(this).css('display') == 'none') {
+		if (getComputedStyle(this).display == 'none') {
 			// we're not editing
 			return;
 		} else {
 			e.stopPropagation();
 		}
 	});
-		
-	$(this).children('.glue-text-input').bind('keydown', function(e) {
-		if ($(this).css('display') == 'none') {
+
+	input.addEventListener('keydown', function(e) {
+		if (getComputedStyle(this).display == 'none') {
 			// we're not editing
 			return;
 		} else {
 			e.stopPropagation();
 		}
-		
+
 		if (e.which == 9) {
 			// tab (key code 9)
-			$.glue.text.insert_at_cursor($(this), String.fromCharCode(9));
+			$.glue.text.insert_at_cursor(this, String.fromCharCode(9));
 			e.preventDefault();
 			return false;
 		} else if (e.shiftKey && e.which == 32) {
 			// shift+space: add a non-breakable space (&nbsp; or key code 160)
-			$.glue.text.insert_at_cursor($(this), String.fromCharCode(160));
+			$.glue.text.insert_at_cursor(this, String.fromCharCode(160));
 			e.preventDefault();
 			return false;
 		} else if (e.which == 27) {
-			$.glue.text.stop_editing($(this).parent());
+			$.glue.text.stop_editing(this.parentElement);
 			e.preventDefault();
 			return false;
 		}
- 
+
 	});
-	
-	$(this).children('.glue-text-input').bind('keypress', function(e) {
-		if ($(this).css('display') == 'none') {
-			// we're not editing
-			return;
-		} else {
-			e.stopPropagation();
-		}		
-	});
-	
-	$(this).children('.glue-text-input').bind('keyup', function(e) {
-		if ($(this).css('display') == 'none') {
+
+	input.addEventListener('keypress', function(e) {
+		if (getComputedStyle(this).display == 'none') {
 			// we're not editing
 			return;
 		} else {
 			e.stopPropagation();
 		}
 	});
-	
-	// disable links
-	$(this).children('.glue-text-render').find('a').bind('click', function(e) {
-		return false;
+
+	input.addEventListener('keyup', function(e) {
+		if (getComputedStyle(this).display == 'none') {
+			// we're not editing
+			return;
+		} else {
+			e.stopPropagation();
+		}
 	});
-	$(this).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
+
+	// disable links
+	render.querySelectorAll('a').forEach(function(a) {
+		a.addEventListener('click', function(e) {
+			e.preventDefault();
+			return false;
+		});
+		a.title = 'this link is disabled for editing';
+	});
 });
 
-$('.text').glueLive('glue-deselect', function(e) {
+$.glue.live('.text', 'glue-deselect', function(e) {
 	// check if we are editing
-	if ($(this).hasClass('glue-text-editing')) {
+	if (this.classList.contains('glue-text-editing')) {
 		$.glue.text.stop_editing(this);
 	}
 });
 
-$('.text.glue-selected').glueLive('click', function(e) {
+$.glue.live('.text.glue-selected', 'click', function(e) {
+	var self = this;
 	// check if we are already editing
-	if ($(this).hasClass('glue-text-editing')) {
+	if (self.classList.contains('glue-text-editing')) {
 		return;
 	}
 	// deselect all other objects
-	if ($(this).hasClass('glue-selected')) {
-		$('.glue-selected').not(this).each(function() {
-			$.glue.sel.deselect(this);
+	if (self.classList.contains('glue-selected')) {
+		Array.from(document.querySelectorAll('.glue-selected')).filter(function(el) {
+			return el !== self;
+		}).forEach(function(el) {
+			$.glue.sel.deselect(el);
 		});
 	}
 	// make the textarea visible
-	$(this).children('.glue-text-input').css('display', 'block');
-	$(this).children('.glue-text-render').css('display', 'none');
-	$(this).addClass('glue-text-editing');
+	var input = self.querySelector(':scope > .glue-text-input');
+	var render = self.querySelector(':scope > .glue-text-render');
+	input.style.display = 'block';
+	render.style.display = 'none';
+	self.classList.add('glue-text-editing');
 	// set focus and selection
-	$(this).children('.glue-text-input').focus();
-	if ($(this).children('.glue-text-input').get(0).setSelectionRange) {
-		$(this).children('.glue-text-input').get(0).setSelectionRange(0, 0);
+	input.focus();
+	if (input.setSelectionRange) {
+		input.setSelectionRange(0, 0);
 	}
 });
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = $('<img src="'+$.glue.base_url+'modules/text/text.png" alt="btn" title="add a new text object" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+	var elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text.png';
+	elem.alt = 'btn';
+	elem.title = 'add a new text object';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		// create new object
 		$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
-			var elem = $('<div class="text resizable object" style="position: absolute;"><textarea class="glue-text-input" style="display: none; height: 100%; width: 100%;"></textarea><div class="glue-text-render" style="height: 100%; width: 100%;"></div></div>');
-			$(elem).attr('id', data['name']);
+			var elem = document.createElement('div');
+			elem.className = 'text resizable object';
+			elem.style.position = 'absolute';
+			var input = document.createElement('textarea');
+			input.className = 'glue-text-input';
+			input.style.display = 'none';
+			input.style.height = '100%';
+			input.style.width = '100%';
+			var render = document.createElement('div');
+			render.className = 'glue-text-render';
+			render.style.height = '100%';
+			render.style.width = '100%';
+			elem.appendChild(input);
+			elem.appendChild(render);
+			elem.id = data['name'];
 			// default width and height is set in the css
 			// randomly pick one of the default colors
 			if ($.glue.conf.object.default_colors) {
 				var rand = Math.floor(Math.random()*$.glue.conf.object.default_colors.length);
-				$(elem).css('background-color', $.glue.conf.object.default_colors[rand]);
+				elem.style.backgroundColor = $.glue.conf.object.default_colors[rand];
 			}
-			$('body').append(elem);
+			document.body.appendChild(elem);
 			// make width and height explicit
-			$(elem).css('width', $(elem).width()+'px');
-			$(elem).css('height', $(elem).height()+'px');
+			elem.style.width = elem.offsetWidth+'px';
+			elem.style.height = elem.offsetHeight+'px';
 			// move to mouseclick
-			$(elem).css('left', (e.pageX-$(elem).outerWidth()/2)+'px');
-			$(elem).css('top', (e.pageY-$(elem).outerHeight()/2)+'px');
+			elem.style.left = (e.pageX-elem.offsetWidth/2)+'px';
+			elem.style.top = (e.pageY-elem.offsetHeight/2)+'px';
 			$.glue.object.register(elem);
 			$.glue.object.save(elem);
 		});
 		$.glue.menu.hide();
 	});
 	$.glue.menu.register('new', elem);
-	
+
 	//
 	// context menu items
 	//
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-color.png" alt="btn" title="change background color" width="32" height="32">');
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-background-color.png';
+	elem.alt = 'btn';
+	elem.title = 'change background color';
+	elem.width = 32;
+	elem.height = 32;
 	var colorpicker_shown = false;
-	$(elem).bind('click', function(e) {
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var col = $(obj).css('background-color');
+		var col = getComputedStyle(obj).backgroundColor;
 		if (e.shiftKey) {
 			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
 			if (!col) {
@@ -315,16 +351,16 @@ $(document).ready(function() {
 			}
 		}
 		$.glue.colorpicker.show(col, false, function(col) {
-			$(obj).css('background-color', col);
+			obj.style.backgroundColor = col;
 			// explicitly set the color for the textarea as changes to the parent object are not reflected while editing on Chrome 10.0.634.0 and below)
-			$(obj).children('.glue-text-input').css('background-color', col);
+			obj.querySelector(':scope > .glue-text-input').style.backgroundColor = col;
 		}, function (col) {
 			$.glue.object.save(obj);
 			colorpicker_shown = false;
 		});
 		colorpicker_shown = true;
 	});
-	$(elem).bind('glue-deselect', function(e) {
+	elem.addEventListener('glue-deselect', function(e) {
 		// hide the colorpicker if we opened it
 		if (colorpicker_shown) {
 			$.glue.colorpicker.hide();
@@ -332,24 +368,33 @@ $(document).ready(function() {
 		}
 	});
 	$.glue.contextmenu.register('text', 'text-background-color', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-transparent.png" alt="btn" title="make background transparent" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-background-transparent.png';
+	elem.alt = 'btn';
+	elem.title = 'make background transparent';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		$(obj).css('background-color', 'transparent');
-		$(obj).children('.glue-text-input').css('background-color', 'transparent');
+		obj.style.backgroundColor = 'transparent';
+		obj.querySelector(':scope > .glue-text-input').style.backgroundColor = 'transparent';
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-size.png" alt="btn" width="32" height="32">');
-	elem.attr('x-data', "{ tip: 'drag to change font size, click to reset to default one' }");
-	elem.attr('x-bind:title', 'tip');
-	elem.attr('x-on:glue-menu-activate', 'text_font_size_sync($el)');
-	$(elem).bind('mousedown', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-font-size.png';
+	elem.alt = 'btn';
+	elem.width = 32;
+	elem.height = 32;
+	elem.setAttribute('x-data', "{ tip: 'drag to change font size, click to reset to default one' }");
+	elem.setAttribute('x-bind:title', 'tip');
+	elem.setAttribute('x-on:glue-menu-activate', 'text_font_size_sync($el)');
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// we assume px here
-		var orig_val = parseInt($(obj).css('font-size'));
+		var orig_val = parseInt(getComputedStyle(obj).fontSize);
 		if (isNaN(orig_val)) {
 			orig_val = 10;
 		}
@@ -360,7 +405,7 @@ $(document).ready(function() {
 			if (val < 0) {
 				val = 0;
 			}
-			$(obj).css('font-size', val+'px');
+			obj.style.fontSize = val+'px';
 			Alpine.$data(that).tip = 'drag to change font size ('+val+'px), click to reset to default one';
 			if (x != 0 || y != 0) {
 				no_change = false;
@@ -368,21 +413,27 @@ $(document).ready(function() {
 		}, function(x, y) {
 			// reset font-size if there was no change at all
 			if (no_change) {
-				$(obj).css('font-size', '');
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-font-size' });
-				Alpine.$data(that).tip = 'drag to change font size ('+$(obj).css('font-size')+'px), click to reset to default one';
+				obj.style.fontSize = '';
+				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-font-size' });
+				Alpine.$data(that).tip = 'drag to change font size ('+getComputedStyle(obj).fontSize+'px), click to reset to default one';
 			} else {
 				$.glue.object.save(obj);
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('text', 'text-font-size', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-color.png" alt="btn" title="change font color" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-font-color.png';
+	elem.alt = 'btn';
+	elem.title = 'change font color';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var col = $(obj).css('color');
+		var col = getComputedStyle(obj).color;
 		if (e.shiftKey) {
 			col = prompt('Enter font color (e.g. #ff0000 or rgb(255, 0, 0))', col);
 			if (!col) {
@@ -390,7 +441,7 @@ $(document).ready(function() {
 			}
 		}
 		$.glue.colorpicker.show(col, false, function(col) {
-			$(obj).css('color', col);
+			obj.style.color = col;
 		}, function (col) {
 			$.glue.object.save(obj);
 			colorpicker_shown = false;
@@ -399,30 +450,35 @@ $(document).ready(function() {
 	});
 	// this also requires the glue-deselect handler above
 	$.glue.contextmenu.register('text', 'text-font-color', elem);
-	
-	elem = $('<div class="glue-text-font-family" style="height: 32px; width: 32px;" title="change typeface (click to cycle through available typefaces)">');
-	$(elem).bind('glue-menu-activate', function(e) {
+
+	elem = document.createElement('div');
+	elem.className = 'glue-text-font-family';
+	elem.style.height = '32px';
+	elem.style.width = '32px';
+	elem.title = 'change typeface (click to cycle through available typefaces)';
+	elem.addEventListener('glue-menu-activate', function(e) {
 		var obj = $.glue.owner(this);
 		var fonts = [];
 		var woff_fonts = [];
 		$.glue.text.get_fonts(fonts, woff_fonts);
 		// check if current font is a woff-font
-		var cur = $(obj).css('font-family');
+		var cur = getComputedStyle(obj).fontFamily;
+		var faceElem = document.getElementById('glue-contextmenu-text-font-face');
 		for (i=0; i < woff_fonts.length; i++) {
 			if (cur === woff_fonts[i]) {
 				// current font is a woff-font
-				$('#glue-contextmenu-text-font-face').addClass('glue-text-font-face');
-				$('#glue-contextmenu-text-font-face').removeClass('glue-text-font-family');
-				$('#glue-contextmenu-text-font-face').attr('title', 'this is a WOFF web-font ('+cur+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF');
+				faceElem.classList.add('glue-text-font-face');
+				faceElem.classList.remove('glue-text-font-family');
+				faceElem.title = 'this is a WOFF web-font ('+cur+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF';
 				return;
 			}
 		}
 		// not a woff-font
-		$('#glue-contextmenu-text-font-face').removeClass('glue-text-font-face');
-		$('#glue-contextmenu-text-font-face').addClass('glue-text-font-family');
-		$('#glue-contextmenu-text-font-face').attr('title', 'change typeface (click to cycle through available typefaces)');
+		faceElem.classList.remove('glue-text-font-face');
+		faceElem.classList.add('glue-text-font-family');
+		faceElem.title = 'change typeface (click to cycle through available typefaces)';
 	});
-	$(elem).bind('click', function(e) {
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var fonts = [];
 		var woff_fonts = [];
@@ -431,7 +487,7 @@ $(document).ready(function() {
 		//console.log(fonts);
 		//console.log(woff_fonts);
 		// search for current font
-		var cur = $(obj).css('font-family');
+		var cur = getComputedStyle(obj).fontFamily;
 		var n = false;
 		for (var i=0; i < fonts.length; i++) {
 			if (cur === fonts[i]) {
@@ -449,7 +505,7 @@ $(document).ready(function() {
 			n = 0;
 		}
 		if (n !== false) {
-			$(obj).css('font-family', fonts[n]);
+			obj.style.fontFamily = fonts[n];
 			// check if woff-font
 			var is_woff = false;
 			for (var i=0; i < woff_fonts.length; i++) {
@@ -459,41 +515,52 @@ $(document).ready(function() {
 				}
 			}
 			if (is_woff) {
-				$(this).addClass('glue-text-font-face');
-				$(this).removeClass('glue-text-font-family');
-				$(this).attr('title', 'this is a WOFF web-font ('+fonts[n]+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF');
+				this.classList.add('glue-text-font-face');
+				this.classList.remove('glue-text-font-family');
+				this.title = 'this is a WOFF web-font ('+fonts[n]+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF';
 			} else {
-				$(this).removeClass('glue-text-font-face');
-				$(this).addClass('glue-text-font-family');
-				$(this).attr('title', 'change typeface (click to cycle through available typefaces)');
+				this.classList.remove('glue-text-font-face');
+				this.classList.add('glue-text-font-family');
+				this.title = 'change typeface (click to cycle through available typefaces)';
 			}
 			$.glue.object.save(obj);
 		}
 	});
 	$.glue.contextmenu.register('text', 'text-font-face', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-style.png" alt="btn" title="change font style" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-font-style.png';
+	elem.alt = 'btn';
+	elem.title = 'change font style';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		if ($(obj).css('font-style') == 'normal' && ($(obj).css('font-weight') == 'bold' || $(obj).css('font-weight') == '700')) {
-			$(obj).css('font-style', 'italic');
-			$(obj).css('font-weight', 'normal');
-		} else if ($(obj).css('font-style') == 'italic' && ($(obj).css('font-weight') == 'normal' || $(obj).css('font-weight') == '400')) {
-			$(obj).css('font-style', 'italic');
-			$(obj).css('font-weight', 'bold');
-		} else if ($(obj).css('font-style') == 'italic' && ($(obj).css('font-weight') == 'bold' || $(obj).css('font-weight') == '700')) {
-			$(obj).css('font-style', 'normal');
-			$(obj).css('font-weight', 'normal');
+		var computed = getComputedStyle(obj);
+		if (computed.fontStyle == 'normal' && (computed.fontWeight == 'bold' || computed.fontWeight == '700')) {
+			obj.style.fontStyle = 'italic';
+			obj.style.fontWeight = 'normal';
+		} else if (computed.fontStyle == 'italic' && (computed.fontWeight == 'normal' || computed.fontWeight == '400')) {
+			obj.style.fontStyle = 'italic';
+			obj.style.fontWeight = 'bold';
+		} else if (computed.fontStyle == 'italic' && (computed.fontWeight == 'bold' || computed.fontWeight == '700')) {
+			obj.style.fontStyle = 'normal';
+			obj.style.fontWeight = 'normal';
 		} else {
-			$(obj).css('font-style', 'normal');
-			$(obj).css('font-weight', 'bold');
+			obj.style.fontStyle = 'normal';
+			obj.style.fontWeight = 'bold';
 		}
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-font-style', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-line-height.png" alt="btn" title="change line height, click to reset to default one" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-line-height.png';
+	elem.alt = 'btn';
+	elem.title = 'change line height, click to reset to default one';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
 		var obj = $.glue.owner(this);
@@ -504,16 +571,17 @@ $(document).ready(function() {
 		}
 		*/
 	});
-	$(elem).bind('mousedown', function(e) {
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// jquery seems to always return line-height in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
-		var font_size = parseFloat($(obj).css('font-size'));
-		if ($(obj).css('line-height').substr(-2) == 'em') {
-			var orig_val = parseFloat($(obj).css('line-height'))*font_size;
-		} else if ($(obj).css('line-height').substr(-2) == 'px') {
-			var orig_val = parseFloat($(obj).css('line-height'));
+		var font_size = parseFloat(getComputedStyle(obj).fontSize);
+		var line_height = getComputedStyle(obj).lineHeight;
+		if (line_height.substr(-2) == 'em') {
+			var orig_val = parseFloat(line_height)*font_size;
+		} else if (line_height.substr(-2) == 'px') {
+			var orig_val = parseFloat(line_height);
 		} else {
 			// some sane fallback
 			var orig_val = font_size*1.2;
@@ -526,7 +594,7 @@ $(document).ready(function() {
 				val = 0;
 			}
 			// set line-height in em
-			$(obj).css('line-height', (val/font_size)+'em');
+			obj.style.lineHeight = (val/font_size)+'em';
 			//$(that).attr('title', 'change line height ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
@@ -534,8 +602,8 @@ $(document).ready(function() {
 		}, function(x, y) {
 			// reset line-height if there was no change at all
 			if (no_change) {
-				$(obj).css('line-height', '');
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-line-height' });
+				obj.style.lineHeight = '';
+				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-line-height' });
 				/*
 				if ($(obj).css('line-height').substr(-2) == 'em') {
 					$(that).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
@@ -547,12 +615,18 @@ $(document).ready(function() {
 				$.glue.object.save(obj);
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('text', 'text-line-height', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-letter-spacing.png" alt="btn" title="change letter spacing" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-letter-spacing.png';
+	elem.alt = 'btn';
+	elem.title = 'change letter spacing';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
 		var obj = $.glue.owner(this);
@@ -563,16 +637,17 @@ $(document).ready(function() {
 		}
 		*/
 	});
-	$(elem).bind('mousedown', function(e) {
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// jquery seems to always return letter-spacing in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
-		var font_size = parseFloat($(obj).css('font-size'));
-		if ($(obj).css('letter-spacing').substr(-2) == 'em') {
-			var orig_val = parseFloat($(obj).css('letter-spacing'))*font_size;
-		} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
-			var orig_val = parseFloat($(obj).css('letter-spacing'));
+		var font_size = parseFloat(getComputedStyle(obj).fontSize);
+		var letter_spacing = getComputedStyle(obj).letterSpacing;
+		if (letter_spacing.substr(-2) == 'em') {
+			var orig_val = parseFloat(letter_spacing)*font_size;
+		} else if (letter_spacing.substr(-2) == 'px') {
+			var orig_val = parseFloat(letter_spacing);
 		} else {
 			// some sane fallback
 			var orig_val = 0.0;
@@ -581,7 +656,7 @@ $(document).ready(function() {
 		var that = this;
 		$.glue.slider(e, function(x, y) {
 			var val = orig_val+y/6;
-			$(obj).css('letter-spacing', (val/font_size)+'em');
+			obj.style.letterSpacing = (val/font_size)+'em';
 			//$(that).attr('title', 'change letter spacing ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
@@ -589,8 +664,8 @@ $(document).ready(function() {
 		}, function(x, y) {
 			// reset letter-spacing if there was no change at all
 			if (no_change) {
-				$(obj).css('letter-spacing', '');
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-letter-spacing' });
+				obj.style.letterSpacing = '';
+				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-letter-spacing' });
 				/*
 				if ($(obj).css('letter-spacing').substr(-2) == 'em') {
 					$(that).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
@@ -602,12 +677,18 @@ $(document).ready(function() {
 				$.glue.object.save(obj);
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('text', 'text-letter-spacing', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-word-spacing.png" alt="btn" title="change word spacing" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-word-spacing.png';
+	elem.alt = 'btn';
+	elem.title = 'change word spacing';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
 		var obj = $.glue.owner(this);
@@ -618,16 +699,17 @@ $(document).ready(function() {
 		}
 		*/
 	});
-	$(elem).bind('mousedown', function(e) {
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// jquery seems to always return word-spacing in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
-		var font_size = parseFloat($(obj).css('font-size'));
-		if ($(obj).css('word-spacing').substr(-2) == 'em') {
-			var orig_val = parseFloat($(obj).css('word-spacing'))*font_size;
-		} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
-			var orig_val = parseFloat($(obj).css('word-spacing'));
+		var font_size = parseFloat(getComputedStyle(obj).fontSize);
+		var word_spacing = getComputedStyle(obj).wordSpacing;
+		if (word_spacing.substr(-2) == 'em') {
+			var orig_val = parseFloat(word_spacing)*font_size;
+		} else if (word_spacing.substr(-2) == 'px') {
+			var orig_val = parseFloat(word_spacing);
 		} else {
 			// some sane fallback
 			var orig_val = 0.0;
@@ -636,7 +718,7 @@ $(document).ready(function() {
 		var that = this;
 		$.glue.slider(e, function(x, y) {
 			var val = orig_val+y/6;
-			$(obj).css('word-spacing', (val/font_size)+'em');
+			obj.style.wordSpacing = (val/font_size)+'em';
 			//$(that).attr('title', 'change word spacing ('+(val/font_size)+'em), click to reset to default one');
 			if (x != 0 || y != 0) {
 				no_change = false;
@@ -644,8 +726,8 @@ $(document).ready(function() {
 		}, function(x, y) {
 			// reset word-spacing if there was no change at all
 			if (no_change) {
-				$(obj).css('word-spacing', '');
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-word-spacing' });
+				obj.style.wordSpacing = '';
+				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-word-spacing' });
 				/*
 				if ($(obj).css('word-spacing').substr(-2) == 'em') {
 					$(that).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
@@ -657,52 +739,62 @@ $(document).ready(function() {
 				$.glue.object.save(obj);
 			}
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('text', 'text-word-spacing', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-align.png" alt="btn" width="32" height="32">');
-	elem.attr('x-data', "{ tip: 'change text alignment' }");
-	elem.attr('x-bind:title', 'tip');
-	elem.attr('x-on:glue-menu-activate', 'text_align_sync($el)');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-align.png';
+	elem.alt = 'btn';
+	elem.width = 32;
+	elem.height = 32;
+	elem.setAttribute('x-data', "{ tip: 'change text alignment' }");
+	elem.setAttribute('x-bind:title', 'tip');
+	elem.setAttribute('x-on:glue-menu-activate', 'text_align_sync($el)');
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var val = $(obj).css('text-align');
+		var val = getComputedStyle(obj).textAlign;
 		var data = Alpine.$data(this);
 		if (val == 'center') {
-			$(obj).css('text-align', 'right');
+			obj.style.textAlign = 'right';
 			data.tip = 'change text alignment (right)';
 		} else if (val == 'right') {
-			$(obj).css('text-align', 'justify');
+			obj.style.textAlign = 'justify';
 			data.tip = 'change text alignment (justify)';
 		} else if (val == 'justify') {
-			$(obj).css('text-align', 'left');
+			obj.style.textAlign = 'left';
 			data.tip = 'change text alignment (left)';
 		} else {
-			$(obj).css('text-align', 'center');
+			obj.style.textAlign = 'center';
 			data.tip = 'change text alignment (center)';
 		}
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-align', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-padding.png" alt="btn" width="32" height="32">');
-	elem.attr('x-data', "{ tip: 'change padding, click to reset to default one' }");
-	elem.attr('x-bind:title', 'tip');
-	elem.attr('x-on:glue-menu-activate', 'text_padding_sync($el)');
-	$(elem).bind('mousedown', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/text/text-padding.png';
+	elem.alt = 'btn';
+	elem.width = 32;
+	elem.height = 32;
+	elem.setAttribute('x-data', "{ tip: 'change padding, click to reset to default one' }");
+	elem.setAttribute('x-bind:title', 'tip');
+	elem.setAttribute('x-on:glue-menu-activate', 'text_padding_sync($el)');
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// we assume px here, and for {left,right} {top,bottom} to be the same
-		var orig_x = parseInt($(obj).css('padding-left'));
+		var computed = getComputedStyle(obj);
+		var orig_x = parseInt(computed.paddingLeft);
 		if (isNaN(orig_x)) {
 			orig_x = 0;
 		}
-		var orig_w = $(obj).width();
-		var orig_y = parseInt($(obj).css('padding-top'));
+		var orig_w = obj.offsetWidth;
+		var orig_y = parseInt(computed.paddingTop);
 		if (isNaN(orig_y)) {
 			orig_y = 0;
 		}
-		var orig_h = $(obj).height();
+		var orig_h = obj.offsetHeight;
 		var no_change = true;
 		var that = this;
 		$.glue.slider(e, function(x, y, e) {
@@ -722,13 +814,13 @@ $(document).ready(function() {
 					val_y = val_x;
 				}
 			}
-			$(obj).css('padding-left', val_x+'px');
-			$(obj).css('padding-right', val_x+'px');
+			obj.style.paddingLeft = val_x+'px';
+			obj.style.paddingRight = val_x+'px';
 			// resize object
-			$(obj).css('width', (orig_w+2*orig_x-2*val_x)+'px');
-			$(obj).css('padding-top', val_y+'px');
-			$(obj).css('padding-bottom', val_y+'px');
-			$(obj).css('height', (orig_h+2*orig_y-2*val_y)+'px');
+			obj.style.width = (orig_w+2*orig_x-2*val_x)+'px';
+			obj.style.paddingTop = val_y+'px';
+			obj.style.paddingBottom = val_y+'px';
+			obj.style.height = (orig_h+2*orig_y-2*val_y)+'px';
 			Alpine.$data(that).tip = 'change padding ('+val_x+'px, '+val_y+'px), click to reset to default one';
 			if (x != 0 || y != 0) {
 				no_change = false;
@@ -736,42 +828,47 @@ $(document).ready(function() {
 		}, function(x, y) {
 			// reset padding if there was no change at all
 			if (no_change) {
-				var var_x = parseInt($(obj).css('padding-left'));
+				var var_x = parseInt(getComputedStyle(obj).paddingLeft);
 				if (!isNaN(var_x)) {
 					// resize object
-					$(obj).css('width', ($(obj).width()+2*var_x)+'px');
+					obj.style.width = (obj.offsetWidth+2*var_x)+'px';
 				}
-				var var_y = parseInt($(obj).css('padding-top'));
+				var var_y = parseInt(getComputedStyle(obj).paddingTop);
 				if (!isNaN(var_y)) {
-					$(obj).css('height', ($(obj).height()+2*var_y)+'px');
+					obj.style.height = (obj.offsetHeight+2*var_y)+'px';
 				}
-				$(obj).css('padding-left', '');
-				$(obj).css('padding-right', '');
-				$(obj).css('padding-top', '');
-				$(obj).css('padding-bottom', '');
-				Alpine.$data(that).tip = 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one';
+				obj.style.paddingLeft = '';
+				obj.style.paddingRight = '';
+				obj.style.paddingTop = '';
+				obj.style.paddingBottom = '';
+				var resetComputed = getComputedStyle(obj);
+				Alpine.$data(that).tip = 'change padding ('+resetComputed.paddingLeft+', '+resetComputed.paddingTop+'), click to reset to default one';
 			}
 			// use object.save() in both cases (width and height got changed too)
 			$.glue.object.save(obj);
 		});
+		e.preventDefault();
 		return false;
 	});
 	$.glue.contextmenu.register('text', 'text-text-padding', elem);
-	
+
 	// make sure we don't send to much over the wire for every save
+	// (obj here is edit.js's still-jQuery-wrapped save clone - kept as
+	// jQuery until edit.js's save() and the other register_alter_pre_save
+	// consumers (download/iframe/webvideo) convert together in one pass)
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {
 		// clear the textarea's background-image that Chrome sends along
 		$(obj).children('.glue-text-input').css('background-image', '');
 		// the textarea's content is automatically not included
-		// we can read it out using 
+		// we can read it out using
 		// $(orig).children('.glue-text-input').val()
-		// and even set it using 
+		// and even set it using
 		// $(obj).children('.glue-text-input').get(0).innerHTML
-		// but later on (when turning the element into a string) the content of the 
+		// but later on (when turning the element into a string) the content of the
 		// textarea get's magically encoded
 		// a la:
 		// &lt;a href="asd"&gt;test&lt;/a&gt;
-		// for this reason we update the object's content not through 
+		// for this reason we update the object's content not through
 		// $.glue.object.update
 		$(obj).children('.glue-text-input').remove();
 		$(obj).children('.glue-text-render').remove();
