@@ -453,7 +453,7 @@ register_hook('has_reference', 'used for deleting referenced resources');
  */
 function delete_upload($args)
 {
-	if (@is_numeric($args['max_cnt'])) {
+	if ((isset($args['max_cnt']) && is_numeric($args['max_cnt']))) {
 		$max_cnt = intval($args['max_cnt']);
 	} else {
 		$max_cnt = 0;
@@ -1222,20 +1222,28 @@ function save_state($args)
 	$elem = html_parse_elem($args['html']);
 	if (!elem_has_class($elem, 'object')) {
 		return response('Error saving state as class "object" is not set', 400);
-	} elseif (!object_exists(elem_attr($elem, 'id'))) {
+	}
+	// elem_attr() returns NULL if the element has no id attribute at all
+	// (e.g. malformed input) - guard against that before it propagates into
+	// object_exists()/_obj_lock(), which both pass it on to string
+	// functions that don't accept null
+	$id = elem_attr($elem, 'id');
+	if (empty($id)) {
+		return response('Error saving state as object has no id', 400);
+	} elseif (!object_exists($id)) {
 		return response('Error saving state as object does not exist', 404);
 	}
-	
+
 	// LOCK
-	$L = _obj_lock(elem_attr($elem, 'id'), LOCK_TIME);
+	$L = _obj_lock($id, LOCK_TIME);
 	if ($L === false) {
 		return response('Could not acquire lock to '.quot($args['name']).' in '.LOCK_TIME.'ms', 500);
 	}
-	$obj = load_object(['name'=>elem_attr($elem, 'id')]);
+	$obj = load_object(['name'=>$id]);
 	if ($obj['#error']) {
 		// UNLOCK
 		_obj_unlock($L);
-		return response('Error saving state, cannot load '.quot(elem_attr($elem, 'id')), 500);
+		return response('Error saving state, cannot load '.quot($id), 500);
 	} else {
 		$obj = $obj['#data'];
 	}
@@ -1531,7 +1539,7 @@ function upload_references($args)
 		return response('Required argument "file" missing or empty', 400);
 	}
 	// this is an optimization for delete_upload()
-	if (@is_numeric($args['stop_after'])) {
+	if ((isset($args['stop_after']) && is_numeric($args['stop_after']))) {
 		$stop_after = intval($args['stop_after']);
 	} else {
 		$stop_after = 0;

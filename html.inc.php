@@ -92,7 +92,7 @@ function elem($tag)
  */
 function elem_add_class(&$elem, $c)
 {
-	if (!@is_array($elem['class'])) {
+	if ((!isset($elem['class']) || !is_array($elem['class']))) {
 		$elem['class'] = [];
 	}
 	$elem['class'][] = $c;
@@ -156,7 +156,7 @@ function elem_attr(&$elem)
  */
 function elem_classes($elem)
 {
-	if (@is_array($elem['class'])) {
+	if ((isset($elem['class']) && is_array($elem['class']))) {
 		return $elem['class'];
 	} else {
 		return [];
@@ -174,13 +174,13 @@ function elem_classes($elem)
 function elem_css(&$elem)
 {
 	if (func_num_args() == 2) {
-		if (@is_array($elem['style']) && isset($elem['style'][func_get_arg(1)])) {
+		if ((isset($elem['style']) && is_array($elem['style'])) && isset($elem['style'][func_get_arg(1)])) {
 			return $elem['style'][func_get_arg(1)];
 		} else {
 			return NULL;
 		}
 	} elseif (2 < func_num_args()) {
-		if (!@is_array($elem['style'])) {
+		if ((!isset($elem['style']) || !is_array($elem['style']))) {
 			$elem['style'] = [];
 		}
 		if (func_get_arg(2) === '') {
@@ -208,7 +208,7 @@ function elem_finalize($elem)
 		$ret .= ' id="'.htmlspecialchars($elem['id'], ENT_COMPAT, 'UTF-8').'"';
 		unset($elem['id']);
 	}
-	if (@is_array($elem['class'])) {
+	if ((isset($elem['class']) && is_array($elem['class']))) {
 		$ret .= ' class="'.htmlspecialchars(implode(' ', $elem['class']), ENT_COMPAT, 'UTF-8').'"';
 		unset($elem['class']);
 	}
@@ -246,12 +246,12 @@ function elem_finalize($elem)
 	
 	// handle text, an element array or an array of both
 	$content = '';
-	if (@is_string($elem['val'])) {
+	if ((isset($elem['val']) && is_string($elem['val']))) {
 		$content = $elem['val'];
-	} elseif (@is_array($elem['val']) && isset($elem['val']['tag'])) {
+	} elseif ((isset($elem['val']) && is_array($elem['val'])) && isset($elem['val']['tag'])) {
 		// this is recursive
 		$content = elem_finalize($elem['val']);
-	} elseif (@is_array($elem['val'])) {
+	} elseif ((isset($elem['val']) && is_array($elem['val']))) {
 		foreach ($elem['val'] as $v) {
 			if (is_string($v)) {
 				$content .= $v;
@@ -324,7 +324,7 @@ function elem_remove_attr(&$elem, $a)
  */
 function elem_remove_class(&$elem, $c)
 {
-	if (@is_array($elem['class'])) {
+	if ((isset($elem['class']) && is_array($elem['class']))) {
 		if (($k = array_search($c, $elem['class'])) !== false) {
 			array_splice($elem['class'], $k, 1);
 		}
@@ -359,7 +359,7 @@ function elem_tag($elem)
 function elem_val(&$elem)
 {
 	if (func_num_args() == 1) {
-		if (@is_string($elem['val'])) {
+		if ((isset($elem['val']) && is_string($elem['val']))) {
 			return $elem['val'];
 		} else {
 			return '';
@@ -380,7 +380,7 @@ function elem_val(&$elem)
 function html_add_alternate($type, $url, $title)
 {
 	global $html;
-	if (!@is_array($html['header']['alternate'])) {
+	if ((!isset($html['header']['alternate']) || !is_array($html['header']['alternate']))) {
 		$html['header']['alternate'] = [];
 	}
 	$html['header']['alternate'][] = ['type'=>$type, 'url'=>$url, 'title'=>$title];
@@ -397,7 +397,7 @@ function html_add_alternate($type, $url, $title)
 function html_add_css($url, $prio = 5, $media = '')
 {
 	global $html;
-	if (!@is_array($html['header']['css'])) {
+	if ((!isset($html['header']['css']) || !is_array($html['header']['css']))) {
 		$html['header']['css'] = [];
 	}
 	$html['header']['css'][] = ['url'=>$url, 'prio'=>$prio, 'media'=>$media];
@@ -413,7 +413,7 @@ function html_add_css($url, $prio = 5, $media = '')
 function html_add_css_inline($rule, $prio = 5)
 {
 	global $html;
-	if (!@is_array($html['header']['css_inline'])) {
+	if ((!isset($html['header']['css_inline']) || !is_array($html['header']['css_inline']))) {
 		$html['header']['css_inline'] = [];
 	}
 	$html['header']['css_inline'][] = ['rule'=>$rule, 'prio'=>$prio];
@@ -428,7 +428,7 @@ function html_add_css_inline($rule, $prio = 5)
 function html_add_head_inline($def, $prio = 5)
 {
 	global $html;
-	if (!@is_array($html['header']['head_inline'])) {
+	if ((!isset($html['header']['head_inline']) || !is_array($html['header']['head_inline']))) {
 		$html['header']['head_inline'] = [];
 	}
 	$html['header']['head_inline'][] = ['def'=>$def, 'prio'=>$prio];
@@ -443,7 +443,7 @@ function html_add_head_inline($def, $prio = 5)
 function html_add_body_inline($def, $prio = 5)
 {
 	global $html;
-	if (!@is_array($html['body']['body_inline'])) {
+	if ((!isset($html['body']['body_inline']) || !is_array($html['body']['body_inline']))) {
 		$html['body']['body_inline'] = [];
 	}
 	$html['body']['body_inline'][] = ['def'=>$def, 'prio'=>$prio];
@@ -458,7 +458,7 @@ function html_add_body_inline($def, $prio = 5)
 function html_add_js($url, $prio = 5)
 {
 	global $html;
-	if (!@is_array($html['header']['js'])) {
+	if ((!isset($html['header']['js']) || !is_array($html['header']['js']))) {
 		$html['header']['js'] = [];
 	}
 	$html['header']['js'][] = ['url'=>$url, 'prio'=>$prio];
@@ -475,7 +475,7 @@ function html_add_js($url, $prio = 5)
 function html_add_js_inline($code, $prio = 5, $reason = '')
 {
 	global $html;
-	if (!@is_array($html['header']['js_inline'])) {
+	if ((!isset($html['header']['js_inline']) || !is_array($html['header']['js_inline']))) {
 		$html['header']['js_inline'] = [];
 	}
 	$html['header']['js_inline'][] = ['code'=>$code, 'prio'=>$prio, 'reason'=>$reason];
@@ -491,7 +491,7 @@ function html_add_js_inline($code, $prio = 5, $reason = '')
 function html_add_js_var($key, $val)
 {
 	global $html;
-	if (!@is_array($html['header']['js_var'])) {
+	if ((!isset($html['header']['js_var']) || !is_array($html['header']['js_var']))) {
 		$html['header']['js_var'] = [];
 	}
 	$html['header']['js_var'][$key] = $val;
@@ -508,13 +508,13 @@ function html_css($prop)
 {
 	global $html;
 	if (func_num_args() == 1) {
-		if (@is_array($html['header']['style']) && isset($html['header']['style'][$prop])) {
+		if ((isset($html['header']['style']) && is_array($html['header']['style'])) && isset($html['header']['style'][$prop])) {
 			return $html['header']['style'][$prop];
 		} else {
 			return NULL;
 		}
 	} elseif (1 < func_num_args()) {
-		if (!@is_array($html['header']['style'])) {
+		if ((!isset($html['header']['style']) || !is_array($html['header']['style']))) {
 			$html['header']['style'] = [];
 		}
 		if (func_get_arg(1) === '') {
@@ -552,7 +552,7 @@ function html_favicon()
 {
 	global $html;
 	if (func_num_args() == 0) {
-		if (@is_string($html['header']['favicon'])) {
+		if ((isset($html['header']['favicon']) && is_string($html['header']['favicon']))) {
 			return $html['header']['favicon'];
 		} else {
 			return '';
@@ -576,7 +576,7 @@ function html_finalize(&$cache = false)
 	// return html5
 	$ret = '<!DOCTYPE html>'.nl();
 	$ret .= '<html';
-	if (@is_array($html['header']['style'])) {
+	if ((isset($html['header']['style']) && is_array($html['header']['style']))) {
 		$ret .= ' style="';
 		ksort($html['header']['style']);
 		foreach ($html['header']['style'] as $key=>$val) {
@@ -590,7 +590,7 @@ function html_finalize(&$cache = false)
 	$ret .= '<head>'.nl();
 	$ret .= '<title>'.htmlspecialchars($html['header']['title'], ENT_NOQUOTES, 'UTF-8').'</title>'.nl();
 	$ret .= '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'.nl();
-	if (@is_array($html['header']['alternate'])) {
+	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();
 		}
@@ -598,7 +598,7 @@ function html_finalize(&$cache = false)
 	if (!empty($html['header']['favicon'])) {
 		$ret .= '<link rel="shortcut icon" href="'.htmlspecialchars($html['header']['favicon'], ENT_COMPAT, 'UTF-8').'">'.nl();
 	}
-	if (@is_array($html['header']['css'])) {
+	if ((isset($html['header']['css']) && is_array($html['header']['css']))) {
 		_array_sort_by_prio($html['header']['css']);
 		// removed the removal of duplicates here as two different media might point to the same url
 		//array_unique_element($html['header']['css'], 'url');
@@ -610,7 +610,7 @@ function html_finalize(&$cache = false)
 			$ret .= '>'.nl();
 		}
 	}
-	if (@is_array($html['header']['css_inline'])) {
+	if ((isset($html['header']['css_inline']) && is_array($html['header']['css_inline']))) {
 		_array_sort_by_prio($html['header']['css_inline']);
 		if (0 < count($html['header']['css_inline'])) {
 			$ret .= '<style type="text/css">'.nl();
@@ -629,17 +629,17 @@ function html_finalize(&$cache = false)
 			$ret .= '</style>'.nl();
 		}
 	}
-	if (@is_array($html['header']['js'])) {
+	if ((isset($html['header']['js']) && is_array($html['header']['js']))) {
 		_array_sort_by_prio($html['header']['js']);
 		array_unique_element($html['header']['js'], 'url');
 		foreach ($html['header']['js'] as $e) {
 			$ret .= '<script type="text/javascript" src="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'"></script>'.nl();
 		}
 	}
-	if (@is_array($html['header']['js_var'])) {
+	if ((isset($html['header']['js_var']) && is_array($html['header']['js_var']))) {
 		$ret .= array_to_js($html['header']['js_var']);
 	}
-	if (@is_array($html['header']['js_inline'])) {
+	if ((isset($html['header']['js_inline']) && is_array($html['header']['js_inline']))) {
 		_array_sort_by_prio($html['header']['js_inline']);
 		foreach ($html['header']['js_inline'] as $c) {
 			if (!empty($c['reason'])) {
@@ -656,7 +656,7 @@ function html_finalize(&$cache = false)
 			}
 		}
 	}
-	if (@is_array($html['header']['head_inline'])) {
+	if ((isset($html['header']['head_inline']) && is_array($html['header']['head_inline']))) {
 		_array_sort_by_prio($html['header']['head_inline']);
 		if (0 < count($html['header']['head_inline'])) {
 			$ret .= '<!-- user HEAD definitions -->'.nl();
@@ -673,7 +673,7 @@ function html_finalize(&$cache = false)
 	}
 	$ret .= '</head>'.nl();
 	// load user body definitions
-	if (@is_array($html['body']['body_inline'])) {
+	if ((isset($html['body']['body_inline']) && is_array($html['body']['body_inline']))) {
 		_array_sort_by_prio($html['body']['body_inline']);
 		if (0 < count($html['body']['body_inline'])) {
 			$user_body = '<!-- user BODY definitions -->'.nl();
