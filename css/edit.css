@@ -17,6 +17,15 @@
 	z-index: 99999 !important;
 }
 
+.moveable-control {
+	/* Moveable's default resize handle is a 14px blue circle with a white
+	   border - restyled to a plain square backdrop matching the look of
+	   the context-menu/toolbar icon PNGs (light grey, semi-transparent) */
+	background: rgba(204, 204, 204, 0.5) !important;
+	border: none !important;
+	border-radius: 0 !important;
+}
+
 #glue-colorpicker {
 	/* colorpicker used for page and objects alike */
 	bottom: 20px;
