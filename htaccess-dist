@@ -1,0 +1,53 @@
+# useful for debugging taugh cases
+# php_flag display_errors on
+
+# make sure MultiViews is disabled
+Options -MultiViews
+
+# disable listing of directories
+Options -Indexes
+
+RewriteEngine on
+
+# on some installations it might be necessary to explicitly set the base URL
+# if you have your hotglue installation on http://foo.com/bar this would be /bar
+# see README for details
+# RewriteBase /bar
+
+# this seems to be needed for authentication if php is working in cgi mode
+# in that case it is also nessesary to set 'AUTH_METHOD','basic' in config.inc.php
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# shortcut for json
+RewriteRule ^json/?$ json.php [L]
+
+# redirect everything that is not a real file or directory towards index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?$1
+
+# disallow access to a bunch of static files
+# Apache 2.4, see below for Apache 2.2 section
+<Files COPYING>
+  Require all denied
+</Files>
+<Files INSTALL>
+  Require all denied
+</Files>
+<Files README>
+  Require all denied
+</Files>
+
+# Apache 2.2
+#<Files COPYING>
+#	order deny,allow
+#	deny from all
+#</Files>
+#<Files INSTALL>
+#	order deny,allow
+#	deny from all
+#</Files>
+#<Files README>
+#	order deny,allow
+#	deny from all
+#</Files>
