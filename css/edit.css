@@ -1,5 +1,22 @@
 /* this file is being included for editing a page */
 
+.moveable-line {
+	/* Moveable renders a bounding-box outline around every registered
+	   object (draggable or not) by default; jQuery UI's draggable/resizable
+	   never showed one outside of an active drag, only small resize-handle
+	   squares, so it's hidden here to match */
+	display: none !important;
+}
+
+.moveable-control-box {
+	/* objects can have a z-index up to 199 ($.glue.stack); Moveable's
+	   control box defaults to z-index 10, which a same-position object can
+	   then win the hit-test against at their shared corner/edge pixels,
+	   making resize handles unclickable. jQuery UI's own resize handles
+	   used z-index 99999 for the same reason - matched here */
+	z-index: 99999 !important;
+}
+
 #glue-colorpicker {
 	/* colorpicker used for page and objects alike */
 	bottom: 20px;

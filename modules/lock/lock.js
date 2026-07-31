@@ -21,13 +21,16 @@ $('.object').live('glue-object-lock', function(e) {
 	// disable dragging and resize
 
 	if ($(this).hasClass('locked')) {
-		$(this).draggable('disable');
-		$(this).resizable('disable');
+		var m = $.glue.object.moveable_of(this);
+		if (m) {
+			m.draggable = false;
+			m.resizable = false;
+		}
 		// small workaround for textarea resize handle
 		if ($(this).hasClass('text')) {
 			$(this).children('textarea').css('resize', 'none');
 		}
-	} 
+	}
 });
 
 
@@ -59,16 +62,21 @@ $(document).ready(function() {
 		var that = this;
 		var obj = $(this).data('owner');
 
+		var m = $.glue.object.moveable_of(obj);
 		if ($(obj).hasClass('locked')) {
 			$(obj).removeClass('locked');
-			$(obj).draggable('enable');
-			$(obj).resizable('enable');
+			if (m) {
+				m.draggable = true;
+				m.resizable = $(obj).hasClass('resizable');
+			}
 			$.glue.contextmenu.hide();
 			$.glue.contextmenu.show(obj);
 		} else {
 			$(obj).addClass('locked');
-			$(obj).draggable('disable');
-			$(obj).resizable('disable');
+			if (m) {
+				m.draggable = false;
+				m.resizable = false;
+			}
 			if ($(obj).hasClass('text')) {
 				$(obj).children('textarea').css('resize', 'none');
 			}

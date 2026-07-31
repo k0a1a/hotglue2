@@ -564,24 +564,9 @@ $.glue.grid = function()
 		} else {
 			remove();
 		}
-		// bit 1 changes drag behavior
-		// this is not working as expected (the object snaps every x/y pixels 
-		// form the current position, not from 0/0)
-		// TODO (later): implement this properly
-		if ((grid_mode & 2)) {
-			$('.object').draggable('option', 'grid', [grid_x, grid_y]);		
-		} else {
-			$('.object').draggable('option', 'grid', false);
-		}
-		// bit 2 changes resize behavior
-		// this is not working as expected (the object snaps every x/y pixels 
-		// form the current position, not from 0/0)
-		// TODO (later): implement this properly
-		if ((grid_mode & 4)) {
-			$('.resizable').resizable('option', 'grid', [grid_x, grid_y]);
-		} else {
-			$('.resizable').resizable('option', 'grid', false);
-		}
+		// bits 1/2 (drag/resize snap-to-grid) are applied live by each
+		// object's Moveable drag/resize handlers reading grid_mode()/x()/y()
+		// directly, rather than through a widget option here
 	};
 	
 	var remove = function() {
@@ -829,60 +814,15 @@ $.glue.menu = function()
 $.glue.object = function()
 {
 	var alter_pre_save = {};
-	var resize_prev_grid = false;
 	var reg_objs = {};
-	
-	$('.resizable').live('glue-pre-clone', function(e) {
-		// remove the jqueryui resizable-related stuff from the object
-		$(this).removeClass('ui-resizable');
-		$(this).children('.ui-resizable-handle').remove();
-	});
-	
-	$('.object').live('resize', function(e) {
-		// ignore grid when ctrl is pressed
-		if (e.ctrlKey) {
-			if ($(this).resizable('option', 'grid') !== false) {
-				// save previous setting
-				resize_prev_grid = $(this).resizable('option', 'grid');
-				// disable grid
-				$(this).resizable('option', 'grid', false);
-			}
-		} else {
-			// reset previous setting
-			if (resize_prev_grid) {
-				$(this).resizable('option', 'grid', resize_prev_grid);
-				resize_prev_grid = false;
-			}
-		}
-		$.glue.object.resizable_update_tooltip(this);
-		$(this).trigger('glue-resize');
-	});
-	
-	$('.object').live('resizestart', function(e) {
-		$(this).trigger('glue-resizestart');
-	});
-	
-	$('.object').live('resizestop', function(e) {
-			// reset previous grid setting
-			if (resize_prev_grid) {
-				$(this).resizable('option', 'grid', resize_prev_grid);
-				resize_prev_grid = false;
-			}
-		$.glue.object.save(this);
-		$(this).trigger('glue-resizestop');
-		$.glue.canvas.update(this);
-	});
-	
+	// keyed by raw DOM element rather than jQuery's .data(), since jQuery
+	// 1.5.2's clone() (used by save() on every save) hangs when an element
+	// carries a .data() entry pointing to a Moveable instance - its internal
+	// object graph is large/circular enough to blow up clone()'s data-cache
+	// fixup walk
+	var moveables = new WeakMap();
+
 	$(document).ready(function() {
-		$.glue.object.register_alter_pre_save('resizable', function(obj, orig) {
-			// remove the jqueryui resizable-related stuff from the object
-			$(obj).removeClass('ui-resizable');
-			$(obj).children('.ui-resizable-handle').remove();
-		});
-		$.glue.object.register_alter_pre_save('object', function(obj, orig) {
-			// remove the jqueryui draggable-related stuff from the object
-			$(obj).removeClass('ui-draggable-dragging');
-		});
 		$.glue.object.register_alter_pre_save('glue-selected', function(obj, orig) {
 			var border = $(orig).outerHeight()-$(orig).innerHeight();
 			var p = $(orig).position();
@@ -895,7 +835,7 @@ $.glue.object = function()
 			//$(obj).css('height', ($(orig).height()+border)+'px');
 		});
 	});
-	
+
 	return {
 		// obj .. element
 		register: function(obj) {
@@ -909,14 +849,145 @@ $.glue.object = function()
 			if (isNaN(parseInt($(obj).css('z-index')))) {
 				$(obj).css('z-index', $.glue.stack.default_z());
 			}
-			// obj must have width & height for draggable to work
-			$(obj).draggable({ addClasses: false, distance: 10 });
-			// obj must not be an img element (otherwise resizable creates a 
-			// wrapper which fucks things up)
-			if ($(obj).hasClass('resizable')) {
-				$(obj).resizable();
-				$.glue.object.resizable_update_tooltip(obj);
+
+			var resizable = $(obj).hasClass('resizable');
+			var m = new Moveable(document.body, {
+				target: obj,
+				container: document.body,
+				draggable: true,
+				resizable: resizable,
+				// jQuery UI's resizable() only exposed e/s/se handles by default
+				renderDirections: resizable ? ['e', 's', 'se'] : [],
+				keepRatio: false,
+				edge: false,
+				origin: false,
+				// mirror jQuery UI draggable's implicit viewport-edge auto-scroll
+				scrollable: true,
+				scrollContainer: document.documentElement,
+				scrollThreshold: 40,
+				scrollThrottleTime: 30
+			});
+			moveables.set($(obj).get(0), m);
+			// Moveable's control box (drag/resize handles) stays
+			// visibility:hidden - and thus unclickable - until a second
+			// internal render pass completes; without user interaction that
+			// never happens on its own, so it's kicked off explicitly here
+			m.updateRect();
+
+			// jQuery UI's draggable had a 10px distance threshold before a
+			// mousedown turned into an actual drag (so a plain click doesn't
+			// nudge the object) - Moveable has no equivalent, so it is
+			// hand-rolled here
+			var drag_started = false;
+			var drag_axis = false;				// false, 'x' or 'y'
+			var drag_orig_left = 0;
+			var drag_orig_top = 0;
+			var drag_mouse_start_x = 0;
+			var drag_mouse_start_y = 0;
+			var drag_multi_prev_left = 0;
+			var drag_multi_prev_top = 0;
+
+			m.on('dragStart', function(e) {
+				drag_started = false;
+				drag_axis = false;
+				drag_orig_left = $(obj).position().left;
+				drag_orig_top = $(obj).position().top;
+				drag_mouse_start_x = e.clientX;
+				drag_mouse_start_y = e.clientY;
+			}).on('drag', function(e) {
+				if (!drag_started) {
+					if (Math.max(Math.abs(e.clientX-drag_mouse_start_x), Math.abs(e.clientY-drag_mouse_start_y)) < 10) {
+						return;
+					}
+					drag_started = true;
+					if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
+						drag_multi_prev_left = drag_orig_left;
+						drag_multi_prev_top = drag_orig_top;
+						$('.glue-selected').trigger('glue-movestart');
+					} else {
+						$(obj).trigger('glue-movestart');
+					}
+				}
+
+				var left = e.left;
+				var top = e.top;
+
+				// constrain to axis when dragging with shift key pressed
+				if (e.inputEvent.shiftKey) {
+					if (!drag_axis) {
+						drag_axis = Math.abs(e.clientX-drag_mouse_start_x) < Math.abs(e.clientY-drag_mouse_start_y) ? 'y' : 'x';
+					} else {
+						var diff = Math.abs(Math.abs(e.clientX-drag_mouse_start_x)-Math.abs(e.clientY-drag_mouse_start_y));
+						if (50 < diff) {
+							drag_axis = Math.abs(e.clientX-drag_mouse_start_x) < Math.abs(e.clientY-drag_mouse_start_y) ? 'y' : 'x';
+						}
+					}
+					if (drag_axis == 'x') {
+						top = drag_orig_top;
+					} else {
+						left = drag_orig_left;
+					}
+				} else {
+					drag_axis = false;
+				}
+
+				// ignore grid when ctrl is pressed
+				if (!e.inputEvent.ctrlKey && ($.glue.grid.mode() & 2)) {
+					left = Math.round(left/$.glue.grid.x())*$.glue.grid.x();
+					top = Math.round(top/$.glue.grid.y())*$.glue.grid.y();
+				}
+
+				$(obj).css('left', left+'px');
+				$(obj).css('top', top+'px');
+
+				if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
+					// dragging multiple selected objects
+					var delta_left = left-drag_multi_prev_left;
+					var delta_top = top-drag_multi_prev_top;
+					$('.glue-selected').not(obj).each(function() {
+						var p = $(this).position();
+						$(this).css('left', (p.left+delta_left)+'px');
+						$(this).css('top', (p.top+delta_top)+'px');
+					});
+					drag_multi_prev_left = left;
+					drag_multi_prev_top = top;
+				}
+			}).on('dragEnd', function(e) {
+				if (!drag_started) {
+					return;
+				}
+				if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
+					$('.glue-selected').trigger('glue-movestop');
+				} else {
+					$(obj).trigger('glue-movestop');
+				}
+			}).on('scroll', function(e) {
+				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
+			});
+
+			if (resizable) {
+				m.on('resizeStart', function(e) {
+					$(obj).trigger('glue-resizestart');
+				}).on('resize', function(e) {
+					var width = e.width;
+					var height = e.height;
+					// ignore grid when ctrl is pressed
+					if (!e.inputEvent.ctrlKey && ($.glue.grid.mode() & 4)) {
+						width = Math.round(width/$.glue.grid.x())*$.glue.grid.x();
+						height = Math.round(height/$.glue.grid.y())*$.glue.grid.y();
+					}
+					$(obj).css('width', width+'px');
+					$(obj).css('height', height+'px');
+					$(obj).css('left', e.drag.left+'px');
+					$(obj).css('top', e.drag.top+'px');
+					$(obj).trigger('glue-resize');
+				}).on('resizeEnd', function(e) {
+					$.glue.object.save(obj);
+					$(obj).trigger('glue-resizestop');
+					$.glue.canvas.update(obj);
+				});
 			}
+
 			$(obj).trigger('glue-register');
 			$.glue.canvas.update(obj);
 		},
@@ -924,9 +995,9 @@ $.glue.object = function()
 			alter_pre_save[cls] = func;
 		},
 		resizable_update_tooltip: function(obj) {
-			var p = $(obj).position();
-			// don't include any border in the calculation
-			$(obj).children('.ui-resizable-handle').attr('title', $(obj).innerWidth()+'x'+$(obj).innerHeight()+' at '+p.left+'x'+p.top);
+			// no-op: Moveable's resize handles are separate overlay elements
+			// (not children of obj), so there is nothing to attach a title
+			// to. Kept for backward compatibility with existing callers.
 		},
 		save: function(obj) {
 			var elem = $(obj).clone();
@@ -946,9 +1017,20 @@ $.glue.object = function()
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
 		},
 		// obj .. element
+		// returns the Moveable instance managing obj's drag/resize, or
+		// undefined - used by modules (e.g. lock.js) that need to toggle
+		// draggable/resizable directly
+		moveable_of: function(obj) {
+			return moveables.get($(obj).get(0));
+		},
 		unregister: function(obj) {
+			var m = moveables.get($(obj).get(0));
+			if (m) {
+				m.destroy();
+				moveables.delete($(obj).get(0));
+			}
 			$(obj).trigger('glue-unregister');
-			// can't update canvas here as object to be deleted is still in the 
+			// can't update canvas here as object to be deleted is still in the
 			// dom
 		}
 	};
@@ -956,13 +1038,6 @@ $.glue.object = function()
 
 $.glue.sel = function()
 {
-	var drag_prev_grid = false;
-	var drag_prev_x = false;
-	var drag_prev_y = false;
-	var drag_start_x = false;
-	var drag_start_y = false;
-	var drag_mouse_start_x = false;
-	var drag_mouse_start_x = false;
 	var key_moving = false;
 	
 	// this could probably also be body
@@ -1151,124 +1226,12 @@ $.glue.sel = function()
 		}
 	});
 	
-	$('.object').live('dragstart', function(e) {
-		// contrain to axis when dragging with shift key pressed
-		drag_start_x = $(this).position().left;
-		drag_start_y = $(this).position().top;
-		drag_mouse_start_x = e.pageX;
-		drag_mouse_start_y = e.pageY;
-		$(this).draggable('option', 'axis', false);
-		if (!$(this).hasClass('glue-selected')) {
-			// event for selected objects is triggered in the .glue-selected dragstart 
-			// handler
-			$(this).trigger('glue-movestart');
-		}
-	});
-	
-	$('.object').live('dragstop', function(e) {
-		// reset previous grid setting
-		if (drag_prev_grid) {
-			$(this).draggable('option', 'grid', drag_prev_grid);
-			drag_prev_grid = false;
-		}
-	});
-	
-	$('.object').live('drag', function(e) {
-		// ignore grid when ctrl is pressed
-		if (e.ctrlKey) {
-			if ($(this).draggable('option', 'grid') !== false) {
-				// save previous setting
-				drag_prev_grid = $(this).draggable('option', 'grid');
-				// disable grid
-				$(this).draggable('option', 'grid', false);
-			}
-		} else {
-			// reset previous setting
-			if (drag_prev_grid) {
-				$(this).draggable('option', 'grid', drag_prev_grid);
-				drag_prev_grid = false;
-			}
-		}
-		// contrain to axis when dragging with shift key pressed
-		if (e.shiftKey) {
-			var dir;
-			if (Math.abs(e.pageX-drag_mouse_start_x) < Math.abs(e.pageY-drag_mouse_start_y)) {
-				dir = 'y';
-			} else {
-				dir = 'x';
-			}
-			var diff = Math.abs(Math.abs(e.pageX-drag_mouse_start_x)-Math.abs(e.pageY-drag_mouse_start_y));
-			if ($(this).draggable('option', 'axis') == false) {
-				// move object back to the starting position
-				$(this).css('left', drag_start_x+'px');
-				$(this).css('top', drag_start_y+'px');
-				$(this).draggable('option', 'axis', dir);
-			} else {
-				// only change direction if difference is greater than 50 pixels
-				if (50 < diff && $(this).draggable('option', 'axis') != dir) {
-					// move object back to the starting position
-					$(this).css('left', drag_start_x+'px');
-					$(this).css('top', drag_start_y+'px');
-					$(this).draggable('option', 'axis', dir);
-				}
-			}
-		} else {
-			$(this).draggable('option', 'axis', false);
-		}
-	});
-	
-	$('.object').live('dragstop', function(e) {
-		if (!$(this).hasClass('glue-selected')) {
-			// event for selected objects is triggered in the .glue-selected dragstop 
-			// handler
-			$(this).trigger('glue-movestop');
-		}
-	});
-	
-	$('.glue-selected').live('drag', function(e) {
-		if (1 < $('.glue-selected').length) {
-			// dragging multiple selected object
-			var that = this;
-			var that_p = $(this).position();
-			$('.glue-selected').each(function() {
-				if (this == that) {
-					return;
-				}
-				var p = $(this).position();
-				$(this).css('left', (p.left+that_p.left-drag_prev_x)+'px');
-				$(this).css('top', (p.top+that_p.top-drag_prev_y)+'px');
-			});
-			drag_prev_x = that_p.left;
-			drag_prev_y = that_p.top;
-		}
-	});
-	
-	$('.glue-selected').live('dragstart', function(e) {
-		if (1 < $('.glue-selected').length) {
-			var p = $(this).position();
-			drag_prev_x = p.left;
-			drag_prev_y = p.top;
-		}
-		$('.glue-selected').trigger('glue-movestart');
-	});
-	
-	$('.glue-selected').live('dragstop', function(e) {
-		// dragging multiple selected object
-		// there does not seem to be a drag event for the position where the 
-		// mouse button is released, so the following is necessary
-		var that = this;
-		var that_p = $(this).position();
-		$('.glue-selected').each(function() {
-			if (this == that) {
-				return;
-			}
-			var p = $(this).position();
-			$(this).css('left', (p.left+that_p.left-drag_prev_x)+'px');
-			$(this).css('top', (p.top+that_p.top-drag_prev_y)+'px');
-		});
-		$('.glue-selected').trigger('glue-movestop');
-	});
-	
+	// note: drag/resize (including axis-constrain, grid-snap, and
+	// multi-select sync) are wired up per-object in $.glue.object.register()
+	// via Moveable's dragStart/drag/dragEnd instead of delegated handlers
+	// here, since Moveable doesn't emit jQuery-style 'drag'/'dragstart' DOM
+	// events the way jQuery UI's draggable() did
+
 	$('.object').live('click', function(e) {
 		// TODO (later): moving objects after shift clicking on them does not seem to work right on Chrome, document and fill a bug upstream
 		if (!e.shiftKey && !$(this).hasClass('glue-selected')) {
@@ -1911,10 +1874,15 @@ $(document).ready(function() {
 		}
 	});
 	
-	// I really don't know why, but when we don't handle the mousedown event here 
-	// double-clicking the page does select some object (the first child of body 
+	// I really don't know why, but when we don't handle the mousedown event here
+	// double-clicking the page does select some object (the first child of body
 	// on Firefox and the nearest element on Chrome)
+	// exclude Moveable's own controls: they need their mousedown to reach
+	// Moveable's handlers undisturbed to start a drag/resize
 	$('html').bind('mousedown', function(e) {
-		return false;	
+		if ($(e.target).closest('.moveable-control, .moveable-line').length) {
+			return;
+		}
+		return false;
 	});
 });

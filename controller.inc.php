@@ -104,6 +104,11 @@ function controller_edit($args)
 		html_add_js(base_url().'js/jquery-ui-1.8.6.custom.js', 2);
 	}
 	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/moveable.min.js', 3);
+	} else {
+		html_add_js(base_url().'js/moveable.js', 3);
+	}
+	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/edit.min.js', 4);
 	} else {
 		html_add_js(base_url().'js/edit.js', 4);
