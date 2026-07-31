@@ -7,6 +7,12 @@
  *	See the file COPYING for more details.
  */
 
+// returns the tooltip-ready transparency percentage for an object, used by
+// the transparency icon's x-bind:title below
+function object_transparency_percent(obj) {
+	return Math.round(parseFloat($(obj).css('opacity'))*100);
+}
+
 $(document).ready(function() {
 	//
 	// register menu items
@@ -35,13 +41,10 @@ $(document).ready(function() {
 	});
 	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-transparency.png" alt="btn" title="change transparency" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var opacity = parseFloat($(obj).css('opacity'))*100;
-		var tip = 'change transparency ('+opacity.toFixed(0)+'%)';
-		$(this).attr('title', tip);
-	});
+	elem = $('<img src="'+$.glue.base_url+'modules/object/object-transparency.png" alt="btn" width="32" height="32">');
+	elem.attr('x-data', '{ opacity: 100 }');
+	elem.attr('x-bind:title', "'change transparency ('+opacity+'%)'");
+	elem.attr('x-on:glue-menu-activate', 'opacity = object_transparency_percent($.glue.owner($el))');
 	$(elem).bind('mousedown', function(e) {
 		var that = this;
 		var obj = $.glue.owner(this);
@@ -60,8 +63,8 @@ $(document).ready(function() {
 			$(obj).css('opacity', x);
 		}, function(x, y) {
 			$.glue.object.save(obj);
-			// update tooltip (see above)
-			$(that).glueTrigger('glue-menu-activate');
+			// update tooltip (see above) via Alpine's reactive opacity state
+			that.dispatchEvent(new CustomEvent('glue-menu-activate'));
 		});
 		return false;
 	});

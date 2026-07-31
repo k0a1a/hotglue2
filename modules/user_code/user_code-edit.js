@@ -7,9 +7,14 @@
  *	See the file COPYING for more details.
  */
 
-$(document).ready(function() {
-	elem = $('<img src="'+$.glue.base_url+'modules/user_code/user_code.png" alt="add/edit custom code" title="add/edit custom code" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+document.addEventListener('DOMContentLoaded', function() {
+	var elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/user_code/user_code.png';
+	elem.alt = 'add/edit custom code';
+	elem.title = 'add/edit custom code';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?'+$.glue.page+'/code';
 	});

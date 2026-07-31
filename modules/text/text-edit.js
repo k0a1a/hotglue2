@@ -7,6 +7,23 @@
  *	See the file COPYING for more details.
  */
 
+function text_font_size_sync(elem) {
+	var obj = $.glue.owner(elem);
+	Alpine.$data(elem).tip = 'drag to change font size ('+$(obj).css('font-size')+'), click to reset to default one';
+}
+
+function text_align_sync(elem) {
+	var obj = $.glue.owner(elem);
+	var val = $(obj).css('text-align');
+	var label = (val == 'center') ? 'center' : (val == 'right') ? 'right' : (val == 'justify') ? 'justify' : 'left';
+	Alpine.$data(elem).tip = 'change text alignment ('+label+')';
+}
+
+function text_padding_sync(elem) {
+	var obj = $.glue.owner(elem);
+	Alpine.$data(elem).tip = 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one';
+}
+
 $.glue.text = function()
 {
 	var str_replace = function(from, to, s) {
@@ -325,11 +342,10 @@ $(document).ready(function() {
 	});
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-size.png" alt="btn" title="drag to change font size, click to reset to default one" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		$(this).attr('title', 'drag to change font size ('+$(obj).css('font-size')+'), click to reset to default one');
-	});
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-size.png" alt="btn" width="32" height="32">');
+	elem.attr('x-data', "{ tip: 'drag to change font size, click to reset to default one' }");
+	elem.attr('x-bind:title', 'tip');
+	elem.attr('x-on:glue-menu-activate', 'text_font_size_sync($el)');
 	$(elem).bind('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// we assume px here
@@ -345,7 +361,7 @@ $(document).ready(function() {
 				val = 0;
 			}
 			$(obj).css('font-size', val+'px');
-			$(that).attr('title', 'drag to change font size ('+val+'px), click to reset to default one');
+			Alpine.$data(that).tip = 'drag to change font size ('+val+'px), click to reset to default one';
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
@@ -354,7 +370,7 @@ $(document).ready(function() {
 			if (no_change) {
 				$(obj).css('font-size', '');
 				$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'text-font-size' });
-				$(that).attr('title', 'drag to change font size ('+$(obj).css('font-size')+'px), click to reset to default one');
+				Alpine.$data(that).tip = 'drag to change font size ('+$(obj).css('font-size')+'px), click to reset to default one';
 			} else {
 				$.glue.object.save(obj);
 			}
@@ -645,46 +661,35 @@ $(document).ready(function() {
 	});
 	$.glue.contextmenu.register('text', 'text-word-spacing', elem);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-align.png" alt="btn" title="change text alignment" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var val = $(obj).css('text-align');
-		if (val == 'center') {
-			$(this).attr('title', 'change text alignment (center)');
-		} else if (val == 'right') {
-			$(this).attr('title', 'change text alignment (right)');
-		} else if (val == 'justify') {
-			$(this).attr('title', 'change text alignment (justify)');
-		} else {
-			// default to left
-			$(this).attr('title', 'change text alignment (left)');
-		}
-	});
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-align.png" alt="btn" width="32" height="32">');
+	elem.attr('x-data', "{ tip: 'change text alignment' }");
+	elem.attr('x-bind:title', 'tip');
+	elem.attr('x-on:glue-menu-activate', 'text_align_sync($el)');
 	$(elem).bind('click', function(e) {
 		var obj = $.glue.owner(this);
 		var val = $(obj).css('text-align');
+		var data = Alpine.$data(this);
 		if (val == 'center') {
 			$(obj).css('text-align', 'right');
-			$(this).attr('title', 'change text alignment (right)');
+			data.tip = 'change text alignment (right)';
 		} else if (val == 'right') {
 			$(obj).css('text-align', 'justify');
-			$(this).attr('title', 'change text alignment (justify)');
+			data.tip = 'change text alignment (justify)';
 		} else if (val == 'justify') {
 			$(obj).css('text-align', 'left');
-			$(this).attr('title', 'change text alignment (left)');			
+			data.tip = 'change text alignment (left)';
 		} else {
 			$(obj).css('text-align', 'center');
-			$(this).attr('title', 'change text alignment (center)');
+			data.tip = 'change text alignment (center)';
 		}
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('text', 'text-align', elem);
 	
-	elem = $('<img src="'+$.glue.base_url+'modules/text/text-padding.png" alt="btn" title="change padding, click to reset to default one" width="32" height="32">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		$(this).attr('title', 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one');
-	});
+	elem = $('<img src="'+$.glue.base_url+'modules/text/text-padding.png" alt="btn" width="32" height="32">');
+	elem.attr('x-data', "{ tip: 'change padding, click to reset to default one' }");
+	elem.attr('x-bind:title', 'tip');
+	elem.attr('x-on:glue-menu-activate', 'text_padding_sync($el)');
 	$(elem).bind('mousedown', function(e) {
 		var obj = $.glue.owner(this);
 		// we assume px here, and for {left,right} {top,bottom} to be the same
@@ -724,7 +729,7 @@ $(document).ready(function() {
 			$(obj).css('padding-top', val_y+'px');
 			$(obj).css('padding-bottom', val_y+'px');
 			$(obj).css('height', (orig_h+2*orig_y-2*val_y)+'px');
-			$(that).attr('title', 'change padding ('+val_x+'px, '+val_y+'px), click to reset to default one');
+			Alpine.$data(that).tip = 'change padding ('+val_x+'px, '+val_y+'px), click to reset to default one';
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
@@ -744,7 +749,7 @@ $(document).ready(function() {
 				$(obj).css('padding-right', '');
 				$(obj).css('padding-top', '');
 				$(obj).css('padding-bottom', '');
-				$(that).attr('title', 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one');
+				Alpine.$data(that).tip = 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one';
 			}
 			// use object.save() in both cases (width and height got changed too)
 			$.glue.object.save(obj);

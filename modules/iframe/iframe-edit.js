@@ -7,6 +7,43 @@
  *	See the file COPYING for more details.
  */
 
+// CSS overflow doesn't meaningfully apply to <iframe> internal scrolling in
+// modern browsers - any authored value (hidden, auto, unset) computes as
+// "clip" via getComputedStyle, making it useless for state detection here.
+// the scrolling attribute this same toggle sets is a reliable source of
+// truth instead (defaults to shown/not-hidden for a never-toggled iframe)
+function iframe_scroll_hidden(child) {
+	return $(child).attr('scrolling') == 'no';
+}
+
+function iframe_scroll_sync(elem) {
+	var child = $($.glue.owner(elem)).children('iframe').first();
+	Alpine.$data(elem).enabled = !iframe_scroll_hidden(child);
+}
+
+function iframe_scroll_toggle(elem) {
+	var obj = $.glue.owner(elem);
+	var child = $(obj).children('iframe').first();
+	var data = Alpine.$data(elem);
+	if (iframe_scroll_hidden(child)) {
+		// show scrollbars
+		$(child).css('overflow', 'auto');
+		// attribute scrolling is not supported in html5 (but works on Chrome)
+		$(child).attr('scrolling', 'auto');
+		$(child).removeAttr('seamless');
+		data.enabled = true;
+	} else {
+		// hide scrollbars
+		$(child).css('overflow', 'hidden');
+		$(child).attr('scrolling', 'no');
+		// this is html5, it supposedly also removes the scrollbars though,
+		// that's why we don't use it all the time
+		$(child).attr('seamless', 'seamless');
+		data.enabled = false;
+	}
+	$.glue.object.save(obj);
+}
+
 $(document).ready(function() {
 	//
 	// menu items
@@ -44,7 +81,7 @@ $(document).ready(function() {
 		$.glue.menu.hide();
 	});
 	$.glue.menu.register('new', elem, 12);
-	
+
 	//
 	// context menu items
 	//
@@ -62,54 +99,12 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('iframe', 'iframe-url', elem);
-	
-	elem = $('<div style="height: 32px; width: 32px;" title="toggle scrollbars on and off">');
-	$(elem).bind('click', function(e) {
-		var obj = $.glue.owner(this);
-		var child = $(obj).children('iframe').first();
-		if ($(child).css('overflow') == 'hidden') {
-			// show scrollbars
-			$(child).css('overflow', 'auto');
-			// attribute scrolling is not supported in html5 (but works on Chrome)
-			$(child).attr('scrolling', 'auto');
-			$(child).removeAttr('seamless');
-			// this does not seem to work on recent Chrome without reloading the 
-			// iframe
-			if ($.browser.webkit) {
-				$(child).attr('src', $(child).attr('src'));
-			}
-			$(this).addClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-		} else {
-			// hide scrollbars
-			$(child).css('overflow', 'hidden');
-			$(child).attr('scrolling', 'no');
-			// this is html5, it supposedly also removes the scrollbars though, 
-			// that's why we don't use it all the time
-			$(child).attr('seamless', 'seamless');
-			// this does not seem to work on recent Chrome without reloading the 
-			// iframe
-			if ($.browser.webkit) {
-				$(child).attr('src', $(child).attr('src'));
-			}
-			$(this).removeClass('glue-menu-enabled');
-			$(this).addClass('glue-menu-disabled');
-		}
-		$.glue.object.save(obj);
-	});
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var child = $(obj).children('iframe').first();
-		if ($(child).css('overflow') == 'hidden') {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).addClass('glue-menu-disabled');
-		} else {
-			$(this).addClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-		}
-	});
+
+	elem = $('<div style="height: 32px; width: 32px;">');
+	$.glue.toggle_button(elem, 'iframe_scroll_sync', 'iframe_scroll_toggle',
+		'scrollbars are shown - click to hide them', 'toggle scrollbars on and off');
 	$.glue.contextmenu.register('iframe', 'iframe-scroll', elem);
-	
+
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('iframe', function(obj, orig) {
 		$(obj).children('iframe').html('');

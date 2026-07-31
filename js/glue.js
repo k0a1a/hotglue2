@@ -134,3 +134,20 @@ $.glue.owner = function()
 		}
 	};
 }();
+
+// wires up the Alpine x-data/x-bind/x-on plumbing shared by the many
+// "boolean toggle" context-menu icons (download-public, video-autoplay/
+// -loop/-controls/-mute, webvideo-autoplay/-loop, ...): an icon that shows
+// enabled/disabled via the glue-menu-enabled/glue-menu-disabled classes and
+// a matching tooltip, synced on glue-menu-activate and flipped on click.
+// sync_fn/toggle_fn are the names of globally-defined functions taking the
+// icon element, since Alpine expressions are evaluated as strings and can't
+// close over local function references directly
+$.glue.toggle_button = function(elem, sync_fn, toggle_fn, enabled_title, disabled_title) {
+	elem.attr('x-data', '{ enabled: false }');
+	elem.attr('x-bind:class', "enabled ? 'glue-menu-enabled' : 'glue-menu-disabled'");
+	elem.attr('x-bind:title', 'enabled ? '+JSON.stringify(enabled_title)+' : '+JSON.stringify(disabled_title));
+	elem.attr('x-on:glue-menu-activate', sync_fn+'($el)');
+	elem.attr('x-on:click', toggle_fn+'($el)');
+	return elem;
+};

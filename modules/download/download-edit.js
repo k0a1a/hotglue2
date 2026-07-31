@@ -28,6 +28,25 @@ $('.download').glueLive('glue-upload-dynamic-early', function(e, mode, target_x,
 	$.glue.object.save(this);
 });
 
+function download_public_sync(elem) {
+	var obj = $.glue.owner(elem);
+	$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
+		Alpine.$data(elem).enabled = (data['download-public'] == 'public');
+	});
+}
+
+function download_public_toggle(elem) {
+	var obj = $.glue.owner(elem);
+	var data = Alpine.$data(elem);
+	if (data.enabled) {
+		data.enabled = false;
+		$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'download-public' });
+	} else {
+		data.enabled = true;
+		$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'download-public': 'public' });
+	}
+}
+
 $(document).ready(function() {
 	$.glue.contextmenu.veto('download', 'object-link');
 	//
@@ -41,43 +60,13 @@ $(document).ready(function() {
 		window.location = $.glue.base_url+'?'+$(obj).attr('id')+'&download=1';
 	});
 	$.glue.contextmenu.register('download', 'download-download', elem);
-	
+
 	elem = $('<div alt="btn" style="height: 32px; width: 32px;">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var that = this;
-		// check if object is public
-		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
-			if (data['download-public'] == 'public') {
-				$(that).addClass('glue-menu-enabled');
-				$(that).removeClass('glue-menu-disabled');
-				$(that).attr('title', 'this object is shown to everyone - click to make it private');
-			} else {
-				$(that).removeClass('glue-menu-enabled');
-				$(that).addClass('glue-menu-disabled');
-				$(that).attr('title', 'this object is only shown while editing - click to make it public');
-			}
-		});
-	});
-	$(elem).bind('click', function(e) {
-		var obj = $.glue.owner(this);
-		// toggle setting
-		if ($(this).hasClass('glue-menu-enabled')) {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).addClass('glue-menu-disabled');
-			$(this).attr('title', 'this object is only shown while editing - click to make it public');
-			// clear public attribute
-			$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'download-public' });
-		} else if ($(this).hasClass('glue-menu-disabled')) {
-			$(this).addClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-			$(this).attr('title', 'this object is shown to everyone - click to make it private');
-			// set public attribute
-			$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'download-public': 'public' });
-		}
-	});
+	$.glue.toggle_button(elem, 'download_public_sync', 'download_public_toggle',
+		'this object is shown to everyone - click to make it private',
+		'this object is only shown while editing - click to make it public');
 	$.glue.contextmenu.register('download', 'download-public', elem);
-	
+
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('download', function(obj, orig) {
 		$(obj).children('.download-ext').remove();

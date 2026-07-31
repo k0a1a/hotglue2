@@ -109,6 +109,11 @@ function controller_edit($args)
 		html_add_js(base_url().'js/moveable.js', 3);
 	}
 	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/alpine.min.js', 3);
+	} else {
+		html_add_js(base_url().'js/alpine.js', 3);
+	}
+	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/edit.min.js', 4);
 	} else {
 		html_add_js(base_url().'js/edit.js', 4);

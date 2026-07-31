@@ -7,6 +7,66 @@
  *	See the file COPYING for more details.
  */
 
+// webvideo-autoplay/-loop are cached on the object element (via jQuery
+// .data(), unrelated to the .data('owner') contract) to avoid a
+// glue.load_object round trip every time the context menu is shown for the
+// same object
+function webvideo_autoplay_sync(elem) {
+	var obj = $.glue.owner(elem);
+	var data = Alpine.$data(elem);
+	if ($(obj).data('webvideo-autoplay') === undefined) {
+		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(resp) {
+			var val = (resp['webvideo-autoplay'] == 'autoplay') ? 'autoplay' : '';
+			$(obj).data('webvideo-autoplay', val);
+			data.enabled = (val == 'autoplay');
+		});
+	} else {
+		data.enabled = ($(obj).data('webvideo-autoplay') == 'autoplay');
+	}
+}
+
+function webvideo_autoplay_toggle(elem) {
+	var obj = $.glue.owner(elem);
+	var data = Alpine.$data(elem);
+	if (data.enabled) {
+		data.enabled = false;
+		$(obj).data('webvideo-autoplay', '');
+		$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'webvideo-autoplay' });
+	} else {
+		data.enabled = true;
+		$(obj).data('webvideo-autoplay', 'autoplay');
+		$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'webvideo-autoplay': 'autoplay' });
+	}
+}
+
+function webvideo_loop_sync(elem) {
+	var obj = $.glue.owner(elem);
+	var data = Alpine.$data(elem);
+	if ($(obj).data('webvideo-loop') === undefined) {
+		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(resp) {
+			var val = (resp['webvideo-loop'] == 'loop') ? 'loop' : '';
+			$(obj).data('webvideo-loop', val);
+			data.enabled = (val == 'loop');
+		});
+	} else {
+		data.enabled = ($(obj).data('webvideo-loop') == 'loop');
+	}
+}
+
+function webvideo_loop_toggle(elem) {
+	var obj = $.glue.owner(elem);
+	var data = Alpine.$data(elem);
+	if (data.enabled) {
+		data.enabled = false;
+		$(obj).data('webvideo-loop', '');
+		$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'webvideo-loop' });
+	} else {
+		data.enabled = true;
+		$(obj).data('webvideo-loop', 'loop');
+		$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'webvideo-loop': 'loop' });
+	}
+}
+
 $(document).ready(function() {
 	//
 	// menu items
@@ -44,7 +104,7 @@ $(document).ready(function() {
 		} else {
 			$.glue.error('Only youtube and vimeo videos are supported at the moment.');
 		}
-		
+
 		if (provider) {
 			// create new object
 			$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
@@ -70,7 +130,7 @@ $(document).ready(function() {
 				// put the iframe behind some shield for editing
 				child = $('<div class="glue-webvideo-handle glue-ui" title="drag here"></div>');
 				$(elem).append(child);
-				$('body').append(elem);				
+				$('body').append(elem);
 				// make width and height explicit
 				$(elem).css('width', $(elem).width()+'px');
 				$(elem).css('height', $(elem).height()+'px');
@@ -87,94 +147,22 @@ $(document).ready(function() {
 		$.glue.menu.hide();
 	});
 	$.glue.menu.register('new', elem, 13);
-	
+
 	//
 	// context menu items
 	//
-	var elem = $('<div style="height: 32px; width: 32px;" title="toggle automatic playback of video (takes effect after a reload)">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		if ($(obj).data('webvideo-autoplay') === undefined) {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-			var that = this;
-			$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
-				if (data['webvideo-autoplay'] == 'autoplay') {
-					$(that).addClass('glue-menu-enabled');
-					$(obj).data('webvideo-autoplay', 'autoplay');
-				} else {
-					$(that).addClass('glue-menu-disabled');
-					$(obj).data('webvideo-autoplay', '');		
-				}
-			});
-		} else {
-			if ($(obj).data('webvideo-autoplay') == 'autoplay') {
-				$(this).addClass('glue-menu-enabled');
-				$(this).removeClass('glue-menu-disabled');
-			} else {
-				$(this).removeClass('glue-menu-enabled');
-				$(this).addClass('glue-menu-disabled');
-			}
-		}
-	});
-	$(elem).bind('click', function(e) {
-		var obj = $.glue.owner(this);
-		if ($(this).hasClass('glue-menu-enabled')) {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).addClass('glue-menu-disabled');
-			$(obj).data('webvideo-autoplay', '');
-			$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'webvideo-autoplay' });
-		} else if ($(this).hasClass('glue-menu-disabled')) {
-			$(this).addClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-			$(obj).data('webvideo-autoplay', '');
-			$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'webvideo-autoplay': 'autoplay' });
-		}
-	});
+	var elem = $('<div style="height: 32px; width: 32px;">');
+	$.glue.toggle_button(elem, 'webvideo_autoplay_sync', 'webvideo_autoplay_toggle',
+		'automatic playback is on (takes effect after a reload) - click to turn off',
+		'toggle automatic playback of video (takes effect after a reload)');
 	$.glue.contextmenu.register('webvideo', 'webvideo-autoplay', elem);
-	
-	elem = $('<div style="height: 32px; width: 32px;" title="toggle looping of video (takes effect after a reload)">');
-	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		if ($(obj).data('webvideo-loop') === undefined) {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-			var that = this;
-			$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
-				if (data['webvideo-loop'] == 'loop') {
-					$(that).addClass('glue-menu-enabled');
-					$(obj).data('webvideo-loop', 'loop');
-				} else {
-					$(that).addClass('glue-menu-disabled');
-					$(obj).data('webvideo-loop', '');		
-				}
-			});
-		} else {
-			if ($(obj).data('webvideo-loop') == 'loop') {
-				$(this).addClass('glue-menu-enabled');
-				$(this).removeClass('glue-menu-disabled');
-			} else {
-				$(this).removeClass('glue-menu-enabled');
-				$(this).addClass('glue-menu-disabled');
-			}
-		}
-	});
-	$(elem).bind('click', function(e) {
-		var obj = $.glue.owner(this);
-		if ($(this).hasClass('glue-menu-enabled')) {
-			$(this).removeClass('glue-menu-enabled');
-			$(this).addClass('glue-menu-disabled');
-			$(obj).data('webvideo-loop', '');
-			$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'webvideo-loop' });
-		} else if ($(this).hasClass('glue-menu-disabled')) {
-			$(this).addClass('glue-menu-enabled');
-			$(this).removeClass('glue-menu-disabled');
-			$(obj).data('webvideo-loop', 'loop');
-			$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'webvideo-loop': 'loop' });
-		}
-	});
+
+	elem = $('<div style="height: 32px; width: 32px;">');
+	$.glue.toggle_button(elem, 'webvideo_loop_sync', 'webvideo_loop_toggle',
+		'looping is on (takes effect after a reload) - click to turn off',
+		'toggle looping of video (takes effect after a reload)');
 	$.glue.contextmenu.register('webvideo', 'webvideo-loop', elem);
-	
+
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('webvideo', function(obj, orig) {
 		$(obj).children('iframe').html('');

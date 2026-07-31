@@ -1,6 +1,6 @@
 /**
  *	modules/revisions_browser/revisions_browser-edit.js
- *	Frontend code linking the revisions browser to the general editing 
+ *	Frontend code linking the revisions browser to the general editing
  *	mode
  *
  *	Copyright Gottfried Haider, Danja Vasiliev 2010.
@@ -8,9 +8,14 @@
  *	See the file COPYING for more details.
  */
 
-$(document).ready(function() {
-	elem = $('<img src="'+$.glue.base_url+'modules/revisions_browser/revisions_browser.png" alt="btn" title="compare revisions of this page" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+document.addEventListener('DOMContentLoaded', function() {
+	var elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/revisions_browser/revisions_browser.png';
+	elem.alt = 'btn';
+	elem.title = 'compare revisions of this page';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?'+$.glue.page+'/revisions';
 	});

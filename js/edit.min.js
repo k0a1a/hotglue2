@@ -430,6 +430,17 @@ $.glue.contextmenu = function()
 					}
 					// set owner and trigger event
 					$.glue.owner(target[j].elem, obj);
+					// Alpine's own MutationObserver-based init is async, but
+					// icons here get detached/reattached on every hide()/
+					// show() - without this, the glue-menu-activate trigger
+					// right below fires before Alpine has (re)attached its
+					// x-on listener on the freshly reappended element, and
+					// the event is silently lost (Alpine.initTree is a
+					// no-op on an already-initialized element, safe to call
+					// every time)
+					if (window.Alpine) {
+						Alpine.initTree($(target[j].elem).get(0));
+					}
 					$(target[j].elem).glueTrigger('glue-menu-activate');
 					// check if we still want to show the icon ;)
 					if ($(target[j].elem).css('display') == 'none') {
@@ -750,6 +761,10 @@ $.glue.menu = function()
 				$(elem).css('z-index', '201');
 				// add to dom
 				$('body').append(elem);
+				// see the equivalent comment in $.glue.contextmenu.show()
+				if (window.Alpine) {
+					Alpine.initTree($(elem).get(0));
+				}
 				// trigger event
 				$(elem).glueTrigger('glue-menu-activate');
 				// check if we still want to show the icon ;)
