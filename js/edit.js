@@ -822,6 +822,20 @@ $.glue.object = function()
 	// fixup walk
 	var moveables = new WeakMap();
 
+	// only show resize handles while an object is selected, not permanently
+	$('.object').live('glue-select', function(e) {
+		var m = moveables.get(this);
+		if (m && $(this).hasClass('resizable') && !$(this).hasClass('locked')) {
+			m.resizable = true;
+		}
+	});
+	$('.object').live('glue-deselect', function(e) {
+		var m = moveables.get(this);
+		if (m) {
+			m.resizable = false;
+		}
+	});
+
 	$(document).ready(function() {
 		$.glue.object.register_alter_pre_save('glue-selected', function(obj, orig) {
 			var border = $(orig).outerHeight()-$(orig).innerHeight();
@@ -850,14 +864,16 @@ $.glue.object = function()
 				$(obj).css('z-index', $.glue.stack.default_z());
 			}
 
-			var resizable = $(obj).hasClass('resizable');
+			var can_resize = $(obj).hasClass('resizable');
 			var m = new Moveable(document.body, {
 				target: obj,
 				container: document.body,
 				draggable: true,
-				resizable: resizable,
+				// resize handles are only shown once the object is selected
+				// (see the glue-select/glue-deselect handlers below)
+				resizable: false,
 				// jQuery UI's resizable() only exposed e/s/se handles by default
-				renderDirections: resizable ? ['e', 's', 'se'] : [],
+				renderDirections: can_resize ? ['e', 's', 'se'] : [],
 				keepRatio: false,
 				edge: false,
 				origin: false,
@@ -965,7 +981,7 @@ $.glue.object = function()
 				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
 			});
 
-			if (resizable) {
+			if (can_resize) {
 				m.on('resizeStart', function(e) {
 					$(obj).trigger('glue-resizestart');
 				}).on('resize', function(e) {

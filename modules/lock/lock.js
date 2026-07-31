@@ -67,7 +67,10 @@ $(document).ready(function() {
 			$(obj).removeClass('locked');
 			if (m) {
 				m.draggable = true;
-				m.resizable = $(obj).hasClass('resizable');
+				// resize handles only show while selected (this button only
+				// appears in the context menu of a selected object, but
+				// check explicitly rather than assume)
+				m.resizable = $(obj).hasClass('resizable') && $(obj).hasClass('glue-selected');
 			}
 			$.glue.contextmenu.hide();
 			$.glue.contextmenu.show(obj);
