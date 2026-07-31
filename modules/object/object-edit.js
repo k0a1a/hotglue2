@@ -10,29 +10,34 @@
 // returns the tooltip-ready transparency percentage for an object, used by
 // the transparency icon's x-bind:title below
 function object_transparency_percent(obj) {
-	return Math.round(parseFloat($(obj).css('opacity'))*100);
+	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
 }
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
 	//
 	var elem;
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-clone.png" alt="btn" title="clone object" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-clone.png';
+	elem.alt = 'btn';
+	elem.title = 'clone object';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		$.glue.backend({ method: 'glue.clone_object', name: $(obj).attr('id') }, function(data) {
+		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {
 			// deselect current object
 			$.glue.sel.none();
-			var clone = $(obj).clone();
+			var clone = obj.cloneNode(true);
 			// set new id
-			$(clone).attr('id', data);
+			clone.id = data;
 			// move object a bit
-			$(clone).css('left', ($(obj).position().left+$.glue.grid.x())+'px');
-			$(clone).css('top', ($(obj).position().top+$.glue.grid.y())+'px');
+			clone.style.left = (obj.offsetLeft+$.glue.grid.x())+'px';
+			clone.style.top = (obj.offsetTop+$.glue.grid.y())+'px';
 			// add to dom and register
-			$('body').append(clone);
-			$(clone).glueTrigger('glue-pre-clone');
+			document.body.appendChild(clone);
+			$.glue.trigger(clone, 'glue-pre-clone');
 			$.glue.object.register(clone);
 			// select new object
 			$.glue.sel.select(clone);
@@ -40,12 +45,16 @@ $(document).ready(function() {
 		});
 	});
 	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-transparency.png" alt="btn" width="32" height="32">');
-	elem.attr('x-data', '{ opacity: 100 }');
-	elem.attr('x-bind:title', "'change transparency ('+opacity+'%)'");
-	elem.attr('x-on:glue-menu-activate', 'opacity = object_transparency_percent($.glue.owner($el))');
-	$(elem).bind('mousedown', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-transparency.png';
+	elem.alt = 'btn';
+	elem.width = 32;
+	elem.height = 32;
+	elem.setAttribute('x-data', '{ opacity: 100 }');
+	elem.setAttribute('x-bind:title', "'change transparency ('+opacity+'%)'");
+	elem.setAttribute('x-on:glue-menu-activate', 'opacity = object_transparency_percent($.glue.owner($el))');
+	elem.addEventListener('mousedown', function(e) {
 		var that = this;
 		var obj = $.glue.owner(this);
 		$.glue.slider(e, function(x, y) {
@@ -60,7 +69,7 @@ $(document).ready(function() {
 			if (x < 0) {
 				x = 0;
 			}
-			$(obj).css('opacity', x);
+			obj.style.opacity = x;
 		}, function(x, y) {
 			$.glue.object.save(obj);
 			// update tooltip (see above) via Alpine's reactive opacity state
@@ -69,28 +78,33 @@ $(document).ready(function() {
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-zindex.png" alt="btn" title="bring object to foreground or background" width="32" height="32">');
-	$(elem).bind('mousedown', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-zindex.png';
+	elem.alt = 'btn';
+	elem.title = 'bring object to foreground or background';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('mousedown', function(e) {
 		var obj = $.glue.owner(this);
-		var old_z = parseInt($(obj).css('z-index'));
+		var old_z = parseInt(getComputedStyle(obj).zIndex);
 		$.glue.slider(e, function(x, y) {
 			if (x < -15) {
-				$.glue.stack.to_bottom($(obj));
+				$.glue.stack.to_bottom(obj);
 			} else if (x < 15) {
 				// dead zone
-				var z = parseInt($(obj).css('z-index'));
+				var z = parseInt(getComputedStyle(obj).zIndex);
 				if (z !== old_z) {
 					if (!isNaN(old_z)) {
-						$(obj).css('z-index', old_z);
+						obj.style.zIndex = old_z;
 					} else {
-						$(obj).css('z-index', '');
+						obj.style.zIndex = '';
 					}
 					// DEBUG
 					//console.log('set z-index to '+old_z);
 				}
 			} else {
-				$.glue.stack.to_top($(obj));
+				$.glue.stack.to_top(obj);
 			}
 		}, function(x, y) {
 			$.glue.object.save(obj);
@@ -99,12 +113,17 @@ $(document).ready(function() {
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-zindex', elem, 3);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-link.png" alt="btn" title="make the object a link" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-link.png';
+	elem.alt = 'btn';
+	elem.title = 'make the object a link';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		// get link
-		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
 			if (data['#error']) {
 				$.glue.error(data['#error']);
 			} else {
@@ -124,47 +143,62 @@ $(document).ready(function() {
 				t = linkdata.split(' '); // if there is no space split() returns the string
 				link = t[0];
 				target = t[1];
-				
+
 				if (link == undefined) {
-					$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'object-link' });
+					$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
 				} else {
 					// set link
-					$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'object-link': link });
+					$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-link': link });
 					if (target !== undefined) {
 						// set target
-						$.glue.backend({ method: 'glue.update_object', name: $(obj).attr('id'), 'object-target': target });
+						$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-target': target });
 					}
 				}
 				if (old_target !== '' && (target == '' || target == undefined)) {
 					// delete target
-					$.glue.backend({ method: 'glue.object_remove_attr', name: $(obj).attr('id'), attr: 'object-target' });
+					$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
 				}
 			}
 		}, false);
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
 
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-target.png" alt="btn" title="get the name of this object (for linking to it)" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-target.png';
+	elem.alt = 'btn';
+	elem.title = 'get the name of this object (for linking to it)';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var name = $(obj).attr('id').split('.').pop();
+		var name = obj.id.split('.').pop();
 		prompt('You can link to this object by copying and pasting this string', $.glue.page+'.'+name);
 	});
 	$.glue.contextmenu.register('object', 'object-target', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-symlink.png" alt="btn" title="make this object appear on all pages" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-symlink.png';
+	elem.alt = 'btn';
+	elem.title = 'make this object appear on all pages';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		$.glue.backend({ method: 'glue.object_make_symlink', name: $(obj).attr('id') });
+		$.glue.backend({ method: 'glue.object_make_symlink', name: obj.id });
 	});
 	$.glue.contextmenu.register('object', 'object-symlink', elem);
-	
-	elem = $('<img src="'+$.glue.base_url+'modules/object/object-delete.png" alt="btn" title="delete object" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/object/object-delete.png';
+	elem.alt = 'btn';
+	elem.title = 'delete object';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var id = $(obj).attr('id');
-		$.glue.object.unregister($(obj));
-		$(obj).remove();
+		var id = obj.id;
+		$.glue.object.unregister(obj);
+		obj.remove();
 		// delete in backend as well
 		$.glue.backend({ method: 'glue.delete_object', name: id });
 		// update canvas
