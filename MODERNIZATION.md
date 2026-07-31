@@ -281,6 +281,17 @@ core. Suggested order:
 
 ## 10. PHP modernization plan (surface-level scope)
 
+**Status (2026-07-31): items 2-6 done, item 1 done in a scoped form, item 7
+already done.** On closer inspection during implementation, most of the
+~204 `@`-suppressed calls this section originally flagged turned out to be
+legitimate uses unrelated to null-safety (filesystem/GD operations like
+`@mkdir`/`@unlink`/`@fopen`/`@getimagesize`, plus `@define`/`@require_once`
+for idempotent/optional loading) - only two things were real risks: the
+named `save_state()` bug (fixed - see below) and the 32-site
+`@is_array()`/`@is_string()`/`@is_numeric()` idiom (converted to explicit
+`isset()` checks). The 38 `global` declarations and auth hardening remain
+out of scope, as originally decided in §13.
+
 No PHP 8.0–8.5 fatal blockers found (zero hits for `create_function`, `each()`,
 `ereg*`, old `mysql_*`, `utf8_encode`/`decode`, `${}` interpolation, curly-brace
 string offsets — codebase is clean on hard removals). Work items, in priority

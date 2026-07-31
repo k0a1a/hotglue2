@@ -1,4 +1,4 @@
-Hotglue 1.0.4
+Hotglue 1.9.0
 
 developed by Gottfried Haider and Danja Vasiliev
 and the people from WORM (worm.org)
@@ -48,6 +48,38 @@ RECENT CHANGES (2026-07)
 
   * Fixed a misplaced parenthesis in module_image.inc.php's image resize
     comparison.
+
+  * Added a feature: holding shift while dragging an object's resize handle
+    now preserves its aspect ratio.
+
+  * Fixed images looking blurry after being resized in the editor. The
+    resize was requested at CSS pixel dimensions rather than device pixel
+    dimensions, so on any HiDPI/Retina display (devicePixelRatio 2 or 3 -
+    most phones, laptops and monitors today) the browser stretched a
+    same-resolution image to fill a box rendered at 2-3x that many
+    physical pixels. Now capped/scaled via the new IMAGE_RESIZE_MAX_DPR
+    config constant (default 2).
+
+  * Restyled the object resize handles: a plain square with a black
+    outline, a light grey semi-transparent backdrop, and a smaller white
+    square centered inside, matching the look of the toolbar/context-menu
+    icons instead of Moveable's default blue circles.
+
+  * PHP 8+ modernization pass: error_reporting no longer references the
+    long-deprecated E_STRICT constant; removed dead PHP<7.1 compatibility
+    code (an is_iterable() polyfill and version_compare() branches that
+    were always-true on any supported PHP 8.x); modernized the PHPUnit
+    test suite's deprecated @expectedException annotation; mechanically
+    converted array(...) to [...] throughout the codebase; fixed a null-
+    safety bug in save_state() where a malformed save request with no id
+    attribute could propagate null into several string functions; replaced
+    32 sites of @is_array()/@is_string()/@is_numeric() error-suppression
+    with explicit isset() checks.
+
+  * Removed a handful of orphaned files no longer referenced anywhere:
+    the Farbtastic color-picker icons (dead since the color picker was
+    replaced with a native <input type="color">), two unused text-object
+    icons, and a stale unminified-only welcome.min.js.
 
 
 KNOWN ISSUES
