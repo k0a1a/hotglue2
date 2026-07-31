@@ -82,3 +82,55 @@ $.glue.error = function()
 		}
 	};
 }();
+
+// native replacements for jQuery's deprecated .live()/.trigger(), used
+// throughout for the glue-* custom event bus. Defined here rather than in
+// edit.js since some modules using them (e.g. page_browser.js) load on
+// pages that never load edit.js. jQuery's own .bind()-registered handlers
+// still work unchanged and don't need touching: verified that a native
+// dispatchEvent(CustomEvent) does reach jQuery .bind() handlers (jQuery
+// wires those up via a real addEventListener), but jQuery's .live()
+// delegation is entirely internal to jQuery and never sees natively-
+// dispatched events - so .live() and .trigger() have to be replaced
+// together, as two halves of the same mechanism
+$.fn.glueLive = function(eventName, handler) {
+	// relies on jQuery still tracking the selector used to build this
+	// object (true through jQuery 1.x), same as .live() itself did
+	var selector = this.selector;
+	document.addEventListener(eventName, function(e) {
+		var matched = $(e.target).closest(selector);
+		if (matched.length) {
+			// preserve .trigger(name, [extra, args]) => handler(e, extra, args)
+			var args = [e];
+			if (e.detail !== undefined && e.detail !== null) {
+				args = args.concat(e.detail);
+			}
+			handler.apply(matched.get(0), args);
+		}
+	}, false);
+	return this;
+};
+
+$.fn.glueTrigger = function(eventName, data) {
+	this.each(function() {
+		this.dispatchEvent(new CustomEvent(eventName, { bubbles: true, cancelable: true, detail: data }));
+	});
+	return this;
+};
+
+// replaces the single .data('owner', obj) contract (set once in
+// $.glue.contextmenu.show, read at ~50 call sites across most modules) -
+// a WeakMap instead of jQuery .data() avoids the same clone()-hangs-on-
+// circular-data-cache issue worked around for Moveable instances
+$.glue.owner = function()
+{
+	var owners = new WeakMap();
+	return function(elem, obj) {
+		elem = $(elem).get(0);
+		if (obj === undefined) {
+			return owners.get(elem);
+		} else {
+			owners.set(elem, obj);
+		}
+	};
+}();

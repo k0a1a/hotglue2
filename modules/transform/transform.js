@@ -24,7 +24,7 @@ $(document).ready(function() {
 	elem = $('<img src="'+$.glue.base_url+'modules/transform/transform-flip.png" alt="btn" title="flip object" width="32" height="32">');
 	$(elem).bind('click', function(e) {
 		var that = this;
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 /*
 		if ($(obj).css('-moz-transform') != '') {
 			var o = $(obj).css('-moz-transform');
@@ -68,7 +68,7 @@ $(document).ready(function() {
 /* implement this later */
 /*	elem = $('<img src="'+$.glue.base_url+'modules/transform/transform-rotate.png" alt="btn" title="rotate object" width="32" height="32">');
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('-moz-transform') != '') {
 			var o = $(obj).css('-moz-transform');
 		} else { var o = $(obj).getAttribute('style'); }

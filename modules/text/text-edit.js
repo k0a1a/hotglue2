@@ -159,7 +159,7 @@ $.glue.text = function()
 	};
 }();
 
-$('.text').live('glue-register', function(e) {
+$('.text').glueLive('glue-register', function(e) {
 	// prevent events from bubbling up while we're editing 
 	// and handle a few keycodes
 	$(this).children('.glue-text-input').bind('mousedown', function(e) {
@@ -224,14 +224,14 @@ $('.text').live('glue-register', function(e) {
 	$(this).children('.glue-text-render').find('a').attr('title', 'this link is disabled for editing');
 });
 
-$('.text').live('glue-deselect', function(e) {
+$('.text').glueLive('glue-deselect', function(e) {
 	// check if we are editing
 	if ($(this).hasClass('glue-text-editing')) {
 		$.glue.text.stop_editing(this);
 	}
 });
 
-$('.text.glue-selected').live('click', function(e) {
+$('.text.glue-selected').glueLive('click', function(e) {
 	// check if we are already editing
 	if ($(this).hasClass('glue-text-editing')) {
 		return;
@@ -289,7 +289,7 @@ $(document).ready(function() {
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-color.png" alt="btn" title="change background color" width="32" height="32">');
 	var colorpicker_shown = false;
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var col = $(obj).css('background-color');
 		if (e.shiftKey) {
 			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
@@ -318,7 +318,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-background-transparent.png" alt="btn" title="make background transparent" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		$(obj).css('background-color', 'transparent');
 		$(obj).children('.glue-text-input').css('background-color', 'transparent');
 		$.glue.object.save(obj);
@@ -327,11 +327,11 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-size.png" alt="btn" title="drag to change font size, click to reset to default one" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		$(this).attr('title', 'drag to change font size ('+$(obj).css('font-size')+'), click to reset to default one');
 	});
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// we assume px here
 		var orig_val = parseInt($(obj).css('font-size'));
 		if (isNaN(orig_val)) {
@@ -365,7 +365,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-color.png" alt="btn" title="change font color" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var col = $(obj).css('color');
 		if (e.shiftKey) {
 			col = prompt('Enter font color (e.g. #ff0000 or rgb(255, 0, 0))', col);
@@ -386,7 +386,7 @@ $(document).ready(function() {
 	
 	elem = $('<div class="glue-text-font-family" style="height: 32px; width: 32px;" title="change typeface (click to cycle through available typefaces)">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var fonts = [];
 		var woff_fonts = [];
 		$.glue.text.get_fonts(fonts, woff_fonts);
@@ -407,7 +407,7 @@ $(document).ready(function() {
 		$('#glue-contextmenu-text-font-face').attr('title', 'change typeface (click to cycle through available typefaces)');
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var fonts = [];
 		var woff_fonts = [];
 		$.glue.text.get_fonts(fonts, woff_fonts);
@@ -458,7 +458,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-font-style.png" alt="btn" title="change font style" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('font-style') == 'normal' && ($(obj).css('font-weight') == 'bold' || $(obj).css('font-weight') == '700')) {
 			$(obj).css('font-style', 'italic');
 			$(obj).css('font-weight', 'normal');
@@ -480,7 +480,7 @@ $(document).ready(function() {
 	$(elem).bind('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('line-height').substr(-2) == 'em') {
 			$(this).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
 		} else if ($(obj).css('line-height').substr(-2) == 'px') {
@@ -489,7 +489,7 @@ $(document).ready(function() {
 		*/
 	});
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// jquery seems to always return line-height in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
@@ -539,7 +539,7 @@ $(document).ready(function() {
 	$(elem).bind('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('letter-spacing').substr(-2) == 'em') {
 			$(this).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
 		} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
@@ -548,7 +548,7 @@ $(document).ready(function() {
 		*/
 	});
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// jquery seems to always return letter-spacing in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
@@ -594,7 +594,7 @@ $(document).ready(function() {
 	$(elem).bind('glue-menu-activate', function(e) {
 		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
 		/*
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('word-spacing').substr(-2) == 'em') {
 			$(this).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
 		} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
@@ -603,7 +603,7 @@ $(document).ready(function() {
 		*/
 	});
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// jquery seems to always return word-spacing in px
 		// but just in case, try to handle em as well
 		// assume px for font-size
@@ -647,7 +647,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-align.png" alt="btn" title="change text alignment" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var val = $(obj).css('text-align');
 		if (val == 'center') {
 			$(this).attr('title', 'change text alignment (center)');
@@ -661,7 +661,7 @@ $(document).ready(function() {
 		}
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var val = $(obj).css('text-align');
 		if (val == 'center') {
 			$(obj).css('text-align', 'right');
@@ -682,11 +682,11 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/text/text-padding.png" alt="btn" title="change padding, click to reset to default one" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		$(this).attr('title', 'change padding ('+$(obj).css('padding-left')+', '+$(obj).css('padding-top')+'), click to reset to default one');
 	});
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// we assume px here, and for {left,right} {top,bottom} to be the same
 		var orig_x = parseInt($(obj).css('padding-left'));
 		if (isNaN(orig_x)) {

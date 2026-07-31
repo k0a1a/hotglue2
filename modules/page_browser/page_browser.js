@@ -9,33 +9,43 @@
 
 $(document).ready(function() {
 	var span = false;
-	
-	$('.page_browser_entry').live('mouseenter', function(e) {
-		if (span) {
-			$(span).remove();
-		}
-		var html = '<span class="page_browser_actions">';
-		html += '<a href="'+$.glue.base_url+'?'+$(this).attr('id')+'/edit">edit</a> | ';
-		html += '<a href="#" class="page_browser_copy">copy</a> | ';
-		html += '<a href="#" class="page_browser_rename">rename</a> | ';
-		html += '<a href="#" class="page_browser_delete">delete</a>';
-		if ($(this).attr('id')+'.head' != $.glue.conf.page.startpage) {
-			html += ' | <a href="#" class="page_browser_set_startpage">startpage</a>';
-		}
-		html += '</span>';
-		
-		span = $(html);
-		$(this).append(span);
+
+	// native mouseenter/mouseleave don't bubble, so unlike the click
+	// handlers below they can't be delegated with glueLive - bound directly
+	// instead, at both points .page_browser_entry elements get created
+	// (initial page render, and the clone in the copy handler)
+	var bind_hover = function(entry) {
+		$(entry).bind('mouseenter', function(e) {
+			if (span) {
+				$(span).remove();
+			}
+			var html = '<span class="page_browser_actions">';
+			html += '<a href="'+$.glue.base_url+'?'+$(this).attr('id')+'/edit">edit</a> | ';
+			html += '<a href="#" class="page_browser_copy">copy</a> | ';
+			html += '<a href="#" class="page_browser_rename">rename</a> | ';
+			html += '<a href="#" class="page_browser_delete">delete</a>';
+			if ($(this).attr('id')+'.head' != $.glue.conf.page.startpage) {
+				html += ' | <a href="#" class="page_browser_set_startpage">startpage</a>';
+			}
+			html += '</span>';
+
+			span = $(html);
+			$(this).append(span);
+		});
+
+		$(entry).bind('mouseleave', function(e) {
+			if (span) {
+				$(span).remove();
+				span = false;
+			}
+		});
+	};
+
+	$('.page_browser_entry').each(function() {
+		bind_hover(this);
 	});
-	
-	$('.page_browser_entry').bind('mouseleave', function(e) {
-		if (span) {
-			$(span).remove();
-			span = false;
-		}
-	});
-	
-	$('.page_browser_rename').live('click', function(e) {
+
+	$('.page_browser_rename').glueLive('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var old = $(entry).attr('id');
 		var pn = prompt('Change the page URL', old);
@@ -47,8 +57,8 @@ $(document).ready(function() {
 		}
 		return false;
 	});
-	
-	$('.page_browser_copy').live('click', function(e) {
+
+	$('.page_browser_copy').glueLive('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var old = $(entry).attr('id');
 		var pn = prompt('Specify a name', old+'-copy');
@@ -59,12 +69,13 @@ $(document).ready(function() {
 				$(copy).find('span.page_browser_pagename').siblings().remove();
 				$(copy).children('.page_browser_pagename').html('<a href="'+$.glue.base_url+'?'+pn+'">'+pn+'</a>');
 				$(entry).after(copy);
+				bind_hover(copy);
 			});
 		}
 		return false;
 	});
 
-	$('.page_browser_delete').live('click', function(e) {
+	$('.page_browser_delete').glueLive('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var pn = $(entry).attr('id');
 		if (confirm('Really delete page '+pn+'?')) {
@@ -89,8 +100,8 @@ $(document).ready(function() {
 		}
 		return false;
 	});
-	
-	$('.page_browser_set_startpage').live('click', function(e) {
+
+	$('.page_browser_set_startpage').glueLive('click', function(e) {
 		var entry = $(this).parents('.page_browser_entry');
 		var pn = $(entry).attr('id');
 		$.glue.backend({ method: 'glue.set_startpage', page: pn+'.head' }, function(data) {

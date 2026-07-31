@@ -8,7 +8,7 @@
  * 
  */
 
-$('.download').live('glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
+$('.download').glueLive('glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
 	// there probably is no load event for our div, so make it available 
 	// right away
 	// position object
@@ -36,7 +36,7 @@ $(document).ready(function() {
 	var elem;
 	elem = $('<img src="'+$.glue.base_url+'img/download.png" alt="btn" title="download file" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// initite download
 		window.location = $.glue.base_url+'?'+$(obj).attr('id')+'&download=1';
 	});
@@ -44,7 +44,7 @@ $(document).ready(function() {
 	
 	elem = $('<div alt="btn" style="height: 32px; width: 32px;">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var that = this;
 		// check if object is public
 		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
@@ -60,7 +60,7 @@ $(document).ready(function() {
 		});
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// toggle setting
 		if ($(this).hasClass('glue-menu-enabled')) {
 			$(this).removeClass('glue-menu-enabled');

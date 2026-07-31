@@ -16,7 +16,7 @@
  *	i.e. $('.glue-selected').not('.locked')
  */
 
-$('.object').live('glue-object-lock', function(e) {
+$('.object').glueLive('glue-object-lock', function(e) {
 	// if object is in locked state
 	// disable dragging and resize
 
@@ -38,7 +38,7 @@ $(document).ready(function() {
 	//
 	// trigger object lock check 
 	//
-	$('.object').trigger('glue-object-lock');
+	$('.object').glueTrigger('glue-object-lock');
 	
 	//
 	// register menu items
@@ -49,7 +49,7 @@ $(document).ready(function() {
 	elem = $('<img src="'+$.glue.base_url+'modules/lock/lock.png" alt="btn" title="lock object" width="32" height="32">');
 
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var tip 
 		if ($(obj).hasClass('locked')) {
 			tip = 'object is locked, click to unlock it';
@@ -60,7 +60,7 @@ $(document).ready(function() {
 
 	$(elem).bind('click', function(e) {
 		var that = this;
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 
 		var m = $.glue.object.moveable_of(obj);
 		if ($(obj).hasClass('locked')) {
@@ -86,7 +86,7 @@ $(document).ready(function() {
 			$.glue.contextmenu.hide();
 			$.glue.contextmenu.show(obj);
 		}
-		$(that).trigger('glue-menu-activate');
+		$(that).glueTrigger('glue-menu-activate');
 		$.glue.object.save(obj);
 	});
 	

@@ -213,12 +213,12 @@ $.glue.contextmenu = function()
 	var top = [];
 	var veto = {};
 	
-	$('.object').live('glue-deselect', function(e) {
+	$('.object').glueLive('glue-deselect', function(e) {
 		// hide menu when deselecting
 		$.glue.contextmenu.hide();
 	});
 	
-	$('.object').live('glue-movestart', function(e) {
+	$('.object').glueLive('glue-movestart', function(e) {
 		// hide menu when moving the selected object
 		if (this == owner) {
 			prev_owner = owner;
@@ -226,7 +226,7 @@ $.glue.contextmenu = function()
 		}
 	});
 	
-	$('.object').live('glue-movestop', function(e) {
+	$('.object').glueLive('glue-movestop', function(e) {
 		// show menu again when we hid the menu because of movement
 		if (this == prev_owner) {
 			$.glue.contextmenu.show(prev_owner);
@@ -234,7 +234,7 @@ $.glue.contextmenu = function()
 		}
 	});
 	
-	$('.object').live('glue-select', function(e) {
+	$('.object').glueLive('glue-select', function(e) {
 		// show menu when one object is selected
 		if ($('.glue-selected').length == 1) {
 			$.glue.contextmenu.show(this);
@@ -248,12 +248,12 @@ $.glue.contextmenu = function()
 			if (owner) {
 				while (left.length) {
 					var item = left.shift();
-					$(item.elem).trigger('glue-menu-deactivate');
+					$(item.elem).glueTrigger('glue-menu-deactivate');
 					$(item.elem).detach();
 				}
 				while (top.length) {
 					var item = top.shift();
-					$(item.elem).trigger('glue-menu-deactivate');
+					$(item.elem).glueTrigger('glue-menu-deactivate');
 					$(item.elem).detach();
 				}
 				owner = false;
@@ -429,8 +429,8 @@ $.glue.contextmenu = function()
 						var cur_height = $(target[j].elem).outerHeight(true);
 					}
 					// set owner and trigger event
-					$(target[j].elem).data('owner', obj);
-					$(target[j].elem).trigger('glue-menu-activate');
+					$.glue.owner(target[j].elem, obj);
+					$(target[j].elem).glueTrigger('glue-menu-activate');
 					// check if we still want to show the icon ;)
 					if ($(target[j].elem).css('display') == 'none') {
 						continue;
@@ -643,7 +643,7 @@ $.glue.menu = function()
 		}
 	};
 	
-	$('.object').live('glue-select', function(e) {
+	$('.object').glueLive('glue-select', function(e) {
 		// hide any menu when an object gets selected
 		if (cur) {
 			$.glue.menu.hide();
@@ -660,7 +660,7 @@ $.glue.menu = function()
 			}
 			if (cur) {
 				for (var i=0; i < cur.length; i++) {
-					$(cur[i].elem).trigger('glue-menu-deactivate');
+					$(cur[i].elem).glueTrigger('glue-menu-deactivate');
 					$(cur[i].elem).detach();
 				}
 				cur = false;
@@ -751,7 +751,7 @@ $.glue.menu = function()
 				// add to dom
 				$('body').append(elem);
 				// trigger event
-				$(elem).trigger('glue-menu-activate');
+				$(elem).glueTrigger('glue-menu-activate');
 				// check if we still want to show the icon ;)
 				if ($(elem).css('display') == 'none') {
 					continue;
@@ -823,13 +823,13 @@ $.glue.object = function()
 	var moveables = new WeakMap();
 
 	// only show resize handles while an object is selected, not permanently
-	$('.object').live('glue-select', function(e) {
+	$('.object').glueLive('glue-select', function(e) {
 		var m = moveables.get(this);
 		if (m && $(this).hasClass('resizable') && !$(this).hasClass('locked')) {
 			m.resizable = true;
 		}
 	});
-	$('.object').live('glue-deselect', function(e) {
+	$('.object').glueLive('glue-deselect', function(e) {
 		var m = moveables.get(this);
 		if (m) {
 			m.resizable = false;
@@ -919,9 +919,9 @@ $.glue.object = function()
 					if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
 						drag_multi_prev_left = drag_orig_left;
 						drag_multi_prev_top = drag_orig_top;
-						$('.glue-selected').trigger('glue-movestart');
+						$('.glue-selected').glueTrigger('glue-movestart');
 					} else {
-						$(obj).trigger('glue-movestart');
+						$(obj).glueTrigger('glue-movestart');
 					}
 				}
 
@@ -973,9 +973,9 @@ $.glue.object = function()
 					return;
 				}
 				if ($('.glue-selected').length > 1 && $(obj).hasClass('glue-selected')) {
-					$('.glue-selected').trigger('glue-movestop');
+					$('.glue-selected').glueTrigger('glue-movestop');
 				} else {
-					$(obj).trigger('glue-movestop');
+					$(obj).glueTrigger('glue-movestop');
 				}
 			}).on('scroll', function(e) {
 				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
@@ -983,7 +983,7 @@ $.glue.object = function()
 
 			if (can_resize) {
 				m.on('resizeStart', function(e) {
-					$(obj).trigger('glue-resizestart');
+					$(obj).glueTrigger('glue-resizestart');
 				}).on('resize', function(e) {
 					var width = e.width;
 					var height = e.height;
@@ -996,15 +996,15 @@ $.glue.object = function()
 					$(obj).css('height', height+'px');
 					$(obj).css('left', e.drag.left+'px');
 					$(obj).css('top', e.drag.top+'px');
-					$(obj).trigger('glue-resize');
+					$(obj).glueTrigger('glue-resize');
 				}).on('resizeEnd', function(e) {
 					$.glue.object.save(obj);
-					$(obj).trigger('glue-resizestop');
+					$(obj).glueTrigger('glue-resizestop');
 					$.glue.canvas.update(obj);
 				});
 			}
 
-			$(obj).trigger('glue-register');
+			$(obj).glueTrigger('glue-register');
 			$.glue.canvas.update(obj);
 		},
 		register_alter_pre_save: function(cls, func) {
@@ -1045,7 +1045,7 @@ $.glue.object = function()
 				m.destroy();
 				moveables.delete($(obj).get(0));
 			}
-			$(obj).trigger('glue-unregister');
+			$(obj).glueTrigger('glue-unregister');
 			// can't update canvas here as object to be deleted is still in the
 			// dom
 		}
@@ -1166,7 +1166,7 @@ $.glue.sel = function()
 			}
 			// trigger event (once, cleared in keyup)
 			if (!key_moving) {
-				$('.glue-selected').not('.locked').trigger('glue-movestart');
+				$('.glue-selected').not('.locked').glueTrigger('glue-movestart');
 				key_moving = true;
 			}
 			// prevent window scrolling
@@ -1219,7 +1219,7 @@ $.glue.sel = function()
 			return false;
 		} else if (37 <= e.which && e.which <= 40 && $('.glue-selected').length) {
 			// move selected elements with arrow keys
-			$('.glue-selected').not('.locked').trigger('glue-movestop');
+			$('.glue-selected').not('.locked').glueTrigger('glue-movestop');
 			key_moving = false;
 			return false;
 		} else if (e.which == 46 && $('.glue-selected').length) {
@@ -1248,7 +1248,7 @@ $.glue.sel = function()
 	// here, since Moveable doesn't emit jQuery-style 'drag'/'dragstart' DOM
 	// events the way jQuery UI's draggable() did
 
-	$('.object').live('click', function(e) {
+	$('.object').glueLive('click', function(e) {
 		// TODO (later): moving objects after shift clicking on them does not seem to work right on Chrome, document and fill a bug upstream
 		if (!e.shiftKey && !$(this).hasClass('glue-selected')) {
 			$.glue.sel.none();
@@ -1265,7 +1265,7 @@ $.glue.sel = function()
 
 	});
 	
-	$('.object').live('glue-movestop', function(e) {
+	$('.object').glueLive('glue-movestop', function(e) {
 		// update tooltip
 		$.glue.object.resizable_update_tooltip(this);
 		// save object
@@ -1274,7 +1274,7 @@ $.glue.sel = function()
 		$.glue.canvas.update(this);
 	});
 	
-	$('.object').live('glue-unregister', function(e) {
+	$('.object').glueLive('glue-unregister', function(e) {
 		$.glue.sel.deselect($(this));
 	});
 	
@@ -1285,7 +1285,7 @@ $.glue.sel = function()
 			if ($(obj).hasClass('glue-selected')) {
 				var border = $(obj).outerHeight()-$(obj).innerHeight();
 				$(obj).removeClass('glue-selected');
-				$(obj).trigger('glue-deselect');
+				$(obj).glueTrigger('glue-deselect');
 				var p = $(obj).position();
 				$(obj).css('left', (p.left+border/2)+'px');
 				$(obj).css('top', (p.top+border/2)+'px');
@@ -1307,7 +1307,7 @@ $.glue.sel = function()
 			// TODO (later): handle more than one obj (and change callers)
 			if (!$(obj).hasClass('glue-selected')) {
 				$(obj).addClass('glue-selected');
-				$(obj).trigger('glue-select');
+				$(obj).glueTrigger('glue-select');
 				// TODO (later): the following code works for dashed borders but 
 				// not for solid ones - read out the border-style on the fly and 
 				// act accordingly (there seem to be a problem with getting the 
@@ -1750,7 +1750,7 @@ $.glue.upload = function()
 						// DEBUG
 						//console.log('glue-upload-dynamic-late: '+$(obj).attr('id'));
 						// fire handler (can overwrite width and height)
-						$(obj).trigger('glue-upload-dynamic-late', [ this ]);
+						$(obj).glueTrigger('glue-upload-dynamic-late', [ this ]);
 						// position object
 						if (mode == 'center') {
 							// move to the center of mouseclick
@@ -1794,7 +1794,7 @@ $.glue.upload = function()
 						// DEBUG
 						//console.log('glue-upload-dynamic-early: '+$(obj).attr('id'));
 						// fire handler
-						$(obj).trigger('glue-upload-dynamic-early', [ mode, target_x, target_y ]);
+						$(obj).glueTrigger('glue-upload-dynamic-early', [ mode, target_x, target_y ]);
 					} else {
 						// add to dom
 						$('body').append(obj);
@@ -1813,7 +1813,7 @@ $.glue.upload = function()
 						// DEBUG
 						//console.log('registered static upload: '+$(obj).attr('id'));
 						// fire handler
-						$(obj).trigger('glue-upload-static', [ mode ]);
+						$(obj).glueTrigger('glue-upload-static', [ mode ]);
 						// save object
 						$.glue.object.save(obj);
 					}

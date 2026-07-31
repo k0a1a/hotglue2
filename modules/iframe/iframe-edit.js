@@ -50,7 +50,7 @@ $(document).ready(function() {
 	//
 	elem = $('<img src="'+$.glue.base_url+'modules/iframe/iframe-url.png" alt="btn" title="change webpage url" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var child = $(obj).children('iframe').first();
 		var url = prompt('Enter the URL to show', window.location.protocol + $(child).attr('src'));
 		if (!url) {
@@ -65,7 +65,7 @@ $(document).ready(function() {
 	
 	elem = $('<div style="height: 32px; width: 32px;" title="toggle scrollbars on and off">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var child = $(obj).children('iframe').first();
 		if ($(child).css('overflow') == 'hidden') {
 			// show scrollbars
@@ -98,7 +98,7 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var child = $(obj).children('iframe').first();
 		if ($(child).css('overflow') == 'hidden') {
 			$(this).removeClass('glue-menu-enabled');

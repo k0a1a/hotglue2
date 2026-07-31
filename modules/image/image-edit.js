@@ -137,11 +137,11 @@ $.glue.image = function() {
 }();
 
 
-$('.image').live('glue-resizestop', function(e) {
+$('.image').glueLive('glue-resizestop', function(e) {
 	$.glue.image.resize($(this));
 });
 
-$('.image').live('glue-upload-dynamic-late', function(e, loaded) {
+$('.image').glueLive('glue-upload-dynamic-late', function(e, loaded) {
 	var img = loaded;
 	if ($(img).is('img')) {
 		// we should have the exact dimensions of the image by now
@@ -162,7 +162,7 @@ $('.image').live('glue-upload-dynamic-late', function(e, loaded) {
 	}
 });
 
-$('.image').live('glue-upload-static', function(e, mode) {
+$('.image').glueLive('glue-upload-static', function(e, mode) {
 	// this is only getting triggered when the object width and height is set 
 	// immediately after uploading, i.e. when gd is available on the server
 	$.glue.image.autoresize(this, mode);
@@ -176,7 +176,7 @@ $(document).ready(function() {
 	//
 	var elem = $('<img src="'+$.glue.base_url+'modules/image/image-tile.png" alt="btn" title="toggle image tiling" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).css('background-repeat') != 'no-repeat') {
 			$(obj).css('background-repeat', 'no-repeat');
 			$(obj).css('background-size', '100% 100%');
@@ -194,12 +194,12 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/image/image-ratio.png" alt="btn" title="reset image size" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// get original-{width,height} from backend
 		$.glue.backend({ method: 'glue.load_object', name: $(obj).attr('id') }, function(data) {
 			if (data['image-file-width'] && data['image-file-height']) {
 				var aspect = data['image-file-width']/data['image-file-height'];
-				$(obj).trigger('glue-resizestart');
+				$(obj).glueTrigger('glue-resizestart');
 				if (e.shiftKey) {
 					// shift: only change aspect ratio
 					// fit height to width
@@ -212,10 +212,10 @@ $(document).ready(function() {
 					$(obj).css('width', data['image-file-width']+'px');
 					$(obj).css('height', data['image-file-height']+'px');
 				}
-				$(obj).trigger('glue-resize');
+				$(obj).glueTrigger('glue-resize');
 				$.glue.object.resizable_update_tooltip(obj);
 				$.glue.object.save(obj);
-				$(obj).trigger('glue-resizestop');
+				$(obj).glueTrigger('glue-resizestop');
 				$.glue.canvas.update(obj);
 			}
 		});
@@ -224,7 +224,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/image/image-pos.png" alt="btn" title="adjust image selection" width="32" height="32">');
 	$(elem).bind('mousedown', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var a = $(obj).css('background-position').split(' ');
 		if (a.length != 2) {
 			var prev_x_pos = 0;
@@ -262,7 +262,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'img/download.png" alt="btn" title="download original file" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// initiate download
 		window.location = $.glue.base_url+'?'+$(obj).attr('id')+'&download=1';
 	});

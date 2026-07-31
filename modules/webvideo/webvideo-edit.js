@@ -93,7 +93,7 @@ $(document).ready(function() {
 	//
 	var elem = $('<div style="height: 32px; width: 32px;" title="toggle automatic playback of video (takes effect after a reload)">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).data('webvideo-autoplay') === undefined) {
 			$(this).removeClass('glue-menu-enabled');
 			$(this).removeClass('glue-menu-disabled');
@@ -118,7 +118,7 @@ $(document).ready(function() {
 		}
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(this).hasClass('glue-menu-enabled')) {
 			$(this).removeClass('glue-menu-enabled');
 			$(this).addClass('glue-menu-disabled');
@@ -135,7 +135,7 @@ $(document).ready(function() {
 	
 	elem = $('<div style="height: 32px; width: 32px;" title="toggle looping of video (takes effect after a reload)">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(obj).data('webvideo-loop') === undefined) {
 			$(this).removeClass('glue-menu-enabled');
 			$(this).removeClass('glue-menu-disabled');
@@ -160,7 +160,7 @@ $(document).ready(function() {
 		}
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		if ($(this).hasClass('glue-menu-enabled')) {
 			$(this).removeClass('glue-menu-enabled');
 			$(this).addClass('glue-menu-disabled');

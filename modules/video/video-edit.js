@@ -11,7 +11,7 @@ $(document).ready(function() {
 	//
 	// turn video upload into an object
 	//
-	$('.video').live('glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
+	$('.video').glueLive('glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
 		$(this).children('video').get(0).addEventListener('loadedmetadata', function(e) {
 			// resize the video to it's native size
 			// DEBUG
@@ -48,7 +48,7 @@ $(document).ready(function() {
 	//
 	var elem = $('<div style="height: 32px; width: 32px;" title="toggle automatic playback of video">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if (!$(video).attr('autoplay')) {
 			$(video).attr('autoplay', 'autoplay');
@@ -64,7 +64,7 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if ($(video).attr('autoplay')) {
 			$('#glue-contextmenu-video-autoplay').addClass('glue-menu-enabled');
@@ -78,7 +78,7 @@ $(document).ready(function() {
 	
 	elem = $('<div style="height: 32px; width: 32px;" title="toggle looping of video">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if (!$(video).attr('loop')) {
 			$(video).attr('loop', 'loop');
@@ -92,7 +92,7 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if ($(video).attr('loop')) {
 			$('#glue-contextmenu-video-loop').addClass('glue-menu-enabled');
@@ -106,7 +106,7 @@ $(document).ready(function() {
 	
 	elem = $('<div style="height: 32px; width: 32px;" title="show or hide control elements">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if (!$(video).attr('controls')) {
 			$(video).attr('controls', 'controls');
@@ -120,7 +120,7 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if ($(video).attr('controls')) {
 			$('#glue-contextmenu-video-controls').addClass('glue-menu-enabled');
@@ -134,7 +134,7 @@ $(document).ready(function() {
 	
 	elem = $('<div style="height: 32px; width: 32px;" title="mute or unmute video">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if ((video).attr('audio') != 'muted') {
 			$(video).attr('audio', 'muted');
@@ -148,7 +148,7 @@ $(document).ready(function() {
 		$.glue.object.save(obj);
 	});
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		if ((video).attr('audio') == 'muted') {
 			$('#glue-contextmenu-video-mute').addClass('glue-menu-enabled');
@@ -162,7 +162,7 @@ $(document).ready(function() {
 	
 	elem = $('<img src="'+$.glue.base_url+'modules/video/video-ratio.png" alt="btn" title="reset video size" width="32" height="32">');
 	$(elem).bind('glue-menu-activate', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		// only show the icon when we have the native width and height
 		var w = $(video).get(0).videoWidth;
@@ -174,7 +174,7 @@ $(document).ready(function() {
 		}
 	});
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		var video = $(obj).children('video').first();
 		// get the native width and height
 		var w = $(video).get(0).videoWidth;
@@ -184,20 +184,20 @@ $(document).ready(function() {
 			return;
 		}
 		var aspect = w/h;
-		$(obj).trigger('glue-resizestart');
+		$(obj).glueTrigger('glue-resizestart');
 		$(obj).css('width', w+'px');
 		$(obj).css('height', h+'px');
-		$(obj).trigger('glue-resize');
+		$(obj).glueTrigger('glue-resize');
 		$.glue.object.resizable_update_tooltip(obj);
 		$.glue.object.save(obj);
-		$(obj).trigger('glue-resizestop');
+		$(obj).glueTrigger('glue-resizestop');
 		$.glue.canvas.update(obj);
 	});
 	$.glue.contextmenu.register('video', 'video-ratio', elem);
 	
 	elem = $('<img src="'+$.glue.base_url+'img/download.png" alt="btn" title="download original file" width="32" height="32">');
 	$(elem).bind('click', function(e) {
-		var obj = $(this).data('owner');
+		var obj = $.glue.owner(this);
 		// initiate download
 		window.location = $.glue.base_url+'?'+$(obj).attr('id')+'&download=1';
 	});
