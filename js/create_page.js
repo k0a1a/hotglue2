@@ -7,9 +7,9 @@
  *	See the file COPYING for more details.
  */
 
-$(document).ready(function() {
-	$('#create_page_btn').bind('click', function(e) {
-		$('#create_page_btn').attr('disabled', 'disabled');
+document.addEventListener('DOMContentLoaded', function() {
+	document.getElementById('create_page_btn').addEventListener('click', function(e) {
+		document.getElementById('create_page_btn').setAttribute('disabled', 'disabled');
 		$.glue.backend({ method: 'glue.create_page', page: $.glue.page }, function(data) {
 			var page_short = $.glue.page;
 			var q_mark = $.glue.q;

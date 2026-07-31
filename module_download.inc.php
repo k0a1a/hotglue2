@@ -79,7 +79,7 @@ function download_delete_object($args)
 	$a = expl('.', $obj['name']);
 	$ret = delete_upload(array('pagename'=>$a[0], 'file'=>$obj['download-file'], 'max_cnt'=>1));
 	if ($ret['#error']) {
-		log_error('error', 'upload_delete_object: delete_upload returned '.quot($ret['#error']));
+		log_msg('error', 'upload_delete_object: delete_upload returned '.quot($ret['#error']));
 	}
 }
 

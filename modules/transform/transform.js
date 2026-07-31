@@ -16,15 +16,21 @@ function matrixToArray(m) {
 }
 */
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
 	//
 	var elem;
-	elem = $('<img src="'+$.glue.base_url+'modules/transform/transform-flip.png" alt="btn" title="flip object" width="32" height="32">');
-	$(elem).bind('click', function(e) {
+	elem = document.createElement('img');
+	elem.src = $.glue.base_url+'modules/transform/transform-flip.png';
+	elem.alt = 'btn';
+	elem.title = 'flip object';
+	elem.width = 32;
+	elem.height = 32;
+	elem.addEventListener('click', function(e) {
 		var that = this;
 		var obj = $.glue.owner(this);
+		var computed = getComputedStyle(obj);
 /*
 		if ($(obj).css('-moz-transform') != '') {
 			var o = $(obj).css('-moz-transform');
@@ -34,31 +40,31 @@ $(document).ready(function() {
 			o = 'matrix(1, 0, 0, 1, 0, 0)';
 		}
 		var o = matrixToArray(o);
-	
+
 		$(obj).transform({reflectX: true, matrix: ''+o+''}, {forceMatrix: true});
 */
-		if ($(obj).css('-moz-transform') != '') {
-			var val = $(obj).css('-moz-transform');
+		if (computed.getPropertyValue('-moz-transform') != '') {
+			var val = computed.getPropertyValue('-moz-transform');
 			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
-				$(obj).css('-moz-transform', 'matrix(1, 0, 0, -1, 0, 0)');
+				obj.style.setProperty('-moz-transform', 'matrix(1, 0, 0, -1, 0, 0)');
 			} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
-				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+				obj.style.setProperty('-moz-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
 			} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
-				$(obj).css('-moz-transform', '');
+				obj.style.setProperty('-moz-transform', '');
 			} else {
-				$(obj).css('-moz-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+				obj.style.setProperty('-moz-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
 			}
 		}
-		if ($(obj).css('-webkit-transform') != '') {
-			var val = $(obj).css('-webkit-transform');
+		if (computed.getPropertyValue('-webkit-transform') != '') {
+			var val = computed.getPropertyValue('-webkit-transform');
 			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
-				$(obj).css('-webkit-transform', 'matrix(1, 0, 0, -1, 0, 0)');
+				obj.style.setProperty('-webkit-transform', 'matrix(1, 0, 0, -1, 0, 0)');
 			} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
-				$(obj).css('-webkit-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+				obj.style.setProperty('-webkit-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
 			} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
-				$(obj).css('-webkit-transform', '');
+				obj.style.setProperty('-webkit-transform', '');
 			} else {
-				$(obj).css('-webkit-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+				obj.style.setProperty('-webkit-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
 			}
 		}
 		$.glue.object.save(obj);

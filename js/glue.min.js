@@ -118,15 +118,49 @@ $.fn.glueTrigger = function(eventName, data) {
 	return this;
 };
 
+// jQuery-free equivalents of the two above, for modules converted away from
+// jQuery. Both mechanisms are just addEventListener/dispatchEvent under the
+// hood, so old ($.fn.glueLive) and new ($.glue.live) listeners interoperate
+// freely during the file-by-file jQuery removal - it doesn't matter which
+// side registered the listener vs. which side dispatched the event.
+$.glue.live = function(selector, eventName, handler) {
+	document.addEventListener(eventName, function(e) {
+		var matched = e.target.closest ? e.target.closest(selector) : null;
+		if (matched) {
+			var args = [e];
+			if (e.detail !== undefined && e.detail !== null) {
+				args = args.concat(e.detail);
+			}
+			handler.apply(matched, args);
+		}
+	}, false);
+};
+
+$.glue.trigger = function(target, eventName, data) {
+	var elems;
+	if (typeof target == 'string') {
+		elems = document.querySelectorAll(target);
+	} else if (target instanceof Element) {
+		elems = [target];
+	} else {
+		// array-like (NodeList, Array, jQuery object)
+		elems = target;
+	}
+	for (var i=0; i<elems.length; i++) {
+		elems[i].dispatchEvent(new CustomEvent(eventName, { bubbles: true, cancelable: true, detail: data }));
+	}
+};
+
 // replaces the single .data('owner', obj) contract (set once in
 // $.glue.contextmenu.show, read at ~50 call sites across most modules) -
 // a WeakMap instead of jQuery .data() avoids the same clone()-hangs-on-
-// circular-data-cache issue worked around for Moveable instances
+// circular-data-cache issue worked around for Moveable instances.
+// elem is always a raw DOM element at every call site (event handler
+// `this`, Alpine's $el, or a plain Element param), never a jQuery object.
 $.glue.owner = function()
 {
 	var owners = new WeakMap();
 	return function(elem, obj) {
-		elem = $(elem).get(0);
 		if (obj === undefined) {
 			return owners.get(elem);
 		} else {
@@ -144,10 +178,16 @@ $.glue.owner = function()
 // icon element, since Alpine expressions are evaluated as strings and can't
 // close over local function references directly
 $.glue.toggle_button = function(elem, sync_fn, toggle_fn, enabled_title, disabled_title) {
-	elem.attr('x-data', '{ enabled: false }');
-	elem.attr('x-bind:class', "enabled ? 'glue-menu-enabled' : 'glue-menu-disabled'");
-	elem.attr('x-bind:title', 'enabled ? '+JSON.stringify(enabled_title)+' : '+JSON.stringify(disabled_title));
-	elem.attr('x-on:glue-menu-activate', sync_fn+'($el)');
-	elem.attr('x-on:click', toggle_fn+'($el)');
+	// accepts either a raw DOM element or a jQuery-wrapped one (not-yet-
+	// converted callers still pass jQuery objects during the jQuery
+	// removal), always returns a raw element
+	if (elem.jquery) {
+		elem = elem.get(0);
+	}
+	elem.setAttribute('x-data', '{ enabled: false }');
+	elem.setAttribute('x-bind:class', "enabled ? 'glue-menu-enabled' : 'glue-menu-disabled'");
+	elem.setAttribute('x-bind:title', 'enabled ? '+JSON.stringify(enabled_title)+' : '+JSON.stringify(disabled_title));
+	elem.setAttribute('x-on:glue-menu-activate', sync_fn+'($el)');
+	elem.setAttribute('x-on:click', toggle_fn+'($el)');
 	return elem;
 };

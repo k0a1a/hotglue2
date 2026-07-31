@@ -16,19 +16,22 @@
  *	i.e. $('.glue-selected').not('.locked')
  */
 
-$('.object').glueLive('glue-object-lock', function(e) {
+$.glue.live('.object', 'glue-object-lock', function(e) {
 	// if object is in locked state
 	// disable dragging and resize
 
-	if ($(this).hasClass('locked')) {
+	if (this.classList.contains('locked')) {
 		var m = $.glue.object.moveable_of(this);
 		if (m) {
 			m.draggable = false;
 			m.resizable = false;
 		}
 		// small workaround for textarea resize handle
-		if ($(this).hasClass('text')) {
-			$(this).children('textarea').css('resize', 'none');
+		if (this.classList.contains('text')) {
+			var ta = this.querySelector(':scope > textarea');
+			if (ta) {
+				ta.style.resize = 'none';
+			}
 		}
 	}
 });
@@ -43,24 +46,27 @@ function lock_toggle(iconElem) {
 	var m = $.glue.object.moveable_of(obj);
 	var nowLocked;
 
-	if ($(obj).hasClass('locked')) {
-		$(obj).removeClass('locked');
+	if (obj.classList.contains('locked')) {
+		obj.classList.remove('locked');
 		if (m) {
 			m.draggable = true;
 			// resize handles only show while selected (this button only
 			// appears in the context menu of a selected object, but check
 			// explicitly rather than assume)
-			m.resizable = $(obj).hasClass('resizable') && $(obj).hasClass('glue-selected');
+			m.resizable = obj.classList.contains('resizable') && obj.classList.contains('glue-selected');
 		}
 		nowLocked = false;
 	} else {
-		$(obj).addClass('locked');
+		obj.classList.add('locked');
 		if (m) {
 			m.draggable = false;
 			m.resizable = false;
 		}
-		if ($(obj).hasClass('text')) {
-			$(obj).children('textarea').css('resize', 'none');
+		if (obj.classList.contains('text')) {
+			var ta = obj.querySelector(':scope > textarea');
+			if (ta) {
+				ta.style.resize = 'none';
+			}
 		}
 		nowLocked = true;
 	}
@@ -74,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// trigger object lock check
 	//
-	$('.object').glueTrigger('glue-object-lock');
+	$.glue.trigger('.object', 'glue-object-lock');
 
 	//
 	// register menu item
