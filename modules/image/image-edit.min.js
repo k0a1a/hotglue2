@@ -19,37 +19,51 @@ $.glue.image = function() {
 			}
 			var larger = $.glue.conf.image.upload_resize_larger;
 			var to = $.glue.conf.image.upload_resize_to;
-			if (larger == '0%' && to == '0%') {
-				return;
-			}
 
 			var w = obj.offsetWidth;
 			var h = obj.offsetHeight;
-			var win_w = window.innerWidth;
-			var win_h = window.innerHeight;
-			var larger_f = parseFloat(larger);
-			var to_f = parseFloat(to);
-			if (isNaN(larger_f) || isNaN(to_f)) {
-				return;
-			}
 			var do_resize = false;
 			var target_w = w;
 			var target_h = h;
 
-			if (win_w*larger_f/100 < w) {
-				target_w = win_w*to_f/100;
-				target_h = target_w*h/w;
-				do_resize = true;
-			}
-			if (win_h*larger_f/100 < h) {
-				// this is here because target_h could also have been
-				// already been changed by the lines above
-				if (win_h*to_f/100 < target_h) {
-					target_h = win_h*to_f/100;
-					target_w = target_h*w/h;
-					do_resize = true;
+			// shrink if larger than a % of the window
+			if (!(larger == '0%' && to == '0%')) {
+				var win_w = window.innerWidth;
+				var win_h = window.innerHeight;
+				var larger_f = parseFloat(larger);
+				var to_f = parseFloat(to);
+				if (!isNaN(larger_f) && !isNaN(to_f)) {
+					if (win_w*larger_f/100 < w) {
+						target_w = win_w*to_f/100;
+						target_h = target_w*h/w;
+						do_resize = true;
+					}
+					if (win_h*larger_f/100 < h) {
+						// this is here because target_h could also have been
+						// already been changed by the lines above
+						if (win_h*to_f/100 < target_h) {
+							target_h = win_h*to_f/100;
+							target_w = target_h*w/h;
+							do_resize = true;
+						}
+					}
 				}
 			}
+
+			// also cap to an absolute maximum pixel size, regardless of
+			// window size or the window-relative resize above - the
+			// original file/resolution is untouched (image-file-width/
+			// -height keep recording it), "reset image size" (the
+			// image-ratio icon) still shows the image at full size
+			var max_w = $.glue.conf.image.upload_max_width;
+			var max_h = $.glue.conf.image.upload_max_height;
+			if (max_w && max_h && (max_w < target_w || max_h < target_h)) {
+				var scale = Math.min(max_w/target_w, max_h/target_h);
+				target_w = target_w*scale;
+				target_h = target_h*scale;
+				do_resize = true;
+			}
+
 			if (do_resize) {
 				// DEBUG
 				//console.log('window is '+window.innerWidth+' and '+window.innerHeight);

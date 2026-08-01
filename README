@@ -72,6 +72,39 @@ RECENT CHANGES (2026-08)
     only the Delete key was wired up, so Ctrl+Z appeared to do nothing for
     the more commonly-used delete button.
 
+  * Added redo (Ctrl+Y, or a new redo icon next to Undo in the single-click
+    menu) to the same undo stack - undoing and redoing can be freely mixed
+    and repeated in either direction. Performing a new action clears
+    whatever was available to redo, same as any standard undo/redo.
+
+  * Newly-uploaded images larger than IMAGE_UPLOAD_MAX_WIDTH/
+    IMAGE_UPLOAD_MAX_HEIGHT (default 512x512) now display at a capped size
+    on the canvas, in addition to the existing window-relative auto-shrink.
+    The original file and its recorded resolution are untouched - the
+    existing "reset image size" icon still restores the object to the
+    image's true full resolution.
+
+  * Image uploads now also accept .webp (image/webp), including server-side
+    resizing if the installed GD build supports it (IMAGE_WEBP_QUAL config
+    constant) - falls back gracefully (upload still works, just unresized)
+    if GD lacks webp support.
+
+  * Applied the same capped-display-size treatment to video
+    (VIDEO_DISPLAY_MAX_WIDTH/VIDEO_DISPLAY_MAX_HEIGHT, default 512x512,
+    independent of VIDEO_MAX_HEIGHT which caps the actual encoded
+    resolution) - "reset video size" restores the object to the encoded
+    video's real dimensions, same relationship as image's reset button.
+
+  * Fixed a real bug surfaced while adding the above: once a video finished
+    encoding, its corrected on-canvas size was written to disk, but an
+    already-open editor session kept showing the placeholder's leftover
+    default size (e.g. 480x360) until the page was reloaded. Two causes,
+    both fixed: video_render_object() finalized a pending encode too late
+    for the generic object-sizing hook to see the corrected dimensions
+    within that same render pass (module_video.inc.php), and video-edit.js's
+    completion poll only swapped the inner <video> tag, never the
+    container's own width/height style.
+
   * Replaced the native <input type="color"> color picker with the vendored
     vanilla-picker library (js/vanilla-picker.js), behind the same
     $.glue.colorpicker API used by page-edit.js/text-edit.js. The native

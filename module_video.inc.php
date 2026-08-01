@@ -108,8 +108,18 @@ function video_check_pending_encode($obj)
 		// placeholder is showing (no real <video> element exists yet)
 		$dim = _video_dimensions($dir.'/'.$out);
 		if ($dim !== false) {
-			$update['object-width'] = $dim['width'].'px';
-			$update['object-height'] = $dim['height'].'px';
+			$w = $dim['width'];
+			$h = $dim['height'];
+			// cap the on-canvas display size (independent of the encoded
+			// resolution cap above) - never upscales, only shrinks to fit
+			if (VIDEO_DISPLAY_MAX_WIDTH && VIDEO_DISPLAY_MAX_HEIGHT
+				&& (VIDEO_DISPLAY_MAX_WIDTH < $w || VIDEO_DISPLAY_MAX_HEIGHT < $h)) {
+				$scale = min(VIDEO_DISPLAY_MAX_WIDTH/$w, VIDEO_DISPLAY_MAX_HEIGHT/$h);
+				$w = round($w*$scale);
+				$h = round($h*$scale);
+			}
+			$update['object-width'] = $w.'px';
+			$update['object-height'] = $h.'px';
 		}
 		$ret = update_object($update);
 		if ($ret['#error']) {
@@ -232,12 +242,9 @@ function video_alter_render_early($args)
 	if (!elem_has_class($elem, 'video')) {
 		return false;
 	}
-
-	// check on a pending background encode, finalizing it if it has
-	// completed so this render already reflects the encoded variant
-	if (!empty($obj['video-encode-status'])) {
-		$obj = video_check_pending_encode($obj);
-	}
+	// note: pending-encode finalization already happened in
+	// video_render_object() before this hook ran, so object_alter_render_early()
+	// (dispatched in the same pass) sees the corrected size too
 
 	// add a css (for viewing as well as editing)
 	html_add_css(base_url().'modules/video/video.css');
@@ -318,7 +325,22 @@ function video_render_object($args)
 	if (!isset($obj['type']) || $obj['type'] != 'video') {
 		return false;
 	}
-	
+
+	// finalize a pending encode (if it just completed) *before* $obj is
+	// handed to alter_render_early - that hook is dispatched to multiple
+	// modules (video_alter_render_early() and the generic
+	// object_alter_render_early(), which applies object-width/-height as
+	// CSS) via the same $args array passed by value, so freshening $obj
+	// only inside one of those hooks never reaches the other within the
+	// same render pass - only a later, separate render call would have
+	// picked up the corrected size, which is exactly the one render pass
+	// the polling in video-edit.js stops at as soon as it sees a
+	// non-pending response
+	if (!empty($obj['video-encode-status'])) {
+		load_modules('glue');
+		$obj = video_check_pending_encode($obj);
+	}
+
 	$e = elem('div');
 	elem_attr($e, 'id', $obj['name']);
 	elem_add_class($e, 'video');

@@ -1155,11 +1155,12 @@ $.glue.object = function()
 	};
 }();
 
-// a lightweight, purely client-side undo stack - in-memory only, cleared on
-// reload, capped to a few levels. Replaces the old server-side auto-snapshot
-// system (periodic full-page backups browsable/revertable via a dedicated
-// UI), which was real disk/complexity overhead for what wasn't actually an
-// undo feature (Ctrl+Z just redirected to it with a confirm() nudge).
+// a lightweight, purely client-side undo/redo stack - in-memory only,
+// cleared on reload, capped to a few levels. Replaces the old server-side
+// auto-snapshot system (periodic full-page backups browsable/revertable via
+// a dedicated UI), which was real disk/complexity overhead for what wasn't
+// actually an undo feature (Ctrl+Z just redirected to it with a confirm()
+// nudge).
 //
 // design: a single generic capture point in $.glue.object.save() covers
 // move/resize/z-order/property-toggles (anything that calls save()) for
@@ -1167,29 +1168,40 @@ $.glue.object = function()
 // for a given object is classified 'create', every later one 'update' with
 // the *previous* html as the undo target. Delete has its own capture call
 // (the object stops existing, so there's no "next save" to diff against).
-// No redo - the create/delete asymmetry makes a correct symmetric redo need
-// its own stack and clearing rules, not worth it for "a few levels of undo".
+//
+// redo: every restore (whether undoing or redoing) computes its own inverse
+// from whatever is currently live right before it acts, and pushes that
+// inverse onto the *other* stack - so redoing an undo, undoing a redo, etc.
+// all just work by always reversing from current state rather than reusing
+// stale captured data. Any genuine new action (capture()/capture_delete())
+// clears the redo stack, same as any standard undo/redo implementation.
 $.glue.undo = function()
 {
 	var MAX_DEPTH = 20;
 	var stack = [];
+	var redo_stack = [];
 	var last_html = new WeakMap();
 	var restoring = false;
 	var batch_depth = 0;
 	var current_batch = null;
 
+	function push_to(target, entry) {
+		target.push(entry);
+		if (MAX_DEPTH < target.length) {
+			target.shift();
+		}
+	}
+
 	function push(entry) {
 		if (restoring) {
 			return;
 		}
+		redo_stack = [];
 		if (0 < batch_depth) {
 			current_batch.push(entry);
 			return;
 		}
-		stack.push(entry);
-		if (MAX_DEPTH < stack.length) {
-			stack.shift();
-		}
+		push_to(stack, entry);
 	}
 
 	// the html captured by to_html()/save() is the on-disk STORAGE format,
@@ -1228,12 +1240,16 @@ $.glue.undo = function()
 		}, false);
 	}
 
-	function restore_one(a) {
+	// applies action `a`, appending its inverse to `inverse_out` - used for
+	// both undo and redo, since reversing either direction works the same
+	// way (capture current state, then overwrite it)
+	function restore_one(a, inverse_out) {
 		if (a.type == 'create') {
 			var el = document.getElementById(a.id);
 			if (!el) {
 				return;
 			}
+			inverse_out.push({ type: 'delete', id: a.id, html: $.glue.object.to_html(el) });
 			$.glue.object.unregister(el);
 			el.remove();
 			$.glue.canvas.update();
@@ -1246,6 +1262,7 @@ $.glue.undo = function()
 				// nothing, this is expected for "a few levels", not an error
 				return;
 			}
+			inverse_out.push({ type: 'update', id: a.id, before: $.glue.object.to_html(el) });
 			$.glue.backend({ method: 'glue.save_state', html: a.before }, function(data) {
 				if (!data || data['#error']) {
 					return;
@@ -1253,6 +1270,7 @@ $.glue.undo = function()
 				render_and_apply(a.id, el, false);
 			}, false);
 		} else if (a.type == 'delete') {
+			inverse_out.push({ type: 'create', id: a.id });
 			// the object's file was unlinked by delete_object() - glue.
 			// save_state requires the object to already exist, so recreate
 			// the (empty) file first via glue.save_object (no such
@@ -1275,6 +1293,34 @@ $.glue.undo = function()
 		}
 	}
 
+	// pops the most recent entry off `from`, replays it, and pushes its
+	// inverse onto `to` - `reverse_order` true replays a batch last-action-
+	// first (undo's direction), false replays first-action-first (redo's
+	// direction, reproducing the original gesture order)
+	function step(from, to, reverse_order) {
+		var entry = from.pop();
+		if (!entry) {
+			return;
+		}
+		var actions = entry.batch ? entry.batch : [entry];
+		var inverses = [];
+		restoring = true;
+		if (reverse_order) {
+			for (var i = actions.length-1; 0 <= i; i--) {
+				restore_one(actions[i], inverses);
+			}
+			inverses.reverse();
+		} else {
+			for (var i = 0; i < actions.length; i++) {
+				restore_one(actions[i], inverses);
+			}
+		}
+		restoring = false;
+		if (inverses.length) {
+			push_to(to, entry.batch ? { batch: inverses } : inverses[0]);
+		}
+	}
+
 	return {
 		begin_batch: function() {
 			if (batch_depth++ === 0) {
@@ -1284,10 +1330,7 @@ $.glue.undo = function()
 		end_batch: function() {
 			if (--batch_depth === 0) {
 				if (current_batch.length) {
-					stack.push({ batch: current_batch });
-					if (MAX_DEPTH < stack.length) {
-						stack.shift();
-					}
+					push_to(stack, { batch: current_batch });
 				}
 				current_batch = null;
 			}
@@ -1324,16 +1367,10 @@ $.glue.undo = function()
 			last_html.delete(obj);
 		},
 		undo: function() {
-			var entry = stack.pop();
-			if (!entry) {
-				return;
-			}
-			var actions = entry.batch ? entry.batch : [entry];
-			restoring = true;
-			for (var i = actions.length-1; 0 <= i; i--) {
-				restore_one(actions[i]);
-			}
-			restoring = false;
+			step(stack, redo_stack, true);
+		},
+		redo: function() {
+			step(redo_stack, stack, false);
 		}
 	};
 }();
@@ -1358,6 +1395,25 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.undo.undo();
 	});
 	$.glue.menu.register('new', elem, 20);
+
+	// visible "Redo" entry, same styling, next to Undo
+	var redo_elem = document.createElement('div');
+	redo_elem.style.alignItems = 'center';
+	redo_elem.style.backgroundColor = '#eee';
+	redo_elem.style.border = '1px solid #000';
+	redo_elem.style.boxSizing = 'border-box';
+	redo_elem.style.display = 'flex';
+	redo_elem.style.fontSize = '20px';
+	redo_elem.style.height = '32px';
+	redo_elem.style.justifyContent = 'center';
+	redo_elem.style.width = '32px';
+	redo_elem.title = 'redo the last undone change';
+	redo_elem.textContent = '↷';
+	redo_elem.addEventListener('click', function(e) {
+		$.glue.menu.hide();
+		$.glue.undo.redo();
+	});
+	$.glue.menu.register('new', redo_elem, 21);
 });
 
 $.glue.sel = function()
@@ -2281,6 +2337,14 @@ document.addEventListener('DOMContentLoaded', function() {
 				return;
 			}
 			$.glue.undo.undo();
+			e.preventDefault();
+			return false;
+		} else if (e.ctrlKey && e.which == 89) {
+			// ctrl+y: redo (same textarea/input guard as ctrl+z)
+			if (document.activeElement && (document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT')) {
+				return;
+			}
+			$.glue.undo.redo();
 			e.preventDefault();
 			return false;
 		}

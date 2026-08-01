@@ -111,7 +111,15 @@ function video_poll_encode(obj) {
 				return;
 			}
 			clearInterval(timer);
+			// copy attributes too, not just content - the placeholder was
+			// sized by the browser's CSS default (e.g. 480x360) before the
+			// encode finished, and that got saved as this object's width/
+			// height; the finalized render's style now carries the real
+			// encoded dimensions, which only applying innerHTML would miss
+			Array.from(obj.attributes).forEach(function(a) { obj.removeAttribute(a.name); });
+			Array.from(fresh.attributes).forEach(function(a) { obj.setAttribute(a.name, a.value); });
 			obj.innerHTML = fresh.innerHTML;
+			$.glue.canvas.update(obj);
 		}, false);
 	}, 3000);
 }

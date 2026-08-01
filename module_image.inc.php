@@ -289,6 +289,8 @@ function image_render_page_early($args)
 		}
 		html_add_js_var('$.glue.conf.image.upload_resize_larger', IMAGE_UPLOAD_RESIZE_LARGER);
 		html_add_js_var('$.glue.conf.image.upload_resize_to', IMAGE_UPLOAD_RESIZE_TO);
+		html_add_js_var('$.glue.conf.image.upload_max_width', IMAGE_UPLOAD_MAX_WIDTH);
+		html_add_js_var('$.glue.conf.image.upload_max_height', IMAGE_UPLOAD_MAX_HEIGHT);
 		html_add_js_var('$.glue.conf.image.resize_max_dpr', IMAGE_RESIZE_MAX_DPR);
 	}
 }
@@ -423,6 +425,9 @@ function image_resize($args)
 		// save gifs as png
 		// TODO (later): check for animated gif (see php.net/manual/en/function.imagecreatefromgif.php)
 		$dest_ext = 'png';
+	} elseif (($obj['image-file-mime'] == 'image/webp' || $ext == 'webp') && function_exists('imagecreatefromwebp')) {
+		$orig = @imagecreatefromwebp($fn);
+		$dest_ext = 'webp';
 	} else {
 		return response('Unsupported source file format '.quot($obj['image-file']), 500);
 	}
@@ -461,6 +466,11 @@ function image_resize($args)
 		@imagealphablending($resized, false);
 		@imagesavealpha($resized, true);
 		$ret = @imagepng($resized, $fn, IMAGE_PNG_QUAL);
+	} else if ($dest_ext == 'webp') {
+		// preserve any alpha channel
+		@imagealphablending($resized, false);
+		@imagesavealpha($resized, true);
+		$ret = @imagewebp($resized, $fn, IMAGE_WEBP_QUAL);
 	}
 	umask($m);
 	// destroy images again
@@ -553,6 +563,8 @@ function image_serve_resource($args)
 			serve_file($fn, false, 'image/jpeg');
 		} else if ($ext == 'png') {
 			serve_file($fn, false, 'image/png');
+		} else if ($ext == 'webp') {
+			serve_file($fn, false, 'image/webp');
 		} else {
 			log_msg('warn', 'image_serve_resource: unsupported image-resized-file '.quot($fn));
 		}
@@ -591,7 +603,7 @@ function image_serve_resource($args)
 function image_upload($args)
 {
 	// check if supported file
-	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
+	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif', 'webp']))) {
 		return false;
 	}
 	

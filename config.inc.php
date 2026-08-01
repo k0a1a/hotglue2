@@ -43,10 +43,13 @@ error_reporting(E_ALL);						// see php documentation
 // default modules
 @define('IMAGE_JPEG_QUAL', 90);				// quality for jpeg resizing (0 < 100)
 @define('IMAGE_PNG_QUAL', 7);				// quality for png resizing (9 < 0)
+@define('IMAGE_WEBP_QUAL', 90);				// quality for webp resizing (0 < 100)
 @define('IMAGE_RESIZING', true);			// resize uploaded images on the server (needs gd installed)
 @define('IMAGE_RESIZE_MAX_DPR', 2);			// cap on window.devicePixelRatio when requesting a server-side resize, so images stay sharp on HiDPI/Retina displays instead of being upscaled by the browser (1 disables this, higher values trade file size for extra sharpness on very-high-DPR devices)
 @define('IMAGE_UPLOAD_RESIZE_LARGER', '120%');	// automatically resize uploaded image when larger than n% of window width or height (set to 0% to disable)
 @define('IMAGE_UPLOAD_RESIZE_TO', '80%');		// target size in n% of window width or height
+@define('IMAGE_UPLOAD_MAX_WIDTH', 512);		// cap the on-canvas size of a newly-uploaded image to at most this many pixels wide (0 to disable) - the original file/resolution is untouched, "reset image size" still shows it at full size
+@define('IMAGE_UPLOAD_MAX_HEIGHT', 512);		// same as above, for height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
 @define('RESERVED_PAGE_NAMES', 'code edit pages');	// page names used internaly and thus unavailable
 @define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
@@ -62,6 +65,8 @@ error_reporting(E_ALL);						// see php documentation
 @define('VIDEO_ENCODE_AUDIO_BITRATE', '64k');	// audio bitrate for the encoded variant
 @define('VIDEO_MAX_HEIGHT', 720);			// cap on the short side of the frame (landscape: height, portrait: width) - never upscales a smaller original
 @define('VIDEO_MAX_DURATION', 60);			// only the first n seconds of an upload are encoded/served, regardless of how long the original is
+@define('VIDEO_DISPLAY_MAX_WIDTH', 512);		// cap the on-canvas size of a newly-encoded video to at most this many pixels wide (0 to disable) - only affects initial display size, not the encoded resolution (VIDEO_MAX_HEIGHT) or file
+@define('VIDEO_DISPLAY_MAX_HEIGHT', 512);		// same as above, for height
 @define('VIDEO_POSTER_TIME', 1);			// second offset into the video to grab the poster frame from
 @define('VIDEO_ENCODE_TIMEOUT', 60*60*2);	// give up waiting for a background encode after n seconds and fall back to the original upload
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
