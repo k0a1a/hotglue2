@@ -16,7 +16,18 @@ error_reporting(E_ALL);						// see php documentation
 
 // otherwise fall back to these defaults
 @define('ALWAYS_PROMPT_CREATE_PAGE', false);	// invoke the "create page" controller when trying to access a non-existing page even if the user is not logged in yet (otherwise they receive a 404)
-@define('AUTH_METHOD', 'basic');			// can be digest, basic or none
+@define('AUTH_METHOD', 'basic');			// can be digest, basic, db or none
+
+// DB_AUTH_* only apply when AUTH_METHOD is 'db' - authenticates against a
+// UserCake-compatible accounts table (columns Username_Clean, Password,
+// Active) instead of the fixed AUTH_USER/AUTH_PASSWORD pair above; the
+// authenticated account must still match this site's own AUTH_USER, since
+// one database can back many hotglue sites each with a single owner
+@define('DB_AUTH_HOST', '');				// MySQL host (leave empty to disable 'db' auth)
+@define('DB_AUTH_USER', '');				// MySQL username
+@define('DB_AUTH_PASSWORD', '');			// MySQL password
+@define('DB_AUTH_NAME', '');				// MySQL database name
+@define('DB_AUTH_TABLE', 'userCake_Users');	// table holding user accounts
 
 // DON'T set username and password here!
 // instead rename file user-config.inc.php-dist to user-config.inc.php

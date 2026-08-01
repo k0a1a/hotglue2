@@ -343,7 +343,9 @@ function http_digest_check($users, $realm = '')
 	$a2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
 	$valid_response = md5($a1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$a2);
 	
-	if ($data['response'] != $valid_response) {
+	// constant-time comparison to avoid leaking response length/content
+	// through response-time differences
+	if (!hash_equals($valid_response, $data['response'])) {
 		return -4;
 	} else {
 		return 0;

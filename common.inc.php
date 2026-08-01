@@ -268,6 +268,88 @@ function hotglue_error($code, $no_header = false)
 
 
 /**
+ *	compute a UserCake-compatible salted password hash
+ *
+ *	matches UserCake's own generateHash(): a 25-character salt prefix
+ *	(freshly generated, or taken from an existing stored hash when
+ *	verifying) followed by sha1(salt . plaintext) - this specific scheme
+ *	is required to verify against an existing UserCake accounts table
+ *	(see db_auth_check()), not something chosen fresh here
+ *
+ *	@param string $plain_text
+ *	@param string|null $salt existing hash/salt to verify against, or null to generate a new one
+ *	@return string
+ */
+function usercake_hash($plain_text, $salt = null)
+{
+	if ($salt === null) {
+		$salt = substr(md5(uniqid((string)mt_rand(), true)), 0, 25);
+	} else {
+		$salt = substr($salt, 0, 25);
+	}
+	return $salt.sha1($salt.$plain_text);
+}
+
+
+/**
+ *	check a username/password pair against a DB_AUTH_* configured database
+ *
+ *	authenticates against a UserCake-compatible accounts table (columns
+ *	Username_Clean, Password, Active) that can be shared across a
+ *	multi-site installation - the authenticated account must additionally
+ *	match this site's own AUTH_USER (from user-config.inc.php), since one
+ *	database can back many hotglue sites each with a single owner
+ *
+ *	@param string $user
+ *	@param string $pass
+ *	@return bool
+ */
+function db_auth_check($user, $pass)
+{
+	if (!class_exists('mysqli')) {
+		log_msg('error', 'db_auth_check: mysqli extension not available');
+		return false;
+	}
+	if (empty(DB_AUTH_HOST) || empty(DB_AUTH_NAME)) {
+		log_msg('error', 'db_auth_check: DB_AUTH_HOST/DB_AUTH_NAME are not configured');
+		return false;
+	}
+
+	$user = strtolower($user);
+	if ($user !== strtolower(AUTH_USER)) {
+		log_msg('info', 'db_auth_check: user does not match site owner ('.$user.' != '.AUTH_USER.')');
+		return false;
+	}
+
+	static $db = null;
+	if ($db === null) {
+		$db = @new mysqli(DB_AUTH_HOST, DB_AUTH_USER, DB_AUTH_PASSWORD, DB_AUTH_NAME);
+	}
+	if ($db->connect_errno) {
+		log_msg('error', 'db_auth_check: database connection failed: '.$db->connect_error);
+		return false;
+	}
+
+	$stmt = $db->prepare('SELECT Password FROM '.DB_AUTH_TABLE.' WHERE Username_Clean = ? AND Active = 1 LIMIT 1');
+	if (!$stmt) {
+		log_msg('error', 'db_auth_check: query prepare failed: '.$db->error);
+		return false;
+	}
+	$stmt->bind_param('s', $user);
+	$stmt->execute();
+	$row = $stmt->get_result()->fetch_assoc();
+	$stmt->close();
+
+	if (!$row) {
+		log_msg('info', 'db_auth_check: no active account for '.quot($user));
+		return false;
+	}
+
+	return hash_equals($row['Password'], usercake_hash($pass, $row['Password']));
+}
+
+
+/**
  *	check if the user is authenticated or not
  *
  *	@return true if authenticated, false if not
@@ -282,7 +364,9 @@ function is_auth()
 			[$_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']] = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
 		}
 		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
-			if ($_SERVER['PHP_AUTH_USER'] == AUTH_USER && $_SERVER['PHP_AUTH_PW'] == AUTH_PASSWORD) {
+			// constant-time comparison to avoid leaking credential length/
+			// content through response-time differences
+			if (hash_equals(AUTH_USER, $_SERVER['PHP_AUTH_USER']) && hash_equals(AUTH_PASSWORD, $_SERVER['PHP_AUTH_PW'])) {
 				log_msg('debug', 'common: auth success (auth_method basic)');
 				return true;
 			} else {
@@ -313,6 +397,26 @@ function is_auth()
 				log_msg('warn', 'common: no auth data (auth_method digest) but HTTP_AUTHORIZATION is '.quot(var_dump_inl($_SERVER['HTTP_AUTHORIZATION'])));
 			} else {
 				log_msg('debug', 'common: no auth data (auth_method digest)');
+			}
+			return false;
+		}
+	} elseif (AUTH_METHOD == 'db') {
+		if (isset($_SERVER['Authorization'])) {
+			[$_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']] = explode(':' , base64_decode(substr($_SERVER['Authorization'], 6)));
+		}
+		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+			if (db_auth_check($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
+				log_msg('debug', 'common: auth success (auth_method db)');
+				return true;
+			} else {
+				log_msg('info', 'common: auth failure (auth_method db)');
+				return false;
+			}
+		} else {
+			if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+				log_msg('warn', 'common: no auth data (auth_method db) but HTTP_AUTHORIZATION is '.quot(var_dump_inl($_SERVER['HTTP_AUTHORIZATION'])));
+			} else {
+				log_msg('debug', 'common: no auth data (auth_method db)');
 			}
 			return false;
 		}
@@ -461,6 +565,9 @@ function prompt_auth($header_only = false)
 		header($_SERVER['SERVER_PROTOCOL'].' 401 Unauthorized');
 	} elseif (AUTH_METHOD == 'digest') {
 		http_digest_prompt(SITE_NAME);
+	} elseif (AUTH_METHOD == 'db') {
+		header('WWW-Authenticate: Basic realm="'.str_replace("\"", '', SITE_NAME).'"');
+		header($_SERVER['SERVER_PROTOCOL'].' 401 Unauthorized');
 	} else {
 		log_msg('error', 'common: invalid or missing AUTH_METHOD config setting');
 	}
