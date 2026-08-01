@@ -1,9 +1,9 @@
 # Hotglue Modernization Assessment: jQuery Removal & PHP Cleanup
 
-Status: **assessment complete, implementation not started.** This document is the
-output of a full-codebase audit plus a decision discussion with the project
-maintainer. See `handover.md` for a short operational summary; this file is the
-detailed rationale and plan.
+Status: **implementation complete** (jQuery/jQuery UI/Farbtastic/xcolor removal,
+all phases in §9; PHP modernization pass, §10; `IE8_COMPAT` removed). This
+document is kept as the detailed rationale/plan and a record of what was
+explicitly deferred (§13) - see `handover.md` for a short operational summary.
 
 ## 1. Executive summary
 
@@ -383,11 +383,13 @@ being replaced here, and can be removed once this migration lands.
   MD5-based HTTP Digest) — flagged as a known limitation, not requested as part
   of "jQuery removal + PHP8.5 cleanup," and changing auth mechanics has its own
   compatibility/deployment considerations that deserve separate discussion.
-- **Custom-styled color-picker UX** — native `<input type="color">` was chosen
-  over a JS wheel-picker library; if the native picker's inconsistent
-  cross-browser UI becomes a real complaint later, a small library like
-  `vanilla-picker` is a drop-in reconsideration point, isolated to
-  `page-edit.js`/`text-edit.js`.
+- ~~**Custom-styled color-picker UX**~~ — *actioned 2026-08*: the native
+  `<input type="color">` picker's platform-dependent UI (a swatch grid on
+  some Linux/Chromium setups) turned out to be a real complaint - trying
+  shades required repeatedly reopening/confirming instead of a continuous
+  drag-to-preview. Replaced with the vendored `js/vanilla-picker.js`
+  library behind the same `$.glue.colorpicker` API, so `page-edit.js`/
+  `text-edit.js` needed no changes. See README's "RECENT CHANGES".
 - **Build-step tooling** (esbuild/Vite) — deferred in favor of no-build ES
   modules; revisit if/when npm dependency management (for Moveable/Alpine
   version bumps) becomes painful to do by hand.

@@ -46,7 +46,12 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-zindex'])) {
 		elem_css($elem, 'z-index', $obj['object-zindex']);
 	}
-	
+	// custom class: appended alongside the internal classes (safe, classes
+	// don't collide) so the user's own CSS/JS can target this object
+	if (!empty($obj['object-custom-class'])) {
+		elem_add_class($elem, $obj['object-custom-class']);
+	}
+
 	return true;
 }
 
@@ -69,11 +74,17 @@ function object_alter_render_late($args)
 			// resolve any aliases
 			$link = resolve_aliases($link, $obj['name']);
 			if (!is_url($link) && substr($link, 0, 1) != '#') {
-				// add base url for relative links that are not directed towards anchors
+				// same-site page links are kept relative (not prefixed with
+				// base_url()) so they still resolve correctly when the page
+				// is viewed through a different domain (e.g. a custom
+				// domain pointed at this install) than whatever BASE_URL is
+				// configured/detected as - the browser resolves a relative
+				// href against the domain the page is actually being viewed
+				// on, not a hardcoded one
 				if (SHORT_URLS) {
-					$link = base_url().urlencode($link);
+					$link = urlencode($link);
 				} else {
-					$link = base_url().'?'.urlencode($link);
+					$link = '?'.urlencode($link);
 				}
 			}
 			// <a> can include block elements in html5

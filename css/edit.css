@@ -40,13 +40,6 @@
 	box-sizing: border-box;
 }
 
-#glue-colorpicker {
-	/* colorpicker used for page and objects alike */
-	bottom: 20px;
-	position: fixed;
-	right: 20px;
-}
-
 .glue-file-upload {
 	/* a file upload button */
 	width: 32px;
@@ -143,5 +136,52 @@
 	border-radius: inherit;
 	height: 100%;
 	width: 0%;
+}
+
+.glue-modal-backdrop {
+	/* full-screen dimmed backdrop behind a modal dialog */
+	background: rgba(0, 0, 0, 0.4);
+	bottom: 0;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+	z-index: 500;
+}
+
+.glue-modal {
+	background: #fff;
+	border: 1px solid #000;
+	box-sizing: border-box;
+	left: 50%;
+	padding: 15px;
+	position: fixed;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 320px;
+}
+
+.glue-modal-field {
+	display: block;
+	margin-bottom: 10px;
+}
+
+.glue-modal-field span {
+	display: block;
+	font-size: 11px;
+	margin-bottom: 3px;
+}
+
+.glue-modal-field input {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.glue-modal-buttons {
+	text-align: right;
+}
+
+.glue-modal-buttons button {
+	margin-left: 5px;
 }
 

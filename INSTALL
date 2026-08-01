@@ -10,12 +10,8 @@ SERVER REQUIREMENTS
 
 CLIENT REQUIREMENTS
 
-  * for editing: Mozilla Firefox (>= 3.6) or Google Chrome (>= 8.0)
-  
-  While we haven't tested it, editing could also work on any recent Safari version.
-  
-  * for viewing: the above plus Internet Explorer 8 (but keep IE8_COMPAT in the 
-    config set to true)
+  * for editing and viewing: a modern evergreen browser (current Chrome, Firefox,
+    Safari or Edge). No Internet Explorer support.
 
 
 INSTALLING HOTGLUE

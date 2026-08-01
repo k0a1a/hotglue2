@@ -122,11 +122,14 @@ function download_render_object($args)
 	invoke_hook_last('alter_render_late', 'download', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
 	
 	if (!$args['edit']) {
-		// put link to file around the element
+		// put link to file around the element - kept relative (not prefixed
+		// with base_url()) so it still resolves correctly when viewed
+		// through a different domain than the one configured/detected as
+		// the base url - see module_object.inc.php's object_alter_render_late()
 		if (SHORT_URLS) {
-			$link = base_url().urlencode($obj['name']).'&download=1';
+			$link = urlencode($obj['name']).'&download=1';
 		} else {
-			$link = base_url().'?'.urlencode($obj['name']).'&download=1';
+			$link = '?'.urlencode($obj['name']).'&download=1';
 		}
 		$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 	}

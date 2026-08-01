@@ -32,7 +32,6 @@ error_reporting(E_ALL);						// see php documentation
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
 @define('HOTGLUE_VERSION', '1.9.0');		// expected api.version.patchlevel
-@define('IE8_COMPAT', true);				// try to be compatible with Internet Explorer 8 in viewing mode (also make sure that TEXT_USE_WOFF_FONTS is set to false)
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable
 @define('LOG_LEVEL', 'error');				// minimum log level (can be error, warn, info, debug)
@@ -88,6 +87,45 @@ function is_base_url_secure()
 }
 
 /**
+ *	compute the current request's own base url (scheme+host+port+path),
+ *	always derived from the request itself regardless of what BASE_URL is
+ *	configured to
+ *
+ *	used where code specifically needs to know the domain the visitor is
+ *	actually on right now (e.g. validating the Referer header against XSRF -
+ *	see controller.inc.php's invoke_controller()) - base_url() can return a
+ *	fixed, different domain than the current request when BASE_URL is
+ *	explicitly configured (e.g. a custom domain pointed at this install)
+ *
+ *	@return string
+ */
+function request_base_url()
+{
+	// HTTP_HOST already includes a non-standard port per RFC 7230 - strip
+	// it first so it isn't appended twice below (pre-existing bug: e.g.
+	// localhost:8931 becoming localhost:8931:8931 whenever this branch
+	// actually ran on a non-standard port)
+	$host = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']);
+	if (!is_base_url_secure()) {
+		$ret = 'http://'.$host;
+		if ($_SERVER['SERVER_PORT'] != '80') {
+			$ret .= ':'.$_SERVER['SERVER_PORT'];
+		}
+	} else {
+		$ret = 'https://'.$host;
+		if ($_SERVER['SERVER_PORT'] != '443' && $_SERVER['SERVER_PORT'] != '80') {
+			$ret .= ':'.$_SERVER['SERVER_PORT'];
+		}
+	}
+	$ret .= dirname($_SERVER['PHP_SELF']);
+	// make sure we have a trailing slash at the end
+	if (substr($ret, -1) != '/') {
+		$ret .= '/';
+	}
+	return $ret;
+}
+
+/**
  *	use this function to get the site's base url
  *
  *	@return string base url (not html-encoded)
@@ -100,22 +138,7 @@ function base_url()
 	if (!empty($temp)) {
 		return $temp;
 	} elseif (!isset($base_url_cached)) {
-		if (!is_base_url_secure()) {
-			$base_url_cached = 'http://'.$_SERVER['HTTP_HOST'];
-			if ($_SERVER['SERVER_PORT'] != '80') {
-				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
-			}
-		} else {
-			$base_url_cached = 'https://'.$_SERVER['HTTP_HOST'];
-			if ($_SERVER['SERVER_PORT'] != '443' && $_SERVER['SERVER_PORT'] != '80') {
-				$base_url_cached .= ':' . $_SERVER['SERVER_PORT'];
-			}
-		}
-		$base_url_cached .= dirname($_SERVER['PHP_SELF']);
-		// make sure we have a trailing slash at the end
-		if (substr($base_url_cached, -1) != '/') {
-			$base_url_cached .= '/';
-		}
+		$base_url_cached = request_base_url();
 	}
 
 	return $base_url_cached;

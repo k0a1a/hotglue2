@@ -131,12 +131,15 @@ function page_render_object($args)
 	if (!empty($obj['page-background-color'])) {
 		html_css('background-color', $obj['page-background-color']);
 	}
-	// background-image
+	// background-image - kept relative (not prefixed with base_url()) so it
+	// still resolves correctly when viewed through a different domain than
+	// the one configured/detected as the base url - see
+	// module_object.inc.php's object_alter_render_late() for the full rationale
 	if (!empty($obj['page-background-file'])) {
 		if (SHORT_URLS) {
-			html_css('background-image', 'url('.base_url().htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+			html_css('background-image', 'url('.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
 		} else {
-			html_css('background-image', 'url('.base_url().'?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+			html_css('background-image', 'url(?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
 		}
 	}
 	// background-image-position

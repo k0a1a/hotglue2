@@ -87,14 +87,18 @@ function image_alter_render_early($args)
 	}
 	
 	// setup url
-	// note: the url points to the object name, not the 
-	// filename in the shared directory (the file eventually gets served 
+	// note: the url points to the object name, not the
+	// filename in the shared directory (the file eventually gets served
 	// in image_serve_resource())
+	// kept relative (not prefixed with base_url()) so it still resolves
+	// correctly when viewed through a different domain than the one
+	// configured/detected as the base url - see module_object.inc.php's
+	// object_alter_render_late() for the full rationale
 	// TODO (later): support URLs as well
 	if (SHORT_URLS) {
-		$url = base_url().urlencode($obj['name']);
+		$url = urlencode($obj['name']);
 	} else {
-		$url = base_url().'?'.urlencode($obj['name']);
+		$url = '?'.urlencode($obj['name']);
 	}
 	
 	// render a div with background if we have original-{width,height}
@@ -112,50 +116,17 @@ function image_alter_render_early($args)
 		// handlers, don't assume that nothing is in there yet
 		elem_append($elem, $i);
 	} else {
-		if (!$args['edit'] && IE8_COMPAT && (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat')) {
-			// background-size is not supported by IE8, so render a div with an img inside instead
-			$i = elem('img');
-			elem_attr($i, 'src', $url);
-			if (!empty($obj['image-title'])) {
-				elem_attr($i, 'alt', $obj['image-title']);
-			} else {
-				elem_attr($i, 'alt', '');
-			}
-			elem_css($i, 'width', '100%');
-			elem_css($i, 'height', '100%');
-			elem_css($i, 'padding', '0px');
-			elem_css($i, 'border', '0px');
-			if (!empty($obj['image-background-position']) && $obj['image-background-position'] != '0px 0px' && $obj['image-background-position'] != '0% 0%') {
-				elem_css($elem, 'max-width', $obj['object-width']);
-				elem_css($elem, 'max-height', $obj['object-height']);
-				elem_css($elem, 'overflow', 'hidden');
-				// assume px
-				$a = expl(' ', $obj['image-background-position']);
-				elem_css($i, 'margin-left', @intval($a[0]).'px');
-				elem_css($i, 'margin-top', @intval($a[1]).'px');
-				elem_css($i, 'margin-right', '0px');
-				elem_css($i, 'margin-bottom', '0px');
-			} else {
-				elem_css($i, 'margin', '0px');
-			}
-			elem_append($elem, $i);
+		// render a div with background
+		elem_css($elem, 'background-image', 'url('.$url.')');
+		// default to no tiling
+		if (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat') {
+			elem_css($elem, 'background-repeat', 'no-repeat');
+			elem_css($elem, 'background-size', '100% 100%');
 		} else {
-			// this is the regular case
-			// render a div with background
-			elem_css($elem, 'background-image', 'url('.$url.')');
-			// default to no tiling
-			if (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat') {
-				elem_css($elem, 'background-repeat', 'no-repeat');
-				// set hardcoded background-size as well
-				elem_css($elem, 'background-size', '100% 100%');
-				// this is for Firefox 3.6
-				elem_css($elem, '-moz-background-size', '100% 100%');
-			} else {
-				elem_css($elem, 'background-repeat', $obj['image-background-repeat']);
-			}
-			if (!empty($obj['image-background-position'])) {
-				elem_css($elem, 'background-position', $obj['image-background-position']);
-			}
+			elem_css($elem, 'background-repeat', $obj['image-background-repeat']);
+		}
+		if (!empty($obj['image-background-position'])) {
+			elem_css($elem, 'background-position', $obj['image-background-position']);
 		}
 	}
 	

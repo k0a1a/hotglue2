@@ -23,6 +23,7 @@ BUNDLED THIRD-PARTY CODE
 
   * Moveable by Daybrush (MIT licensed)
   * Alpine.js (MIT licensed)
+  * vanilla-picker by Andreas Borgen & Adam Brooks (ISC licensed)
   * DejaVu Fonts (Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is a trademark of Bitstream, Inc.)
   * the file icon has been taken from gnome-icon-theme (GPL licensed)
 
@@ -65,6 +66,62 @@ RECENT CHANGES (2026-08)
 
   * Raising a video's/large file's upload size limit is a php.ini setting,
     not a Hotglue one - see KNOWN ISSUES below.
+
+  * Fixed: the undo stack above didn't capture deletions made via an
+    object's own context-menu delete icon (modules/object/object-edit.js) -
+    only the Delete key was wired up, so Ctrl+Z appeared to do nothing for
+    the more commonly-used delete button.
+
+  * Replaced the native <input type="color"> color picker with the vendored
+    vanilla-picker library (js/vanilla-picker.js), behind the same
+    $.glue.colorpicker API used by page-edit.js/text-edit.js. The native
+    picker's platform-dependent UI (a swatch grid on some Linux/Chromium
+    setups) made trying out shades require repeatedly reopening/confirming
+    rather than a continuous drag-to-preview.
+
+  * Removed the long-dead IE8_COMPAT config constant and its associated
+    fallback rendering code (module_image.inc.php, module_iframe.inc.php) -
+    Internet Explorer was already out of scope per the modern-evergreen
+    browser baseline. Updated INSTALL accordingly.
+
+  * Fixed same-site links/URLs (page links via "make the object a link",
+    links typed directly into rich text, the page browser listing, and
+    image/video/download/page-background-image URLs) being hard-coded to
+    whatever domain BASE_URL is configured/detected as, instead of staying
+    relative. This broke navigation and asset loading whenever a page was
+    accessed through a different domain than the configured one (e.g. a
+    custom domain pointed at the same Hotglue install) - links and embedded
+    media would silently jump back to the original domain. All of these are
+    now emitted as plain relative URLs, which resolve correctly against
+    whatever domain/path the page is actually being viewed on.
+
+  * Extended the same relative-URL fix to every static asset (all CSS/JS
+    file references, the favicon, @font-face URLs, and the error/create-page
+    templates' logo images and "take me home" link) via a single
+    centralized fix in html_add_css()/html_add_js()/html_favicon()
+    (html.inc.php) rather than touching each of the ~20 files that load
+    them, plus the client-side $.glue.base_url variable every module's
+    editor JS uses for its own icon/link URLs.
+
+  * Added a custom-class field to the "get id" context-menu icon (any
+    object): opens a small modal showing the object's id (read-only, for
+    linking to it) and an editable class field. The value is stored as
+    object-custom-class and appended alongside the object's own internal
+    classes when the page renders, so it's usable as a normal CSS/JS
+    selector without touching the object's real id.
+
+  * Fixed the XSRF referer check (controller.inc.php and json.php, guarding
+    every authenticated write action - saving, editing, uploads, creating
+    pages) comparing against the fixed base_url() instead of the domain the
+    request actually arrived on. Under a custom domain with BASE_URL
+    configured to the primary one, this rejected every legitimate editor
+    action as "possible xsrf" - likely the most disruptive of this whole
+    batch of custom-domain issues. Added request_base_url() (config.inc.php),
+    always derived from the current request, for this and similar checks to
+    use instead of base_url(). Also fixed the two login/create-page redirect
+    Location headers using the same fixed-domain pattern, and a latent bug
+    in the underlying host/port detection this surfaced (a non-standard
+    port could end up duplicated, e.g. "localhost:8931:8931").
 
 
 RECENT CHANGES (2026-07)

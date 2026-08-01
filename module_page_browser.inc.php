@@ -40,7 +40,7 @@ function controller_pages($args)
 	foreach ($pns as $pn) {
 		// display only pages with 'head'
 		if (is_dir(CONTENT_DIR.'/'.$pn.'/head')) {
-			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"><span class="page_browser_pagename"><a href="'.base_url().'?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
+			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"><span class="page_browser_pagename"><a href="?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
 			if ($pn.'.head' == startpage()) {
 				body_append('<span id="page_browser_startpage">[startpage]</span> ');
 			}

@@ -100,8 +100,13 @@ if (isset($m['cross-origin']) && $m['cross-origin']) {
 	header('Access-Controll-Allow-Origin: *');
 } else {
 	// otherwise check the referer to make xsrf harder
+	// use request_base_url() (always derived from this request), not
+	// base_url() (can be a fixed, different domain when BASE_URL is
+	// configured, e.g. a custom domain pointed at this install - comparing
+	// against it would reject every legitimate request that didn't arrive
+	// on that one specific domain)
 	if (!empty($_SERVER['HTTP_REFERER'])) {
-		$bu = base_url();
+		$bu = request_base_url();
 		if (substr($_SERVER['HTTP_REFERER'], 0, strlen($bu)) != $bu) {
 			echo json_encode(response('Cross-origin requests not supported for this method', 400));
 			log_msg('warn', 'json: possible xsrf detected, referer is '.quot($_SERVER['HTTP_REFERER']).', arguments '.var_dump_inl($args));

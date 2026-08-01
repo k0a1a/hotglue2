@@ -257,11 +257,15 @@ function video_alter_render_early($args)
 	if (empty($obj['video-file'])) {
 		elem_attr($v, 'src', '');
 	} else {
+		// kept relative (not prefixed with base_url()) so it still resolves
+		// correctly when viewed through a different domain than the one
+		// configured/detected as the base url - see module_object.inc.php's
+		// object_alter_render_late() for the full rationale
 		// TODO (later): support URLs as well
 		if (SHORT_URLS) {
-			elem_attr($v, 'src', base_url().urlencode($obj['name']));
+			elem_attr($v, 'src', urlencode($obj['name']));
 		} else {
-			elem_attr($v, 'src', base_url().'?'.urlencode($obj['name']));
+			elem_attr($v, 'src', '?'.urlencode($obj['name']));
 		}
 	}
 	elem_css($v, 'width', '100%');
@@ -270,7 +274,7 @@ function video_alter_render_early($args)
 	// files under content/<page>/shared/)
 	if (!empty($obj['video-poster-file'])) {
 		$pn = get_first_item(expl('.', $obj['name']));
-		elem_attr($v, 'poster', base_url().CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['video-poster-file']));
+		elem_attr($v, 'poster', CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['video-poster-file']));
 	}
 	// we're currently not preloading the video due to some troubles on 
 	// Firefox

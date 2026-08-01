@@ -13,6 +13,84 @@ function object_transparency_percent(obj) {
 	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
 }
 
+// modal shown by the "get id" icon: read-only object id (for linking to
+// it), plus an editable custom class field (object-custom-class) for the
+// object's own CSS/JS scripting - see module_object.inc.php's
+// object_alter_render_early() for how it gets applied when the page renders.
+// note: the object's real id is the internal dotted name (page.rev.objid)
+// and stays that way always - it's load-bearing for the whole editor
+// (selection, save, undo, etc. all key off it), so it's not user-editable
+function object_id_modal_show(obj, data) {
+	var name = obj.id.split('.').pop();
+	var full_name = $.glue.page+'.'+name;
+	var custom_class = data['object-custom-class'] || '';
+
+	var backdrop = document.createElement('div');
+	backdrop.className = 'glue-modal-backdrop glue-ui';
+
+	var modal = document.createElement('div');
+	modal.className = 'glue-modal';
+
+	function field(labelText, value, readonly) {
+		var label = document.createElement('label');
+		label.className = 'glue-modal-field';
+		var span = document.createElement('span');
+		span.textContent = labelText;
+		var input = document.createElement('input');
+		input.type = 'text';
+		input.value = value;
+		input.readOnly = !!readonly;
+		label.appendChild(span);
+		label.appendChild(input);
+		modal.appendChild(label);
+		return input;
+	}
+
+	field('id (for linking to this object)', full_name, true);
+	var class_input = field('class (for your own CSS/JS)', custom_class, false);
+
+	var buttons = document.createElement('div');
+	buttons.className = 'glue-modal-buttons';
+	var ok = document.createElement('button');
+	ok.type = 'button';
+	ok.textContent = 'OK';
+	var cancel = document.createElement('button');
+	cancel.type = 'button';
+	cancel.textContent = 'Cancel';
+	buttons.appendChild(cancel);
+	buttons.appendChild(ok);
+	modal.appendChild(buttons);
+
+	function close() {
+		backdrop.remove();
+	}
+
+	ok.addEventListener('click', function() {
+		var new_class = class_input.value.trim();
+		if (new_class) {
+			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-custom-class': new_class });
+		} else if (custom_class) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-custom-class' });
+		}
+		close();
+	});
+	cancel.addEventListener('click', close);
+	backdrop.addEventListener('click', function(e) {
+		if (e.target === backdrop) {
+			close();
+		}
+	});
+	backdrop.addEventListener('keydown', function(e) {
+		if (e.key == 'Escape') {
+			close();
+		}
+	});
+
+	backdrop.appendChild(modal);
+	document.body.appendChild(backdrop);
+	class_input.focus();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -168,13 +246,18 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/object/object-target.png';
 	elem.alt = 'btn';
-	elem.title = 'get the name of this object (for linking to it)';
+	elem.title = 'get this object\'s id (for linking to it), or assign a custom class';
 	elem.width = 32;
 	elem.height = 32;
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var name = obj.id.split('.').pop();
-		prompt('You can link to this object by copying and pasting this string', $.glue.page+'.'+name);
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+			if (data['#error']) {
+				$.glue.error(data['#error']);
+				return;
+			}
+			object_id_modal_show(obj, data['#data']);
+		}, false);
 	});
 	$.glue.contextmenu.register('object', 'object-target', elem);
 

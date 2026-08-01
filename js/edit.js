@@ -152,57 +152,60 @@ $.glue.color = function()
 	};
 }();
 
+// wraps the vendored vanilla-picker library (js/vanilla-picker.js) behind
+// the same show/hide/set_color API the native <input type="color"> version
+// used, so page-edit.js/text-edit.js need no changes. Switched away from the
+// native picker because its platform-dependent UI (a swatch grid on some
+// Linux/Chromium setups) made trying out shades require repeated confirm-
+// and-reopen clicks, instead of farbtastic's original continuous drag-to-
+// preview wheel - vanilla-picker's onChange fires live while dragging,
+// matching that.
 $.glue.colorpicker = function()
 {
 	var change_func = false;
 	var finish_func = false;
-	var finished = false;
 	var shown = false;
+	var cancelled = false;
 
-	// setup element
+	// invisible positioning anchor - vanilla-picker renders its popup
+	// relative to this, moved to the last menu-spawn point each time show()
+	// is called so the picker appears near whatever was clicked
+	var anchor = document.createElement('div');
+	anchor.className = 'glue-ui';
+	anchor.style.position = 'fixed';
+	anchor.style.width = '0';
+	anchor.style.height = '0';
+
 	// note: the "transparent" toggle farbtastic used to offer here was never
 	// actually used by any module (transparency is handled by a separate
-	// opacity slider on objects), so it's not carried over
-	var elem = document.createElement('input');
-	elem.type = 'color';
-	elem.id = 'glue-colorpicker';
-	elem.className = 'glue-ui';
-	elem.addEventListener('input', function(e) {
-		if (typeof change_func == 'function') {
-			change_func(elem.value);
+	// opacity slider on objects), so alpha support is not carried over
+	var picker = new Picker({
+		parent: anchor,
+		popup: 'top',
+		alpha: false,
+		onChange: function(color) {
+			if (typeof change_func == 'function') {
+				change_func(color.hex);
+			}
+		},
+		onClose: function(color) {
+			if (!shown) {
+				return;
+			}
+			shown = false;
+			if (!cancelled && typeof finish_func == 'function') {
+				finish_func(color.hex);
+			}
+			anchor.remove();
 		}
 	});
-	elem.addEventListener('change', function(e) {
-		// the native picker has been dismissed/confirmed
-		$.glue.colorpicker.hide();
-	});
-
-	var close_colorpicker = function(e) {
-		// close colorpicker when clicking outside of it or its children
-		// note: this handler is also being called right after colorpicker
-		// creation
-		if (!e.target.classList.contains('glue-ui') && !e.target.closest('.glue-ui')) {
-			// this also unregisters the event
-			$.glue.colorpicker.hide();
-			// prevent the menu from firing
-			e.stopImmediatePropagation();
-		}
-	};
 
 	return {
 		hide: function(cancel) {
 			if (shown) {
-				if (!finished && (cancel === undefined || cancel == false)) {
-					finished = true;
-					if (typeof finish_func == 'function') {
-						finish_func(elem.value);
-					}
-				}
-				elem.remove();
-				shown = false;
+				cancelled = (cancel === true);
+				picker.hide();
 			}
-			// unregister event
-			document.body.removeEventListener('click', close_colorpicker);
 		},
 		is_shown: function() {
 			return shown;
@@ -211,36 +214,38 @@ $.glue.colorpicker = function()
 			var rgb = $.glue.color.parse(col);
 			var hex = rgb ? $.glue.color.to_hex(rgb) : '#ff0000';
 			// a special case for color 'transparent': show white rather than
-			// black, as native color inputs can't represent alpha
+			// black, since alpha support isn't carried over (see above)
 			if (rgb && rgb.a == 0) {
 				hex = '#ffffff';
 			}
-			elem.value = hex;
+			picker.setColor(hex, true);
 		},
 		show: function(def, transp, change, finish) {
 			if (shown) {
-				$.glue.colorpicker.hide();
+				$.glue.colorpicker.hide(true);
 			}
 
 			change_func = change;
 			finish_func = finish;
-			finished = false;
+			cancelled = false;
+
+			document.body.appendChild(anchor);
+			var p = $.glue.menu.spawn_coords();
+			if (!p) {
+				p = { x: Math.round(window.innerWidth/2), y: Math.round(window.innerHeight/2) };
+			}
+			anchor.style.left = p.x+'px';
+			anchor.style.top = p.y+'px';
 
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
-				elem.value = '#ff0000';
+				picker.setColor('#ff0000', true);
 			} else {
 				$.glue.colorpicker.set_color(def);
 			}
 
-			// add to dom
-			document.body.appendChild(elem);
 			shown = true;
-			// register event
-			document.body.addEventListener('click', close_colorpicker);
-			// open the native picker right away, mirroring farbtastic's
-			// always-visible wheel
-			elem.click();
+			picker.show();
 		}
 	};
 }();

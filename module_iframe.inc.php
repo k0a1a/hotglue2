@@ -70,10 +70,6 @@ function iframe_alter_render_early($args)
 	
 	// add iframe
 	$i = elem('iframe');
-	// frameborder is not valid html5
-	//if (!$args['edit'] && IE8_COMPAT) {
-	//	elem_attr($i, 'frameborder', '0');
-	//}
 	// set the name attribute
 	elem_attr($i, 'name', $obj['name']);
 	if (!$args['edit']) {

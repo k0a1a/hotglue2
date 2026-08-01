@@ -65,7 +65,7 @@ function _include_woff_font($font_family, $style_to_include = '')
 		} else {
 			$rule .= tab().'font-weight: normal;'.nl();
 		}
-		$rule .= tab().'src: url('.base_url().'img/'.$woff.') format("woff");'.nl();
+		$rule .= tab().'src: url(img/'.$woff.') format("woff");'.nl();
 		$rule .= '}';
 		html_add_css_inline($rule, 5);
 		// add to list of already included font styles

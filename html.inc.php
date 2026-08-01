@@ -388,6 +388,31 @@ function html_add_alternate($type, $url, $title)
 
 
 /**
+ *	strip a leading base_url() from an asset url, turning it back into a
+ *	same-site relative one
+ *
+ *	every asset-loading call site in this codebase builds its url as
+ *	base_url().'some/path' - centralizing the strip here (rather than
+ *	dropping the base_url() call at each of those many sites) means assets
+ *	keep resolving correctly even when a page is viewed through a different
+ *	domain than the one BASE_URL is configured/detected as (e.g. a custom
+ *	domain pointed at this install), same rationale as
+ *	module_object.inc.php's object_alter_render_late() for page links
+ *
+ *	@param string $url
+ *	@return string
+ */
+function _relativize_asset_url($url)
+{
+	$bu = base_url();
+	if (!empty($bu) && strpos($url, $bu) === 0) {
+		return substr($url, strlen($bu));
+	}
+	return $url;
+}
+
+
+/**
  *	add a reference to a css file to the html header
  *
  *	@param string $url url attribute (url-encoded if necessary)
@@ -400,7 +425,7 @@ function html_add_css($url, $prio = 5, $media = '')
 	if ((!isset($html['header']['css']) || !is_array($html['header']['css']))) {
 		$html['header']['css'] = [];
 	}
-	$html['header']['css'][] = ['url'=>$url, 'prio'=>$prio, 'media'=>$media];
+	$html['header']['css'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'media'=>$media];
 }
 
 
@@ -461,7 +486,7 @@ function html_add_js($url, $prio = 5)
 	if ((!isset($html['header']['js']) || !is_array($html['header']['js']))) {
 		$html['header']['js'] = [];
 	}
-	$html['header']['js'][] = ['url'=>$url, 'prio'=>$prio];
+	$html['header']['js'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio];
 }
 
 
@@ -558,7 +583,7 @@ function html_favicon()
 			return '';
 		}
 	} elseif (0 < func_num_args()) {
-		$html['header']['favicon'] = func_get_arg(0);
+		$html['header']['favicon'] = _relativize_asset_url(func_get_arg(0));
 	}
 }
 

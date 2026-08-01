@@ -52,7 +52,7 @@ function controller_create_page($args)
 	body_append(tab(2).'<div id="wrapper">'.nl());
 	body_append(tab(3).'<div id="content">'.nl());
 	body_append(tab(4).'<div id="left-nav">'.nl());
-	body_append(tab(5).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(5).'<img src="img/hotglue-logo.png" alt="logo">'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(4).'<div id="main">'.nl());
 	body_append(tab(5).'<h1 id="error-title">Page does not exist yet!</h1>'.nl());
@@ -65,7 +65,7 @@ function controller_create_page($args)
 	body_append(tab(3).'</div>'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(2).'<div style="position: absolute; left: 200px; top: -10px; z-index: 2;">'.nl());
-	body_append(tab(3).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-404.png" alt="404">'.nl());
+	body_append(tab(3).'<img src="img/hotglue-404.png" alt="404">'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(1).'</div>'.nl());
 	echo html_finalize();
@@ -107,6 +107,11 @@ function controller_edit($args)
 		html_add_js(base_url().'js/alpine.min.js', 3);
 	} else {
 		html_add_js(base_url().'js/alpine.js', 3);
+	}
+	if (USE_MIN_FILES) {
+		html_add_js(base_url().'js/vanilla-picker.min.js', 3);
+	} else {
+		html_add_js(base_url().'js/vanilla-picker.js', 3);
 	}
 	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/edit.min.js', 4);
@@ -197,11 +202,14 @@ function controller_login($args)
 	if (!is_auth()) {
 		prompt_auth();
 	} else {
-		// redirect
+		// redirect - kept relative (not prefixed with base_url()) so it
+		// stays on whatever domain the request actually came in on, see
+		// module_object.inc.php's object_alter_render_late() for the full
+		// rationale
 		if (SHORT_URLS) {
-			header('Location: '.base_url().'pages');		
+			header('Location: pages');
 		} else {
-			header('Location: '.base_url().'?pages');
+			header('Location: ?pages');
 		}
 		die();
 	}
@@ -303,12 +311,17 @@ function invoke_controller($args)
 				prompt_auth();
 			}
 			
-			// also check the referer to prevent against cross site request 
+			// also check the referer to prevent against cross site request
 			// forgery (xsrf)
-			// this is not really optimal, since proxies can filter the referer 
+			// this is not really optimal, since proxies can filter the referer
 			// header, but as a first step..
+			// use request_base_url() (always derived from this request),
+			// not base_url() (can be a fixed, different domain when
+			// BASE_URL is configured, e.g. a custom domain pointed at this
+			// install - comparing against it would reject every legitimate
+			// request that didn't arrive on that one specific domain)
 			if (!empty($_SERVER['HTTP_REFERER'])) {
-				$bu = base_url();
+				$bu = request_base_url();
 				if (substr($_SERVER['HTTP_REFERER'], 0, strlen($bu)) != $bu) {
 					log_msg('warn', 'controller: possible xsrf detected, referer is '.quot($_SERVER['HTTP_REFERER']).', arguments '.var_dump_inl($args));
 					hotglue_error(400);

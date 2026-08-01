@@ -103,7 +103,12 @@ function default_html($add_glue)
 		} else {
 			html_add_js(base_url().'js/glue.js', 3);
 		}
-		html_add_js_var('$.glue.base_url', base_url());
+		// left relative (not the full base_url()) so every module's icon/
+		// link/fetch URL built as `$.glue.base_url+'relative/path'` still
+		// resolves correctly when viewed through a different domain than
+		// the one BASE_URL is configured/detected as - same rationale as
+		// html.inc.php's _relativize_asset_url()
+		html_add_js_var('$.glue.base_url', '');
 		html_add_js_var('$.glue.conf.show_frontend_errors', SHOW_FRONTEND_ERRORS);
 		html_add_js_var('$.glue.version', glue_version());
 	}
@@ -222,7 +227,7 @@ function hotglue_error($code, $no_header = false)
 	body_append(tab(2).'<div id="wrapper">'.nl());
 	body_append(tab(3).'<div id="content">'.nl());
 	body_append(tab(4).'<div id="left-nav">'.nl());
-	body_append(tab(5).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(5).'<img src="img/hotglue-logo.png" alt="logo">'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(4).'<div id="main">'.nl());
 	if ($code == 400) {
@@ -248,12 +253,12 @@ function hotglue_error($code, $no_header = false)
 		body_append(tab(6).'Something is causing serious server errors!'.nl());
 	}
 	body_append(tab(5).'</p>'.nl());
-	body_append(tab(6).'<a href="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
+	body_append(tab(6).'<a href="." id="home">take me home!</a>'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(3).'</div>'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(2).'<div style="position: absolute; left: 200px; top: -10px; z-index: 2;">'.nl());
-	body_append(tab(3).'<img src="'.htmlspecialchars(base_url(), ENT_COMPAT, 'UTF-8').'img/hotglue-404.png" alt="404">'.nl());
+	body_append(tab(3).'<img src="img/hotglue-404.png" alt="404">'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(1).'</div>'.nl());
 	echo html_finalize();
@@ -517,12 +522,14 @@ function resolve_relative_urls($s)
 			if (($end = strpos($s, '"', $start+strlen($attr)+2)) !== false) {
 				$link = substr($s, $start+strlen($attr)+2, $end-$start-strlen($attr)-2);
 				if (!is_url($link) && substr($link, 0, 1) != '#') {
-					// add base url for relative links that are not directed towards anchors
+					// keep same-site page links relative (not prefixed with
+					// base_url()) so they resolve correctly when viewed
+					// through a different domain than the one configured/
+					// detected as the base url - see module_object.inc.php's
+					// object_alter_render_late() for the full rationale
 					log_msg('debug', 'common: resolving relative url '.quot($link));
-					if (SHORT_URLS) {
-						$link = base_url().$link;
-					} else {
-						$link = base_url().'?'.$link;
+					if (!SHORT_URLS) {
+						$link = '?'.$link;
 					}
 				} else {
 					log_msg('debug', 'common: not resolving url '.quot($link));
