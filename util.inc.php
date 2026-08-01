@@ -108,47 +108,6 @@ function dir_has_same_file($dir, $fn, $orig_fn = '')
 
 
 /**
- *	check if two directories are different
- *
- *	@param string $a filename
- *	@param string $b filename
- *	@return bool
- */
-function dir_is_different($a, $b)
-{
-	if (substr($a, -1) == '/') {
-		$a = substr($a, 0, -1);
-	}
-	if (substr($b, -1) == '/') {
-		$b = substr($b, 0, -1);
-	}
-	
-	$a_fns = @scandir($a);
-	$b_fns = @scandir($b);
-	if ($a_fns !== $b_fns) {
-		return true;
-	}
-	
-	foreach ($a_fns as $fn) {
-		if ($fn == '.' || $fn == '..') {
-			continue;
-		}
-		if (is_dir($a.'/'.$fn) || is_dir($b.'/'.$fn)) {
-			if (dir_is_different($a.'/'.$fn, $b.'/'.$fn)) {
-				return true;
-			}
-		} else {
-			if (file_is_different($a.'/'.$fn, $b.'/'.$fn)) {
-				return true;
-			}
-		}
-	}
-	
-	return false;
-}
-
-
-/**
  *	split a string by string
  *
  *	like php's explode() but handles empty strings better.

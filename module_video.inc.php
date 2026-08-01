@@ -17,8 +17,125 @@ require_once('modules.inc.php');
 require_once('util.inc.php');
 
 
-// module_image.inc.php has more information on what's going on inside modules 
+// module_image.inc.php has more information on what's going on inside modules
 // (they can be easier than that one though)
+
+
+/**
+ *	return if ffmpeg is available
+ *
+ *	@return bool
+ */
+function _ffmpeg_available()
+{
+	static $available = null;
+	if ($available === null) {
+		if (!function_exists('exec')) {
+			$available = false;
+		} else {
+			exec(escapeshellarg(FFMPEG_BINARY).' -version 2>&1', $out, $ret);
+			$available = ($ret === 0);
+		}
+	}
+	return $available;
+}
+
+
+/**
+ *	return the pixel dimensions of a video file's first video stream
+ *
+ *	@param string $file filename
+ *
+ *	@return array with width and height, or false on error
+ */
+function _video_dimensions($file)
+{
+	$dir = dirname(FFMPEG_BINARY);
+	$ffprobe = ($dir == '.') ? 'ffprobe' : $dir.'/ffprobe';
+	$cmd = escapeshellarg($ffprobe).' -v quiet -print_format json -show_streams '.escapeshellarg($file);
+	exec($cmd, $out, $ret);
+	if ($ret !== 0 || empty($out)) {
+		return false;
+	}
+	$data = json_decode(implode("\n", $out), true);
+	if (empty($data['streams'])) {
+		return false;
+	}
+	foreach ($data['streams'] as $s) {
+		if (isset($s['codec_type']) && $s['codec_type'] == 'video' && !empty($s['width']) && !empty($s['height'])) {
+			return ['width'=>intval($s['width']), 'height'=>intval($s['height'])];
+		}
+	}
+	return false;
+}
+
+
+/**
+ *	check on a pending background video encode, finalizing it (swapping in
+ *	the encoded variant, recording the poster file, discarding the
+ *	original) if the expected output files have appeared on disk, or
+ *	reverting to serving the original indefinitely if it's been pending
+ *	for too long
+ *
+ *	the only piggybacked-on-render deferred-work check in this codebase
+ *
+ *	@param array $obj video object
+ *
+ *	@return array the (possibly updated) object
+ */
+function video_check_pending_encode($obj)
+{
+	if (empty($obj['video-encode-status']) || $obj['video-encode-status'] != 'pending') {
+		return $obj;
+	}
+
+	load_modules('glue');
+	$pn = get_first_item(expl('.', $obj['name']));
+	$dir = CONTENT_DIR.'/'.$pn.'/shared';
+	$out = $obj['video-encode-file'];
+	$poster = $obj['video-encode-poster-file'];
+
+	if (is_file($dir.'/'.$out) && is_file($dir.'/'.$poster)) {
+		$orig_file = $obj['video-file'];
+		object_remove_attr(['name'=>$obj['name'], 'attr'=>['video-encode-status', 'video-encode-started', 'video-encode-file', 'video-encode-poster-file']]);
+		$update = [];
+		$update['name'] = $obj['name'];
+		$update['video-file'] = $out;
+		$update['video-file-mime'] = 'video/mp4';
+		$update['video-poster-file'] = $poster;
+		// size the object to the encoded video's actual dimensions - the
+		// client can't do this itself via <video loadedmetadata> while the
+		// placeholder is showing (no real <video> element exists yet)
+		$dim = _video_dimensions($dir.'/'.$out);
+		if ($dim !== false) {
+			$update['object-width'] = $dim['width'].'px';
+			$update['object-height'] = $dim['height'].'px';
+		}
+		$ret = update_object($update);
+		if ($ret['#error']) {
+			log_msg('error', 'video_check_pending_encode: error updating object '.quot($obj['name']).': '.quot($ret['#data']));
+			return $obj;
+		}
+		if ($orig_file != $out) {
+			delete_upload(['pagename'=>$pn, 'file'=>$orig_file, 'max_cnt'=>0]);
+		}
+		log_msg('info', 'video_check_pending_encode: encode finished for '.quot($obj['name']));
+		// re-read so this same render already reflects the finished encode
+		$fresh = load_object(['name'=>$obj['name']]);
+		if (!$fresh['#error']) {
+			$obj = $fresh['#data'];
+		}
+	} elseif (time() - intval($obj['video-encode-started']) > VIDEO_ENCODE_TIMEOUT) {
+		log_msg('warn', 'video_check_pending_encode: timed out waiting for encode of '.quot($obj['name']).', falling back to the original');
+		object_remove_attr(['name'=>$obj['name'], 'attr'=>['video-encode-status', 'video-encode-started', 'video-encode-file', 'video-encode-poster-file']]);
+		unset($obj['video-encode-status']);
+		unset($obj['video-encode-started']);
+		unset($obj['video-encode-file']);
+		unset($obj['video-encode-poster-file']);
+	}
+
+	return $obj;
+}
 
 
 function video_alter_save($args)
@@ -76,11 +193,13 @@ function video_delete_object($args)
 	if (!isset($obj['type']) || $obj['type'] != 'video') {
 		return false;
 	}
-	
+
 	load_modules('glue');
-	if (!empty($obj['video-file'])) {
-		$pn = get_first_item(expl('.', $obj['name']));
-		delete_upload(['pagename'=>$pn, 'file'=>$obj['video-file'], 'max_cnt'=>1]);
+	$pn = get_first_item(expl('.', $obj['name']));
+	foreach (['video-file', 'video-poster-file', 'video-encode-file', 'video-encode-poster-file'] as $attr) {
+		if (!empty($obj[$attr])) {
+			delete_upload(['pagename'=>$pn, 'file'=>$obj[$attr], 'max_cnt'=>1]);
+		}
 	}
 }
 
@@ -91,17 +210,18 @@ function video_has_reference($args)
 	if (!isset($obj['type']) || $obj['type'] != 'video') {
 		return false;
 	}
-	// symlinks have their referenced files in a different page that's why 
+	// symlinks have their referenced files in a different page that's why
 	// they are not relevant here
 	if (@is_link(CONTENT_DIR.'/'.str_replace('.', '/', $obj['name']))) {
 		return false;
 	}
-	
-	if (!empty($obj['video-file']) && $obj['video-file'] == $args['file']) {
-		return true;
-	} else {
-		return false;
+
+	foreach (['video-file', 'video-poster-file', 'video-encode-file', 'video-encode-poster-file'] as $attr) {
+		if (!empty($obj[$attr]) && $obj[$attr] == $args['file']) {
+			return true;
+		}
 	}
+	return false;
 }
 
 
@@ -112,10 +232,27 @@ function video_alter_render_early($args)
 	if (!elem_has_class($elem, 'video')) {
 		return false;
 	}
-	
+
+	// check on a pending background encode, finalizing it if it has
+	// completed so this render already reflects the encoded variant
+	if (!empty($obj['video-encode-status'])) {
+		$obj = video_check_pending_encode($obj);
+	}
+
 	// add a css (for viewing as well as editing)
 	html_add_css(base_url().'modules/video/video.css');
-	
+
+	// still encoding: don't serve the (potentially huge, untrimmed)
+	// original while we wait - show a placeholder instead, so nothing gets
+	// downloaded until the capped/trimmed variant is ready
+	if (!empty($obj['video-encode-status']) && $obj['video-encode-status'] == 'pending') {
+		$ph = elem('div');
+		elem_add_class($ph, 'video-processing');
+		elem_val($ph, 'Video is being processed, reload in a moment to see it');
+		elem_append($elem, $ph);
+		return true;
+	}
+
 	$v = elem('video');
 	if (empty($obj['video-file'])) {
 		elem_attr($v, 'src', '');
@@ -129,6 +266,12 @@ function video_alter_render_early($args)
 	}
 	elem_css($v, 'width', '100%');
 	elem_css($v, 'height', '100%');
+	// poster frame (served directly as a static file, same as the other
+	// files under content/<page>/shared/)
+	if (!empty($obj['video-poster-file'])) {
+		$pn = get_first_item(expl('.', $obj['name']));
+		elem_attr($v, 'poster', base_url().CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['video-poster-file']));
+	}
 	// we're currently not preloading the video due to some troubles on 
 	// Firefox
 	//elem_css($v, 'preload', 'preload');
@@ -245,41 +388,6 @@ function video_serve_resource($args)
 }
 
 
-function video_snapshot_symlink($args)
-{
-	$obj = $args['obj'];
-	if (!isset($obj['type']) || $obj['type'] != 'video') {
-		return false;
-	}
-	
-	$dest_dir = CONTENT_DIR.'/'.get_first_item(expl('.', $obj['name'])).'/shared';
-	$src_file = CONTENT_DIR.'/'.get_first_item(expl('.', $args['origin'])).'/shared/'.$obj['video-file'];
-	
-	if (($f = dir_has_same_file($dest_dir, $src_file)) !== false) {
-		$obj['video-file'] = $f;
-	} else {
-		// copy file
-		$dest_file = $dest_dir.'/'.unique_filename($dest_dir, $src_file);
-		$m = umask(0111);
-		if (!(@copy($src_file, $dest_file))) {
-			umask($m);
-			log_msg('error', 'video_snapshot_symlink: error copying referenced file '.quot($src_file).' to '.quot($dest_file));
-			return false;
-		}
-		umask($m);
-		$obj['video-file'] = basename($dest_file);
-		log_msg('info', 'video_snapshot_symlink: copied referenced file to '.quot($dest_file));
-	}
-	$ret = save_object($obj);
-	if ($ret['#error']) {
-		log_msg('error', 'video_snapshot_symlink: error saving object '.quot($obj['name']));
-		return false;
-	} else {
-		return true;
-	}
-}
-
-
 function video_upload($args)
 {
 	$ext = filext($args['file']);
@@ -297,6 +405,10 @@ function video_upload($args)
 	} elseif ($args['mime'] == 'video/webm' || $ext == 'webm') {
 		// again, webm could also be audio/webm
 		$mime = 'video/webm';
+	} elseif ($args['mime'] == 'video/quicktime' || $ext == 'mov') {
+		// QuickTime - not natively playable in most browsers, but every
+		// upload gets re-encoded to mp4 anyway (see below), so this is fine
+		$mime = 'video/quicktime';
 	} else {
 		return false;
 	}
@@ -312,8 +424,37 @@ function video_upload($args)
 	$obj['module'] = 'video';
 	$obj['video-file'] = $args['file'];
 	$obj['video-file-mime'] = $mime;
+
+	// kick off ffmpeg-based transcoding + poster generation, if available -
+	// every upload gets re-encoded, regardless of its original resolution/
+	// duration/bitrate, so all served video is uniformly capped/trimmed
+	if (VIDEO_ENCODING && _ffmpeg_available()) {
+		$pn = get_first_item(expl('.', $obj['name']));
+		$dir = CONTENT_DIR.'/'.$pn.'/shared';
+		$orig = $dir.'/'.$args['file'];
+		$a = expl('.', $args['file']);
+		$base = (1 < count($a)) ? implode('.', array_slice($a, 0, -1)) : $a[0];
+		$poster = $base.'-poster.jpg';
+		$out = $base.'-720p.mp4';
+
+		// cap the short side of the frame at VIDEO_MAX_HEIGHT, whichever
+		// side that is (landscape: height, portrait: width) - never
+		// upscales a smaller original
+		$vf = "scale=w='if(gte(iw,ih),-2,min(".intval(VIDEO_MAX_HEIGHT).",iw))':h='if(gte(iw,ih),min(".intval(VIDEO_MAX_HEIGHT).",ih),-2)'";
+		// -t as an input option so ffmpeg stops reading once it has enough
+		// source material, rather than decoding the whole file and
+		// discarding everything past VIDEO_MAX_DURATION
+		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart '.escapeshellarg($dir.'/'.$out)
+			.' && '.escapeshellarg(FFMPEG_BINARY).' -y -ss '.intval(VIDEO_POSTER_TIME).' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($dir.'/'.$poster);
+		exec($cmd.' > /dev/null 2>&1 &');
+		$obj['video-encode-status'] = 'pending';
+		$obj['video-encode-started'] = time();
+		$obj['video-encode-file'] = $out;
+		$obj['video-encode-poster-file'] = $poster;
+	}
+
 	save_object($obj);
-	
+
 	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
 	if ($ret['#error']) {
 		return false;

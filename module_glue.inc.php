@@ -24,22 +24,6 @@ require_once('util.inc.php');
 
 
 /**
- *	helper function for revisions_info()
- *
- *	@param array $a array to compare
- *	@param array $b array to compare
- *	@return int comparison result
- */
-function _cmp_time($a, $b)
-{
-	if ($a['time'] == $b['time']) {
-		return 0;
-	}
-	return ($a['time'] < $b['time']) ? 1 : -1;
-}
-
-
-/**
  *	lock an object file
  *
  *	@param string $name object name (i.e. page.rev.obj)
@@ -116,71 +100,6 @@ function _obj_unlock($f)
 		@fclose($f);
 	}
 }
-
-
-/**
- *	create and delete auto- revisions
- *
- *	this function operates on a specific page and takes SNAPSHOT_MIN_AGE and
- *	SNAPSHOT_MAX_AGE into account.
- *	@param array $args arguments
- *		key 'page' is the page (i.e. page.rev)
- *	@return array response
- *		true if successful
- */
-function check_auto_snapshot($args)
-{
-	if (!isset($args['page'])) {
-		return response('Required argument "page" missing', 400);
-	}
-	if (!page_exists($args['page'])) {
-		return response('Page '.quot($args['page']).' does not exist', 400);
-	}
-	
-	$a = expl('.', $args['page']);
-	$revs = revisions_info(['pagename'=>$a[0], 'sort'=>'time']);
-	$revs = $revs['#data'];
-	
-	if ($a[1] == 'head' && SNAPSHOT_MIN_AGE != 0) {
-		// we're dealing with a head revision and taking snapshots
-		// find the previous auto- revision
-		for ($i=0; $i < count($revs); $i++) {
-			if (substr($revs[$i]['revision'], 0, 5) == 'auto-') {
-				// got it, check age
-				if (time()-$revs[$i]['time'] < SNAPSHOT_MIN_AGE) {
-					log_msg('debug', 'check_auto_snapshot: age is '.(time()-$revs[$i]['time']).' seconds, not creating a snapshot');
-					break;
-				}
-				// check if different
-				if (dir_is_different(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']), CONTENT_DIR.'/'.str_replace('.', '/', $revs[$i]['page']))) {
-					snapshot($args);
-				} else {
-					log_msg('debug', 'check_auto_snapshot: head is identical to '.$revs[$i]['revision'].', not creating a snapshot');
-				}
-				break;
-			}
-			if ($i == count($revs)-1) {
-				// no auto- revision?, create one now
-				snapshot($args);
-			}
-		}
-	}
-	
-	// delete old auto- revisions
-	if (SNAPSHOT_MAX_AGE != 0) {
-		for ($i=count($revs)-1; 0 <= $i; $i--) {
-			if (substr($revs[$i]['revision'], 0, 5) == 'auto-' && SNAPSHOT_MAX_AGE < time()-$revs[$i]['time']) {
-				log_msg('info', 'check_auto_snapshot: deleting an old snapshot');
-				delete_page(['page'=>$revs[$i]['page']]);
-				$i--;
-			}
-		}
-	}
-	
-	return response(true);
-}
-
-register_service('glue.check_auto_snapshot', 'check_auto_snapshot', ['auth'=>true]);
 
 
 /**
@@ -996,73 +915,6 @@ register_hook('copy_page', 'invoked when a page has been copied');
 
 
 /**
- *	revert to a specific revision of a page
- *
- *	this function makes the revision the page's new head revision by copying it.
- *	@param array $args arguments
- *		key 'page' page to revert to (i.e. page.rev)
- *	@return array response
- */
-function revert($args)
-{
-	if (empty($args['page'])) {
-		return response('Required argument "page" missing or empty', 400);
-	}
-	if (!page_exists($args['page'])) {
-		return response('Page '.quot($args['page']).' does not exist', 404);
-	}
-	$a = expl('.', $args['page']);
-	if ($a[1] == 'head') {
-		return response('Cannot revert to head revision', 400);
-	}
-	
-	log_msg('info', 'revert: reverting to '.quot($args['page']));
-	
-	// delete current head revision
-	// TODO (later): create a snapshot of it before doing so?
-	if (page_exists($a[0].'.head')) {
-		$ret = delete_page(['page'=>$a[0].'.head']);
-		if ($ret['#error']) {
-			return $ret;
-		}
-	}
-	
-	// create new head revision
-	$dest = CONTENT_DIR.'/'.$a[0].'/head';
-	$m = umask(0000);
-	if (!@mkdir($dest, 0777)) {
-		umask($m);
-		return response('Error creating directory '.quot($dest), 500);
-	}
-	umask($m);
-	
-	// copy files
-	$src = CONTENT_DIR.'/'.$a[0].'/'.$a[1];
-	$files = scandir($src);
-	foreach ($files as $f) {
-		if ($f == '.' || $f == '..') {
-			continue;
-		} elseif (is_file($src.'/'.$f)) {
-			// copy file
-			$m = umask(0111);
-			if (!@copy($src.'/'.$f, $dest.'/'.$f)) {
-				log_msg('error', 'revert: error copying '.quot($src.'/'.$f).' to '.quot($dest.'/'.$f).', skipping file');
-			}
-			umask($m);
-		}
-	}
-	
-	log_msg('info', 'revert: reverted to '.quot($args['page']));
-	invoke_hook('revert', ['page'=>$args['page']]);
-	
-	return response(true);
-}
-
-register_service('glue.revert', 'revert', ['auth'=>true]);
-register_hook('revert', 'invoked after a page has been reverted to');
-
-
-/**
  *	return an array of all revisions of a page
  *
  *	@param array $args arguments
@@ -1097,50 +949,6 @@ function revisions($args)
 }
 
 register_service('glue.revisions', 'revisions');
-
-
-/**
- *	return an array with information about all revisions of a page
- *
- *	@param array $args arguments
- *		key 'pagename' is the pagename (i.e. page)
- *		key 'sort' can be either 'time' (descending) or 'name' (ascending, the 
- *		default)
- *	@return array response
- */
-function revisions_info($args)
-{
-	$revs = revisions($args);
-	if ($revs['#error']) {
-		return $revs;
-	}
-	
-	$ret = [];
-	foreach ($revs['#data'] as $r) {
-		$d = CONTENT_DIR.'/'.$args['pagename'].'/'.$r;
-		$ret[] = ['revision'=>$r, 'time'=>@filemtime($d), 'num_objs'=>count(@scandir($d))-2, 'page'=>$args['pagename'].'.'.$r];
-	}
-	
-	if (isset($args['sort']) && $args['sort'] == 'time') {
-		// make head revision always most recent one
-		$head = false;
-		for ($i=0; $i < count($ret); $i++) {
-			if ($ret[$i]['revision'] == 'head') {
-				$head = $ret[$i];
-				array_splice($ret, $i, 1);
-				$i--;
-			}
-		}
-		usort($ret, '_cmp_time');
-		if ($head !== false) {
-			$ret = array_merge([$head], $ret);
-		}
-	}
-	
-	return response($ret);
-}
-
-register_service('glue.revisions_info', 'revisions_info');
 
 
 /**
@@ -1291,103 +1099,6 @@ function set_startpage($args)
 }
 
 register_service('glue.set_startpage', 'set_startpage', ['auth'=>true]);
-
-
-/**
- *	create a snapshot from a page
- *
- *	@param array $args arguments
- *		key 'page' page to shapshot (i.e. page.rev)
- *		key 'rev' (optional) new revision name (i.e. rev2) (if empty or not set 
- *			a revision starting with 'auto-' and the current date will be 
- *			created)
- *	@return array response (holding the page of the newly created revision 
- *		if successful)
- */
-function snapshot($args)
-{
-	if (empty($args['page'])) {
-		return response('Required argument "page" missing or empty', 400);
-	}
-	if (!page_exists($args['page'])) {
-		return response('Page '.quot($args['page']).' does not exist', 404);
-	}
-	// setup revision name
-	$a = expl('.', $args['page']);
-	if (empty($args['rev'])) {
-		$args['rev'] = 'auto-'.date('YmdHis');
-	} elseif (page_exists($a[0].'.'.$args['rev'])) {
-		return response('Revision '.quot($args['rev']).' already exists', 400);
-	} elseif (!valid_pagename($a[0].'.'.$args['rev'])) {
-		return response('Invalid revision '.quot($args['rev']), 400);
-	}
-	
-	// create revision
-	$dest = CONTENT_DIR.'/'.$a[0].'/'.$args['rev'];
-	$m = umask(0000);
-	if (!@mkdir($dest)) {
-		umask($m);
-		return response('Error creating directory '.quot($dest), 500);
-	}
-	umask($m);
-	
-	// copy files
-	// we go through the files one by one in order to spot symlinks hiding
-	$src = CONTENT_DIR.'/'.str_replace('.', '/', $args['page']);
-	$files = scandir($src);
-	foreach ($files as $f) {
-		if ($f == '.' || $f == '..') {
-			continue;
-		} elseif (is_dir($src.'/'.$f) && substr($f, 0, 1) == '.') {
-			// skip directories that start with a dot (like .svn) without a warning
-			continue;
-		} elseif (is_dir($src.'/'.$f)) {
-			log_msg('warn', 'snapshot: skipping '.quot($src.'/'.$f).' as we don\'t support directories inside pages');
-		} elseif (is_link($src.'/'.$f) && is_file($src.'/'.$f)) {
-			// a proper symlink, copy content
-			$s = @file_get_contents($src.'/'.$f);
-			$m = umask(0111);
-			if (!@file_put_contents($dest.'/'.$f, $s)) {
-				log_msg('error', 'snapshot: error writing to '.quot($dest.'/'.$f). ', skipping file');
-			} else {
-				log_msg('debug', 'snapshot: copied the content of symlink '.quot($args['page'].'.'.$f));
-			}
-			umask($m);
-			// load the newly created snapshot and give modules a chance to 
-			// copy referenced files as well
-			$dest_name = $a[0].'.'.$args['rev'].'.'.$f;
-			$dest_obj = load_object(['name'=>$dest_name]);
-			if ($dest_obj['#error']) {
-				log_msg('error', 'snapshot: error loading snapshotted object '.quot($dest_name).', skipping hook');
-			} else {
-				$dest_obj = $dest_obj['#data'];
-				// get the source object's target
-				$src_name = $args['page'].'.'.$f;
-				$src_target = object_get_symlink(['name'=>$src_name]);
-				if ($src_target['#error']) {
-					log_msg('error', 'snapshot: error getting the symlink target of source object '.quot($src_name).', skipping hook');
-				} else {
-					$src_target = $src_target['#data'];
-					// hook
-					invoke_hook('snapshot_symlink', ['obj'=>$dest_obj, 'origin'=>implode('.', array_slice(expl('.', $src_target), 0, 2))]);
-				}
-			}
-		} elseif (is_file($src.'/'.$f)) {
-			// copy file
-			$m = umask(0111);
-			if (!@copy($src.'/'.$f, $dest.'/'.$f)) {
-				log_msg('error', 'snapshot: error copying '.quot($src.'/'.$f).' to '.quot($dest.'/'.$f).', skipping file');
-			}
-			umask($m);
-		}
-	}
-	
-	log_msg('info', 'snapshot: created snapshot '.quot($a[0].'.'.$args['rev']).' from '.quot($args['page']));
-	return response($a[0].'.'.$args['rev']);
-}
-
-register_service('glue.snapshot', 'snapshot', ['auth'=>true]);
-register_hook('snapshot_symlink', 'invoked when a symlink is part of a page that gets snapshotted; the module in question is supposed to copy all referenced files to the shared directory of the destination page');
 
 
 /**

@@ -14,3 +14,16 @@
 	top: 50%;
 	width: 100%;
 }
+
+.video-processing {
+	/* displayed while a background encode/trim is still in progress */
+	background-color: #eee;
+	box-sizing: border-box;
+	color: #666;
+	font-size: 12px;
+	height: 100%;
+	overflow: hidden;
+	padding: 10px;
+	text-align: center;
+	width: 100%;
+}

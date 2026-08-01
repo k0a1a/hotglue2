@@ -115,9 +115,6 @@ function controller_edit($args)
 	}
 	render_page(['page'=>$page, 'edit'=>true]);
 	echo html_finalize();
-	
-	log_msg('debug', 'controller_edit: invoking check_auto_snapshot');
-	check_auto_snapshot(['page'=>$page]);
 }
 
 register_controller('*', 'edit', 'controller_edit', ['auth'=>true]);

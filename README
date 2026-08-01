@@ -27,6 +27,46 @@ BUNDLED THIRD-PARTY CODE
   * the file icon has been taken from gnome-icon-theme (GPL licensed)
 
 
+RECENT CHANGES (2026-08)
+
+  * Video module upgrade: uploaded videos (.mp4, .webm, .ogg/.ogv, .h264,
+    .mov) are now automatically re-encoded server-side via ffmpeg into a
+    single web-optimized variant, capped at 720p on the short side
+    (landscape or portrait, never upscaled) and trimmed to the first 60
+    seconds (VIDEO_MAX_HEIGHT/VIDEO_MAX_DURATION in config.inc.php), with a
+    poster frame generated automatically. Every upload is re-encoded
+    uniformly for predictable size/quality. Encoding happens in the
+    background; while pending, a lightweight "processing" placeholder is
+    shown instead of the raw original (so nothing large gets served before
+    it's ready), and the editor polls quietly and swaps in the finished
+    video without needing a page reload. Requires ffmpeg to be installed;
+    falls back to serving the original unmodified if it isn't
+    (VIDEO_ENCODING config constant). A dedicated "add video" icon was
+    added to the object-creation menu (previously videos could only be
+    added through the generic file-upload button).
+
+  * Removed the automatic page-snapshot/revision-history system
+    (check_auto_snapshot(), snapshot(), revert(), and the whole
+    revisions-browser UI) and the SNAPSHOT_MIN_AGE/SNAPSHOT_MAX_AGE config
+    constants. It only ran when the editor happened to be reopened for a
+    page, made no real undo guarantees, and Ctrl+Z previously did nothing
+    but suggest browsing it. Replaced with a proper, lightweight undo
+    stack in the editor: move, resize, z-order, create, delete, and any
+    property toggle that already saves through the normal object-save
+    path are now undoable via Ctrl+Z or a new undo icon in the
+    single-click menu (a few levels deep, purely in-browser-memory, reset
+    on page reload - not a replacement for backups). Attribute-only
+    changes that bypass the normal save path (e.g. page background/title,
+    a couple of per-module toggles) are not covered by this pass.
+    Existing leftover auto-* snapshot directories from before this change
+    are not cleaned up automatically anymore; run
+    `php tools/cleanup_auto_snapshots.php` (dry run by default, pass
+    --confirm to actually delete) if you want to reclaim that space.
+
+  * Raising a video's/large file's upload size limit is a php.ini setting,
+    not a Hotglue one - see KNOWN ISSUES below.
+
+
 RECENT CHANGES (2026-07)
 
   * jQuery and jQuery UI have been removed entirely from the editor
@@ -99,7 +139,7 @@ KNOWN ISSUES
 
   * Rewrite rules in the Apache configuration or in any parent directory .htaccess file can clash with the Hotglue one.
 
-  * If you receive an error message while uploading a large file this 
+  * If you receive an error message while uploading a large file this
     might  be due to the limits set in the servers's php.ini file.
     You might want to change the values of these settings:
     - post_max_size
@@ -107,6 +147,9 @@ KNOWN ISSUES
     - memory-limit (if memory limits have been enabled)
     - max_input_time
     - max_file_uploads
+    When running via the built-in PHP dev server (php -S), these can be
+    overridden per-invocation without touching php.ini, e.g.:
+    php -S localhost:8000 -d upload_max_filesize=200M -d post_max_size=220M
 
   * For now, caching or seeking is not implemented for retrieval of uploaded files. 
     This might be an issue when embedding large video files.

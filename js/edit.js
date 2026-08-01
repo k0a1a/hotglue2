@@ -1038,11 +1038,13 @@ $.glue.object = function()
 				if (!drag_started) {
 					return;
 				}
+				$.glue.undo.begin_batch();
 				if (document.querySelectorAll('.glue-selected').length > 1 && obj.classList.contains('glue-selected')) {
 					$.glue.trigger('.glue-selected', 'glue-movestop');
 				} else {
 					$.glue.trigger(obj, 'glue-movestop');
 				}
+				$.glue.undo.end_batch();
 			}).on('scroll', function(e) {
 				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
 			});
@@ -1104,7 +1106,11 @@ $.glue.object = function()
 			// (not children of obj), so there is nothing to attach a title
 			// to. Kept for backward compatibility with existing callers.
 		},
-		save: function(obj) {
+		// serializes obj to the on-disk storage format, without sending it
+		// anywhere - factored out of save() so other callers (e.g. the undo
+		// stack, capturing state before a delete) can get the exact same
+		// normalized HTML save() would have sent
+		to_html: function(obj) {
 			var elem = obj.cloneNode(true);
 			var elem_cls = Array.from(elem.classList);
 			for (var i=0; i < elem_cls.length; i++) {
@@ -1115,10 +1121,13 @@ $.glue.object = function()
 			// trim element content
 			// necessary, otherwise we'd be sending \n\t back again
 			elem.innerHTML = elem.innerHTML.trim();
-			// convert to string
-			var html = elem.outerHTML;
+			return elem.outerHTML;
+		},
+		save: function(obj) {
+			var html = $.glue.object.to_html(obj);
 			// DEBUG
 			//console.log(html);
+			$.glue.undo.capture(obj, html);
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
 		},
 		// obj .. element
@@ -1140,6 +1149,211 @@ $.glue.object = function()
 		}
 	};
 }();
+
+// a lightweight, purely client-side undo stack - in-memory only, cleared on
+// reload, capped to a few levels. Replaces the old server-side auto-snapshot
+// system (periodic full-page backups browsable/revertable via a dedicated
+// UI), which was real disk/complexity overhead for what wasn't actually an
+// undo feature (Ctrl+Z just redirected to it with a confirm() nudge).
+//
+// design: a single generic capture point in $.glue.object.save() covers
+// move/resize/z-order/property-toggles (anything that calls save()) for
+// free - a WeakMap tracks each object's last-saved html, so the first save
+// for a given object is classified 'create', every later one 'update' with
+// the *previous* html as the undo target. Delete has its own capture call
+// (the object stops existing, so there's no "next save" to diff against).
+// No redo - the create/delete asymmetry makes a correct symmetric redo need
+// its own stack and clearing rules, not worth it for "a few levels of undo".
+$.glue.undo = function()
+{
+	var MAX_DEPTH = 20;
+	var stack = [];
+	var last_html = new WeakMap();
+	var restoring = false;
+	var batch_depth = 0;
+	var current_batch = null;
+
+	function push(entry) {
+		if (restoring) {
+			return;
+		}
+		if (0 < batch_depth) {
+			current_batch.push(entry);
+			return;
+		}
+		stack.push(entry);
+		if (MAX_DEPTH < stack.length) {
+			stack.shift();
+		}
+	}
+
+	// the html captured by to_html()/save() is the on-disk STORAGE format,
+	// not necessarily the live-DOM format - some modules strip presentation-
+	// only children before saving (e.g. text's alter_pre_save removes its
+	// .glue-text-input/.glue-text-render, which the server-side render adds
+	// back). So restoring must go through the same glue.render_object() call
+	// every normal page load uses, not reuse the stored snapshot as DOM
+	// content directly.
+	function apply_rendered(live, rendered_html) {
+		var tmpl = document.createElement('template');
+		tmpl.innerHTML = (rendered_html || '').trim();
+		var fresh = tmpl.content.firstElementChild;
+		if (!fresh) {
+			return;
+		}
+		// mutate the live node in place (attributes + content) rather than
+		// replacing it, so Moveable's bound target and delegated event
+		// matching (both keyed on the actual DOM node/id) stay intact
+		Array.from(live.attributes).forEach(function(a) { live.removeAttribute(a.name); });
+		Array.from(fresh.attributes).forEach(function(a) { live.setAttribute(a.name, a.value); });
+		live.innerHTML = fresh.innerHTML;
+	}
+
+	function render_and_apply(id, live, is_new) {
+		$.glue.backend({ method: 'glue.render_object', name: id, edit: true }, function(data) {
+			if (!data || data['#error']) {
+				return;
+			}
+			apply_rendered(live, data['#data']);
+			if (is_new) {
+				$.glue.object.register(live);
+			}
+			last_html.set(live, $.glue.object.to_html(live));
+			$.glue.canvas.update(live);
+		}, false);
+	}
+
+	function restore_one(a) {
+		if (a.type == 'create') {
+			var el = document.getElementById(a.id);
+			if (!el) {
+				return;
+			}
+			$.glue.object.unregister(el);
+			el.remove();
+			$.glue.canvas.update();
+			$.glue.backend({ method: 'glue.delete_object', name: a.id });
+			last_html.delete(el);
+		} else if (a.type == 'update') {
+			var el = document.getElementById(a.id);
+			if (!el) {
+				// object was later deleted - can't restore an update onto
+				// nothing, this is expected for "a few levels", not an error
+				return;
+			}
+			$.glue.backend({ method: 'glue.save_state', html: a.before }, function(data) {
+				if (!data || data['#error']) {
+					return;
+				}
+				render_and_apply(a.id, el, false);
+			}, false);
+		} else if (a.type == 'delete') {
+			// the object's file was unlinked by delete_object() - glue.
+			// save_state requires the object to already exist, so recreate
+			// the (empty) file first via glue.save_object (no such
+			// precondition), then populate it the normal way
+			$.glue.backend({ method: 'glue.save_object', name: a.id }, function(data) {
+				if (!data || data['#error']) {
+					return;
+				}
+				$.glue.backend({ method: 'glue.save_state', html: a.html }, function(data2) {
+					if (!data2 || data2['#error']) {
+						return;
+					}
+					var el = document.createElement('div');
+					el.id = a.id;
+					el.style.position = 'absolute';
+					document.body.appendChild(el);
+					render_and_apply(a.id, el, true);
+				}, false);
+			}, false);
+		}
+	}
+
+	return {
+		begin_batch: function() {
+			if (batch_depth++ === 0) {
+				current_batch = [];
+			}
+		},
+		end_batch: function() {
+			if (--batch_depth === 0) {
+				if (current_batch.length) {
+					stack.push({ batch: current_batch });
+					if (MAX_DEPTH < stack.length) {
+						stack.shift();
+					}
+				}
+				current_batch = null;
+			}
+		},
+		// establishes a baseline for an object that already existed when the
+		// page loaded (never went through save() this session) - without
+		// this, that object's first edit would have no "previous html" to
+		// diff against and would be wrongly classified as 'create' by
+		// capture() below, making undo DELETE it instead of reverting the edit
+		seed: function(obj, html) {
+			last_html.set(obj, html);
+		},
+		// called from $.glue.object.save() - classifies as create (first
+		// save ever seen for this object) or update (with the previous html
+		// as the undo target)
+		capture: function(obj, html) {
+			if (restoring) {
+				return;
+			}
+			var prev = last_html.get(obj);
+			if (prev === undefined) {
+				push({ type: 'create', id: obj.id });
+			} else {
+				push({ type: 'update', id: obj.id, before: prev });
+			}
+			last_html.set(obj, html);
+		},
+		// called before a delete removes the object from the dom
+		capture_delete: function(obj, html) {
+			if (restoring) {
+				return;
+			}
+			push({ type: 'delete', id: obj.id, html: html });
+			last_html.delete(obj);
+		},
+		undo: function() {
+			var entry = stack.pop();
+			if (!entry) {
+				return;
+			}
+			var actions = entry.batch ? entry.batch : [entry];
+			restoring = true;
+			for (var i = actions.length-1; 0 <= i; i--) {
+				restore_one(actions[i]);
+			}
+			restoring = false;
+		}
+	};
+}();
+
+document.addEventListener('DOMContentLoaded', function() {
+	// visible "Undo" entry in the single-click ("new") menu, not just the
+	// Ctrl+Z shortcut - plain text glyph rather than a new binary icon asset
+	var elem = document.createElement('div');
+	elem.style.alignItems = 'center';
+	elem.style.backgroundColor = '#eee';
+	elem.style.border = '1px solid #000';
+	elem.style.boxSizing = 'border-box';
+	elem.style.display = 'flex';
+	elem.style.fontSize = '20px';
+	elem.style.height = '32px';
+	elem.style.justifyContent = 'center';
+	elem.style.width = '32px';
+	elem.title = 'undo the last change';
+	elem.textContent = '↶';
+	elem.addEventListener('click', function(e) {
+		$.glue.menu.hide();
+		$.glue.undo.undo();
+	});
+	$.glue.menu.register('new', elem, 20);
+});
 
 $.glue.sel = function()
 {
@@ -1303,25 +1517,31 @@ $.glue.sel = function()
 	document.documentElement.addEventListener('keyup', function(e) {
 		if (33 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pageup: move objects to top of stack
+			$.glue.undo.begin_batch();
 			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
 				$.glue.stack.to_top(el);
 				$.glue.object.save(el);
 			});
 			$.glue.stack.compress();
+			$.glue.undo.end_batch();
 			e.preventDefault();
 			return false;
 		} else if (34 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pagedown: move objects to bottom of stack
+			$.glue.undo.begin_batch();
 			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
 				$.glue.stack.to_bottom(el);
 				$.glue.object.save(el);
 			});
 			$.glue.stack.compress();
+			$.glue.undo.end_batch();
 			e.preventDefault();
 			return false;
 		} else if (37 <= e.which && e.which <= 40 && document.querySelectorAll('.glue-selected').length) {
 			// move selected elements with arrow keys
+			$.glue.undo.begin_batch();
 			$.glue.trigger('.glue-selected:not(.locked)', 'glue-movestop');
+			$.glue.undo.end_batch();
 			key_moving = false;
 			e.preventDefault();
 			return false;
@@ -1329,8 +1549,10 @@ $.glue.sel = function()
 			// delete selected objects
 			// this is pretty much copied from object-edit.js
 			var objs = document.querySelectorAll('.glue-selected:not(.locked)');
+			$.glue.undo.begin_batch();
 			objs.forEach(function(el) {
 				var id = el.id;
+				$.glue.undo.capture_delete(el, $.glue.object.to_html(el));
 				$.glue.object.unregister(el);
 				el.remove();
 				// delete in backend as well
@@ -1338,6 +1560,7 @@ $.glue.sel = function()
 				// update canvas
 				$.glue.canvas.update();
 			});
+			$.glue.undo.end_batch();
 			e.preventDefault();
 			return false;
 		} else {
@@ -1744,10 +1967,15 @@ $.glue.upload = function()
 	});
 
 	return {
+		// exposed so other modules can build their own upload buttons (e.g.
+		// a type-specific "add video" menu entry) without reimplementing the
+		// status bar / progress / error handling
+		default_upload_handling: default_upload_handling,
 		// elem .. element to turn into a file button
 		// data .. other parameters to send to the service
 		// options ..	multiple => allow multiple files to be uploaded (boolean, defaults to false)
 		//				tooltip => title attribute on the file button
+		//				accept => restricts the file picker to matching files (e.g. 'video/*,.mp4')
 		//				abort => function called if the upload didn't start
 		//				start => function called when the upload started
 		//				progress => function called periodically during the upload
@@ -1772,6 +2000,9 @@ $.glue.upload = function()
 			elem.insertBefore(input, elem.firstChild);
 			if (options.multiple) {
 				input.setAttribute('multiple', 'multiple');
+			}
+			if (options.accept) {
+				input.setAttribute('accept', options.accept);
 			}
 			// add event handler
 			input.addEventListener('change', function(e) {
@@ -1981,6 +2212,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// register all objects
 	document.querySelectorAll('.object').forEach(function(el) {
 		$.glue.object.register(el);
+		$.glue.undo.seed(el, $.glue.object.to_html(el));
 	});
 
 	// make sure we call enlarge body even if there are no objects
@@ -2038,12 +2270,14 @@ document.addEventListener('DOMContentLoaded', function() {
 			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 90) {
-			// ctrl+z: show revisions browser to suggest using revisions in place of undo
-			if (confirm('Looking for an "undo" option?\nHOTGLUE keeps record of your recent edits - it\'s called "revisions".\nWould you like to browse through the revisions of this page?')) {
-				window.location = $.glue.base_url+'?'+$.glue.page+'/revisions';
-				e.preventDefault();
-				return false;
+			// ctrl+z: undo (let native undo handle in-progress text editing -
+			// there's no contenteditable anywhere, text editing is textarea-based)
+			if (document.activeElement && (document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT')) {
+				return;
 			}
+			$.glue.undo.undo();
+			e.preventDefault();
+			return false;
 		}
 	});
 

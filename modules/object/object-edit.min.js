@@ -199,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var id = obj.id;
+		$.glue.undo.capture_delete(obj, $.glue.object.to_html(obj));
 		$.glue.object.unregister(obj);
 		obj.remove();
 		// delete in backend as well

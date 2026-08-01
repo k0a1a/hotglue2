@@ -61,6 +61,11 @@ only when `$add_glue` is true.
 | `/page/revisions` | `controller_revisions` (`module_revisions_browser.inc.php:50`) | true | `REVISIONS_NEED_AUTH`, default `true` (`config.inc.php:60`), **configurable** |
 | `/code` | `controller_user_code_stylesheet` (`module_user_code.inc.php:39`) | true | hardcoded `true` (`module_user_code.inc.php:98-99`), not configurable |
 
+Note: `/page/revisions` and `module_revisions_browser.inc.php` (row above)
+were removed entirely in 2026-08, unrelated to this jQuery-removal effort -
+see the README's "RECENT CHANGES" for why. Table left as-is as an accurate
+record of the audit at the time it was written.
+
 Every per-object module's editor JS (`download-edit.js`, `image-edit.js`, etc.) is
 additionally gated inside its own `*_render_page_early` hook by
 `if ($args['edit'])`, e.g. `module_image.inc.php:305-322`,

@@ -39,8 +39,6 @@ error_reporting(E_ALL);						// see php documentation
 @define('SHORT_URLS', false);				// use short urls internally
 @define('SHOW_FRONTEND_ERRORS', true);
 @define('SITE_NAME', 'hotglue 1.9');
-@define('SNAPSHOT_MAX_AGE', 60*60*24*7);	// auto- revisions are automatically deleted after n seconds (zero to disable)
-@define('SNAPSHOT_MIN_AGE', 60*60);			// auto- revisions are created every n seconds (zero to disable)
 @define('USE_HOTGLUE_ERRORS', true);		// use hotglue theming for error pages
 @define('USE_MIN_FILES', true);				// use minified files if possible
 // default modules
@@ -57,9 +55,16 @@ error_reporting(E_ALL);						// see php documentation
 @define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)
 @define('PAGE_GUIDES_Y', '');				// show a grid line after n vertical px (space-separated string)
 @define('PAGES_NEED_AUTH', true);			// page browser needs authentication
-@define('REVISIONS_NEED_AUTH', true);		// revisions browser needs authentication
 @define('TEXT_AUTO_BR', true);				// automatically add <br> elements for newlines
 @define('TEXT_USE_WOFF_FONTS', true);		// (experimental) offer woff webfonts (supported by Firefox 3.6+, Chrome 5.0+, Internet Explorer 9)
+@define('VIDEO_ENCODING', true);			// re-encode every uploaded video into a web-optimized, resource-capped 720p variant + poster image (needs ffmpeg installed)
+@define('FFMPEG_BINARY', 'ffmpeg');			// path to the ffmpeg binary
+@define('VIDEO_ENCODE_CRF', 24);			// x264 quality for the encoded variant (lower is higher quality/larger file)
+@define('VIDEO_ENCODE_AUDIO_BITRATE', '64k');	// audio bitrate for the encoded variant
+@define('VIDEO_MAX_HEIGHT', 720);			// cap on the short side of the frame (landscape: height, portrait: width) - never upscales a smaller original
+@define('VIDEO_MAX_DURATION', 60);			// only the first n seconds of an upload are encoded/served, regardless of how long the original is
+@define('VIDEO_POSTER_TIME', 1);			// second offset into the video to grab the poster frame from
+@define('VIDEO_ENCODE_TIMEOUT', 60*60*2);	// give up waiting for a background encode after n seconds and fall back to the original upload
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 

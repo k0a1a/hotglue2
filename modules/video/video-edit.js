@@ -85,24 +85,100 @@ function video_mute_toggle(elem) {
 	$.glue.object.save(obj);
 }
 
+// while a video object shows the "processing" placeholder (see
+// video_alter_render_early()), periodically re-render it server-side and
+// swap in the result once the background encode has finished, so an
+// editor left open doesn't keep showing a stale placeholder indefinitely
+function video_poll_encode(obj) {
+	var attempts = 0;
+	var max_attempts = 200; // ~10 minutes at 3s intervals
+	var timer = setInterval(function() {
+		attempts++;
+		if (!document.body.contains(obj) || max_attempts < attempts) {
+			clearInterval(timer);
+			return;
+		}
+		$.glue.backend({ method: 'glue.render_object', name: obj.id, edit: true }, function(data) {
+			if (!data || data['#error']) {
+				// transient error - keep polling silently, don't alert
+				return;
+			}
+			var tmpl = document.createElement('template');
+			tmpl.innerHTML = (data['#data'] || '').trim();
+			var fresh = tmpl.content.firstElementChild;
+			if (!fresh || fresh.querySelector('.video-processing')) {
+				// still pending
+				return;
+			}
+			clearInterval(timer);
+			obj.innerHTML = fresh.innerHTML;
+		}, false);
+	}, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+	// resume polling for any objects that were already mid-encode when this
+	// page was loaded (e.g. reopened the editor before a previous upload's
+	// encode had finished)
+	document.querySelectorAll('.video.object').forEach(function(obj) {
+		if (obj.querySelector('.video-processing')) {
+			video_poll_encode(obj);
+		}
+	});
+
+	//
+	// "new" menu: explicit video upload button (video files can also be
+	// added via the generic upload button/drag-drop, this just makes the
+	// capability discoverable)
+	//
+	var upload_elem = document.createElement('div');
+	upload_elem.style.height = '32px';
+	upload_elem.style.maxHeight = '32px';
+	upload_elem.style.maxWidth = '32px';
+	upload_elem.style.overflow = 'hidden';
+	upload_elem.style.width = '32px';
+	var upload_img = document.createElement('img');
+	upload_img.src = $.glue.base_url+'modules/video/video.png';
+	upload_img.alt = 'btn';
+	upload_img.width = 32;
+	upload_img.height = 32;
+	upload_elem.appendChild(upload_img);
+	var upload = $.glue.upload.default_upload_handling();
+	upload.multiple = true;
+	upload.accept = 'video/*,.mp4,.webm,.ogv,.ogg,.h264,.mov';
+	upload.tooltip = 'upload a video';
+	$.glue.upload.button(upload_elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'video' }, upload);
+	upload_elem.addEventListener('click', function(e) {
+		var p = $.glue.menu.spawn_coords();
+		upload.x = p.x;
+		upload.y = p.y;
+	});
+	$.glue.menu.register('new', upload_elem, 11.5);
+
 	//
 	// turn video upload into an object
 	//
 	$.glue.live('.video', 'glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
-		this.querySelector(':scope > video').addEventListener('loadedmetadata', function(e) {
-			// resize the video to it's native size
-			// DEBUG
-			//console.log('loadedmetadata');
-			var w = e.target.videoWidth;
-			var h = e.target.videoHeight;
-			if (typeof w == 'number' && 0 < w && typeof h == 'number' && 0 < h) {
-				var obj = e.target.parentElement;
-				obj.style.width = w+'px';
-				obj.style.height = h+'px';
-				$.glue.object.save(obj);
-			}
-		}, false);
+		// while a background encode is still pending, the server renders a
+		// placeholder (see video_alter_render_early()) instead of a <video>
+		// element - skip the native-size auto-resize below in that case,
+		// it'll apply on a later reload once the encode finishes
+		var video = this.querySelector(':scope > video');
+		if (video) {
+			video.addEventListener('loadedmetadata', function(e) {
+				// resize the video to it's native size
+				// DEBUG
+				//console.log('loadedmetadata');
+				var w = e.target.videoWidth;
+				var h = e.target.videoHeight;
+				if (typeof w == 'number' && 0 < w && typeof h == 'number' && 0 < h) {
+					var obj = e.target.parentElement;
+					obj.style.width = w+'px';
+					obj.style.height = h+'px';
+					$.glue.object.save(obj);
+				}
+			}, false);
+		}
 		// default width and height is set in the css
 		// make it explicit though
 		this.style.width = this.offsetWidth+'px';
@@ -120,6 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		glue_orig_visibility.delete(this);
 		$.glue.object.register(this);
 		$.glue.object.save(this);
+		if (this.querySelector('.video-processing')) {
+			video_poll_encode(this);
+		}
 	});
 
 	//
