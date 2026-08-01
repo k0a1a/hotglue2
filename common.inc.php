@@ -703,6 +703,30 @@ function startpage()
 
 
 /**
+ *	return the site's uploaded custom fonts (site settings, see /pages)
+ *
+ *	stored as a json-encoded list on the startpage's own page-object
+ *	(page-custom-fonts), regardless of which page is currently being
+ *	rendered - see module_page.inc.php's page_font_upload()
+ *
+ *	@return array list of ['file'=>..., 'name'=>...]
+ */
+function site_custom_fonts()
+{
+	load_modules('glue');
+	$obj = load_object(['name'=>startpage().'.page']);
+	if ($obj['#error'] || empty($obj['#data']['page-custom-fonts'])) {
+		return [];
+	}
+	$fonts = @json_decode($obj['#data']['page-custom-fonts'], true);
+	if (!is_array($fonts)) {
+		return [];
+	}
+	return $fonts;
+}
+
+
+/**
  *	move an uploaded file to the shared directory of a page
  *
  *	this function reuses existing files when possible.

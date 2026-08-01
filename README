@@ -156,6 +156,109 @@ RECENT CHANGES (2026-08)
     in the underlying host/port detection this surfaced (a non-standard
     port could end up duplicated, e.g. "localhost:8931:8931").
 
+  * Auth hardening: HTTP Basic and Digest credential comparisons now use
+    hash_equals() instead of ==/!= (common.inc.php, util.inc.php), avoiding
+    timing side-channels. Added an optional AUTH_METHOD 'db', authenticating
+    against a UserCake-compatible accounts table via mysqli (DB_AUTH_HOST/
+    USER/PASSWORD/NAME/TABLE config constants, all empty/off by default) -
+    the authenticated account must match the site's own AUTH_USER, since one
+    database can back many sites. HTTP Digest's use of MD5 was left as-is:
+    that's the wire protocol itself (RFC 2617), not a code choice, and
+    there's no widely-supported alternative - treat 'digest' as legacy in
+    favor of 'basic' behind HTTPS if that's a concern.
+
+  * Fixed a hook-dispatch bug in image rendering, the same class of bug
+    fixed for video above: image_alter_render_early() backfilled
+    image-file-width/height (and default object-width/height) locally when
+    missing - e.g. images uploaded while GD was unavailable - but
+    invoke_hook() passes its $args array by value to every alter_render_early
+    hook, so object_alter_render_early() (which sets the container div's
+    CSS width/height, dispatched afterwards in the same pass) saw the
+    pre-backfill values on that first render. Moved the backfill
+    (_image_finalize_dimensions()) to the top of image_render_object(),
+    before the hook dispatch, mirroring video's fix.
+
+  * Added a click shield to video and webvideo (YouTube/Vimeo embed)
+    objects in edit mode: clicking one to select it or open its menu was
+    getting swallowed by the <video> tag's own playback/controls handling,
+    or - for webvideo - lost entirely inside the embed's cross-origin
+    <iframe> document, which can never bubble a click to the parent page at
+    all. A same-document overlay (glue-video-shield / glue-webvideo-shield)
+    covering the top 40% of the object intercepts the click instead,
+    transparent until hovered so it doesn't obscure the video, leaving the
+    rest of the object clickable so playback can still be tested while
+    editing. This replaces webvideo's old small corner drag handle
+    (glue-webvideo-handle) with the same, much larger shield.
+
+  * Added 90-degree object rotation: a new context-menu button next to the
+    existing flip button cycles 0/90/180/270deg in one click each,
+    composing a rotate(Ndeg) term into the same CSS transform string flip
+    already reads/writes (modules/transform/transform.js) - no PHP changes
+    needed. Known limitation: rotating and then flipping the same object
+    discards the rotation, since flip only recognizes its own 4 fixed
+    matrices - rotating after flipping works fine.
+
+  * Added site-wide settings, reachable at /pages (aliased /options) above
+    the existing page list:
+      - A site favicon, uploaded once and served at every page regardless
+        of which one is being viewed (stored as page-favicon-file/-mime on
+        the startpage's own page-object; served at the new /favicon route).
+      - Up to 10 custom fonts (.woff/.woff2/.ttf), listed with a hover-
+        revealed remove action (matching the existing page-list style).
+        Each uploaded font automatically becomes available in text objects'
+        "change typeface" button - it discovers typefaces by scanning the
+        page's CSS for .glue-font* rules, so uploading one just means
+        emitting a matching @font-face plus that companion rule
+        (module_text.inc.php's _include_custom_font()). Custom fonts sort
+        first in the cycle order, ahead of the 4 built-in WOFF fonts
+        (though still after the 6 plain system fonts, which live in a
+        separate static stylesheet that structurally can't be reordered
+        without moving them to generated CSS too).
+      - The "change typeface" button's tooltip is now just "<font name> |
+        add fonts ⚙", and the double-click ("page") menu's link to /pages
+        is now a plain gear glyph instead of a binary icon, matching the
+        undo/redo buttons' convention.
+      - The last font, font size, and line height picked via their
+        respective "change ..." controls are remembered site-wide and
+        applied as the default for newly created text objects, so you
+        don't have to dial them in again on every new one.
+    Found and fixed two real bugs along the way: module_page.inc.php was
+    missing require_once('controller.inc.php') (harmless via normal page
+    loads, which already pull it in first, but fatal-erroring the first
+    time the module loaded via json.php's upload endpoint instead); and the
+    favicon/font upload validation used && where it needed || (a non-empty-
+    but-unrecognized mime type slipped through unrejected) - then, once
+    fixed to ||, still wrongly rejected a valid file whenever the browser
+    reported an empty mime type (common for less-common font formats),
+    since the empty-mime branch never got a chance to run. Rewritten with
+    explicit $mime_ok/$ext_ok checks.
+
+  * Text editing improvements: default padding (12px 15px) and font-size
+    (18px) via a CSS class rule (modules/text/text.css, previously created
+    but never actually loaded) rather than inline styles, so the existing
+    "change padding"/"change font size" controls still reset to it
+    instantly with no reload; dragging font size now scales line-height
+    proportionally alongside it, preserving whatever ratio was already in
+    effect; the textarea's edit-mode focus indicator uses CSS outline
+    instead of border (border participates in the box model and shifts
+    text position by its own width even with box-sizing:border-box, outline
+    doesn't); and the selected-object border is now black instead of red.
+
+  * Added a "make link" button to text objects: select some text, click it,
+    enter a URL, and that selection gets wrapped in <a href="...">. No
+    rendering changes were needed for this - html_encode_str_smart()
+    (html_parse.inc.php) already passes well-formed HTML tags through
+    unescaped rather than encoding them, and text-edit.js's stop_editing()
+    already anticipated <a> tags inside text content (disabling their click
+    behavior while editing) - a hand-typed link already worked today, this
+    just gives an easier way to insert one. Also fixed: inline links inside
+    text content weren't visibly underlined, because of the global
+    `a { text-decoration: inherit; }` rule (css/main.css) that intentionally
+    keeps object-level links - e.g. a whole linked image - from forcing an
+    underline where there's no text to underline; added a scoped
+    `.text a { text-decoration: underline; }` override for inline links
+    specifically.
+
 
 RECENT CHANGES (2026-07)
 

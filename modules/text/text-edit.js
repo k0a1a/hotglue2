@@ -317,6 +317,21 @@ document.addEventListener('DOMContentLoaded', function() {
 				var rand = Math.floor(Math.random()*$.glue.conf.object.default_colors.length);
 				elem.style.backgroundColor = $.glue.conf.object.default_colors[rand];
 			}
+			// default to whichever typeface/font size/line height were last
+			// picked via "change typeface"/"change font size"/"change line
+			// height" (site-wide, see page_set_last_font()/
+			// page_set_last_font_size()/page_set_last_line_height()), so
+			// the user doesn't have to cycle/drag back to them on every
+			// new text object
+			if ($.glue.conf.text.last_font) {
+				elem.style.fontFamily = $.glue.conf.text.last_font;
+			}
+			if ($.glue.conf.text.last_font_size) {
+				elem.style.fontSize = $.glue.conf.text.last_font_size;
+			}
+			if ($.glue.conf.text.last_line_height) {
+				elem.style.lineHeight = $.glue.conf.text.last_line_height;
+			}
 			document.body.appendChild(elem);
 			// make width and height explicit
 			elem.style.width = elem.offsetWidth+'px';
@@ -334,6 +349,53 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// context menu items
 	//
+
+	// turn the currently selected text into a link - plain text glyph
+	// rather than a new binary icon asset, same convention as the undo/
+	// redo/gear buttons elsewhere. Storage/rendering need no changes at
+	// all: html_encode_str_smart() already passes well-formed tags like
+	// <a href="..."> through unescaped rather than encoding them, and
+	// stop_editing() below already anticipates <a> tags inside rendered
+	// text content (it finds and disables them while editing) - this
+	// button just gives an easier way to insert one than hand-typing the
+	// raw HTML into the textarea
+	elem = document.createElement('div');
+	elem.style.alignItems = 'center';
+	elem.style.backgroundColor = '#eee';
+	elem.style.border = '1px solid #000';
+	elem.style.boxSizing = 'border-box';
+	elem.style.display = 'flex';
+	elem.style.fontSize = '20px';
+	elem.style.height = '32px';
+	elem.style.justifyContent = 'center';
+	elem.style.width = '32px';
+	elem.title = 'turn the selected text into a link';
+	elem.textContent = '🔗';
+	elem.addEventListener('click', function(e) {
+		var obj = $.glue.owner(this);
+		var input = obj.querySelector(':scope > .glue-text-input');
+		var start = input.selectionStart;
+		var end = input.selectionEnd;
+		if (start === end) {
+			alert('Select some text first, then click this to turn it into a link.');
+			return;
+		}
+		var url = prompt('Enter the link URL', 'https://');
+		if (!url) {
+			return;
+		}
+		// escape quotes so the url can't break out of the href attribute
+		var safe_url = url.replace(/"/g, '&quot;');
+		var selected = input.value.substring(start, end);
+		var link = '<a href="'+safe_url+'">'+selected+'</a>';
+		input.value = input.value.substring(0, start)+link+input.value.substring(end);
+		// put the cursor right after the newly-inserted link
+		var pos = start+link.length;
+		input.focus();
+		input.setSelectionRange(pos, pos);
+	});
+	$.glue.contextmenu.register('text', 'text-link', elem);
+
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/text/text-background-color.png';
 	elem.alt = 'btn';
@@ -398,6 +460,13 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (isNaN(orig_val)) {
 			orig_val = 10;
 		}
+		// preserve whatever line-height-to-font-size ratio is currently in
+		// effect (falls back to a sane readable default) so line-height
+		// scales along with font-size instead of staying fixed - this
+		// also correctly keeps a previously custom-set ratio (via the
+		// separate "change line height" control) rather than resetting it
+		var orig_line_height = parseFloat(getComputedStyle(obj).lineHeight);
+		var line_height_ratio = (!isNaN(orig_line_height) && orig_val) ? orig_line_height/orig_val : 1.2;
 		var no_change = true;
 		var that = this;
 		$.glue.slider(e, function(x, y) {
@@ -406,18 +475,31 @@ document.addEventListener('DOMContentLoaded', function() {
 				val = 0;
 			}
 			obj.style.fontSize = val+'px';
+			obj.style.lineHeight = (val*line_height_ratio)+'px';
 			Alpine.$data(that).tip = 'drag to change font size ('+val+'px), click to reset to default one';
 			if (x != 0 || y != 0) {
 				no_change = false;
 			}
 		}, function(x, y) {
-			// reset font-size if there was no change at all
+			// reset font-size if there was no change at all - line-height
+			// is left alone here, since it has its own dedicated reset
+			// (the separate "change line height" control) and a plain
+			// click on this button shouldn't discard an unrelated,
+			// deliberately customized line-height
 			if (no_change) {
 				obj.style.fontSize = '';
 				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-font-size' });
 				Alpine.$data(that).tip = 'drag to change font size ('+getComputedStyle(obj).fontSize+'px), click to reset to default one';
 			} else {
 				$.glue.object.save(obj);
+				// remember as the site-wide default for newly created text
+				// objects (see the "new text" handler above) - this
+				// includes line-height, which this drag also sets
+				// alongside font-size (see line_height_ratio above)
+				$.glue.conf.text.last_font_size = obj.style.fontSize;
+				$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
+				$.glue.conf.text.last_line_height = obj.style.lineHeight;
+				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
 			}
 		});
 		e.preventDefault();
@@ -455,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.className = 'glue-text-font-family';
 	elem.style.height = '32px';
 	elem.style.width = '32px';
-	elem.title = 'change typeface (click to cycle through available typefaces)';
+	elem.title = 'add fonts ⚙';
 	elem.addEventListener('glue-menu-activate', function(e) {
 		var obj = $.glue.owner(this);
 		var fonts = [];
@@ -469,14 +551,14 @@ document.addEventListener('DOMContentLoaded', function() {
 				// current font is a woff-font
 				faceElem.classList.add('glue-text-font-face');
 				faceElem.classList.remove('glue-text-font-family');
-				faceElem.title = 'this is a WOFF web-font ('+cur+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF';
+				faceElem.title = cur+' | add fonts ⚙';
 				return;
 			}
 		}
 		// not a woff-font
 		faceElem.classList.remove('glue-text-font-face');
 		faceElem.classList.add('glue-text-font-family');
-		faceElem.title = 'change typeface (click to cycle through available typefaces)';
+		faceElem.title = cur+' | add fonts ⚙';
 	});
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
@@ -517,13 +599,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (is_woff) {
 				this.classList.add('glue-text-font-face');
 				this.classList.remove('glue-text-font-family');
-				this.title = 'this is a WOFF web-font ('+fonts[n]+') - while only supported on the latest browser versions, this text should look similar across different browsers and operating systems supporting WOFF';
 			} else {
 				this.classList.remove('glue-text-font-face');
 				this.classList.add('glue-text-font-family');
-				this.title = 'change typeface (click to cycle through available typefaces)';
 			}
+			this.title = fonts[n]+' | add fonts ⚙';
 			$.glue.object.save(obj);
+			// remember as the site-wide default for newly created text
+			// objects (see the "new text" handler above)
+			$.glue.conf.text.last_font = fonts[n];
+			$.glue.backend({ method: 'page.set_last_font', font: fonts[n] });
 		}
 	});
 	$.glue.contextmenu.register('text', 'text-font-face', elem);
@@ -613,6 +698,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				*/
 			} else {
 				$.glue.object.save(obj);
+				// remember as the site-wide default for newly created text
+				// objects (see the "new text" handler above)
+				$.glue.conf.text.last_line_height = obj.style.lineHeight;
+				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
 			}
 		});
 		e.preventDefault();

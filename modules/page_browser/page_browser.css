@@ -9,6 +9,48 @@
 	margin-top: 10px;
 }
 
+#site_settings_favicon,
+#site_settings_fonts {
+	margin-bottom: 15px;
+	margin-left: 10px;
+}
+
+#site_settings_favicon_preview {
+	display: block;
+	height: 32px;
+	margin-bottom: 5px;
+	width: 32px;
+}
+
+#site_settings_favicon_preview_empty {
+	color: darkgrey;
+	display: block;
+	margin-bottom: 5px;
+}
+
+.site_settings_upload_btn {
+	background-color: #eee;
+	border: 1px solid #ccc;
+	border-radius: 2px;
+	cursor: pointer;
+	display: inline-block;
+	padding: 3px 8px;
+}
+
+.site_settings_upload_btn:hover {
+	background-color: #ddd;
+}
+
+#site_settings_fonts_list {
+	list-style: none;
+	margin: 0 0 5px 0;
+	padding: 0;
+}
+
+#site_settings_fonts_list li {
+	margin-bottom: 3px;
+}
+
 .page_browser_entry {
 	margin-bottom: 4.25px;
 	margin-left: 10px;

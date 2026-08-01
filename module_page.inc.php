@@ -58,6 +58,80 @@ function page_clear_background_img($args)
 register_service('page.clear_background_img', 'page_clear_background_img', ['auth'=>true]);
 
 
+/**
+ *	clear the site's favicon (site settings, see /pages)
+ *
+ *	@return array response
+ */
+function page_clear_favicon($args)
+{
+	$page = startpage();
+	load_modules('glue');
+	$obj = load_object(['name'=>$page.'.page']);
+	if ($obj['#error']) {
+		return response(true);
+	}
+	$obj = $obj['#data'];
+	if (!empty($obj['page-favicon-file'])) {
+		delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-favicon-file'], 'max_cnt'=>1]);
+		return object_remove_attr(['name'=>$obj['name'], 'attr'=>['page-favicon-file', 'page-favicon-mime']]);
+	} else {
+		return response(true);
+	}
+}
+
+register_service('page.clear_favicon', 'page_clear_favicon', ['auth'=>true]);
+
+
+/**
+ *	remove one of the site's uploaded custom fonts (site settings, see /pages)
+ *
+ *	@param array $args arguments
+ *		key 'file' the font's stored filename, as returned in the fonts list
+ *	@return array response
+ */
+function page_remove_font($args)
+{
+	if (empty($args['file'])) {
+		return response('Required argument "file" missing', 400);
+	}
+	$page = startpage();
+	load_modules('glue');
+	$obj = load_object(['name'=>$page.'.page']);
+	if ($obj['#error'] || empty($obj['#data']['page-custom-fonts'])) {
+		return response(true);
+	}
+	$obj = $obj['#data'];
+	$fonts = @json_decode($obj['page-custom-fonts'], true);
+	if (!is_array($fonts)) {
+		return response(true);
+	}
+
+	$found = false;
+	$remaining = [];
+	foreach ($fonts as $f) {
+		if (isset($f['file']) && $f['file'] == $args['file']) {
+			$found = true;
+			continue;
+		}
+		$remaining[] = $f;
+	}
+	if (!$found) {
+		return response(true);
+	}
+
+	delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$args['file'], 'max_cnt'=>1]);
+
+	if (empty($remaining)) {
+		return object_remove_attr(['name'=>$obj['name'], 'attr'=>['page-custom-fonts']]);
+	} else {
+		return update_object(['name'=>$obj['name'], 'page-custom-fonts'=>json_encode($remaining)]);
+	}
+}
+
+register_service('page.remove_font', 'page_remove_font', ['auth'=>true]);
+
+
 function page_delete_page($args)
 {
 	$page = $args['page'];
@@ -76,11 +150,23 @@ function page_delete_page($args)
 		delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
 		$deleted = true;
 	}
-	// check if there is a site favicon (only ever set on the startpage, but
-	// no harm checking any page - it'll simply never be set on others)
+	// check if there is a site favicon/custom fonts (only ever set on the
+	// startpage, but no harm checking any page - it'll simply never be set
+	// on others)
 	if (!empty($obj['page-favicon-file'])) {
 		delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$obj['page-favicon-file'], 'max_cnt'=>1]);
 		$deleted = true;
+	}
+	if (!empty($obj['page-custom-fonts'])) {
+		$fonts = @json_decode($obj['page-custom-fonts'], true);
+		if (is_array($fonts)) {
+			foreach ($fonts as $f) {
+				if (!empty($f['file'])) {
+					delete_upload(['pagename'=>get_first_item(expl('.', $page)), 'file'=>$f['file'], 'max_cnt'=>1]);
+					$deleted = true;
+				}
+			}
+		}
 	}
 	return $deleted;
 }
@@ -98,9 +184,18 @@ function page_has_reference($args)
 		return true;
 	} elseif (!empty($obj['page-favicon-file']) && $obj['page-favicon-file'] == $args['file']) {
 		return true;
-	} else {
-		return false;
 	}
+	if (!empty($obj['page-custom-fonts'])) {
+		$fonts = @json_decode($obj['page-custom-fonts'], true);
+		if (is_array($fonts)) {
+			foreach ($fonts as $f) {
+				if (!empty($f['file']) && $f['file'] == $args['file']) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 
@@ -171,11 +266,6 @@ function page_render_page_early($args)
 			html_add_js(base_url().'modules/page/page-edit.js');
 		}
 		html_add_css(base_url().'modules/page/page-edit.css');
-		// so page-edit.js can tell whether the page currently being edited
-		// is the startpage - the site favicon upload control only makes
-		// sense there, since it's stored on the startpage's own page-object
-		// regardless of which page it applies to
-		html_add_js_var('$.glue.conf.page.startpage', startpage());
 
 		// set default grid
 		$grid = page_get_grid([]);
@@ -256,6 +346,70 @@ register_service('page.set_grid', 'page_set_grid', ['auth'=>true]);
 
 
 /**
+ *	remember the last typeface picked via "change typeface", applied as
+ *	the default for newly created text objects (see
+ *	modules/text/text-edit.js) instead of the browser default - site-wide,
+ *	stored on the startpage's own page-object like the other site settings
+ *
+ *	@param array $args arguments
+ *		key 'font' the font-family string last selected
+ *	@return array response
+ */
+function page_set_last_font($args)
+{
+	if (!isset($args['font']) || $args['font'] === '') {
+		return response('Required argument "font" missing', 400);
+	}
+	load_modules('glue');
+	return update_object(['name'=>startpage().'.page', 'page-last-text-font'=>$args['font']]);
+}
+
+register_service('page.set_last_font', 'page_set_last_font', ['auth'=>true]);
+
+
+/**
+ *	remember the last font size picked via "change font size", applied as
+ *	the default for newly created text objects - same rationale as
+ *	page_set_last_font()
+ *
+ *	@param array $args arguments
+ *		key 'size' the font-size string last selected (e.g. '18px')
+ *	@return array response
+ */
+function page_set_last_font_size($args)
+{
+	if (!isset($args['size']) || $args['size'] === '') {
+		return response('Required argument "size" missing', 400);
+	}
+	load_modules('glue');
+	return update_object(['name'=>startpage().'.page', 'page-last-text-font-size'=>$args['size']]);
+}
+
+register_service('page.set_last_font_size', 'page_set_last_font_size', ['auth'=>true]);
+
+
+/**
+ *	remember the last line height picked via "change line height", applied
+ *	as the default for newly created text objects - same rationale as
+ *	page_set_last_font()
+ *
+ *	@param array $args arguments
+ *		key 'height' the line-height string last selected (e.g. '1.2em')
+ *	@return array response
+ */
+function page_set_last_line_height($args)
+{
+	if (!isset($args['height']) || $args['height'] === '') {
+		return response('Required argument "height" missing', 400);
+	}
+	load_modules('glue');
+	return update_object(['name'=>startpage().'.page', 'page-last-text-line-height'=>$args['height']]);
+}
+
+register_service('page.set_last_line_height', 'page_set_last_line_height', ['auth'=>true]);
+
+
+/**
  *	implements upload for preferred_module 'page_favicon'
  *
  *	kept as its own top-level function (rather than a branch inside
@@ -277,9 +431,15 @@ function page_favicon_upload($args)
 	if (empty($args['page']) || $args['page'] != startpage()) {
 		return false;
 	}
-	// check if supported file
-	if (!in_array($args['mime'], ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/gif', 'image/svg+xml'])
-		&& ($args['mime'] == '' && !in_array(filext($args['file']), ['ico', 'png', 'gif', 'svg']))) {
+	// check if supported file: accept a recognized mime, or (since
+	// browsers are inconsistent about reporting mime types for less common
+	// formats, often falling back to a generic type that upload_files()
+	// already clears to '') an empty mime paired with a recognized
+	// extension - reject anything else, including an unrecognized *non*-
+	// empty mime regardless of extension
+	$mime_ok = in_array($args['mime'], ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/gif', 'image/svg+xml']);
+	$ext_ok = in_array(filext($args['file']), ['ico', 'png', 'gif', 'svg']);
+	if (!$mime_ok && !($args['mime'] == '' && $ext_ok)) {
 		return false;
 	}
 
@@ -304,6 +464,82 @@ function page_favicon_upload($args)
 		return false;
 	} else {
 		return true;
+	}
+}
+
+
+/**
+ *	implements upload for preferred_module 'page_font'
+ *
+ *	same rationale as page_favicon_upload() for being a standalone
+ *	top-level function rather than a branch inside page_upload() - see its
+ *	docblock
+ */
+function page_font_upload($args)
+{
+	// site-wide custom fonts: same storage/restriction rationale as
+	// page_favicon_upload()
+	if (empty($args['page']) || $args['page'] != startpage()) {
+		return false;
+	}
+	// woff/woff2/ttf accepted - see module_text.inc.php's
+	// _include_custom_font() for the format() mapping used when declaring
+	// these via @font-face. Browsers are especially inconsistent about
+	// reporting mime types for font files (often falling back to a generic
+	// type that upload_files() already clears to ''), so an empty mime
+	// paired with a recognized extension is accepted too - see
+	// page_favicon_upload()'s identical reasoning
+	$mime_ok = in_array($args['mime'], ['font/woff', 'application/font-woff', 'application/x-font-woff',
+		'font/woff2', 'application/font-woff2', 'application/x-font-woff2',
+		'font/ttf', 'font/sfnt', 'application/x-font-ttf', 'application/x-font-truetype']);
+	$ext_ok = in_array(filext($args['file']), ['woff', 'woff2', 'ttf']);
+	if (!$mime_ok && !($args['mime'] == '' && $ext_ok)) {
+		return false;
+	}
+
+	load_modules('glue');
+	$obj = load_object(['name'=>$args['page'].'.page']);
+	$fonts = [];
+	if (!$obj['#error'] && !empty($obj['#data']['page-custom-fonts'])) {
+		$fonts = @json_decode($obj['#data']['page-custom-fonts'], true);
+		if (!is_array($fonts)) {
+			$fonts = [];
+		}
+	}
+
+	if (10 <= count($fonts)) {
+		// reject cleanly rather than returning false, which would fall
+		// through to another module's generic upload handler and silently
+		// store this as an unrelated object (e.g. a plain download) - the
+		// file was already saved to disk by upload_files() before this
+		// function was called, so it needs cleaning up here
+		delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$args['file'], 'max_cnt'=>1]);
+		return 'limit';
+	}
+
+	// derive a font-family name from the filename, deduplicating against
+	// any already-uploaded font of the same name
+	$name = preg_replace('/[^A-Za-z0-9_-]/', '', pathinfo($args['file'], PATHINFO_FILENAME));
+	if (empty($name)) {
+		$name = 'Font';
+	}
+	$base = $name;
+	$i = 2;
+	while (in_array($name, array_column($fonts, 'name'))) {
+		$name = $base.'-'.$i;
+		$i++;
+	}
+	$fonts[] = ['file'=>$args['file'], 'name'=>$name];
+
+	$ret = update_object(['name'=>$args['page'].'.page', 'page-custom-fonts'=>json_encode($fonts)]);
+	if ($ret['#error']) {
+		log_msg('error', 'page_font_upload: error updating page object: '.quot($ret['#data']));
+		return false;
+	} else {
+		// the frontend needs both to show the new entry (and later remove
+		// it) without a reload - $args['file'] is the server-assigned
+		// stored filename, which can differ from the originally uploaded one
+		return ['file'=>$args['file'], 'name'=>$name];
 	}
 }
 

@@ -96,6 +96,72 @@ function _is_woff_font($font_family)
 
 
 /**
+ *	include the font-face css for a user-uploaded custom font (site
+ *	settings, see /pages) - counterpart to _include_woff_font() for
+ *	site_custom_fonts() instead of the hardcoded _woff_fonts()
+ *
+ *	@param string $font_family font family (as returned by site_custom_fonts())
+ *	@return true if successful, false if not
+ */
+function _include_custom_font($font_family)
+{
+	static $already_included = [];
+	if (isset($already_included[$font_family])) {
+		return true;
+	}
+
+	$font_family = str_replace('"', '', $font_family);
+	$font_family = str_replace('\'', '', $font_family);
+	foreach (site_custom_fonts() as $font) {
+		if (empty($font['name']) || empty($font['file']) || $font['name'] != $font_family) {
+			continue;
+		}
+		switch (strtolower(filext($font['file']))) {
+			case 'woff2':
+				$format = 'woff2';
+				break;
+			case 'ttf':
+				$format = 'truetype';
+				break;
+			default:
+				$format = 'woff';
+		}
+		$rule = '@font-face {'.nl();
+		$rule .= tab().'font-family: \''.$font_family.'\';'.nl();
+		// kept relative (not prefixed with base_url()) so it still resolves
+		// correctly when viewed through a different domain than the one
+		// configured/detected as the base url - see
+		// module_object.inc.php's object_alter_render_late() for the full rationale
+		$rule .= tab().'src: url('.CONTENT_DIR.'/'.get_first_item(expl('.', startpage())).'/shared/'.rawurlencode($font['file']).') format("'.$format.'");'.nl();
+		$rule .= '}';
+		html_add_css_inline($rule, 5);
+		$already_included[$font_family] = true;
+		return true;
+	}
+	return false;
+}
+
+
+/**
+ *	return if the font-family is a user-uploaded custom font
+ *
+ *	@param string $font_family font family
+ *	@return true if it is a custom font, false if not
+ */
+function _is_custom_font($font_family)
+{
+	$font_family = str_replace('"', '', $font_family);
+	$font_family = str_replace('\'', '', $font_family);
+	foreach (site_custom_fonts() as $font) {
+		if (!empty($font['name']) && $font['name'] == $font_family) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
+/**
  *	helper function for rendering the content of a text object for use in 
  *	editing (outside the textarea) and viewing
  *
@@ -325,9 +391,11 @@ function text_alter_render_early($args)
 		elem_css($elem, 'font-family', $obj['text-font-family']);
 		if (TEXT_USE_WOFF_FONTS) {
 			if (_is_woff_font($obj['text-font-family'])) {
-				// include all styles of the font because of inline html 
+				// include all styles of the font because of inline html
 				// (<strong>, etc)
 				_include_woff_font($obj['text-font-family']);
+			} elseif (_is_custom_font($obj['text-font-family'])) {
+				_include_custom_font($obj['text-font-family']);
 			}
 		}
 	}
@@ -406,8 +474,43 @@ function text_render_page_early($args)
 		}
 		html_add_css(base_url().'modules/text/text-edit.css');
 		html_add_js_var('$.glue.conf.text.auto_br', TEXT_AUTO_BR);
-		
+
+		// last typeface/font size/line height picked via "change typeface"/
+		// "change font size"/"change line height" (site-wide, see
+		// page_set_last_font()/page_set_last_font_size()/
+		// page_set_last_line_height()) - applied as the default for newly
+		// created text objects, see text-edit.js's "new text" handler
+		load_modules('glue');
+		$site_obj = load_object(['name'=>startpage().'.page']);
+		if (!$site_obj['#error'] && !empty($site_obj['#data']['page-last-text-font'])) {
+			html_add_js_var('$.glue.conf.text.last_font', $site_obj['#data']['page-last-text-font']);
+		}
+		if (!$site_obj['#error'] && !empty($site_obj['#data']['page-last-text-font-size'])) {
+			html_add_js_var('$.glue.conf.text.last_font_size', $site_obj['#data']['page-last-text-font-size']);
+		}
+		if (!$site_obj['#error'] && !empty($site_obj['#data']['page-last-text-line-height'])) {
+			html_add_js_var('$.glue.conf.text.last_line_height', $site_obj['#data']['page-last-text-line-height']);
+		}
+
 		if (TEXT_USE_WOFF_FONTS) {
+			// user-uploaded custom fonts (site settings, see /pages) go
+			// first in the "change typeface" cycle button's order - it
+			// discovers typefaces by scanning document.styleSheets for
+			// .glue-font* selectors in order (see text-edit.js's
+			// get_fonts()), so a lower priority here (5, vs 6 below)
+			// guarantees these sort first regardless of insertion order -
+			// usort() isn't guaranteed stable for equal priorities (see
+			// html.inc.php's _array_sort_by_prio())
+			foreach (site_custom_fonts() as $font) {
+				if (empty($font['name'])) {
+					continue;
+				}
+				_include_custom_font($font['name']);
+				$rule = '.glue-font-custom-'.$font['name'].' {'.nl();
+				$rule .= tab().'font-family: \''.$font['name'].'\';'.nl();
+				$rule .= '}';
+				html_add_css_inline($rule, 5);
+			}
 			$woff_fonts = _woff_fonts();
 			foreach ($woff_fonts as $font=>$styles) {
 				_include_woff_font($font);
