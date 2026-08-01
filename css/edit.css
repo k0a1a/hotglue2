@@ -113,7 +113,7 @@
 
 .glue-selected {
 	/* class for selected objects */
-	border-color: red;
+	border-color: black;
 	border-style: dashed;
 	border-width: 1px;
 }

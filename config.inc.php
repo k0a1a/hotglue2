@@ -62,7 +62,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('IMAGE_UPLOAD_MAX_WIDTH', 512);		// cap the on-canvas size of a newly-uploaded image to at most this many pixels wide (0 to disable) - the original file/resolution is untouched, "reset image size" still shows it at full size
 @define('IMAGE_UPLOAD_MAX_HEIGHT', 512);		// same as above, for height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
-@define('RESERVED_PAGE_NAMES', 'code edit pages');	// page names used internaly and thus unavailable
+@define('RESERVED_PAGE_NAMES', 'code edit pages favicon');	// page names used internaly and thus unavailable
 @define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
 @define('PAGE_DEFAULT_GRID_Y', 50);			// default grid y spacing in px
 @define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)

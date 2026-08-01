@@ -28,8 +28,9 @@
 .glue-text-input {
 	/* this is the textarea for editing */
 	/* inherit as much as possible */
-	background-color: inherit;
+	background: inherit;
 	border: 0px;
+	box-sizing: border-box;
 	color: inherit;
 	font-family: inherit;
 	font-size: inherit;
@@ -37,6 +38,13 @@
 	font-weight: inherit;
 	letter-spacing: inherit;
 	line-height: inherit;
+	/* outline instead of border: border participates in the box model
+	   (shifting the text inward by its width even with box-sizing:
+	   border-box), outline paints outside it without affecting layout at
+	   all - outline-offset pulls it back in so it still sits at the edge
+	   rather than overlapping outward */
+	outline: 1px dashed rgba(0, 0, 0, 0.5);
+	outline-offset: -1px;
 	text-align: inherit;
 	word-spacing: inherit;
 }

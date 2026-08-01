@@ -269,7 +269,16 @@ function text_alter_render_early($args)
 	if (!elem_has_class($elem, 'text')) {
 		return false;
 	}
-	
+
+	// default padding/font-size (see modules/text/text.css) - a CSS class
+	// rule rather than an inline style here, so it's only ever a fallback:
+	// an explicit text-padding-*/text-font-size attribute renders as an
+	// inline style below and naturally overrides it, and the "change
+	// padding"/"change font size" editor controls reset by clearing their
+	// own inline override, which then immediately falls back to this rule
+	// (no reload needed, and nothing to keep in sync here)
+	html_add_css(base_url().'modules/text/text.css');
+
 	// background-color
 	if (!empty($obj['text-background-color'])) {
 		elem_css($elem, 'background-color', $obj['text-background-color']);

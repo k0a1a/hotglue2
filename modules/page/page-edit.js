@@ -230,6 +230,55 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, upload);
 	$.glue.menu.register('page', elem);
 
+	// site favicon: applies to every page, so it's stored on (and only
+	// offered while editing) the startpage - see module_page.inc.php's
+	// page_upload()/controller_favicon()
+	if ($.glue.page == $.glue.conf.page.startpage) {
+		elem = document.createElement('div');
+		elem.style.height = '32px';
+		elem.style.maxHeight = '32px';
+		elem.style.maxWidth = '32px';
+		elem.style.overflow = 'hidden';
+		elem.style.width = '32px';
+		var favImg = document.createElement('img');
+		favImg.src = $.glue.base_url+'img/favicon.ico';
+		favImg.alt = 'btn';
+		favImg.width = 32;
+		favImg.height = 32;
+		elem.appendChild(favImg);
+		var faviconUpload = {
+			error: function(e) {
+				if (e && e.target && e.target.status) {
+					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+				} else {
+					$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+					console.error(e);
+				}
+				$.glue.menu.hide();
+			},
+			finish: function(data) {
+				if (!data) {
+					$.glue.error('There was a problem communicating with the server');
+				} else if (data['#error']) {
+					$.glue.error('There was a problem uploading the file ('+data['#data']+')');
+				} else {
+					var link = document.querySelector('link[rel="shortcut icon"]');
+					if (!link) {
+						link = document.createElement('link');
+						link.rel = 'shortcut icon';
+						document.head.appendChild(link);
+					}
+					// the timestamp here is to trick any caching going on
+					link.href = $.glue.base_url+'?favicon&'+(new Date().getTime());
+				}
+				$.glue.menu.hide();
+			},
+			tooltip: 'upload a site favicon (applies to every page)'
+		};
+		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page_favicon' }, faviconUpload);
+		$.glue.menu.register('page', elem);
+	}
+
 	elem = document.createElement('div');
 	elem.id = 'glue-menu-page-background-scroll';
 	elem.setAttribute('alt', 'btn');

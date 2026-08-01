@@ -78,12 +78,23 @@ function cache_output($category, $name, $out)
 function default_html($add_glue)
 {
 	html_title(SITE_NAME);
-	$favicon = FAVICON;
-	if (!empty($favicon)) {
-		if (is_url($favicon)) {
-			html_favicon($favicon);
-		} else {
-			html_favicon(base_url().$favicon);
+	// a site-wide favicon can be uploaded via the startpage's "page" menu
+	// (page-favicon-file, stored on the startpage's own page-object
+	// regardless of which page is currently being viewed - see
+	// module_page.inc.php's page_upload()/controller_favicon()) - falls
+	// back to the FAVICON config constant if none has been uploaded
+	load_modules('glue');
+	$favicon_obj = load_object(['name'=>startpage().'.page']);
+	if (!$favicon_obj['#error'] && !empty($favicon_obj['#data']['page-favicon-file'])) {
+		html_favicon('?favicon');
+	} else {
+		$favicon = FAVICON;
+		if (!empty($favicon)) {
+			if (is_url($favicon)) {
+				html_favicon($favicon);
+			} else {
+				html_favicon(base_url().$favicon);
+			}
 		}
 	}
 	if (USE_MIN_FILES) {
