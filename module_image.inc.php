@@ -46,19 +46,26 @@ function _gd_get_imagesize($f)
 
 
 /**
- *	implements alter_render_early
+ *	fill in image-file-{width,height} (and default object-{width,height}
+ *	if not already set) for an image object that doesn't have them yet,
+ *	persisting the result
  *
- *	see image_render_object()
+ *	must be called before invoke_hook_first('alter_render_early', 'image',
+ *	...) in image_render_object(), not from within the hook itself -
+ *	invoke_hook() passes the same $args array by value to every hook it
+ *	calls, so a reassignment made inside image_alter_render_early() would
+ *	only be visible to itself, not to object_alter_render_early()
+ *	(dispatched afterwards in the same pass), which sets the container
+ *	div's width/height CSS from object-width/object-height - it would see
+ *	the pre-backfill (missing) values on the very first render of a newly
+ *	uploaded image, only correcting itself on the next reload. See
+ *	video_render_object()'s equivalent fix for video-file dimensions.
+ *
+ *	@param array $obj
+ *	@return array the (possibly updated) object
  */
-function image_alter_render_early($args)
+function _image_finalize_dimensions($obj)
 {
-	$elem = &$args['elem'];
-	$obj = $args['obj'];
-	if (!elem_has_class($elem, 'image')) {
-		return false;
-	}
-	
-	// try to calculate original-{width,height} if not already set
 	if (!empty($obj['image-file']) && (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0)) {
 		if (_gd_available()) {
 			$a = expl('.', $obj['name']);
@@ -85,7 +92,26 @@ function image_alter_render_early($args)
 		}
 		save_object($obj);
 	}
-	
+	return $obj;
+}
+
+
+/**
+ *	implements alter_render_early
+ *
+ *	see image_render_object()
+ */
+function image_alter_render_early($args)
+{
+	$elem = &$args['elem'];
+	$obj = $args['obj'];
+	if (!elem_has_class($elem, 'image')) {
+		return false;
+	}
+	// note: image-file-{width,height} backfill already happened in
+	// image_render_object() before this hook ran, see
+	// _image_finalize_dimensions()
+
 	// setup url
 	// note: the url points to the object name, not the
 	// filename in the shared directory (the file eventually gets served
@@ -240,8 +266,11 @@ function image_render_object($args)
 	if (!isset($obj['type']) || $obj['type'] != 'image') {
 		return false;
 	}
-	
-	// the outer element must be a div or something else that can contain 
+	// must happen before the hook dispatch below - see
+	// _image_finalize_dimensions()
+	$obj = _image_finalize_dimensions($obj);
+
+	// the outer element must be a div or something else that can contain
 	// other elements
 	// we only set up the most basic element here - all the other work is 
 	// done inside the alter_render_early hook
