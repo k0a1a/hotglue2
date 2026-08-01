@@ -615,6 +615,12 @@ function html_finalize(&$cache = false)
 	$ret .= '<head>'.nl();
 	$ret .= '<title>'.htmlspecialchars($html['header']['title'], ENT_NOQUOTES, 'UTF-8').'</title>'.nl();
 	$ret .= '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'.nl();
+	// without this, mobile browsers shrink the whole (typically much wider
+	// than the screen) absolutely-positioned canvas to fit, scaling every
+	// font down with it - this makes text render at its real size instead,
+	// relying on native horizontal/vertical scrolling (and pinch-zoom,
+	// deliberately not disabled here) rather than a shrunk-to-fit page
+	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
 	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();

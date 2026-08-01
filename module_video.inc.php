@@ -189,7 +189,7 @@ function video_alter_save($args)
 		unset($obj['video-controls']);
 	}
 	// volume
-	if (elem_attr($v, 'audio') == 'muted') {
+	if (elem_attr($v, 'muted') !== NULL) {
 		$obj['video-volume'] = '0';
 	} else {
 		unset($obj['video-volume']);
@@ -311,8 +311,14 @@ function video_alter_render_early($args)
 	}
 	// volume
 	if (isset($obj['video-volume']) && $obj['video-volume'] == '0') {
-		elem_attr($v, 'audio', 'muted');
+		// was previously (incorrectly) rendered as audio="muted", which
+		// isn't a real HTML attribute - the actual boolean attribute is
+		// just "muted"
+		elem_attr($v, 'muted', 'muted');
 	}
+	// required for autoplay to work on iOS Safari at all - without it,
+	// the video is forced into fullscreen instead of playing inline
+	elem_attr($v, 'playsinline', 'playsinline');
 	elem_append($elem, $v);
 
 	if ($args['edit']) {
