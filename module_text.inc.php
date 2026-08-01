@@ -106,12 +106,18 @@ function _is_woff_font($font_family)
 function _include_custom_font($font_family)
 {
 	static $already_included = [];
+	// normalize before checking/setting the cache - checking the raw
+	// (possibly quoted) value but caching under the normalized one meant
+	// the two could never match, so the cache never actually hit for any
+	// quoted font-family value (e.g. a computed style of '"Quicksand-Bold"'
+	// with literal quotes, which is what gets stored/reused for this
+	// object attribute)
+	$font_family = str_replace('"', '', $font_family);
+	$font_family = str_replace('\'', '', $font_family);
 	if (isset($already_included[$font_family])) {
 		return true;
 	}
 
-	$font_family = str_replace('"', '', $font_family);
-	$font_family = str_replace('\'', '', $font_family);
 	foreach (site_custom_fonts() as $font) {
 		if (empty($font['name']) || empty($font['file']) || $font['name'] != $font_family) {
 			continue;
@@ -343,7 +349,15 @@ function text_alter_render_early($args)
 	// padding"/"change font size" editor controls reset by clearing their
 	// own inline override, which then immediately falls back to this rule
 	// (no reload needed, and nothing to keep in sync here)
-	html_add_css(base_url().'modules/text/text.css');
+	// guarded so a page with N text objects doesn't emit N identical
+	// <link> tags - html_add_css() itself doesn't dedupe (a URL can
+	// legitimately be added twice with different media= attributes), so
+	// this is a local guard for this one always-identical call specifically
+	static $text_css_added = false;
+	if (!$text_css_added) {
+		html_add_css(base_url().'modules/text/text.css');
+		$text_css_added = true;
+	}
 
 	// background-color
 	if (!empty($obj['text-background-color'])) {

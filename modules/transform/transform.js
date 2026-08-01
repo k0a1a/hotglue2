@@ -7,15 +7,6 @@
  *	See the file COPYING for more details.
  */
 
-/*
-function matrixToArray(m) {
-	var c = m.substr(7);
-	c = c.substr(0, c.length - 1);
-
-	return c.split(', ');
-}
-*/
-
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -28,47 +19,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.width = 32;
 	elem.height = 32;
 	elem.addEventListener('click', function(e) {
-		var that = this;
 		var obj = $.glue.owner(this);
-		var computed = getComputedStyle(obj);
-/*
-		if ($(obj).css('-moz-transform') != '') {
-			var o = $(obj).css('-moz-transform');
-		} else { var o = $(obj).css('-webkit-transform'); }
-
-		if (o == null || o.length < 6) {
-			o = 'matrix(1, 0, 0, 1, 0, 0)';
-		}
-		var o = matrixToArray(o);
-
-		$(obj).transform({reflectX: true, matrix: ''+o+''}, {forceMatrix: true});
-*/
-		if (computed.getPropertyValue('-moz-transform') != '') {
-			var val = computed.getPropertyValue('-moz-transform');
-			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
-				obj.style.setProperty('-moz-transform', 'matrix(1, 0, 0, -1, 0, 0)');
-			} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
-				obj.style.setProperty('-moz-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
-			} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
-				obj.style.setProperty('-moz-transform', '');
-			} else {
-				obj.style.setProperty('-moz-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
-			}
-		}
-		if (computed.getPropertyValue('-webkit-transform') != '') {
-			var val = computed.getPropertyValue('-webkit-transform');
-			if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
-				obj.style.setProperty('-webkit-transform', 'matrix(1, 0, 0, -1, 0, 0)');
-			} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
-				obj.style.setProperty('-webkit-transform', 'matrix(-1, 0, 0, 1, 0, 0)');
-			} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
-				obj.style.setProperty('-webkit-transform', '');
-			} else {
-				obj.style.setProperty('-webkit-transform', 'matrix(-1, 0, 0, -1, 0, 0)');
-			}
+		var val = getComputedStyle(obj).getPropertyValue('transform');
+		if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
+			obj.style.setProperty('transform', 'matrix(1, 0, 0, -1, 0, 0)');
+		} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
+			obj.style.setProperty('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+		} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
+			obj.style.setProperty('transform', '');
+		} else {
+			obj.style.setProperty('transform', 'matrix(-1, 0, 0, -1, 0, 0)');
 		}
 		$.glue.object.save(obj);
-		});
+	});
 	$.glue.contextmenu.register('object', 'object-transform-flip', elem, 5);
 
 	elem = document.createElement('img');
@@ -87,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// list was literally assigned, so any existing rotate(Ndeg) term
 		// can be found and replaced while leaving a flip matrix (if any)
 		// untouched
-		var cur = obj.style.getPropertyValue('-webkit-transform') || obj.style.getPropertyValue('-moz-transform') || '';
+		var cur = obj.style.getPropertyValue('transform') || '';
 		var deg = 0;
 		var m = cur.match(/rotate\((-?\d+)deg\)/);
 		if (m) {
@@ -100,8 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (deg != 0) {
 			next = (cur ? cur+' ' : '')+'rotate('+deg+'deg)';
 		}
-		obj.style.setProperty('-moz-transform', next);
-		obj.style.setProperty('-webkit-transform', next);
+		obj.style.setProperty('transform', next);
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('object', 'object-transform-rotate', elem, 6);
