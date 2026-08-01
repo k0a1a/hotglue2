@@ -734,9 +734,53 @@ register_hook('render_object', 'render an object');
 
 
 /**
+ *	compute the rightmost extent (left + width) of a page's objects
+ *
+ *	used for the mobile "zero-marks" viewport fallback (see
+ *	MOBILE-VIEW-DESIGN.md) - lets the viewport scale the whole canvas to
+ *	fit the device width precisely, instead of the browser's own guessed
+ *	default (~980px), which either over-shrinks a narrower canvas or
+ *	forces horizontal scroll on a wider one
+ *
+ *	@param string $page page (i.e. page.rev)
+ *	@return float rightmost extent in css px, 0 if it couldn't be determined
+ */
+function _page_canvas_width($page)
+{
+	$files = @scandir(CONTENT_DIR.'/'.str_replace('.', '/', $page));
+	if ($files === false) {
+		return 0;
+	}
+	$max_x = 0;
+	foreach ($files as $f) {
+		if ($f == '.' || $f == '..' || $f == 'page') {
+			continue;
+		}
+		$fn = CONTENT_DIR.'/'.str_replace('.', '/', $page).'/'.$f;
+		if (!is_file($fn)) {
+			continue;
+		}
+		$obj = load_object(['name'=>$page.'.'.$f]);
+		if ($obj['#error']) {
+			continue;
+		}
+		$obj = $obj['#data'];
+		if (empty($obj['object-left']) || empty($obj['object-width'])) {
+			continue;
+		}
+		$x = floatval($obj['object-left'])+floatval($obj['object-width']);
+		if ($max_x < $x) {
+			$max_x = $x;
+		}
+	}
+	return $max_x;
+}
+
+
+/**
  *	turn a page into an html string
  *
- *	the function also appends the resulting string to the output in 
+ *	the function also appends the resulting string to the output in
  *	html.inc.php.
  *	@param array $args arguments
  *		key 'page' is the page (i.e. page.rev)
@@ -764,6 +808,20 @@ function render_page($args)
 	}
 	
 	log_msg('debug', 'render_page: rendering '.quot($args['page']));
+
+	if (!$args['edit']) {
+		// zero-marks mobile fallback (see MOBILE-VIEW-DESIGN.md): scale the
+		// whole canvas to fit the device width, with pinch-zoom left
+		// enabled for detail - the safe baseline until a page opts into
+		// the curated mobile-friendly stack. Editing keeps the plain
+		// device-width viewport (html_viewport()'s default) since the
+		// editor isn't a mobile-viewing surface.
+		$canvas_width = _page_canvas_width($args['page']);
+		if (0 < $canvas_width) {
+			html_viewport('width='.intval(ceil($canvas_width)));
+		}
+	}
+
 	$bdy = &body();
 	elem_add_class($bdy, 'page');
 	elem_attr($bdy, 'id', $args['page']);

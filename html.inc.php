@@ -589,6 +589,31 @@ function html_favicon()
 
 
 /**
+ *	get or set the viewport meta tag's content attribute
+ *
+ *	defaults to "width=device-width, initial-scale=1" (renders text at its
+ *	real size, relies on scrolling/pinch-zoom) if never set - render_page()
+ *	overrides this for view-mode pages with a canvas-width-based value
+ *	instead (see MOBILE-VIEW-DESIGN.md's "zero-marks" fallback)
+ *
+ *	@param string $content viewport meta content (to set it)
+ */
+function html_viewport()
+{
+	global $html;
+	if (func_num_args() == 0) {
+		if ((isset($html['header']['viewport']) && is_string($html['header']['viewport']))) {
+			return $html['header']['viewport'];
+		} else {
+			return 'width=device-width, initial-scale=1';
+		}
+	} elseif (0 < func_num_args()) {
+		$html['header']['viewport'] = func_get_arg(0);
+	}
+}
+
+
+/**
  *	turn the page into a html string
  *
  *	@param bool &$cache is output cachable (will only modified if $cache is 
@@ -615,12 +640,10 @@ function html_finalize(&$cache = false)
 	$ret .= '<head>'.nl();
 	$ret .= '<title>'.htmlspecialchars($html['header']['title'], ENT_NOQUOTES, 'UTF-8').'</title>'.nl();
 	$ret .= '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'.nl();
-	// without this, mobile browsers shrink the whole (typically much wider
-	// than the screen) absolutely-positioned canvas to fit, scaling every
-	// font down with it - this makes text render at its real size instead,
-	// relying on native horizontal/vertical scrolling (and pinch-zoom,
-	// deliberately not disabled here) rather than a shrunk-to-fit page
-	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
+	// see html_viewport() - defaults to width=device-width, overridden per
+	// view-mode page render_page() with a canvas-width-based value (see
+	// MOBILE-VIEW-DESIGN.md)
+	$ret .= '<meta name="viewport" content="'.htmlspecialchars(html_viewport(), ENT_COMPAT, 'UTF-8').'">'.nl();
 	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();
