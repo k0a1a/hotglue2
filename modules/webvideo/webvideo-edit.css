@@ -4,14 +4,23 @@
 	width: 480px;
 }
 
-.glue-webvideo-handle {
-	/* that's the handle displayed above webvideo objects */
-	background-image: url(webvideo-handle.png);
-	height: 20px;
-	left: -20px;
-	position: relative;
-	top: -20px;
-	width: 20px;
+.glue-webvideo-shield {
+	/* covers the upper part of the embed so clicks reach the editor
+	   instead of being lost inside the cross-origin iframe - the rest is
+	   left uncovered so playback can still be tested while editing */
+	background-color: darkgrey;
+	height: 40%;
+	left: 0;
+	opacity: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+
+.webvideo:hover .glue-webvideo-shield {
+	/* only show the shield while hovering the object, so it doesn't
+	   obscure the embed when the user isn't interacting with it */
+	opacity: 0.5;
 }
 
 #glue-contextmenu-webvideo-autoplay {

@@ -75,12 +75,18 @@ function webvideo_alter_render_early($args)
 	elem_append($elem, $i);
 	
 	if ($args['edit']) {
-		// add handle as well
-		$h = elem('div');
-		elem_add_class($h, 'glue-webvideo-handle');
-		elem_add_class($h, 'glue-ui');
-		elem_attr($h, 'title', 'drag here');
-		elem_append($elem, $h);
+		// shield over the upper part of the embed: the youtube/vimeo
+		// <iframe> is a genuine cross-origin document, so any click landing
+		// directly on it never bubbles to the parent page at all - a
+		// same-document div stacked on top intercepts the click before it
+		// reaches the iframe, letting the editor's select/menu/drag handling
+		// see it (see video's identical glue-video-shield, which replaced
+		// this module's old small corner drag handle)
+		$s = elem('div');
+		elem_add_class($s, 'glue-webvideo-shield');
+		elem_add_class($s, 'glue-ui');
+		elem_attr($s, 'title', 'click here to select/edit this video');
+		elem_append($elem, $s);
 	}
 	
 	return true;

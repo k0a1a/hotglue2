@@ -162,8 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
 				elem.appendChild(child);
 				// put the iframe behind some shield for editing
 				child = document.createElement('div');
-				child.className = 'glue-webvideo-handle glue-ui';
-				child.title = 'drag here';
+				child.className = 'glue-webvideo-shield glue-ui';
+				child.title = 'click here to select/edit this video';
 				elem.appendChild(child);
 				document.body.appendChild(elem);
 				// make width and height explicit
@@ -208,9 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (child) {
 			child.innerHTML = '';
 		}
-		var handle = obj.querySelector(':scope > .glue-webvideo-handle');
-		if (handle) {
-			handle.remove();
+		var shield = obj.querySelector(':scope > .glue-webvideo-shield');
+		if (shield) {
+			shield.remove();
 		}
 	});
 });

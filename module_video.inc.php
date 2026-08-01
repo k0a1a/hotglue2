@@ -314,7 +314,22 @@ function video_alter_render_early($args)
 		elem_attr($v, 'audio', 'muted');
 	}
 	elem_append($elem, $v);
-	
+
+	if ($args['edit']) {
+		// shield over the upper part of the video: without it, clicks meant
+		// for the editor (select the object, open its menu) get swallowed
+		// by the <video> element's own playback/controls handling instead -
+		// same problem iframe/webvideo objects have with their embedded
+		// content, see their glue-iframe-shield/glue-webvideo-shield
+		// elements. Left uncovered below so playback can still be tested
+		// while editing.
+		$s = elem('div');
+		elem_add_class($s, 'glue-video-shield');
+		elem_add_class($s, 'glue-ui');
+		elem_attr($s, 'title', 'click here to select/edit this video');
+		elem_append($elem, $s);
+	}
+
 	return true;
 }
 
