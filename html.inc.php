@@ -480,13 +480,13 @@ function html_add_body_inline($def, $prio = 5)
  *	@param string $url url attribute (url-encoded if necessary)
  *	@param int $prio when to insert reference (0 - very early to 9 - late)
  */
-function html_add_js($url, $prio = 5)
+function html_add_js($url, $prio = 5, $defer = false)
 {
 	global $html;
 	if ((!isset($html['header']['js']) || !is_array($html['header']['js']))) {
 		$html['header']['js'] = [];
 	}
-	$html['header']['js'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio];
+	$html['header']['js'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'defer'=>$defer];
 }
 
 
@@ -687,7 +687,7 @@ function html_finalize(&$cache = false)
 		_array_sort_by_prio($html['header']['js']);
 		array_unique_element($html['header']['js'], 'url');
 		foreach ($html['header']['js'] as $e) {
-			$ret .= '<script type="text/javascript" src="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'"></script>'.nl();
+			$ret .= '<script type="text/javascript"'.(!empty($e['defer']) ? ' defer' : '').' src="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'"></script>'.nl();
 		}
 	}
 	if ((isset($html['header']['js_var']) && is_array($html['header']['js_var']))) {

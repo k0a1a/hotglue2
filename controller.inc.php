@@ -103,10 +103,16 @@ function controller_edit($args)
 	} else {
 		html_add_js(base_url().'js/moveable.js', 3);
 	}
+	// deferred per Alpine's own recommendation: without it, the script runs
+	// as soon as it's parsed (still inside <head>, before <body> exists),
+	// forcing Alpine to fall back to retrying initialization later - a
+	// race that can intermittently affect the context-menu toggle buttons
+	// (loop/controls/autoplay/mute etc.) built on its x-data/x-bind/x-on
+	// plumbing (see $.glue.toggle_button in js/glue.js)
 	if (USE_MIN_FILES) {
-		html_add_js(base_url().'js/alpine.min.js', 3);
+		html_add_js(base_url().'js/alpine.min.js', 3, true);
 	} else {
-		html_add_js(base_url().'js/alpine.js', 3);
+		html_add_js(base_url().'js/alpine.js', 3, true);
 	}
 	if (USE_MIN_FILES) {
 		html_add_js(base_url().'js/vanilla-picker.min.js', 3);
