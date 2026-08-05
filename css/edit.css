@@ -127,7 +127,7 @@
 	background-color: lightgrey;
 	border-radius: 2px;
 	height: 4px;
-	width: 100px;
+	width: 200px;
 }
 
 .glue-upload-statusbar-done {
@@ -136,6 +136,16 @@
 	border-radius: inherit;
 	height: 100%;
 	width: 0%;
+}
+
+.glue-upload-statusbar-label {
+	/* percentage/speed shown once an upload has been running for a while */
+	color: #333;
+	display: none;
+	font-size: 11px;
+	padding-top: 2px;
+	text-align: center;
+	white-space: nowrap;
 }
 
 .glue-modal-backdrop {

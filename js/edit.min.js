@@ -1955,17 +1955,31 @@ $.glue.upload = function()
 			progress: function(e) {
 				// update status indicator
 				// TODO (later): values are off on Chrome when uploading multiple file, one after another (it jumps back and forth) (report)
-				this.status.querySelector('.glue-upload-statusbar-done').style.width = (e.loaded/e.total*100)+'%';
-				this.status.title = e.loaded+' of '+e.total+' bytes ('+(e.loaded/e.total*100).toFixed(1)+'%)';
+				var pct = e.loaded/e.total*100;
+				this.status.querySelector('.glue-upload-statusbar-done').style.width = pct+'%';
+				this.status.title = e.loaded+' of '+e.total+' bytes ('+pct.toFixed(1)+'%)';
+				// once an upload has been running for more than 5 seconds, also
+				// show percentage + speed as a visible label (not just on hover)
+				var elapsed = (Date.now()-this.startTime)/1000;
+				var label = this.status.querySelector('.glue-upload-statusbar-label');
+				if (elapsed > 5) {
+					var mbps = (e.loaded*8/1000000)/elapsed;
+					label.textContent = pct.toFixed(1)+'% – '+mbps.toFixed(1)+' Mbps';
+					label.style.display = 'block';
+				}
 			},
 			start: function(e) {
 				// DEBUG
 				//console.log('started uploading');
 				$.glue.menu.hide();
 				uploading++;
+				this.startTime = Date.now();
 				// add status indicator to dom
 				document.body.appendChild(this.status);
 				this.status.querySelector('.glue-upload-statusbar-done').style.width = '0%';
+				var label = this.status.querySelector('.glue-upload-statusbar-label');
+				label.style.display = 'none';
+				label.textContent = '';
 				this.status.style.left = (this.x-outer_width(this.status)/2)+'px';
 				this.status.style.top = (this.y-outer_height(this.status)/2)+'px';
 			},
@@ -1977,6 +1991,9 @@ $.glue.upload = function()
 				var inner = document.createElement('div');
 				inner.className = 'glue-upload-statusbar-done';
 				el.appendChild(inner);
+				var label = document.createElement('div');
+				label.className = 'glue-upload-statusbar-label';
+				el.appendChild(label);
 				return el;
 			})(),
 			x: orig_x,
