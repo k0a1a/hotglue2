@@ -44,6 +44,23 @@
 
 	function num(v) { return parseFloat(v) || 0; }
 
+	// TEMP diagnostic: ?debug=1 paints state onto the page itself, because a
+	// phone's console isn't reachable from here. Remove once the device issue
+	// is understood.
+	var DBG = {};
+	function debugOn() { return /[?&]debug=1/.test(location.search); }
+	function showDebug() {
+		var d = document.createElement('div');
+		d.id = 'hg-mg-dbg';
+		d.style.cssText = 'position:fixed;z-index:2147483647;top:0;left:0;right:0;' +
+			'background:rgba(0,0,0,.88);color:#0f0;font:11px/1.4 monospace;' +
+			'padding:6px;white-space:pre-wrap;pointer-events:none;';
+		var s = '';
+		for (var k in DBG) s += k + ': ' + DBG[k] + '\n';
+		d.textContent = s;
+		(document.body || document.documentElement).appendChild(d);
+	}
+
 	// Geometry comes from the inline styles hotglue writes on every object, so
 	// it is correct before images finish loading. offsetWidth/Height only backs
 	// it up where a dimension is missing.
@@ -56,6 +73,7 @@
 	function init() {
 		var forced = override();
 		if (forced === false) return;
+
 
 		var objects = [].slice.call(document.querySelectorAll('.object'));
 		if (!objects.length) return;
@@ -70,9 +88,42 @@
 		var canvasW = maxX - minX, canvasH = maxY - minY;
 		if (canvasW <= 0 || canvasH <= 0) return;
 
-		var vw = window.innerWidth, vh = window.innerHeight;
+		// Measure the LAYOUT viewport, not window.innerWidth. innerWidth is the
+		// visual viewport and it is not trustworthy here: on desktop it counts
+		// the scrollbar (measured 512 against a real 497), and Firefox's
+		// responsive-design mode reports it as 1572 for a 393px viewport - 4x
+		// out. Every scale below divides by this, so a wrong value silently
+		// rescales the whole reveal: at 1572 the pull-back computed 0.718
+		// instead of 0.179, turning a 5x move into 1.24x, and panFor() then
+		// clamped the scroll negative and parked the page at the canvas origin.
+		// documentElement.clientWidth is the width the page is actually laid
+		// out against, excludes scrollbars, and does not move under pinch-zoom.
+		var docEl = document.documentElement;
+		var vw = docEl.clientWidth, vh = docEl.clientHeight;
+		DBG.forced = forced;
+		// The three environments (desktop small window / real phone / RDM)
+		// disagree about these, and every scale we compute keys off the first
+		// one. innerWidth is the VISUAL viewport (moves when pinch-zoomed);
+		// clientWidth is the LAYOUT viewport (stable). If they disagree, that
+		// is the discrepancy.
+		DBG.innerWH = vw + 'x' + vh;
+		DBG.clientWH = document.documentElement.clientWidth + 'x' +
+			document.documentElement.clientHeight;
+		DBG.visualVP = window.visualViewport ?
+			(Math.round(window.visualViewport.width) + 'x' +
+			 Math.round(window.visualViewport.height) +
+			 ' @' + window.visualViewport.scale.toFixed(3)) : 'n/a';
+		DBG.dpr = window.devicePixelRatio;
+		DBG.coarsePointer = matchMedia('(pointer: coarse)').matches;
+		DBG.objects = objects.length;
+		DBG.bbox = Math.round(minX) + ',' + Math.round(minY) + ' -> ' +
+			Math.round(maxX) + ',' + Math.round(maxY);
+		DBG.canvas = Math.round(canvasW) + 'x' + Math.round(canvasH);
 		// A page that already fits needs no intervention at all.
-		if (forced !== true && (vw > SMALL_SCREEN_PX || canvasW <= vw)) return;
+		if (forced !== true && (vw > SMALL_SCREEN_PX || canvasW <= vw)) {
+			DBG.result = 'INACTIVE (viewport ' + vw + ' vs canvasW ' + Math.round(canvasW) + ')';
+			return;
+		}
 
 		var fitWidth = vw / canvasW;
 
@@ -84,6 +135,12 @@
 		var textLed = (texts.length / objects.length) > TEXT_LED_RATIO;
 
 		var target = textLed ? textView() : { scale: fitWidth, x: minX, y: minY };
+		DBG.texts = texts.length;
+		DBG.ratio = (texts.length / objects.length).toFixed(3);
+		DBG.mode = textLed ? 'TEXT-LED' : 'IMAGE-LED';
+		DBG.fitWidth = fitWidth.toFixed(4);
+		DBG.targetScale = target.scale.toFixed(4);
+		DBG.entry = Math.round(target.x) + ',' + Math.round(target.y);
 
 		// Entry point + readable scale, both MEASURED from the rendered page.
 		// The object files can't answer this: on content/zinecamp2015 only 10
@@ -127,11 +184,22 @@
 		var canvas = document.createElement('div');
 		canvas.id = 'hg-mg-canvas';
 		canvas.style.cssText = 'position:absolute;top:0;left:0;transform-origin:0 0;';
+		// Do NOT lean on the document scrolling. Sizing a block that overflows
+		// body gives the right scrollWidth but Firefox refuses to make it
+		// scrollable - measured scrollWidth 1460 against scrollLeftMax 0.43 -
+		// so scrollTo and scrollLeft alike silently do nothing there. Instead
+		// use a real scroll container pinned to the viewport, with an inner
+		// sizer that gives it genuine scrollable content.
+		var sizer = document.createElement('div');
+		sizer.id = 'hg-mg-sizer';
+		sizer.style.cssText = 'position:relative;';
 		var spacer = document.createElement('div');
 		spacer.id = 'hg-mg-spacer';
-		spacer.style.cssText = 'position:relative;overflow:hidden;';
+		spacer.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;' +
+			'overflow:hidden;-webkit-overflow-scrolling:touch;';
 		while (document.body.firstChild) canvas.appendChild(document.body.firstChild);
-		spacer.appendChild(canvas);
+		sizer.appendChild(canvas);
+		spacer.appendChild(sizer);
 		document.body.appendChild(spacer);
 
 		// transform reads right-to-left: shift the bounding box to the origin,
@@ -144,8 +212,8 @@
 		// Sized to the FINAL scale up front so the scrollable area never
 		// resizes mid-animation (scrolling is locked during the reveal anyway).
 		function sizeSpacer(scale) {
-			spacer.style.width = (canvasW * scale) + 'px';
-			spacer.style.height = (canvasH * scale) + 'px';
+			sizer.style.width = (canvasW * scale) + 'px';
+			sizer.style.height = (canvasH * scale) + 'px';
 		}
 		// Centre the entry point where we can, but never scroll past content.
 		function panFor(scale, x, y) {
@@ -161,12 +229,37 @@
 		// Hand control to native scrolling: drop the pan out of the transform
 		// and re-express it as scroll offset. Exact, so there is no jump.
 		function handoff(scale, panX, panY) {
-			spacer.style.overflow = '';
 			canvas.style.transition = '';
 			sizeSpacer(scale);
 			canvas.style.transform =
 				'scale(' + scale + ') translate(' + (-minX) + 'px,' + (-minY) + 'px)';
-			window.scrollTo(panX, panY);
+			// Only now let the container scroll: during the reveal the pan
+			// lives in the transform, and a scrollable box would fight it.
+			spacer.style.overflow = 'auto';
+			setScroll(panX, panY);
+		}
+
+		// Firefox restores the previous scroll position after load, which lands
+		// AFTER handoff() and silently undoes it - measured wantScroll 1010,0
+		// against gotScroll 0,0 while the extent (1460) allowed it fine. Taking
+		// manual control of restoration stops that; re-applying on the next
+		// frame and once more shortly after covers any other late clobber
+		// (Chrome needed neither, so this is belt and braces there).
+		// Scroll the container we built, not the document.
+		function setScroll(panX, panY) {
+			void sizer.offsetWidth;		// flush the new sizer box before scrolling
+			spacer.scrollLeft = panX;
+			spacer.scrollTop = panY;
+			DBG.scrollable = (sizer.offsetWidth - spacer.clientWidth) + ',' +
+				(sizer.offsetHeight - spacer.clientHeight);
+			DBG.scrollImmediate = Math.round(spacer.scrollLeft) + ',' +
+				Math.round(spacer.scrollTop);
+			var again = function () {
+				spacer.scrollLeft = panX;
+				spacer.scrollTop = panY;
+			};
+			requestAnimationFrame(again);
+			setTimeout(again, 80);
 		}
 
 		var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -186,9 +279,28 @@
 		var startScale = fitWidth * 0.75;
 		var start = panFor(startScale, minX, minY);
 		apply(startScale, start.x, start.y);
+		DBG.startScale = startScale.toFixed(4);
+		DBG.wantScroll = Math.round(end.x) + ',' + Math.round(end.y);
+		DBG.result = 'reveal armed';
+		// after the reveal, confirm the scroll actually took (the Firefox
+		// layout-flush bug showed up precisely here)
+		setTimeout(function () {
+			DBG.gotScroll = Math.round(spacer.scrollLeft) + ',' + Math.round(spacer.scrollTop);
+			DBG.scrollExtent = sizer.offsetWidth + 'x' + sizer.offsetHeight +
+				' port=' + spacer.clientWidth + 'x' + spacer.clientHeight;
+			DBG.finalScale = new DOMMatrixReadOnly(getComputedStyle(canvas).transform).a.toFixed(4);
+			DBG.vpAfter = window.visualViewport ?
+				(Math.round(window.visualViewport.width) + ' @' +
+				 window.visualViewport.scale.toFixed(3)) : 'n/a';
+			if (debugOn()) { var o = document.getElementById('hg-mg-dbg'); if (o) o.remove(); showDebug(); }
+		}, REVEAL_MS + REVEAL_DWELL_MS + 800);
 
 		var done = false;
-		function finish() {
+		function finish(ev) {
+			// transitionend bubbles, so a transition on any descendant object
+			// would otherwise end the reveal early. Only our own transform
+			// counts.
+			if (ev && (ev.target !== canvas || ev.propertyName !== 'transform')) return;
 			if (done) return;
 			done = true;
 			canvas.removeEventListener('transitionend', finish);
@@ -267,9 +379,21 @@
 		}
 	}
 
+	function boot() {
+		if (!debugOn()) { init(); return; }
+		DBG.readyState = document.readyState;
+		try {
+			init();
+		} catch (e) {
+			DBG.result = 'THREW: ' + (e && e.message);
+			DBG.stack = (e && e.stack ? String(e.stack).split('\n').slice(0, 3).join(' | ') : '');
+		}
+		showDebug();
+	}
+
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
+		document.addEventListener('DOMContentLoaded', boot);
 	} else {
-		init();
+		boot();
 	}
 })();
