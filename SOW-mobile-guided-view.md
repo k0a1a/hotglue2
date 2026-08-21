@@ -88,7 +88,28 @@ that: explicit `text-font-size` is present on only a minority of text objects.
 
 69% of zinecamp's text inherits its size from the stylesheet, so the object files
 cannot answer "how large does this text actually render?" — the single number the
-readable scale depends on. Server-side data is therefore a hint at best.
+readable scale depends on.
+
+**Worse than incomplete: server-side data is actively WRONG here.** The inherited
+default is `.text { font-size: 18px }` (`modules/text/text.css:5`), overridden inline
+only when the author changes it. Rendering `content/zinecamp2015` and counting what
+the browser actually gets:
+
+| size | source | count |
+|---|---|---|
+| **18px** | inherited default | **20** |
+| 17px | inline | 8 |
+| 11px | inline | 1 |
+| 9px | inline | 1 |
+
+The dominant body size is **18px** (20 of 30 text objects). But the 10 objects with an
+inline size are unrepresentative of the page, so a server-side-only reading concludes
+the dominant size is **17px** — the wrong answer, not just a partial one. Any scale
+derived from it is wrong by ~6% here, and there is no guarantee the error stays that
+small on another page. Measure the rendered page.
+
+NOTE: 18px being a known CSS default does NOT make it safe to hardcode — per-site
+`user_code` CSS can override it, which is precisely what measuring absorbs.
 
 - **Client-side measurement is the PRIMARY path.** Measure the RENDERED page: find the
   text elements near the entry point and read their true size via
@@ -195,7 +216,7 @@ Spec (get these right or the reveal goes from charming to annoying):
 - **SKIP the reveal on image-led pages.** Their target IS composition-fit, so start and
   end scales nearly coincide and the move is imperceptible — measured start-to-end
   zoom ratio:
-  - `content/zinecamp2015` (text-led): `0.178 -> 0.941` = **5.3x**, a real move.
+  - `content/zinecamp2015` (text-led): `0.178 -> ~0.89` = **~5x**, a real move.
   - `content/mort` (image-led): `0.069 -> 0.092` = **1.33x**, not worth animating.
   Land image-led pages directly at composition-fit. If a reveal is wanted for them
   later it needs a DIFFERENT target (e.g. zoom in to the dominant image), which is a
