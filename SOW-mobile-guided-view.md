@@ -136,9 +136,16 @@ Spec (get these right or the reveal goes from charming to annoying):
 - **Interruptible**: if the user touches the screen DURING the reveal, abort the
   animation immediately and hand them control at the current scale/position. Never
   trap them in a non-skippable intro.
-- **Once per session, not per navigation**: play on first arrival at a site; do NOT
-  replay on every internal-link navigation within the same session (charming once,
-  maddening every time). Use a session-scoped "reveal seen" flag.
+- **Once per page load; replays across pages, not within one.** The reveal plays on
+  arrival at each page, including internal links to OTHER pages. It must NOT play for
+  same-page anchor jumps. No flag or bookkeeping is needed to achieve this: Hotglue
+  view-mode navigation is plain full-page loads (verified — no `pushState` /
+  `hashchange` anywhere in view-mode JS), while a same-page fragment jump is a
+  same-document navigation that never re-parses the document, so the script simply
+  does not re-run. Play unconditionally on load and both halves of the rule hold.
+  NOTE: back-navigation restored from bfcache also does not re-run the script, so the
+  reveal is skipped and the user's prior position is kept — which is the wanted
+  behaviour.
 - **Respect `prefers-reduced-motion`**: if the user has OS-level reduced-motion set,
   SKIP the animation entirely and land directly at the readable zoom. Accessibility
   requirement (zoom animation can cause motion sickness) — not optional.
@@ -154,6 +161,11 @@ Spec (get these right or the reveal goes from charming to annoying):
   (recover with `git show 6e6bd6b:MOBILE-VIEW-DESIGN.md` if needed). This SOW is
   pan/zoom of the intact composition only.
 - Per-page author controls / mobile annotations (also part of that separate approach).
+- Remembering the visitor's zoom/position per page across visits — parked for later.
+  If built: prefer `localStorage` keyed by page name over a cookie, since a cookie is
+  re-sent on EVERY http request for no benefit here. Note it interacts with the
+  reveal — a restored zoom means either skipping the reveal on that page, or
+  animating to the saved scale instead of the computed readable one. Decide then.
 
 ## Constraints
 
@@ -177,8 +189,9 @@ Spec (get these right or the reveal goes from charming to annoying):
 
 - On first arrival at a wider-than-viewport page on a small screen, the "Powers of
   Ten" reveal plays: whole page shown briefly, then a smooth continuous zoom/pan to
-  the readable entry point. It is interruptible (touch aborts it), plays once per
-  session (not per navigation), and is SKIPPED when `prefers-reduced-motion` is set.
+  the readable entry point. It is interruptible (touch aborts it), plays on each page
+  load but never on a same-page anchor jump, and is SKIPPED when
+  `prefers-reduced-motion` is set.
 - After the reveal/skip, a text page sits zoomed to a readable scale at the top-most
   text element; the user can pan and pinch-zoom (in AND out) freely.
 - An image-only page loads fit to its composition; pan/pinch works.
