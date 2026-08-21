@@ -122,6 +122,18 @@ function default_html($add_glue)
 		html_add_js_var('$.glue.base_url', '');
 		html_add_js_var('$.glue.conf.show_frontend_errors', SHOW_FRONTEND_ERRORS);
 		html_add_js_var('$.glue.version', glue_version());
+	} else {
+		// mobile guided view - a pan/zoom viewing layer for small screens (see
+		// SOW-mobile-guided-view.md). VIEWING mode only: the editor is not a
+		// mobile-viewing surface, and the script must never fight the editor's
+		// own drag/resize handling, so it is gated here rather than at runtime.
+		// It decides for itself whether to activate (small viewport, and a
+		// canvas wider than it) and does nothing otherwise. Deferred so the
+		// objects it measures are parsed before it runs.
+		// Loaded unminified regardless of USE_MIN_FILES for now - there is no
+		// .min.js pair yet, and USE_MIN_FILES defaults to true, so keying off
+		// it would 404 in any default install.
+		html_add_js(base_url().'js/mobile-guided.js', 3, true);
 	}
 }
 
