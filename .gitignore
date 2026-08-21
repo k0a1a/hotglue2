@@ -1,0 +1,11 @@
+# composer dependencies - install with `composer install`
+/vendor/
+
+# local auth config - contains AUTH_PASSWORD, never commit
+# (copy user-config.inc.php-dist to create it)
+/user-config.inc.php
+
+# hotglue stores pages/uploads here as flat files - that's user data,
+# not source. log.txt stays tracked as an empty placeholder.
+/content/*
+!/content/log.txt
