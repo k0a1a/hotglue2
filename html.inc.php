@@ -620,7 +620,15 @@ function html_finalize(&$cache = false)
 	// font down with it - this makes text render at its real size instead,
 	// relying on native horizontal/vertical scrolling (and pinch-zoom,
 	// deliberately not disabled here) rather than a shrunk-to-fit page
-	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
+	//
+	// minimum-scale is set here rather than adjusted from javascript: browsers
+	// parse the viewport at load and firefox ignores later changes to it, so a
+	// scripted value silently does nothing on exactly the devices that need it.
+	// 0.1 is the floor the viewport spec allows, and it is what lets a visitor
+	// pinch back out to see a whole oversized canvas - the default stop is
+	// around 25%, which is not nearly far enough for a multi-thousand-pixel
+	// page. Never add user-scalable=no or maximum-scale: zoom must stay free.
+	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.1">'.nl();
 	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();
