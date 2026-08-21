@@ -150,10 +150,12 @@ readable scale depends on. Server-side data is therefore a hint at best.
   width exceeds the device width, browsers clamp MINIMUM zoom to the scale at which
   that width fits, so you cannot zoom out past fit-to-canvas. On `ng` the
   canvas-width override that caused this has already been reverted — `html_finalize()`
-  in `html.inc.php` now emits a fixed `width=device-width, initial-scale=1` — so
-  zoom-out likely already works here. VERIFY on a real device before doing any work
-  for it. Whatever viewport is emitted, keep it free of `maximum-scale` and
-  `user-scalable=no`.
+  in `html.inc.php` now emits a fixed `width=device-width, initial-scale=1`.
+  **VERIFIED on a real phone (2026-08-21): pinch-zoom-out works. No work required.**
+  This also confirms the diagnosis — removing the `width=` override was what fixed it,
+  so relaxing `maximum-scale` would have been a no-op. Whatever viewport is emitted in
+  future, keep it free of `maximum-scale` and `user-scalable=no`, and do NOT reinstate
+  a canvas-width `width=` value: that is what broke zoom-out in the first place.
 - Prefer NATIVE touch pan/zoom where possible (momentum/inertia feels better than
   custom JS panning). Only hand-roll if native can't deliver the initial-scale +
   entry-point positioning.
@@ -277,9 +279,10 @@ Spec (get these right or the reveal goes from charming to annoying):
 - Entry point and readable scale are measured CLIENT-SIDE from the rendered page.
   Correct on text whose size is inherited rather than declared — which is 69% of
   `content/zinecamp2015`'s text objects, so this is the common case, not an edge one.
-- Pinch-zoom-OUT works. (May already hold on `ng`, since the canvas-width viewport
-  override that caused the zoom-in-only behaviour has been reverted — verify on a
-  device rather than assuming work is needed here.)
+- ~~Pinch-zoom-OUT works.~~ **DONE — verified on a real phone, 2026-08-21.** Already
+  satisfied on `ng` by the revert of the canvas-width viewport override; no code
+  needed. Only regression-check it: any change that reinstates a `width=<canvas>`
+  viewport would break it again.
 - No auto-zoom; zoom is user-initiated. (Optional double-tap-to-readable if cheap.)
 - `mobile-guided.js` is vanilla, loaded only under the activation conditions, and
   doesn't touch stored data.
