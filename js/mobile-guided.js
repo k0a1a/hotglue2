@@ -25,6 +25,8 @@
 
 	var TARGET_TEXT_PX = 16;	// what body text should render at after scaling
 	var REVEAL_MS = 1500;
+	var REVEAL_DWELL_MS = 500;	// hold at the pulled-back view before moving
+	var LOAD_WAIT_MS = 2500;	// cap on waiting for images; abort-on-touch still works meanwhile
 	var REVEAL_EASE = 'cubic-bezier(.3,.7,.2,1)';
 	var SMALL_SCREEN_PX = 768;
 	var TEXT_LED_RATIO = 0.15;	// text objects / all objects, above which a page is text-led
@@ -213,11 +215,56 @@
 		window.addEventListener('touchstart', abort, true);
 		window.addEventListener('pointerdown', abort, true);
 
-		requestAnimationFrame(function () {
-			canvas.getBoundingClientRect();	// force the start state to stick
-			canvas.style.transition = 'transform ' + REVEAL_MS + 'ms ' + REVEAL_EASE;
-			apply(target.scale, end.x, end.y);
-		});
+		// Don't start moving the moment the DOM is ready. This script is
+		// deferred, so it runs before a single image has painted - animating
+		// from there means the pulled-back view is spent on a blank page and
+		// the composition, the entire point of the reveal, is never seen.
+		//
+		// The start transform is already applied above, so the page frames
+		// itself correctly while it loads and the user watches it fill in.
+		// Only the MOVE waits: for window.load, capped so a slow or broken
+		// image can't strand the page zoomed out, then a short dwell so the
+		// composition registers before anything moves (the easing is fast-out,
+		// so without a dwell there is no still moment at all).
+		// Wait for the page to be VISIBLE before moving, explicitly rather than
+		// by relying on how a given browser throttles hidden tabs. Opened in a
+		// background tab, the reveal must still be there when the visitor
+		// finally looks: run it while hidden and they arrive to find it already
+		// over. (Don't gate this on requestAnimationFrame instead - rAF happens
+		// to be frozen while hidden today, but that is a scheduling detail, not
+		// a promise about visibility.)
+		function whenVisible(fn) {
+			if (document.visibilityState === 'visible') return fn();
+			document.addEventListener('visibilitychange', function once() {
+				if (document.visibilityState !== 'visible') return;
+				document.removeEventListener('visibilitychange', once);
+				fn();
+			});
+		}
+		function beginReveal() {
+			if (done) return;
+			whenVisible(function () {
+				setTimeout(function () {
+					if (done) return;
+					canvas.getBoundingClientRect();	// force the start state to stick
+					canvas.style.transition = 'transform ' + REVEAL_MS + 'ms ' + REVEAL_EASE;
+					apply(target.scale, end.x, end.y);
+				}, REVEAL_DWELL_MS);
+			});
+		}
+		if (document.readyState === 'complete') {
+			beginReveal();
+		} else {
+			var waiting = true;
+			var go = function () {
+				if (!waiting) return;
+				waiting = false;
+				window.removeEventListener('load', go);
+				beginReveal();
+			};
+			window.addEventListener('load', go);
+			setTimeout(go, LOAD_WAIT_MS);
+		}
 	}
 
 	if (document.readyState === 'loading') {
