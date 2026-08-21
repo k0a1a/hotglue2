@@ -131,11 +131,16 @@ Spec (get these right or the reveal goes from charming to annoying):
   point (text pages) / composition-fit (image pages). Continuous zoom+pan between the
   two — an Eames-style continuous move, NOT a cut. Prefer CSS transforms/transitions
   (GPU-accelerated) over per-frame JS.
-- **Brief**: long enough to register the composition, short enough it never feels like
-  a trapped loading screen. Tune to feel; err shorter.
-- **Interruptible**: if the user touches the screen DURING the reveal, abort the
-  animation immediately and hand them control at the current scale/position. Never
-  trap them in a non-skippable intro.
+- **Brief**: **1.5s** for the whole zoom/pan move. Long enough to register the
+  composition, short enough it never reads as a loading screen. Tune on a real device
+  if needed, but err shorter — past ~2.5s it starts to feel like one.
+- **Interruptible on TOUCH, not on movement**: abort on `touchstart`/`pointerdown` —
+  any touch, including a plain tap. Do NOT wait for drag or pinch movement to be
+  detected first: if you do, the opening pixels of the user's gesture fight the
+  running animation, which feels broken. Abort by reading the computed transform
+  matrix, writing it back as an inline style and dropping the transition, so control
+  is handed over at exactly the current scale/position with no visual jump. Never
+  trap the user in a non-skippable intro.
 - **Once per page load; replays across pages, not within one.** The reveal plays on
   arrival at each page, including internal links to OTHER pages. It must NOT play for
   same-page anchor jumps. No flag or bookkeeping is needed to achieve this: Hotglue
