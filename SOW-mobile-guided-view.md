@@ -29,10 +29,29 @@ If any fails, do nothing (normal rendering).
 
 ## Determining the initial zoom + entry point
 
-Hotglue pages are absolute-positioned; content is scattered and there may be NO
-content at literal (0,0). Two page types need different handling:
+Hotglue pages are absolute-positioned; content is scattered, coordinates may be
+NEGATIVE, and there may be NO content at literal (0,0). Always derive the bounding box
+from the actual min/max across objects — never assume an origin at (0,0). (Measured:
+`content/mort` starts at y = **-13**.)
 
-### A. Pages WITH text (the common case)
+### Classifying the page: text-led or image-led
+
+Do NOT branch on the boolean "does this page contain any text object?" — it misroutes
+real pages. Measured: `content/mort` has exactly **1 text object among 95** (92 images,
+2 iframes), so a boolean test sends a visually image-only page down the text path and
+anchors it on a lone 100x100 box at y = -13 whose font is inherited (i.e. unknowable
+server-side).
+
+Branch on a RATIO instead: treat a page as text-led only when text is a meaningful
+share of it. Start at **>15% of positioned objects** (or a comparable share of
+bounding-box area) and tune against the two test pages:
+
+| page | text / objects | | verdict |
+|---|---|---|---|
+| `content/zinecamp2015` | 32 / 65 | 49% | text-led |
+| `content/mort` | 1 / 95 | 1% | image-led |
+
+### A. Text-led pages (the common case)
 
 - **Entry point = the top-most (smallest `object-top`), then left-most
   (`object-left`) TEXT element.** Anchor the initial view there, NOT at geometric
@@ -48,18 +67,44 @@ content at literal (0,0). Two page types need different handling:
   - Factor `devicePixelRatio` so "readable" is consistent across low-DPI and retina
     devices.
 
-### B. Pages with NO text (e.g. image-only — real example: `content/mort/`)
+### B. Image-led pages (real example: `content/mort/`)
 
-- No font to key on. Instead **fit to the content bounding box width** (or the
-  dominant image) so the visual composition is viewable, then let the user pinch to
-  explore. Do NOT zoom into one image arbitrarily — show the composition, let them
-  navigate.
+- No usable font to key on. Instead **fit to the content bounding box width** so the
+  visual composition is viewable, then let the user pinch to explore. Do NOT zoom into
+  one image arbitrarily — show the composition, let them navigate.
+- If the page has a token text object or two (as `content/mort` does), ignore them for
+  scale purposes. They are not what the visitor came for.
 
-### Data source: server-side first, client-side fallback
+### Data source: measure client-side (server-side data is NOT sufficient)
 
-- **Server-side (preferred, fast):** parse the page's object files in `head/` for
-  `text-font-size` (and `object-top`/`object-left`/`object-width`/`object-height`
-  for geometry). Example object file:
+**Decided by measurement, not preference.** An earlier draft made server-side parsing
+the primary path with client-side as a fallback. Counting the real test pages reversed
+that: explicit `text-font-size` is present on only a minority of text objects.
+
+| page | text objects | with explicit `text-font-size` | |
+|---|---|---|---|
+| `content/zinecamp2015` | 32 | 10 | **31%** |
+| `content/mort` | 1 | 0 | **0%** |
+
+69% of zinecamp's text inherits its size from the stylesheet, so the object files
+cannot answer "how large does this text actually render?" — the single number the
+readable scale depends on. Server-side data is therefore a hint at best.
+
+- **Client-side measurement is the PRIMARY path.** Measure the RENDERED page: find the
+  text elements near the entry point and read their true size via
+  `getBoundingClientRect()` / `getComputedStyle()`, then compute the scale from that.
+  For image-led pages, measure the content bounding box from rendered elements. This
+  also absorbs the cases object files can never cover: inherited sizes, non-px units,
+  and web fonts whose rendered metrics differ from what was declared.
+- **v1 needs NO PHP beyond loading the script.** Computing entirely client-side means
+  `render_page()` and the viewport emission are left alone — worth keeping in mind,
+  since the canvas-width override there was deliberately reverted off `ng`. Add a
+  server-side hint later ONLY if the render-then-adjust flash proves visible in
+  practice.
+- **Reference (not the v1 path):** the object files in `head/` do carry
+  `object-top`/`object-left`/`object-width`/`object-height` for every object, plus
+  `text-font-size` on the minority of text objects that set it explicitly. Example
+  object file:
   ```
   type:text
   module:text
@@ -70,9 +115,10 @@ content at literal (0,0). Two page types need different handling:
   text-font-size:11px
   ...text...
   ```
-  From these you can compute: the content bounding box (max object-left+width, etc.),
-  which elements are text, their positions, and their font sizes — enough to pick the
-  entry point and readable scale before render.
+  Geometry from these files is reliable and would be enough for the bounding box, the
+  text/image ratio and the entry-point PICK. Only the readable SCALE is unavailable,
+  because it depends on font sizes that mostly aren't recorded — which is why v1
+  measures everything client-side rather than splitting the work across two sources.
   NOTE: no existing helper does this. A `_page_canvas_width()` in `module_glue.inc.php`
   previously walked these same files for `object-left`/`object-width` and would have
   been the natural thing to extend, but it was reverted off `ng` with the rest of the
@@ -120,17 +166,38 @@ content at literal (0,0). Two page types need different handling:
 
 ## Initial "Powers of Ten" reveal (IN for v1)
 
-On first arrival, briefly show the WHOLE page (so the user grasps the composition and
-understands there's more than fits the screen), then smoothly zoom/pan IN to the entry
-point at the readable scale. This teaches spatial awareness with zero UI chrome — the
-user learns "this is a big canvas I can explore" by seeing it happen.
+On arrival, briefly pull back to show the page's full WIDTH (so the user grasps the
+composition and understands there's more than fits the screen), then smoothly zoom/pan
+IN to the entry point at the readable scale. This teaches spatial awareness with zero
+UI chrome — the user learns "this is a big canvas I can explore" by seeing it happen.
+
+**"The whole page" is not literally achievable — pull back to fit-WIDTH, not
+fit-contain.** Hotglue canvases are far taller than a phone is:
+
+| | canvas | aspect | fit-width @390 | true contain-fit |
+|---|---|---|---|---|
+| `content/zinecamp2015` | 1642 x 5976 | 1 : 3.6 | 0.238 | 0.141 |
+| `content/mort` | 4220 x 17590 | 1 : 4.2 | 0.092 | **0.048** |
+| phone | 390 x 844 | 1 : 2.2 | | |
+
+Contain-fitting `content/mort` renders it as a 202px-wide sliver at 4.8% scale, where
+92 images are unrecognisable mush — a reveal starting from noise teaches nothing. So
+pull back to fit-width and accept that the vertical extent still overflows (zinecamp
+by ~1.7 screens, mort by ~2). Reword any "whole page" phrasing accordingly.
 
 Spec (get these right or the reveal goes from charming to annoying):
-- **Animation**: start at fit-whole-page scale (~75% of viewport width so it's clearly
-  "the whole thing" with a margin), end at the computed readable scale at the entry
-  point (text pages) / composition-fit (image pages). Continuous zoom+pan between the
-  two — an Eames-style continuous move, NOT a cut. Prefer CSS transforms/transitions
-  (GPU-accelerated) over per-frame JS.
+- **Animation**: start at 75% of the fit-WIDTH scale (so the full canvas width sits on
+  screen with a margin), end at the computed readable scale at the entry point.
+  Continuous zoom+pan between the two — an Eames-style continuous move, NOT a cut.
+  Prefer CSS transforms/transitions (GPU-accelerated) over per-frame JS.
+- **SKIP the reveal on image-led pages.** Their target IS composition-fit, so start and
+  end scales nearly coincide and the move is imperceptible — measured start-to-end
+  zoom ratio:
+  - `content/zinecamp2015` (text-led): `0.178 -> 0.941` = **5.3x**, a real move.
+  - `content/mort` (image-led): `0.069 -> 0.092` = **1.33x**, not worth animating.
+  Land image-led pages directly at composition-fit. If a reveal is wanted for them
+  later it needs a DIFFERENT target (e.g. zoom in to the dominant image), which is a
+  separate design question — not v1.
 - **Brief**: **1.5s** for the whole zoom/pan move. Long enough to register the
   composition, short enough it never reads as a loading screen. Tune on a real device
   if needed, but err shorter — past ~2.5s it starts to feel like one.
@@ -185,25 +252,31 @@ Spec (get these right or the reveal goes from charming to annoying):
   MODERNIZATION.md's "Build tooling" row: the project is deliberately no-build, and
   minified copies are produced by a small one-off script, matching today's
   `*.min.js` pairs. Do not hand-minify.
-- Test on REAL pages of both types: a text-heavy page (`content/zinecamp2015/`) and
-  an image-only page (`content/mort/`). Confirm the text page lands readable at a
-  sensible entry point, and the image page fits the composition. Test on actual
-  phone viewport sizes, not just a narrowed desktop window.
+- Test on REAL pages of both types: a text-led page (`content/zinecamp2015/`, 1642 x
+  5976, 32 text / 65 objects) and an image-led page (`content/mort/`, 4220 x 17590,
+  1 text / 95 objects). Confirm the text page lands readable at a sensible entry point
+  — measured: top-most text sits at x=1279 of a 1642px canvas, i.e. 78% across, so
+  anchoring at (0,0) would land on empty canvas — and that the image page fits the
+  composition. Test on actual phone viewport sizes, not just a narrowed desktop
+  window.
 
 ## Definition of done
 
-- On first arrival at a wider-than-viewport page on a small screen, the "Powers of
-  Ten" reveal plays: whole page shown briefly, then a smooth continuous zoom/pan to
-  the readable entry point. It is interruptible (touch aborts it), plays on each page
-  load but never on a same-page anchor jump, and is SKIPPED when
-  `prefers-reduced-motion` is set.
-- After the reveal/skip, a text page sits zoomed to a readable scale at the top-most
-  text element; the user can pan and pinch-zoom (in AND out) freely.
-- An image-only page loads fit to its composition; pan/pinch works.
-- Pages that already fit the viewport, the editor, and desktop viewing are all
-  unaffected.
-- Font size / geometry taken from server-side `head/` object files where available,
-  with a client-side measurement fallback when absent or ambiguous.
+- On arrival at a wider-than-viewport TEXT-LED page on a small screen, the "Powers of
+  Ten" reveal plays: the page's full WIDTH shown briefly, then a smooth continuous
+  1.5s zoom/pan to the readable entry point. It is interruptible (any touch aborts
+  it), plays on each page load but never on a same-page anchor jump, and is SKIPPED
+  when `prefers-reduced-motion` is set.
+- After the reveal/skip, a text-led page sits zoomed to a readable scale at the
+  top-most text element; the user can pan and pinch-zoom (in AND out) freely.
+- An image-led page lands DIRECTLY at composition-fit with no reveal; pan/pinch works.
+- Pages are classified text-led vs image-led by RATIO, not by a boolean "has any
+  text" test — `content/mort` (1 text object of 95) must classify as image-led.
+- Bounding boxes are computed from actual min/max and handle NEGATIVE coordinates
+  (`content/mort` starts at y = -13).
+- Entry point and readable scale are measured CLIENT-SIDE from the rendered page.
+  Correct on text whose size is inherited rather than declared — which is 69% of
+  `content/zinecamp2015`'s text objects, so this is the common case, not an edge one.
 - Pinch-zoom-OUT works. (May already hold on `ng`, since the canvas-width viewport
   override that caused the zoom-in-only behaviour has been reverted — verify on a
   device rather than assuming work is needed here.)
