@@ -31,6 +31,7 @@
 	var SMALL_SCREEN_PX = 768;
 	var TEXT_LED_RATIO = 0.15;	// text objects / all objects, above which a page is text-led
 	var MIN_SCALE = 0.4, MAX_SCALE = 3;
+	var MAX_PULLBACK = 4;	// never pull back further than 1/4 of fit-width
 
 	// ?guided=1 forces activation on a wide screen, ?guided=0 forces it off on
 	// a phone. QA/demo tooling only - this is NOT a/b infrastructure (there is
@@ -142,7 +143,29 @@
 		DBG.targetScale = target.scale.toFixed(4);
 		DBG.entry = Math.round(target.x) + ',' + Math.round(target.y);
 
-		// Entry point + readable scale, both MEASURED from the rendered page.
+		// Where the viewer lands: the first substantial thing in reading order,
+		// of ANY type. An earlier version considered only text objects and so
+		// picked, on content/zinecamp2015, a 68x21px label reading "*ZINES" at
+		// x=1279 - skipping the 500x715 ZINE CAMP poster at (31,30) that is
+		// plainly where the page begins, purely because it is an image. Hence:
+		// all object types, and a size floor so a speck cannot win on the
+		// strength of being one pixel higher.
+		//
+		// Ordering is GEOMETRIC, never DOM order - hotglue objects are
+		// absolutely positioned and their DOM order reflects creation order and
+		// z-index, which routinely bears no relation to where they appear.
+		function entryPoint() {
+			var boxes2 = objects.map(measure);
+			var maxArea = 0;
+			boxes2.forEach(function (b) { maxArea = Math.max(maxArea, b.w * b.h); });
+			var floor = Math.max(1000, maxArea * 0.02);
+			var cands = boxes2.filter(function (b) { return b.w * b.h >= floor; });
+			if (!cands.length) cands = boxes2;
+			cands.sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); });
+			return cands[0];
+		}
+
+		// Readable scale, MEASURED from the rendered page.
 		// The object files can't answer this: on content/zinecamp2015 only 10
 		// of 32 text objects carry an explicit text-font-size, and the ones
 		// that do are unrepresentative - reading them alone reports a dominant
@@ -154,7 +177,10 @@
 				b.weight = (el.textContent || '').trim().length;
 				return b;
 			}).filter(function (b) { return b.font > 0; });
-			if (!sized.length) return { scale: fitWidth, x: minX, y: minY };
+			if (!sized.length) {
+				var e0 = entryPoint();
+				return { scale: fitWidth, x: e0.x, y: e0.y };
+			}
 
 			// Dominant body size, weighted by how much text is actually set at
 			// it - so a long paragraph outweighs a short heading, and neither a
@@ -169,12 +195,7 @@
 			var scale = TARGET_TEXT_PX / parseFloat(dominant);
 			scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
 
-			// Entry = top-most then left-most text. NOT (0,0), which is often
-			// empty canvas - on content/zinecamp2015 the top-most text sits at
-			// x=1279 of a 1642px canvas, 78% of the way across.
-			var entry = sized.slice().sort(function (a, b) {
-				return (a.y - b.y) || (a.x - b.x);
-			})[0];
+			var entry = entryPoint();
 			return { scale: scale, x: entry.x, y: entry.y };
 		}
 
@@ -216,10 +237,17 @@
 			sizer.style.height = (canvasH * scale) + 'px';
 		}
 		// Centre the entry point where we can, but never scroll past content.
+		// Pan is in post-scale (document) px. A NEGATIVE result means the canvas
+		// is smaller than the viewport on that axis and should be centred -
+		// which is the normal case at contain-fit, where the pulled-back canvas
+		// is a narrow strip on a wide screen.
 		function panFor(scale, x, y) {
+			var cw = canvasW * scale, ch = canvasH * scale;
 			return {
-				x: Math.max(0, Math.min((x - minX) * scale - vw / 4, canvasW * scale - vw)),
-				y: Math.max(0, Math.min((y - minY) * scale - vh / 4, canvasH * scale - vh))
+				x: cw <= vw ? -(vw - cw) / 2
+					: Math.max(0, Math.min((x - minX) * scale - vw / 4, cw - vw)),
+				y: ch <= vh ? -(vh - ch) / 2
+					: Math.max(0, Math.min((y - minY) * scale - vh / 4, ch - vh))
 			};
 		}
 
@@ -231,8 +259,16 @@
 		function handoff(scale, panX, panY) {
 			canvas.style.transition = '';
 			sizeSpacer(scale);
+			// A negative pan means "centre me" - a scroll offset cannot express
+			// that, so keep only that residue in the transform and scroll the
+			// rest. Matters when the reveal is aborted while still pulled back
+			// far enough that the canvas is narrower than the screen.
+			var resX = Math.min(panX, 0), resY = Math.min(panY, 0);
 			canvas.style.transform =
+				'translate(' + (-resX) + 'px,' + (-resY) + 'px) ' +
 				'scale(' + scale + ') translate(' + (-minX) + 'px,' + (-minY) + 'px)';
+			panX = Math.max(0, panX);
+			panY = Math.max(0, panY);
 			// Only now let the container scroll: during the reveal the pan
 			// lives in the transform, and a scrollable box would fight it.
 			spacer.style.overflow = 'auto';
@@ -276,7 +312,15 @@
 		// 1:3.6 and 1:4.2 against a phone's 1:2.2, so contain-fitting mort
 		// would render it as a 202px sliver of unrecognisable mush), then move
 		// continuously in to the entry point at the readable scale.
-		var startScale = fitWidth * 0.75;
+		// Pull back to show the WHOLE canvas, not merely its full width.
+		// Fit-width leaves a tall page overflowing vertically - measured on
+		// content/zinecamp2015 at 360px wide, that is still 1.5 screens of
+		// height, so the composition is never actually seen, which defeats the
+		// entire point of the reveal. Contain-fit shows all of it.
+		// Floored so a freakishly tall canvas cannot pull back into
+		// unrecognisable mush (content/mort would contain-fit to 0.048).
+		var containFit = Math.min(fitWidth, vh / canvasH);
+		var startScale = Math.max(containFit * 0.9, fitWidth / MAX_PULLBACK);
 		var start = panFor(startScale, minX, minY);
 		apply(startScale, start.x, start.y);
 		DBG.startScale = startScale.toFixed(4);
