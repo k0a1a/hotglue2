@@ -53,9 +53,21 @@ bounding-box area) and tune against the two test pages:
 
 ### A. Text-led pages (the common case)
 
-- **Entry point = the top-most (smallest `object-top`), then left-most
-  (`object-left`) TEXT element.** Anchor the initial view there, NOT at geometric
-  (0,0) — (0,0) may be empty.
+- **Entry point = the first SUBSTANTIAL object in reading order, of ANY type** —
+  top-most (smallest `object-top`), then left-most (`object-left`), filtered by a size
+  floor of `max(1000px², 2% of the largest object's area)`. Anchor the initial view
+  there, NOT at geometric (0,0) — (0,0) may be empty.
+  - An earlier draft said "the top-most TEXT element". That is wrong on real pages,
+    for two reasons. Restricting to text ignores the object that actually opens the
+    page when it happens to be a graphic: on `content/zinecamp2015` it selected a
+    68x21px label reading "*ZINES" at x=1279, skipping the 500x715 ZINE CAMP poster at
+    (31,30). And without a size floor, being one pixel higher beats being two hundred
+    times larger.
+  - Order GEOMETRICALLY, never by DOM order. Hotglue objects are absolutely
+    positioned; their DOM order reflects creation order and z-index and routinely
+    bears no relation to where they appear on the canvas.
+  - Entry POSITION and readable SCALE are independent: position comes from all
+    objects, scale from text alone. Changing one must not disturb the other.
 - **Readable scale**: pick a scale so the BODY text at the entry region renders at a
   comfortable size after scaling (target ~16px CSS, hard floor ~12px). Formula:
   `scale = target_px / entry_region_font_px`.
@@ -64,8 +76,13 @@ bounding-box area) and tune against the two test pages:
     caption would zoom in absurdly). Sample the body-ish text near the entry point.
   - Apply a floor and ceiling to the resulting scale so outliers don't produce absurd
     zoom (e.g. clamp scale to a sane range).
-  - Factor `devicePixelRatio` so "readable" is consistent across low-DPI and retina
-    devices.
+  - Do NOT factor in `devicePixelRatio`. An earlier draft required this; it is wrong.
+    A CSS pixel is already density-normalised, so 16 CSS px is the same apparent size
+    on a retina phone as on a low-DPI one, and multiplying by DPR would make text
+    roughly three times too large on a modern handset. Worse, it would deliberately
+    reintroduce a bug we hit for real: keying anything off device pixels made the page
+    behave differently on a 1080p laptop panel than on a 1440p external display, via
+    the OS scale factor. Everything here works in CSS px, on purpose.
 
 ### B. Image-led pages (real example: `content/mort/`)
 
@@ -189,30 +206,43 @@ NOTE: 18px being a known CSS default does NOT make it safe to hardcode — per-s
 
 ## Initial "Powers of Ten" reveal (IN for v1)
 
-On arrival, briefly pull back to show the page's full WIDTH (so the user grasps the
+On arrival, briefly pull back to show the WHOLE page (so the user grasps the
 composition and understands there's more than fits the screen), then smoothly zoom/pan
 IN to the entry point at the readable scale. This teaches spatial awareness with zero
 UI chrome — the user learns "this is a big canvas I can explore" by seeing it happen.
 
-**"The whole page" is not literally achievable — pull back to fit-WIDTH, not
-fit-contain.** Hotglue canvases are far taller than a phone is:
+**Pull back to CONTAIN-fit — the whole canvas, both axes — floored so it cannot
+degenerate.** Hotglue canvases are far taller than a phone is:
 
-| | canvas | aspect | fit-width @390 | true contain-fit |
+| | canvas | aspect | fit-width @360 | contain-fit |
 |---|---|---|---|---|
-| `content/zinecamp2015` | 1642 x 5976 | 1 : 3.6 | 0.238 | 0.141 |
-| `content/mort` | 4220 x 17590 | 1 : 4.2 | 0.092 | **0.048** |
-| phone | 390 x 844 | 1 : 2.2 | | |
+| `content/zinecamp2015` | 1642 x 5976 | 1 : 3.6 | 0.219 | 0.109 |
+| `content/mort` | 4220 x 17590 | 1 : 4.2 | 0.085 | 0.037 |
+| phone (measured) | 360 x 649 | 1 : 1.8 | | |
 
-Contain-fitting `content/mort` renders it as a 202px-wide sliver at 4.8% scale, where
-92 images are unrecognisable mush — a reveal starting from noise teaches nothing. So
-pull back to fit-width and accept that the vertical extent still overflows (zinecamp
-by ~1.7 screens, mort by ~2). Reword any "whole page" phrasing accordingly.
+An earlier draft specified fit-WIDTH here, reasoning that contain-fitting something as
+extreme as `content/mort` yields an unrecognisable sliver. Reviewed on a device, that
+was the wrong call: fit-width leaves `zinecamp` still overflowing **2.0 screens
+vertically**, so the composition is never actually seen and the reveal has nothing to
+reveal. Contain-fit shows all of it.
+
+Guard the degenerate case with a FLOOR instead of by abandoning contain-fit: never
+pull back further than **a quarter of fit-width**. On zinecamp the floor is 0.055 and
+contain-fit (x0.9 for margin) gives 0.098, so the floor is not reached; it exists for
+a future pathologically tall TEXT page. `content/mort` is image-led and skips the
+reveal entirely, so the case that motivated the original fit-width decision never
+actually runs.
+
+Note the pulled-back canvas is then NARROWER than the screen (160px on a 360px phone),
+so it must be CENTRED. A scroll offset cannot express that — scroll cannot go
+negative — so the centring offset has to stay in the transform.
 
 Spec (get these right or the reveal goes from charming to annoying):
-- **Animation**: start at 75% of the fit-WIDTH scale (so the full canvas width sits on
-  screen with a margin), end at the computed readable scale at the entry point.
-  Continuous zoom+pan between the two — an Eames-style continuous move, NOT a cut.
-  Prefer CSS transforms/transitions (GPU-accelerated) over per-frame JS.
+- **Animation**: start at 90% of the contain-fit scale (whole canvas on screen with a
+  margin), floored at a quarter of fit-width; end at the computed readable scale at the
+  entry point. Continuous zoom+pan between the two — an Eames-style continuous move,
+  NOT a cut. Prefer CSS transforms/transitions (GPU-accelerated) over per-frame JS.
+  Measured on a 360px phone this is a 9.1x move; at fit-width it was 5.4x.
 - **SKIP the reveal on image-led pages.** Their target IS composition-fit, so start and
   end scales nearly coincide and the move is imperceptible — measured start-to-end
   zoom ratio:
@@ -262,6 +292,51 @@ Spec (get these right or the reveal goes from charming to annoying):
   reveal — a restored zoom means either skipping the reveal on that page, or
   animating to the saved scale instead of the computed readable one. Decide then.
 
+## Browser landmines (measured, not theorised)
+
+Each of these cost a debugging round trip. They are recorded so the next person does
+not rediscover them.
+
+- **Never use `window.innerWidth` for the scale math. Use
+  `document.documentElement.clientWidth`.** innerWidth is the VISUAL viewport and is
+  not trustworthy: Chrome desktop reported 512 against a real 497 (it counts the
+  scrollbar), and Firefox reported **1572 for a 393px viewport** and 1440 for a 360px
+  one — 4x out, on both desktop responsive-design mode and Android. Every scale
+  divides by this, so the pull-back computed 0.66 instead of 0.16 and the reveal
+  collapsed from 5x to 1.35x. It also made behaviour depend on WHICH PHYSICAL DISPLAY
+  the window was on, through the OS scale factor. clientWidth is the layout viewport,
+  in CSS px, stable under both pinch-zoom and display scaling.
+- **Do not rely on the DOCUMENT scrolling.** Sizing a block wider than `body` and
+  expecting the viewport to scroll works in Chrome and silently fails in Firefox,
+  which reported `scrollWidth` 1460 while setting `scrollLeftMax` to **0.43** and
+  refusing to scroll at all — so `window.scrollTo` and direct `scrollLeft` assignment
+  both did nothing, and the view snapped back to the canvas origin. Use an explicit
+  scroll container: a fixed, viewport-sized box with an inner sizer of
+  `canvasW x scale`, so scrolling is an ordinary element with properly sized content.
+  Confirmed on-device that this keeps native momentum panning.
+- **`transitionend` BUBBLES.** Filter on `event.target` and `propertyName`, or a
+  transition on any descendant object ends the reveal early. No hotglue CSS currently
+  transitions `.object`, but per-site `user_code` CSS could add one at any time.
+- **`requestAnimationFrame` does not fire while the document is hidden.** Do not gate
+  the reveal on it; gate on `visibilitychange` explicitly, so a page opened in a
+  background tab still has its reveal when the visitor finally looks.
+- **A phone's console is not reachable from the dev machine**, which is why `?debug=1`
+  below exists. Diagnosing this class of bug by reasoning from symptoms failed
+  repeatedly; asking the browser directly (`scrollLeftMax`) settled it immediately.
+
+## Dev/QA overrides (not A/B infrastructure)
+
+- `?guided=1` forces activation on a wide screen; `?guided=0` forces it off on a
+  phone. For desktop iteration and for side-by-side comparison on a device.
+- `?debug=1` paints the computed state onto the page itself — viewports, canvas box,
+  classification ratio, scales, entry point, requested vs achieved scroll — and
+  refreshes once the reveal has finished. Inert without the parameter.
+- Neither may override the view-mode guard: this must never load in the editor.
+- These are NOT an A/B mechanism. Hotglue has no analytics, tracking or event
+  collection of any kind and no datastore but flat files, so there is nothing to
+  measure against; and a URL parameter cannot bucket organic traffic anyway. They are
+  for qualitative comparison — hand someone a phone and toggle.
+
 ## Constraints
 
 - `js/mobile-guided.js` is VANILLA JS (consistent with the dejQuery'd `ng` editor).
@@ -286,7 +361,7 @@ Spec (get these right or the reveal goes from charming to annoying):
 ## Definition of done
 
 - On arrival at a wider-than-viewport TEXT-LED page on a small screen, the "Powers of
-  Ten" reveal plays: the page's full WIDTH shown briefly, then a smooth continuous
+  Ten" reveal plays: the WHOLE canvas shown briefly, then a smooth continuous
   1.5s zoom/pan to the readable entry point. It is interruptible (any touch aborts
   it), plays on each page load but never on a same-page anchor jump, and is SKIPPED
   when `prefers-reduced-motion` is set.
