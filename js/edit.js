@@ -883,6 +883,112 @@ $.glue.menu = function()
 	};
 }();
 
+// A modal dialog that is actually modal.
+//
+// Factored out because getting this right is not obvious and it was wrong the
+// first time: the editor binds its shortcuts on documentElement and a dialog
+// lives inside body, so without stopping propagation every keystroke typed into
+// a dialog also drives the canvas behind it - Tab cycles through objects,
+// Delete deletes one, arrows move it. On top of the editor is not the same as
+// modal to it.
+//
+// open() returns { modal, close }: fill in modal, call close() when done.
+$.glue.modal = function()
+{
+	return {
+		// label ..	accessible name for the dialog
+		// cls ..	optional extra class on the dialog box
+		open: function(label, cls) {
+			var previously_focused = document.activeElement;
+
+			var backdrop = document.createElement('div');
+			backdrop.className = 'glue-modal-backdrop glue-ui';
+			var modal = document.createElement('div');
+			modal.className = 'glue-modal'+(cls ? ' '+cls : '');
+			modal.setAttribute('role', 'dialog');
+			modal.setAttribute('aria-modal', 'true');
+			modal.setAttribute('aria-label', label || 'dialog');
+			// so focus has somewhere to go if every control is disabled
+			modal.tabIndex = -1;
+
+			function close() {
+				backdrop.remove();
+				if (previously_focused && document.contains(previously_focused)) {
+					previously_focused.focus();
+				}
+			}
+
+			// everything focusable inside, in tab order - disabled and hidden
+			// controls skipped, so a disabled OK button is not a dead stop
+			function focusable() {
+				return Array.from(modal.querySelectorAll('input, button, select, textarea'))
+					.filter(function(el) { return !el.disabled && el.offsetParent !== null; });
+			}
+
+			['keydown', 'keypress', 'keyup'].forEach(function(type) {
+				backdrop.addEventListener(type, function(e) {
+					e.stopPropagation();
+				});
+			});
+
+			backdrop.addEventListener('keydown', function(e) {
+				if (e.key == 'Escape') {
+					close();
+					return;
+				}
+				if (e.key != 'Tab') {
+					return;
+				}
+				// keep Tab inside the dialog rather than letting the browser
+				// walk focus out into the page behind it
+				var items = focusable();
+				if (!items.length) {
+					e.preventDefault();
+					return;
+				}
+				var first = items[0];
+				var last = items[items.length-1];
+				var at = document.activeElement;
+				if (e.shiftKey && (at === first || !modal.contains(at))) {
+					last.focus();
+					e.preventDefault();
+				} else if (!e.shiftKey && (at === last || !modal.contains(at))) {
+					first.focus();
+					e.preventDefault();
+				}
+			});
+
+			backdrop.addEventListener('click', function(e) {
+				if (e.target === backdrop) {
+					close();
+				}
+			});
+
+			backdrop.appendChild(modal);
+			document.body.appendChild(backdrop);
+			return { backdrop: backdrop, modal: modal, close: close };
+		},
+		// standard OK/Cancel row; extra buttons can be prepended by the caller
+		buttons: function(modal, on_ok, on_cancel) {
+			var row = document.createElement('div');
+			row.className = 'glue-modal-buttons';
+			var cancel = document.createElement('button');
+			cancel.type = 'button';
+			cancel.textContent = 'Cancel';
+			cancel.addEventListener('click', on_cancel);
+			var ok = document.createElement('button');
+			ok.type = 'button';
+			ok.textContent = 'OK';
+			ok.addEventListener('click', on_ok);
+			row.appendChild(cancel);
+			row.appendChild(ok);
+			modal.appendChild(row);
+			return { row: row, ok: ok, cancel: cancel };
+		}
+	};
+}();
+
+
 $.glue.object = function()
 {
 	var alter_pre_save = {};

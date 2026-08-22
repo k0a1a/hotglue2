@@ -283,6 +283,177 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 	}
 });
 
+// --- "make link" for a selection inside a text object ---------------------
+//
+// Text objects are edited as a TEXTAREA holding raw HTML source, not as
+// contenteditable (see js/edit.js:2370). So there is no Selection/Range API to
+// use here and document.execCommand('createLink') does nothing: making a link
+// means splicing literal <a> tags into the textarea's value around the selected
+// characters. That is also why the URL has to be escaped as attribute syntax on
+// the way in - the user is authoring source, and a stray quote produces broken
+// markup rather than a broken DOM.
+
+// Schemes that are allowed to appear in a href here. Anything else - including
+// javascript: and data: - is refused.
+//
+// This is hygiene, not a security boundary: the author is authenticated and is
+// typing raw HTML into a textarea, so they can already write anything at all,
+// this button included or not. The point is that a link the UI builds for you
+// should never be something you did not ask for.
+var LINK_SCHEME_RE = /^([a-z][a-z0-9+.-]*):/i;
+var LINK_ALLOWED_SCHEMES = ['http', 'https', 'mailto', 'ftp'];
+
+function text_link_url_problem(url) {
+	url = url.trim();
+	if (url === '') {
+		return 'enter a URL';
+	}
+	var m = LINK_SCHEME_RE.exec(url);
+	if (m) {
+		if (LINK_ALLOWED_SCHEMES.indexOf(m[1].toLowerCase()) == -1) {
+			return '"' + m[1] + ':" links are not allowed here';
+		}
+		return false;
+	}
+	// no scheme: an anchor, or a page/relative path, or a bare domain
+	return false;
+}
+
+// What actually goes in the href. A bare domain gets https:// so the link
+// works; anchors and relative hotglue paths are left exactly as typed.
+function text_link_normalize(url) {
+	url = url.trim();
+	if (url === '' || LINK_SCHEME_RE.test(url)) {
+		return url;
+	}
+	if (url.charAt(0) == '#' || url.charAt(0) == '/') {
+		return url;
+	}
+	// something.tld[/...] - looks like a domain the user typed without a scheme
+	if (/^[^\s\/]+\.[a-z]{2,}(\/|$|\?|#)/i.test(url)) {
+		return 'https://' + url;
+	}
+	// otherwise treat it as an internal hotglue page name / relative path
+	return url;
+}
+
+function text_link_escape_attr(s) {
+	return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+		.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Find an <a>...</a> in the source that contains the given offsets.
+//
+// A regex over the source, not a parser: the textarea holds text that may not
+// even be well-formed while it is being typed. It is good enough to recognise
+// a link this UI wrote, and it fails by finding nothing rather than by
+// mangling something.
+function text_link_at(value, start, end) {
+	var re = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+	var m;
+	while ((m = re.exec(value)) !== null) {
+		var from = m.index;
+		var to = m.index + m[0].length;
+		if (start >= from && end <= to) {
+			var href = /href\s*=\s*"([^"]*)"/i.exec(m[1]) || /href\s*=\s*'([^']*)'/i.exec(m[1]);
+			var cls = /class\s*=\s*"([^"]*)"/i.exec(m[1]) || /class\s*=\s*'([^']*)'/i.exec(m[1]);
+			return {
+				from: from, to: to,
+				href: href ? href[1] : '',
+				cls: cls ? cls[1] : '',
+				text: m[2]
+			};
+		}
+	}
+	return null;
+}
+
+function text_link_dialog(obj, input, start, end) {
+	var value = input.value;
+	var existing = text_link_at(value, start, end);
+	var selected = value.substring(start, end);
+
+	if (!existing && start === end) {
+		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+		return;
+	}
+
+	var m = $.glue.modal.open(existing ? 'edit link' : 'make link');
+
+	function field(labelText, value) {
+		var label = document.createElement('label');
+		label.className = 'glue-modal-field';
+		var span = document.createElement('span');
+		span.textContent = labelText;
+		var inp = document.createElement('input');
+		inp.type = 'text';
+		inp.value = value || '';
+		label.appendChild(span);
+		label.appendChild(inp);
+		m.modal.appendChild(label);
+		return inp;
+	}
+
+	var what = document.createElement('div');
+	what.className = 'glue-modal-note';
+	what.textContent = existing ? 'editing the link around "' +
+		existing.text.replace(/<[^>]*>/g, '').substring(0, 40) + '"'
+		: 'linking "' + selected.replace(/<[^>]*>/g, '').substring(0, 40) + '"';
+	m.modal.appendChild(what);
+
+	var url_input = field('URL', existing ? existing.href : 'https://');
+	var class_input = field('class (optional, for your own CSS)', existing ? existing.cls : '');
+
+	var problem = document.createElement('div');
+	problem.className = 'glue-tag-problem';
+	m.modal.appendChild(problem);
+
+	var buttons = $.glue.modal.buttons(m.modal, function() {
+		if (!validate()) {
+			return;
+		}
+		var href = text_link_escape_attr(text_link_normalize(url_input.value));
+		var cls = class_input.value.trim();
+		var body = existing ? existing.text : selected;
+		var link = '<a href="' + href + '"' +
+			(cls ? ' class="' + text_link_escape_attr(cls) + '"' : '') + '>' + body + '</a>';
+		var from = existing ? existing.from : start;
+		var to = existing ? existing.to : end;
+		splice(from, to, link);
+	}, m.close);
+
+	if (existing) {
+		var remove = document.createElement('button');
+		remove.type = 'button';
+		remove.textContent = 'Remove link';
+		remove.addEventListener('click', function() {
+			// unwrap: keep the text, drop the tags
+			splice(existing.from, existing.to, existing.text);
+		});
+		buttons.row.insertBefore(remove, buttons.row.firstChild);
+	}
+
+	function splice(from, to, str) {
+		input.value = input.value.substring(0, from) + str + input.value.substring(to);
+		var pos = from + str.length;
+		m.close();
+		input.focus();
+		input.setSelectionRange(pos, pos);
+	}
+
+	function validate() {
+		var msg = text_link_url_problem(url_input.value);
+		url_input.classList.toggle('glue-tag-invalid', !!msg);
+		problem.textContent = msg || '';
+		buttons.ok.disabled = !!msg;
+		return !msg;
+	}
+	url_input.addEventListener('input', validate);
+	validate();
+	url_input.focus();
+	url_input.select();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
@@ -369,30 +540,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.style.height = '32px';
 	elem.style.justifyContent = 'center';
 	elem.style.width = '32px';
-	elem.title = 'turn the selected text into a link';
-	elem.textContent = '🔗';
+	elem.title = 'turn the selected text into a link, or edit a link';
+	elem.textContent = '\U0001f517';
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var input = obj.querySelector(':scope > .glue-text-input');
-		var start = input.selectionStart;
-		var end = input.selectionEnd;
-		if (start === end) {
-			alert('Select some text first, then click this to turn it into a link.');
-			return;
-		}
-		var url = prompt('Enter the link URL', 'https://');
-		if (!url) {
-			return;
-		}
-		// escape quotes so the url can't break out of the href attribute
-		var safe_url = url.replace(/"/g, '&quot;');
-		var selected = input.value.substring(start, end);
-		var link = '<a href="'+safe_url+'">'+selected+'</a>';
-		input.value = input.value.substring(0, start)+link+input.value.substring(end);
-		// put the cursor right after the newly-inserted link
-		var pos = start+link.length;
-		input.focus();
-		input.setSelectionRange(pos, pos);
+		// selectionStart/End survive the textarea losing focus to this click,
+		// which is what makes reading them here work at all
+		text_link_dialog(obj, input, input.selectionStart, input.selectionEnd);
 	});
 	$.glue.contextmenu.register('text', 'text-link', elem);
 

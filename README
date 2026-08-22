@@ -30,6 +30,21 @@ BUNDLED THIRD-PARTY CODE
 
 RECENT CHANGES (2026-08)
 
+  * Text objects: selecting text and clicking the link button in the text
+    context menu now opens a small dialog instead of a browser prompt. It
+    validates the URL (refusing javascript: and data:), adds https:// to a
+    bare domain while leaving anchors and page names alone, escapes the URL
+    into the href, optionally puts a class on the link, and can edit or
+    remove a link you already made. Note text objects are edited as raw HTML
+    source in a textarea, so the markup is visible while editing.
+
+  * Objects: the context menu's id button is now an Object Properties
+    dialog, showing the object as the <div> it renders as - id read-only,
+    hotglue's own classes fixed with a field for your own, and custom
+    attributes you can add. Attribute names are restricted and a denylist
+    (id, class, style, on*, contenteditable, draggable) is enforced both on
+    save and again when the page renders.
+
   * Video module upgrade: uploaded videos (.mp4, .webm, .ogg/.ogv, .h264,
     .mov) are now automatically re-encoded server-side via ffmpeg into a
     single web-optimized variant, capped at 720p on the short side

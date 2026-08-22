@@ -294,3 +294,10 @@
 	margin: 6px 0;
 	min-height: 14px;
 }
+
+.glue-modal-note {
+	/* which text a link dialog is about to act on */
+	color: #666;
+	font-size: 11px;
+	margin-bottom: 10px;
+}
