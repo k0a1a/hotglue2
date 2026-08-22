@@ -165,13 +165,15 @@ document.addEventListener('DOMContentLoaded', function() {
 				child.className = 'glue-webvideo-shield glue-ui';
 				child.title = 'click here to select/edit this video';
 				elem.appendChild(child);
-				document.body.appendChild(elem);
+				$.glue.canvas.add(elem);
 				// make width and height explicit
 				elem.style.width = elem.offsetWidth+'px';
 				elem.style.height = elem.offsetHeight+'px';
-				// move to mouseclick
-				elem.style.left = (e.pageX-elem.offsetWidth/2)+'px';
-				elem.style.top = (e.pageY-elem.offsetHeight/2)+'px';
+				// move to mouseclick - out of page space, since in centered mode an
+				// object's coordinates are measured from the container, not the page
+				var at = $.glue.canvas.from_page(e.pageX, e.pageY);
+				elem.style.left = (at.x-elem.offsetWidth/2)+'px';
+				elem.style.top = (at.y-elem.offsetHeight/2)+'px';
 				$.glue.object.register(elem);
 				// set the provider and the id in the object file
 				$.glue.backend({ method: 'glue.update_object', name: elem.id, 'webvideo-provider': provider, 'webvideo-id': id });

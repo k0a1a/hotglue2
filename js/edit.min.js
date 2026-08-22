@@ -73,10 +73,61 @@ $.glue.canvas = function()
 				max_y = window.innerHeight;
 			}
 			// resize body
-			document.body.style.width = max_x+'px';
+			var wrap = $.glue.canvas.wrapper();
+			if (wrap) {
+				// Centered layout: the container centers itself with
+				// margin:0 auto, which resolves against BODY - so pinning a
+				// pixel width on body would center it once, at whatever width
+				// body happened to have, and never again on resize. Measured:
+				// the object stayed at the same screen x through viewports of
+				// 1280, 1100 and 950 until this branch existed.
+				//
+				// Height still has to grow to the content, on both, or the
+				// page cannot be scrolled to reach the lower objects.
+				document.body.style.width = '';
+				wrap.style.height = max_y+'px';
+			} else {
+				document.body.style.width = max_x+'px';
+			}
 			document.body.style.height = max_y+'px';
 			// update grid
 			$.glue.grid.update();
+		},
+		// the centering container in centered layout mode, or false
+		wrapper: function() {
+			return document.getElementById('hg-centered-wrapper') || false;
+		},
+		// Where object coordinates sit in PAGE space.
+		//
+		// An object's offsetLeft/offsetTop are measured from its positioning
+		// ancestor: the page in infinite mode, the centering container in
+		// centered mode. Editor chrome - the context menus, and scrolling an
+		// object into view - is positioned against the page in both, so it has
+		// to add the container's own offset or it lands short by however far
+		// the container is centered. Zero when there is no container, which
+		// makes this a no-op on every existing page.
+		origin: function() {
+			var w = $.glue.canvas.wrapper();
+			return w ? { x: w.offsetLeft, y: w.offsetTop } : { x: 0, y: 0 };
+		},
+		// Add a newly created object to the canvas. In centered mode that is
+		// the container, not body - an object appended to body would sit
+		// outside the centered layout until the next reload, and would then
+		// jump, because the coordinates it saved were measured from a
+		// different origin than the one it is reloaded into.
+		add: function(elem) {
+			var w = $.glue.canvas.wrapper();
+			(w || document.body).appendChild(elem);
+			return elem;
+		},
+		// Convert a PAGE point (a click's pageX/pageY, or menu spawn coords)
+		// into the space object coordinates are stored in. A no-op in infinite
+		// mode; in centered mode it takes off the container's offset, so an
+		// object created by clicking lands under the pointer instead of
+		// centering-width to the right of it.
+		from_page: function(x, y) {
+			var o = $.glue.canvas.origin();
+			return { x: x-o.x, y: y-o.y };
 		}
 	};
 }();
@@ -167,14 +218,32 @@ $.glue.colorpicker = function()
 	var shown = false;
 	var cancelled = false;
 
-	// invisible positioning anchor - vanilla-picker renders its popup
-	// relative to this, moved to the last menu-spawn point each time show()
-	// is called so the picker appears near whatever was clicked
+	// Invisible positioning anchor - vanilla-picker renders its popup relative
+	// to this, moved to wherever was last clicked each time show() is called,
+	// so the picker appears next to the button that opened it.
+	//
+	// It is position:FIXED, so it needs VIEWPORT coordinates. It used to be
+	// given $.glue.menu.spawn_coords(), which is in page space and is captured
+	// when the menu opens rather than when the picker does - so the popup
+	// landed wherever the page had been scrolled to at some earlier moment.
+	// Measured: the same 655,30 whatever button was clicked. The last click is
+	// both the right anchor and already in the right space.
+	var last_click = false;
+	document.addEventListener('mousedown', function(e) {
+		last_click = { x: e.clientX, y: e.clientY };
+	}, true);
+
 	var anchor = document.createElement('div');
 	anchor.className = 'glue-ui';
 	anchor.style.position = 'fixed';
 	anchor.style.width = '0';
 	anchor.style.height = '0';
+	// Above the objects it is used to recolour. Objects go up to z-index 199
+	// ($.glue.stack), menu items sit at 200/201 and the centered-layout
+	// handles at 400 - without this the picker paints UNDER whichever object
+	// is selected, which is most of the time, since that is the object being
+	// coloured. Below the modal backdrop at 500.
+	anchor.style.zIndex = '450';
 
 	// note: the "transparent" toggle farbtastic used to offer here was never
 	// actually used by any module (transparency is handled by a separate
@@ -230,12 +299,17 @@ $.glue.colorpicker = function()
 			cancelled = false;
 
 			document.body.appendChild(anchor);
-			var p = $.glue.menu.spawn_coords();
+			var p = last_click;
 			if (!p) {
 				p = { x: Math.round(window.innerWidth/2), y: Math.round(window.innerHeight/2) };
 			}
 			anchor.style.left = p.x+'px';
 			anchor.style.top = p.y+'px';
+			// Open upwards or downwards depending on which way there is room.
+			// The library fixes this at construction and does not flip on its
+			// own, so a button near the top of the window put the popup off
+			// the top of the screen - measured at y=-68 for a button at 246.
+			picker.setOptions({ popup: (p.y < 340) ? 'bottom' : 'top' });
 
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
@@ -413,8 +487,9 @@ $.glue.contextmenu = function()
 			// position items
 			for (var i=0; i < 2; i++) {
 				var target;
-				var cur_left = obj.offsetLeft;
-				var cur_top = obj.offsetTop;
+				var canvas_origin = $.glue.canvas.origin();
+				var cur_left = obj.offsetLeft+canvas_origin.x;
+				var cur_top = obj.offsetTop+canvas_origin.y;
 				var offset = 48; // menu offset (when can't calculate height or width)
 				if (i == 0) {
 					target = top;
@@ -556,7 +631,16 @@ $.glue.grid = function()
 					}
 				}
 				// add grid lines
-				for (var x=grid_x; x <= grid_width; x+=grid_x) {
+				//
+				// Offset by the canvas origin. Snapping happens in OBJECT
+				// space (an object's left is measured from the centering
+				// container), while these lines are drawn in page space - so
+				// without the offset the grid a user sees and the positions
+				// objects actually snap to are out of step by however far the
+				// container is centered. No-op in infinite mode, where the
+				// origin is 0.
+				var grid_origin = $.glue.canvas.origin();
+				for (var x=(grid_origin.x % grid_x); x <= grid_width; x+=grid_x) {
 					var elem = document.createElement('div');
 					// set crucial css properties
 					elem.classList.add('glue-grid-y');
@@ -574,7 +658,7 @@ $.glue.grid = function()
 					document.body.appendChild(elem);
 					lines.push(elem);
 				}
-				for (var y=grid_y; y <= grid_height; y+=grid_y) {
+				for (var y=(grid_origin.y % grid_y); y <= grid_height; y+=grid_y) {
 					var elem = document.createElement('div');
 					elem.classList.add('glue-grid-x');
 					elem.classList.add('glue-grid');
@@ -1586,7 +1670,8 @@ $.glue.sel = function()
 					var window_min_y = document.documentElement.scrollTop;
 					var window_max_y = window_min_y+window.innerHeight;
 					var h = outer_height(next);
-					var p = { left: next.offsetLeft, top: next.offsetTop };
+					var o = $.glue.canvas.origin();
+					var p = { left: next.offsetLeft+o.x, top: next.offsetTop+o.y };
 					var w = outer_width(next);
 					// fit the entire object on the screen
 					// TODO (later): scroll a bit more up/left for the any
@@ -1651,7 +1736,8 @@ $.glue.sel = function()
 				var window_min_y = document.documentElement.scrollTop;
 				var window_max_y = window_min_y+window.innerHeight;
 				var elem = document.querySelector('.glue-selected');
-				var p = { left: elem.offsetLeft, top: elem.offsetTop };
+				var o = $.glue.canvas.origin();
+				var p = { left: elem.offsetLeft+o.x, top: elem.offsetTop+o.y };
 				var w = outer_width(elem);
 				var h = outer_height(elem);
 				if (p.left < window_min_x) {
@@ -2383,14 +2469,14 @@ $.glue.upload = function()
 						glue_orig_visibility.set(obj, getComputedStyle(obj).visibility);
 						obj.style.visibility = 'hidden';
 						// add to dom
-						document.body.appendChild(obj);
+						$.glue.canvas.add(obj);
 						// DEBUG
 						//console.log('glue-upload-dynamic-early: '+obj.id);
 						// fire handler
 						$.glue.trigger(obj, 'glue-upload-dynamic-early', [ mode, target_x, target_y ]);
 					} else {
 						// add to dom
-						document.body.appendChild(obj);
+						$.glue.canvas.add(obj);
 						// position object
 						if (mode == 'center') {
 							// move to the center of mouseclick

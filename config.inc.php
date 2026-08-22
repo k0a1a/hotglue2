@@ -63,6 +63,13 @@ error_reporting(E_ALL);						// see php documentation
 @define('IMAGE_UPLOAD_MAX_HEIGHT', 512);		// same as above, for height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
 @define('RESERVED_PAGE_NAMES', 'code edit pages favicon');	// page names used internaly and thus unavailable
+// centered layout mode: the content container's width, and the bounds the
+// editor's drag handles may set it to. Only used by pages that opt in to
+// page-layout-mode 'centered'; every page defaults to 'infinite', which is
+// hotglue's original unbounded canvas.
+@define('PAGE_DEFAULT_CONTAINER_WIDTH', 960);	// default centered container width in px
+@define('PAGE_MIN_CONTAINER_WIDTH', 320);		// narrowest the handles may drag to
+@define('PAGE_MAX_CONTAINER_WIDTH', 4000);		// widest the handles may drag to
 @define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
 @define('PAGE_DEFAULT_GRID_Y', 50);			// default grid y spacing in px
 @define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)

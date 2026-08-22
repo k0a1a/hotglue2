@@ -12,3 +12,19 @@ a, a:link, a:visited, a:active, a:hover {
 	color: inherit;
 	text-decoration: inherit;
 }
+
+#hg-centered-wrapper {
+	/* Centered layout mode's container (module_page.inc.php).
+
+	   pointer-events:none is load bearing, not decoration: the container spans
+	   the canvas, so without it every click meant for the page background hits
+	   the container instead of body - and the editor decides what is a
+	   background click by testing e.target == document.body. That silently
+	   breaks opening the page menu and deselecting objects. Events pass
+	   through the container and are picked up by the objects themselves. */
+	pointer-events: none;
+}
+
+#hg-centered-wrapper > .object {
+	pointer-events: auto;
+}

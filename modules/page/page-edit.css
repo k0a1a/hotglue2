@@ -10,3 +10,21 @@
 #glue-menu-page-background-scroll.glue-menu-enabled {
 	background-image: url(page-background-scroll-on.png);
 }
+
+.glue-container-handle {
+	/* the centered container's boundary while authoring: a visible edge and
+	   the grip that sets the container width. Fixed, so it stays reachable
+	   however far the page is scrolled vertically. */
+	border-left: 1px dashed rgba(0, 0, 0, 0.5);
+	bottom: 0;
+	cursor: ew-resize;
+	margin-left: -4px;
+	position: fixed;
+	top: 0;
+	width: 9px;
+	z-index: 400;
+}
+
+.glue-container-handle:hover {
+	border-left-color: #c00;
+}

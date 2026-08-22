@@ -27,6 +27,87 @@ function page_bg_scroll_toggle(elem) {
 	}
 }
 
+
+// --- centered layout mode -------------------------------------------------
+//
+// The container is rendered server-side (module_page.inc.php,
+// page_render_page_late) and objects live inside it with their coordinates
+// untouched. What the editor adds is the two edge handles: they show where the
+// container's boundary is while authoring, and dragging one sets its width.
+//
+// The container is centered, so moving one edge by dx changes the width by
+// 2*dx - the opposite edge moves the same amount the other way.
+
+function page_container_handles_update() {
+	var wrap = $.glue.canvas.wrapper();
+	var handles = document.querySelectorAll('.glue-container-handle');
+	if (!wrap) {
+		handles.forEach(function(h) { h.style.display = 'none'; });
+		return;
+	}
+	var box = wrap.getBoundingClientRect();
+	handles.forEach(function(h) {
+		h.style.display = 'block';
+		h.style.left = (h.dataset.edge == 'left' ? box.left : box.right) + 'px';
+	});
+}
+
+function page_container_handle_make(edge) {
+	var h = document.createElement('div');
+	h.className = 'glue-container-handle glue-ui';
+	h.dataset.edge = edge;
+	h.title = 'drag to set how wide the centered container is';
+	h.addEventListener('mousedown', function(e) {
+		var wrap = $.glue.canvas.wrapper();
+		if (!wrap) {
+			return;
+		}
+		e.preventDefault();
+		var box = wrap.getBoundingClientRect();
+		var centre = box.left + box.width/2;
+		var min = $.glue.conf.page.container_min;
+		var max = $.glue.conf.page.container_max;
+		var width = box.width;
+
+		function move(ev) {
+			// centered: the distance from the centre IS half the width
+			width = Math.round(Math.abs(ev.clientX - centre) * 2);
+			width = Math.max(min, Math.min(max, width));
+			wrap.style.width = width + 'px';
+			page_container_handles_update();
+			$.glue.grid.update();
+		}
+		function up() {
+			document.removeEventListener('mousemove', move);
+			document.removeEventListener('mouseup', up);
+			$.glue.backend({ method: 'page.set_layout', page: $.glue.page, width: width });
+		}
+		document.addEventListener('mousemove', move);
+		document.addEventListener('mouseup', up);
+	});
+	document.body.appendChild(h);
+	return h;
+}
+
+function page_layout_toggle() {
+	var centered = !!$.glue.canvas.wrapper();
+	$.glue.backend({
+		method: 'page.set_layout',
+		page: $.glue.page,
+		mode: centered ? 'infinite' : 'centered'
+	}, function(resp) {
+		if (resp['#error']) {
+			$.glue.error(resp['#data'] || resp['#error']);
+			return;
+		}
+		// The container is part of the server-rendered markup, so reload rather
+		// than rebuilding the DOM here - it keeps one definition of what each
+		// mode renders as, instead of a second one in the editor that could
+		// drift from it.
+		window.location.reload();
+	});
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	// set grid
 	$.glue.grid.x($.glue.conf.page.default_grid_x);
@@ -344,4 +425,39 @@ document.addEventListener('DOMContentLoaded', function() {
 		return false;
 	});
 	$.glue.menu.register('page', elem, 13);
+
+	// centered/infinite layout toggle
+	elem = document.createElement('div');
+	elem.style.alignItems = 'center';
+	elem.style.backgroundColor = '#eee';
+	elem.style.border = '1px solid #000';
+	elem.style.boxSizing = 'border-box';
+	elem.style.display = 'flex';
+	elem.style.fontSize = '11px';
+	elem.style.height = '32px';
+	elem.style.justifyContent = 'center';
+	elem.style.lineHeight = '32px';
+	elem.style.textAlign = 'center';
+	elem.style.width = '32px';
+	// text placeholder, like the other new buttons - this menu wants a real
+	// icon set eventually
+	elem.innerHTML = '<small>' +
+		($.glue.conf.page.layout_mode == 'centered' ? 'wide' : 'centre') + '</small>';
+	elem.title = $.glue.conf.page.layout_mode == 'centered' ?
+		'page content is centered in a fixed-width container - click for the unbounded canvas' :
+		'page content sits on an unbounded canvas - click to center it in a fixed-width container';
+	elem.addEventListener('click', function(e) {
+		$.glue.menu.hide();
+		page_layout_toggle();
+	});
+	$.glue.menu.register('page', elem, 14);
+
+	// container edge handles, in centered mode only
+	if ($.glue.canvas.wrapper()) {
+		page_container_handle_make('left');
+		page_container_handle_make('right');
+		page_container_handles_update();
+		window.addEventListener('resize', page_container_handles_update);
+		window.addEventListener('scroll', page_container_handles_update);
+	}
 });

@@ -257,6 +257,107 @@ function page_render_object($args)
 }
 
 
+/**
+ *	the page's layout mode and container width
+ *
+ *	@param string $page page name (page.revision)
+ *	@return array keys 'mode' ('infinite'|'centered') and 'width' (int px)
+ */
+function page_layout($page)
+{
+	$mode = 'infinite';
+	$width = PAGE_DEFAULT_CONTAINER_WIDTH;
+	$obj = load_object(['name'=>$page.'.page']);
+	if (!$obj['#error']) {
+		$obj = $obj['#data'];
+		if (!empty($obj['page-layout-mode']) && $obj['page-layout-mode'] == 'centered') {
+			$mode = 'centered';
+		}
+		if (!empty($obj['page-container-width'])) {
+			$width = intval($obj['page-container-width']);
+		}
+	}
+	if ($width < PAGE_MIN_CONTAINER_WIDTH) {
+		$width = PAGE_MIN_CONTAINER_WIDTH;
+	} elseif (PAGE_MAX_CONTAINER_WIDTH < $width) {
+		$width = PAGE_MAX_CONTAINER_WIDTH;
+	}
+	return ['mode'=>$mode, 'width'=>$width];
+}
+
+
+/**
+ *	remember where the page's objects begin in the body
+ *
+ *	render_object() appends each object to the body as an HTML STRING, not as an
+ *	element tree, so the container cannot be built by moving child elements
+ *	around - it has to be spliced into the markup. This runs before any object
+ *	is rendered, so whatever is in the body now is what comes before them.
+ */
+function _page_body_offset($set = NULL)
+{
+	static $offset = 0;
+	if ($set !== NULL) {
+		$offset = $set;
+	}
+	return $offset;
+}
+
+
+/**
+ *	wrap the page's objects in a centering container, in centered layout mode
+ *
+ *	The objects keep their exact stored coordinates: they stay
+ *	position:absolute, and the wrapper is position:relative, so the origin they
+ *	are measured from moves with the wrapper instead of being the page origin.
+ *	Nothing about an object file changes, and switching modes is only a question
+ *	of whether this wrapper is emitted.
+ *
+ *	margin:0 auto does the centering, in CSS, including on resize - but only for
+ *	as long as nothing pins a pixel width on body. In the EDITOR something does:
+ *	$.glue.canvas.update() sizes body to the content bounding box, which would
+ *	center the container once and never again. js/edit.js branches on the mode
+ *	for exactly that reason.
+ *
+ *	In INFINITE mode this emits nothing at all, so existing pages render exactly
+ *	as they always have.
+ */
+function page_render_page_late($args)
+{
+	$layout = page_layout($args['page']);
+	if ($args['edit']) {
+		html_add_js_var('$.glue.conf.page.layout_mode', $layout['mode']);
+		html_add_js_var('$.glue.conf.page.container_width', $layout['width']);
+		html_add_js_var('$.glue.conf.page.container_min', PAGE_MIN_CONTAINER_WIDTH);
+		html_add_js_var('$.glue.conf.page.container_max', PAGE_MAX_CONTAINER_WIDTH);
+	}
+	if ($layout['mode'] != 'centered') {
+		return false;
+	}
+
+	$bdy = &body();
+	if (!isset($bdy['val']) || !is_string($bdy['val'])) {
+		return false;
+	}
+	$offset = _page_body_offset();
+	if (strlen($bdy['val']) <= $offset) {
+		// no objects on this page - nothing to center
+		return false;
+	}
+	$before = substr($bdy['val'], 0, $offset);
+	$objects = substr($bdy['val'], $offset);
+
+	// position:relative is load bearing - without it the absolutely positioned
+	// objects inside would resolve against the viewport instead of the container
+	$bdy['val'] = $before.
+		'<div id="hg-centered-wrapper" style="position: relative; width: '.
+		intval($layout['width']).'px; margin: 0 auto;">'.nl().
+		$objects.
+		'</div>'.nl();
+	return true;
+}
+
+
 function page_render_page_early($args)
 {
 	if ($args['edit']) {
@@ -288,6 +389,10 @@ function page_render_page_early($args)
 
 	// set the html title to the page name by default
 	html_title(page_short($args['page']));
+
+	// note where the objects will start, for the centering container
+	$bdy = &body();
+	_page_body_offset(isset($bdy['val']) && is_string($bdy['val']) ? strlen($bdy['val']) : 0);
 }
 
 
@@ -343,6 +448,64 @@ function page_set_grid($args)
 }
 
 register_service('page.set_grid', 'page_set_grid', ['auth'=>true]);
+
+
+/**
+ *	set a page's layout mode and container width
+ *
+ *	@param array $args arguments
+ *		key 'page' is the page (page.revision)
+ *		key 'mode' is 'infinite' or 'centered' (optional)
+ *		key 'width' is the container width in px (optional)
+ *	@return array response
+ *		true if successful
+ */
+function page_set_layout($args)
+{
+	if (empty($args['page'])) {
+		return response('Required argument "page" missing', 400);
+	}
+	load_modules('glue');
+	$update = ['name'=>$args['page'].'.page'];
+	$remove = [];
+
+	if (isset($args['mode'])) {
+		if ($args['mode'] == 'centered') {
+			$update['page-layout-mode'] = 'centered';
+		} elseif ($args['mode'] == 'infinite') {
+			// infinite is the default, so it is stored by ABSENCE - a page that
+			// has never been switched keeps exactly the file it had
+			$remove[] = 'page-layout-mode';
+		} else {
+			return response('Invalid layout mode '.quot($args['mode']), 400);
+		}
+	}
+
+	if (isset($args['width'])) {
+		$width = intval($args['width']);
+		if ($width < PAGE_MIN_CONTAINER_WIDTH || PAGE_MAX_CONTAINER_WIDTH < $width) {
+			return response('Container width must be between '.PAGE_MIN_CONTAINER_WIDTH.
+				' and '.PAGE_MAX_CONTAINER_WIDTH.'px', 400);
+		}
+		$update['page-container-width'] = $width;
+	}
+
+	if (1 < count($update)) {
+		$ret = update_object($update);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	foreach ($remove as $attr) {
+		$ret = object_remove_attr(['name'=>$args['page'].'.page', 'attr'=>$attr]);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	return response(true);
+}
+
+register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
 
 
 /**

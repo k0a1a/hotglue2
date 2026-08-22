@@ -320,7 +320,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			clone.style.left = (obj.offsetLeft+$.glue.grid.x())+'px';
 			clone.style.top = (obj.offsetTop+$.glue.grid.y())+'px';
 			// add to dom and register
-			document.body.appendChild(clone);
+			// same parent as everything else on the canvas - in centered mode
+			// that is the container, and the clone's coordinates are already
+			// in that space because they came from the object it copied
+			$.glue.canvas.add(clone);
 			$.glue.trigger(clone, 'glue-pre-clone');
 			$.glue.object.register(clone);
 			// select new object

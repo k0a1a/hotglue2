@@ -719,13 +719,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			if ($.glue.conf.text.last_line_height) {
 				elem.style.lineHeight = $.glue.conf.text.last_line_height;
 			}
-			document.body.appendChild(elem);
+			$.glue.canvas.add(elem);
 			// make width and height explicit
 			elem.style.width = elem.offsetWidth+'px';
 			elem.style.height = elem.offsetHeight+'px';
-			// move to mouseclick
-			elem.style.left = (e.pageX-elem.offsetWidth/2)+'px';
-			elem.style.top = (e.pageY-elem.offsetHeight/2)+'px';
+			// move to mouseclick - converted out of page space, since in
+			// centered mode an object's coordinates are measured from the
+			// container rather than the page
+			var at = $.glue.canvas.from_page(e.pageX, e.pageY);
+			elem.style.left = (at.x-elem.offsetWidth/2)+'px';
+			elem.style.top = (at.y-elem.offsetHeight/2)+'px';
 			$.glue.object.register(elem);
 			$.glue.object.save(elem);
 		});
