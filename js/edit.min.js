@@ -1508,12 +1508,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.style.border = '1px solid #000';
 	elem.style.boxSizing = 'border-box';
 	elem.style.display = 'flex';
-	elem.style.fontSize = '20px';
+	elem.style.fontSize = '11px';
 	elem.style.height = '32px';
 	elem.style.justifyContent = 'center';
 	elem.style.width = '32px';
+	elem.style.lineHeight = '32px';
+	elem.style.textAlign = 'center';
 	elem.title = 'undo the last change';
-	elem.textContent = '↶';
+	// text placeholder until this menu gets a proper icon set
+	elem.innerHTML = '<small>undo</small>';
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.undo();
@@ -1527,12 +1530,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	redo_elem.style.border = '1px solid #000';
 	redo_elem.style.boxSizing = 'border-box';
 	redo_elem.style.display = 'flex';
-	redo_elem.style.fontSize = '20px';
+	redo_elem.style.fontSize = '11px';
 	redo_elem.style.height = '32px';
 	redo_elem.style.justifyContent = 'center';
 	redo_elem.style.width = '32px';
+	redo_elem.style.lineHeight = '32px';
+	redo_elem.style.textAlign = 'center';
 	redo_elem.title = 'redo the last undone change';
-	redo_elem.textContent = '↷';
+	// text placeholder until this menu gets a proper icon set
+	redo_elem.innerHTML = '<small>redo</small>';
 	redo_elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.redo();
