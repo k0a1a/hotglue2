@@ -323,10 +323,44 @@ Constants (`js/mobile-guided.js`):
 |---|---|
 | `REVEAL_DWELL_MS` | 500 — hold at the pulled-back view before moving |
 | `REVEAL_MS` | 1500 — the zoom/pan move |
-| `REVEAL_EASE` | `cubic-bezier(.3,.7,.2,1)` |
+| easing | computed per move — see *Pacing* below |
 | `LOAD_WAIT_MS` | 2500 — cap on waiting for images |
 
 - **One continuous CSS transform transition**, not a cut and not per-frame JS.
+
+### Pacing: the zoom is exponential, not linear
+
+Apparent size is multiplicative, so a zoom only feels even if each frame
+multiplies the last by a constant. A CSS transition interpolates the transform
+matrix LINEARLY, which over these ratios is visibly wrong. Measured on a device
+before the fix, `content/mort`'s 19x move went **0.0525 → 0.7218 in its first
+~400ms** and then crawled — nearly three quarters of the way in a quarter of the
+time.
+
+The fix is an easing, not a duration. Solving
+
+```
+start + (end - start) · e(t) = start · ratio^t
+  ⇒  e(t) = (ratio^t - 1) / (ratio - 1)
+```
+
+gives the curve that makes a linear interpolation trace an exponential one. It is
+sampled into a CSS `linear()` easing, composed with an ease-in-out applied to
+TIME so the move still starts and stops softly. `zoom_transition()` builds it per
+move, and the double-tap toggle uses the same thing — that move is the larger of
+the two (`content/wide` toggles across 13.7x in 400ms).
+
+**This must stay on the compositor.** Driving it per frame from
+`requestAnimationFrame` gets the curve right and then loses it again to jank: on
+`content/mort`, whose 92 images keep the main thread busy, rAF frames were
+measured stalling for **533ms** mid-move, which is far worse than the pacing
+problem being fixed. Measured after the fix, on the same page and device: 19x over
+1312ms in 290 frames with no stall, log-progress 0.17 / 0.65 / 0.96 at the
+quarter, half and three-quarter marks — a clean S-curve in log space.
+
+`linear()` needs Chrome 113+, Firefox 112+ or Safari 17.2+, which the project's
+evergreen baseline covers. Where it is missing, `log_easing()` returns null and
+the move falls back to a plain cubic-bezier: the pacing is lost, nothing breaks.
 - **Wait for `window.load` (capped at 2.5s), then for the page to be VISIBLE, then
   dwell.** The script is deferred, so it runs before a single image has painted;
   animating from there spends the pulled-back view on a blank page. Visibility is
