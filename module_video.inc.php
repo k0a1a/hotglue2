@@ -30,11 +30,18 @@ function _ffmpeg_available()
 {
 	static $available = null;
 	if ($available === null) {
-		if (!function_exists('exec')) {
-			$available = false;
+		$binary = FFMPEG_BINARY;
+		if (strpos($binary, '/') !== false || strpos($binary, DIRECTORY_SEPARATOR) !== false) {
+			$available = is_executable($binary);
 		} else {
-			exec(escapeshellarg(FFMPEG_BINARY).' -version 2>&1', $out, $ret);
-			$available = ($ret === 0);
+			$available = false;
+			$path = getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin';
+			foreach (explode(':', $path) as $dir) {
+				if ($dir !== '' && is_executable($dir.DIRECTORY_SEPARATOR.$binary)) {
+					$available = true;
+					break;
+				}
+			}
 		}
 	}
 	return $available;
@@ -52,8 +59,17 @@ function _video_dimensions($file)
 {
 	$dir = dirname(FFMPEG_BINARY);
 	$ffprobe = ($dir == '.') ? 'ffprobe' : $dir.'/ffprobe';
-	$cmd = escapeshellarg($ffprobe).' -v quiet -print_format json -show_streams '.escapeshellarg($file);
-	exec($cmd, $out, $ret);
+	$out = [];
+	$ret = -1;
+	$_pipes = [];
+	$_proc = proc_open([$ffprobe, '-v', 'quiet', '-print_format', 'json', '-show_streams', $file], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $_pipes);
+	if (is_resource($_proc)) {
+		$_stdout = stream_get_contents($_pipes[1]);
+		fclose($_pipes[1]);
+		fclose($_pipes[2]);
+		$ret = proc_close($_proc);
+		$out = $_stdout !== false ? explode("\n", $_stdout) : [];
+	}
 	if ($ret !== 0 || empty($out)) {
 		return false;
 	}
