@@ -1356,6 +1356,11 @@ $.glue.object = function()
 				m.destroy();
 				moveables.delete(obj);
 			}
+			// Clear the double-registration guard too, or the pair does not
+			// round-trip: register() would see the id still marked, return
+			// early, and leave the object with no Moveable at all - silently
+			// undraggable and unresizable until the page is reloaded.
+			delete reg_objs[obj.id];
 			$.glue.trigger(obj, 'glue-unregister');
 			// can't update canvas here as object to be deleted is still in the
 			// dom
@@ -2379,6 +2384,15 @@ $.glue.upload = function()
 			}
 		},
 		handle_response: function(data, x, y) {
+			// x and y arrive in PAGE space - from a drop's pageX/pageY, or from
+			// $.glue.menu.spawn_coords() when the upload button was used. The
+			// objects built below are added to the canvas, which in centered
+			// mode is the container, so their coordinates have to be in the
+			// container's space or every uploaded file lands centering-width to
+			// the right of where it was dropped. A no-op in infinite mode.
+			var at = $.glue.canvas.from_page(x, y);
+			x = at.x;
+			y = at.y;
 			if (!data) {
 				$.glue.error('There was a problem communicating with the server');
 			} else if (data['#error']) {

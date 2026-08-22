@@ -17,7 +17,7 @@
 //      words) travels a different path - glue.update_object - and a save must
 //      never touch it.
 
-const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
+const { test, expect, waitForEditor, CONTENT } = require('./fixtures/hotglue.js');
 
 // Canonical stored forms, i.e. what hotglue itself writes. Note iframe-url is
 // protocol-relative; see the normalization test at the bottom for why.
@@ -142,4 +142,132 @@ test('iframe urls are normalized to protocol-relative, then stay put', async ({ 
 	await saveAll(page);
 	expect(hg.readObjectRaw('100000000001'), 'iframe url normalization is not idempotent')
 		.toBe(normalized);
+});
+
+// --- the file-backed module types ----------------------------------------
+//
+// Above covers text and iframe, which need nothing on disk. image, video and
+// download each reference an uploaded file, and are seeded here rather than
+// uploaded: what is under test is the SERIALIZATION round trip, and going
+// through a real upload would drag ffmpeg re-encoding and image resizing into
+// it without testing anything more about the storage format.
+
+const fs = require('fs');
+const path = require('path');
+
+const IMAGE = {
+	type: 'image', module: 'image',
+	'object-left': '120px', 'object-top': '80px',
+	'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+	'image-file': 'sample.png', 'image-file-mime': 'image/png',
+	'image-file-width': '120', 'image-file-height': '80',
+	'image-background-repeat': 'no-repeat',
+};
+const DOWNLOAD = {
+	type: 'download', module: 'download',
+	'object-left': '400px', 'object-top': '80px', 'object-zindex': '102',
+	'download-file': 'notes.txt', 'download-file-mime': 'text/plain',
+	// deliberately NO object-width/height: download_save_state() strips them
+	// ("make width and height only be determined by the css"), so a real
+	// download object does not carry them and a fixture that does would look
+	// like data loss on the first save
+};
+const VIDEO = {
+	type: 'video', module: 'video',
+	'object-left': '120px', 'object-top': '300px',
+	'object-width': '320px', 'object-height': '180px', 'object-zindex': '103',
+	'video-file': 'clip.mp4', 'video-file-mime': 'video/mp4',
+};
+
+// put the files the objects reference into the page's shared directory
+function shareFiles(hg) {
+	const dir = path.join(CONTENT, hg.pageName.split('.')[0], 'shared');
+	fs.mkdirSync(dir, { recursive: true });
+	fs.copyFileSync(path.join(__dirname, 'fixtures', 'sample.png'),
+		path.join(dir, 'sample.png'));
+	fs.writeFileSync(path.join(dir, 'notes.txt'), 'a downloadable file\n');
+	fs.writeFileSync(path.join(dir, 'clip.mp4'), 'not really a video\n');
+}
+
+// What each module normalises on save. Anything NOT listed here would be the
+// storage format drifting; these are the module deciding what its own objects
+// look like, which is a different thing and worth pinning by name.
+const NORMALISES = {
+	image: {},
+	// video objects default to autoplay, materialised on the first save - real
+	// ones on disk carry it too
+	video: { 'video-autoplay': 'autoplay' },
+	// download objects are sized entirely by css, so any stored size is dropped
+	download: {},
+};
+
+for (const [name, attrs] of [['image', IMAGE], ['download', DOWNLOAD], ['video', VIDEO]]) {
+	test(`a ${name} object only changes in the ways its module intends`,
+		async ({ page, hg }) => {
+			hg.addObject('100000000001', attrs);
+			shareFiles(hg);
+			const before = hg.readObject('100000000001').attrs;
+
+			await page.goto(hg.editUrl());
+			await waitForEditor(page, 1);
+			await saveAll(page);
+			const after = hg.readObject('100000000001').attrs;
+
+			const expected = { ...before, ...NORMALISES[name] };
+			expect(after, `a ${name} object changed in a way its module does not intend`)
+				.toEqual(expected);
+		});
+
+	test(`a second save of a ${name} object changes nothing further`,
+		async ({ page, hg }) => {
+			// the normalisations above must settle, not compound
+			hg.addObject('100000000001', attrs);
+			shareFiles(hg);
+			await page.goto(hg.editUrl());
+			await waitForEditor(page, 1);
+			await saveAll(page);
+			const once = hg.readObjectRaw('100000000001');
+
+			await page.reload();
+			await waitForEditor(page, 1);
+			await saveAll(page);
+			expect(hg.readObjectRaw('100000000001'),
+				`saving a ${name} object twice kept changing it`).toBe(once);
+		});
+
+	test(`${name} serialization is stable across a save and reload`, async ({ page, hg }) => {
+		hg.addObject('100000000001', attrs);
+		shareFiles(hg);
+		const serialize = () => page.evaluate(() =>
+			window.$.glue.object.to_html(document.querySelector('.object')));
+
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		const first = await serialize();
+		await saveAll(page);
+
+		await page.reload();
+		await waitForEditor(page, 1);
+		expect(await serialize()).toEqual(first);
+	});
+}
+
+test('a moved image keeps the file it points at', async ({ page, hg }) => {
+	// the file reference is the part that would be catastrophic to lose: the
+	// upload stays on disk but the object no longer knows about it
+	hg.addObject('100000000001', IMAGE);
+	shareFiles(hg);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await page.evaluate(() => {
+		const el = document.querySelector('.object');
+		el.style.left = '600px';
+	});
+	await saveAll(page);
+
+	await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('600px');
+	const after = hg.readObject('100000000001').attrs;
+	expect(after['image-file']).toBe('sample.png');
+	expect(after['image-file-width']).toBe('120');
+	expect(after['image-file-mime']).toBe('image/png');
 });

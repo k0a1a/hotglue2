@@ -263,3 +263,42 @@ test('the drawn grid lines up with where objects snap', async ({ page, hg }) => 
 		.toBe(true);
 	expect(gridX).toBeGreaterThan(0);
 });
+
+test('an uploaded object lands where it was dropped, in both modes',
+	async ({ page, hg }) => {
+		// Upload placement comes in as PAGE coordinates - from a drop's
+		// pageX/pageY, or from the menu spawn point - while the object is added
+		// to the canvas, which in centered mode is the container. Without
+		// converting, every uploaded file lands centring-width to the right of
+		// where it was put.
+		const landed = {};
+		for (const mode of ['infinite', 'centered']) {
+			hg.destroy(); hg.create();
+			hg.addObject('100000000001', OBJ(100, 100), 'existing');
+			if (mode === 'centered') makeCentered(hg);
+			await page.goto(hg.editUrl());
+			await waitForEditor(page, 1);
+
+			// drive the real placement path with a stand-in object
+			landed[mode] = await page.evaluate(() => {
+				// a bare object: giving it a module class would pull in that
+				// module's pre-save hook, which expects children this has not got
+				const html = '<div id="x.y.z" class="object" ' +
+					'style="position:absolute; width:100px; height:50px;">u</div>';
+				window.$.glue.upload.handle_response({ '#error': false, '#data': [html] }, 500, 400);
+				const el = document.getElementById('x.y.z');
+				return {
+					parent: el.parentElement.id || el.parentElement.tagName,
+					// where it sits ON SCREEN is what the user judges
+					screenX: Math.round(el.getBoundingClientRect().x),
+					styleLeft: el.style.left,
+				};
+			});
+		}
+		expect(landed.centered.parent, 'uploads must join the centred container')
+			.toBe('hg-centered-wrapper');
+		expect(landed.centered.screenX,
+			`dropped at the same page point but landed at ${landed.centered.screenX} ` +
+			`in centred mode vs ${landed.infinite.screenX} in infinite`)
+			.toBe(landed.infinite.screenX);
+	});
