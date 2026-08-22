@@ -2391,7 +2391,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	// exclude Moveable's own controls: they need their mousedown to reach
 	// Moveable's handlers undisturbed to start a drag/resize
 	document.documentElement.addEventListener('mousedown', function(e) {
-		if (e.target.closest('.moveable-control, .moveable-line')) {
+		// preventDefault on mousedown is what stops a drag on the canvas from
+		// turning into a text selection - but it also suppresses FOCUS, so
+		// anything the user is meant to click into has to be exempt. Without
+		// the form controls here, an input inside editor UI can only be typed
+		// into if something focused it programmatically: clicking a second
+		// field does nothing at all, and the keystrokes keep going to the
+		// first one. modules/text/text-edit.js:187 works around this same
+		// handler locally for its textarea; this is the general case.
+		if (e.target.closest('.moveable-control, .moveable-line, input, textarea, select, button, label')) {
 			return;
 		}
 		e.preventDefault();

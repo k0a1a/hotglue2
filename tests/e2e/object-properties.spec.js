@@ -188,3 +188,39 @@ test('awkward attribute values survive storage and are escaped on render', async
 	// the DOM value is the original, i.e. it was escaped rather than mangled
 	await expect(byId(page, a)).toHaveAttribute('title', value);
 });
+
+test('every field can be clicked into, not just the focused one', async ({ page, hg }) => {
+	// Regression: edit.js's global mousedown handler calls preventDefault to
+	// stop canvas drags becoming text selections, and that also suppresses
+	// FOCUS. The modal opens with the class input focused programmatically, so
+	// typing appeared to work while clicking any other field did nothing and
+	// the keystrokes kept going to the class input. Form controls are now
+	// exempt from that handler (js/edit.js:2394).
+	const a = hg.addObject('100000000001', box(200, 200), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openProperties(page, a);
+
+	const classInput = page.locator('.glue-tag-input').first();
+	await page.locator('.glue-tag-add').click();
+	const nameInput = page.locator('.glue-tag-attr-name');
+	const valueInput = page.locator('.glue-tag-attr-value');
+
+	// click each field and type - no fill(), which would focus programmatically
+	// and hide exactly the bug this guards
+	await nameInput.click();
+	await page.keyboard.type('data-note');
+	await valueInput.click();
+	await page.keyboard.type('hi');
+	await classInput.click();
+	await page.keyboard.type('mine');
+
+	expect(await nameInput.inputValue()).toBe('data-note');
+	expect(await valueInput.inputValue()).toBe('hi');
+	expect(await classInput.inputValue()).toBe('mine');
+
+	await page.locator('.glue-modal-buttons button:has-text("OK")').click();
+	await expect.poll(() => hg.readObject('100000000001').attrs['object-attributes'])
+		.toBe('{"data-note":"hi"}');
+	expect(hg.readObject('100000000001').attrs['object-custom-class']).toBe('mine');
+});
