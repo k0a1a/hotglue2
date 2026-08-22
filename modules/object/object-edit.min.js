@@ -97,6 +97,12 @@ function object_properties_modal_show(obj, data) {
 	backdrop.className = 'glue-modal-backdrop glue-ui';
 	var modal = document.createElement('div');
 	modal.className = 'glue-modal glue-modal-tag';
+	modal.setAttribute('role', 'dialog');
+	modal.setAttribute('aria-modal', 'true');
+	modal.setAttribute('aria-label', 'object properties');
+	// so focus can be handed back here if every control is disabled
+	modal.tabIndex = -1;
+	var previously_focused = document.activeElement;
 
 	function txt(parent, str, cls) {
 		var span = document.createElement('span');
@@ -251,6 +257,17 @@ function object_properties_modal_show(obj, data) {
 
 	function close() {
 		backdrop.remove();
+		// hand focus back where it came from, rather than dropping it on body
+		if (previously_focused && document.contains(previously_focused)) {
+			previously_focused.focus();
+		}
+	}
+
+	// Everything focusable inside the dialog, in tab order. Disabled controls
+	// are skipped, so a disabled OK button does not become a dead stop.
+	function focusable() {
+		return Array.from(modal.querySelectorAll('input, button, select, textarea'))
+			.filter(function(el) { return !el.disabled && el.offsetParent !== null; });
 	}
 
 	ok.addEventListener('click', function() {
@@ -294,9 +311,42 @@ function object_properties_modal_show(obj, data) {
 			close();
 		}
 	});
+	// --- make it actually modal -------------------------------------------
+	// The editor binds its shortcuts on documentElement, and the dialog lives
+	// inside body, so every keystroke typed in here bubbles straight into them:
+	// Tab cycled through the objects on the canvas behind the dialog, and
+	// Delete, arrows and ctrl+z were all live too. Stopping propagation at the
+	// backdrop is what makes the dialog modal rather than merely on top.
+	['keydown', 'keypress', 'keyup'].forEach(function(type) {
+		backdrop.addEventListener(type, function(e) {
+			e.stopPropagation();
+		});
+	});
+
 	backdrop.addEventListener('keydown', function(e) {
 		if (e.key == 'Escape') {
 			close();
+			return;
+		}
+		if (e.key != 'Tab') {
+			return;
+		}
+		// Keep Tab inside the dialog. Without this the browser walks focus out
+		// into the page behind it, which is the same problem one layer down.
+		var items = focusable();
+		if (!items.length) {
+			e.preventDefault();
+			return;
+		}
+		var first = items[0];
+		var last = items[items.length-1];
+		var at = document.activeElement;
+		if (e.shiftKey && (at === first || !modal.contains(at))) {
+			last.focus();
+			e.preventDefault();
+		} else if (!e.shiftKey && (at === last || !modal.contains(at))) {
+			first.focus();
+			e.preventDefault();
 		}
 	});
 

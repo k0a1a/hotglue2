@@ -224,3 +224,61 @@ test('every field can be clicked into, not just the focused one', async ({ page,
 		.toBe('{"data-note":"hi"}');
 	expect(hg.readObject('100000000001').attrs['object-custom-class']).toBe('mine');
 });
+
+test('the dialog is modal: keys do not reach the canvas behind it', async ({ page, hg }) => {
+	// The editor binds its shortcuts on documentElement and the dialog lives
+	// inside body, so without stopping propagation every keystroke typed here
+	// also drove the canvas: Tab cycled through objects behind the dialog, and
+	// Delete, the arrow keys and ctrl+z were all live too.
+	const a = hg.addObject('100000000001', box(200, 200), 'A');
+	const b = hg.addObject('100000000002', box(600, 200), 'B');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+	await openProperties(page, a);
+
+	const selectedBefore = await page.evaluate(() =>
+		Array.from(document.querySelectorAll('.glue-selected')).map((el) => el.id));
+	const posBefore = await page.evaluate((i) => {
+		const el = document.getElementById(i);
+		return [el.style.left, el.style.top];
+	}, a);
+
+	for (let i = 0; i < 8; i++) await page.keyboard.press('Tab');
+	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Delete');
+
+	// nothing on the canvas moved, changed selection, or got deleted
+	expect(await page.evaluate(() =>
+		Array.from(document.querySelectorAll('.glue-selected')).map((el) => el.id)),
+	'Tab cycled the canvas selection behind the dialog').toEqual(selectedBefore);
+	expect(await page.evaluate((i) => {
+		const el = document.getElementById(i);
+		return [el.style.left, el.style.top];
+	}, a), 'arrow keys moved an object behind the dialog').toEqual(posBefore);
+	await expect(page.locator('.object')).toHaveCount(2);
+	expect(b).toBeTruthy();
+
+	// and focus never left the dialog
+	expect(await page.evaluate(() =>
+		!!document.activeElement.closest('.glue-modal-tag')),
+	'Tab walked focus out of the dialog').toBe(true);
+});
+
+test('closing the dialog gives the canvas its keyboard back', async ({ page, hg }) => {
+	// The other half of being modal. Swallowing keys while open is only correct
+	// if the editor is usable again the moment it closes - asserting on
+	// document.activeElement would not show that, and would pass trivially
+	// since the icon that opens the dialog is an <img> and cannot hold focus.
+	const a = hg.addObject('100000000001', box(200, 200), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openProperties(page, a);
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-modal-tag')).toHaveCount(0);
+
+	const before = await page.evaluate((i) => parseFloat(document.getElementById(i).style.left), a);
+	await page.keyboard.press('ArrowRight');
+	const after = await page.evaluate((i) => parseFloat(document.getElementById(i).style.left), a);
+	expect(after - before, 'the canvas did not get its keyboard back').toBe(1);
+});
