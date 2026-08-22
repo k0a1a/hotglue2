@@ -50,6 +50,10 @@ test('exactly the e, s and se handles are offered', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await byId(page, a).click();
 
+	// Handles render asynchronously (js/edit.js:963 kicks off the render pass
+	// Moveable needs before the control box becomes visible), so wait for them
+	// rather than reading the DOM the instant the click returns.
+	await expect(page.locator('.moveable-control.moveable-direction')).toHaveCount(3);
 	const dirs = await page.evaluate(() => Array.from(
 		document.querySelectorAll('.moveable-control.moveable-direction'))
 		.map((el) => el.getAttribute('data-direction')).sort());
@@ -57,11 +61,16 @@ test('exactly the e, s and se handles are offered', async ({ page, hg }) => {
 });
 
 test('no resize handles appear until an object is selected', async ({ page, hg }) => {
-	seed(hg);
+	const a = seed(hg);
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	// js/edit.js:944 - resizable is false until glue-select
 	expect(await page.locator('.moveable-control.moveable-direction').count()).toBe(0);
+	// Then prove that assertion was not vacuous: selecting DOES produce them,
+	// so a count of zero above meant "not yet offered" rather than "not yet
+	// rendered".
+	await byId(page, a).click();
+	await expect(page.locator('.moveable-control.moveable-direction')).toHaveCount(3);
 });
 
 for (const [dir, dx, dy, expects] of [

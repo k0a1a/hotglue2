@@ -4,9 +4,11 @@
 // Auto-scroll is section 8 item 4: "jQuery UI's viewport-edge auto-scroll
 // during drag is never explicitly coded anywhere - it's a default behavior of
 // .draggable(). Easy to lose silently when swapping to Moveable; put it in the
-// test suite explicitly." It was not lost - js/edit.js:953-956 configures
-// Moveable's scrollable/scrollThreshold and js/edit.js:1053 does the scrolling
-// - but only one axis of it actually works. See the vertical test below.
+// test suite explicitly."
+//
+// It was not lost, but half of it was broken and nobody noticed: horizontal
+// auto-scroll worked and vertical never fired at all. Both axes are covered
+// here, because covering one would have looked like covering the feature.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -149,18 +151,16 @@ test('dragging to the right edge auto-scrolls the page', async ({ page, hg }) =>
 });
 
 test('dragging to the bottom edge auto-scrolls the page', async ({ page, hg }) => {
-	test.fail();
-	// KNOWN BUG. Moveable measures its scroll-trigger zone from the rect of
-	// scrollContainer, which is document.documentElement (js/edit.js:954).
-	// That element's border box is the viewport WIDTH but the full document
-	// HEIGHT - measured 1280x2624 against a 1280x720 viewport - so its bottom
-	// edge sits ~1900px below the fold and the 40px scrollThreshold can never
-	// be reached vertically. Moveable emits direction [1,0] on every tick and
-	// never [0,1], so js/edit.js:1053 scrolls only sideways.
+	// Regression guard. This did not work at all until the scroll container
+	// was changed from document.documentElement to document.body: Moveable
+	// compares the pointer against the container's box, and documentElement's
+	// box is the viewport WIDTH but the full document HEIGHT (measured
+	// 1280x2624 against a 1280x720 viewport), so its bottom edge sat far below
+	// the fold and the 40px threshold was unreachable downwards. Moveable
+	// emitted direction [1,0] on every tick and never [0,1].
 	//
-	// It matters more than the horizontal case: hotglue canvases are typically
-	// far taller than wide (content/zinecamp2015 is 1642x5976, content/mort
-	// 4220x17590), so this is the axis people actually need.
+	// It is the axis that matters: hotglue canvases run far taller than wide
+	// (content/zinecamp2015 is 1642x5976, content/mort 4220x17590).
 	hg.addObject('100000000001', box(200, 200), 'A');
 	hg.addObject('100000000002', box(3000, 2500), 'FAR');
 	await page.goto(hg.editUrl());

@@ -951,7 +951,23 @@ $.glue.object = function()
 				origin: false,
 				// mirror jQuery UI draggable's implicit viewport-edge auto-scroll
 				scrollable: true,
-				scrollContainer: document.documentElement,
+				// document.body, NOT documentElement. Moveable decides the
+				// pointer is near an edge by comparing it against the scroll
+				// container's box, captured at drag start, and it special-cases
+				// body to mean the VIEWPORT (js/moveable.js:4064) while every
+				// other element is measured with getBoundingClientRect().
+				// documentElement's box is the viewport WIDTH but the full
+				// document HEIGHT - measured 1280x2624 against a 1280x720
+				// viewport - so its bottom edge sits far below the fold and the
+				// threshold could never be reached downwards. Horizontal
+				// auto-scroll worked and vertical silently did not.
+				scrollContainer: document.body,
+				// body.scrollTop is 0 in standards mode (the viewport's scroll
+				// lives on the window), so the offsets Moveable diffs to detect
+				// that a scroll happened have to be read from the window.
+				getScrollPosition: function() {
+					return [window.scrollX, window.scrollY];
+				},
 				scrollThreshold: 40,
 				scrollThrottleTime: 30
 			});
@@ -1051,7 +1067,9 @@ $.glue.object = function()
 				}
 				$.glue.undo.end_batch();
 			}).on('scroll', function(e) {
-				e.scrollContainer.scrollBy(e.direction[0]*15, e.direction[1]*15);
+				// the window, not e.scrollContainer: body is the container by
+				// name only - it does not scroll, the viewport does
+				window.scrollBy(e.direction[0]*15, e.direction[1]*15);
 			});
 
 			if (can_resize) {
