@@ -30,6 +30,26 @@ BUNDLED THIRD-PARTY CODE
 
 RECENT CHANGES (2026-08)
 
+  * Pages can now be CENTERED. A page is either "infinite" - hotglue's
+    original unbounded canvas, still the default and unchanged for every
+    existing page - or "centered", where the content sits in a fixed-width
+    container that stays in the middle of the window and re-centers as the
+    window is resized. The button is in the page menu (double-click the
+    background); in centered mode two dashed handles at the container's
+    edges show the boundary and set its width by dragging.
+
+    Objects keep their exact coordinates either way: centering wraps them
+    in a container rather than moving them, so switching modes changes no
+    object file and nothing has to be migrated. Content positioned beyond
+    the container is not clipped or moved - it simply extends past it. The
+    page background still spans the full window; only the content is
+    centered.
+
+  * The color picker now opens next to the button that was clicked, and
+    above the object it is recoloring. It used to appear wherever the page
+    had last been scrolled to, could open off the top of the window, and
+    was painted over by the object being colored.
+
   * Objects: a new button in the object context menu toggles whether content
     bigger than the object's box is cut off or spills out of it. Objects
     have always spilled, which stays the default - the setting is only
