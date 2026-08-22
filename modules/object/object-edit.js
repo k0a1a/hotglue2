@@ -9,6 +9,11 @@
 
 // returns the tooltip-ready transparency percentage for an object, used by
 // the transparency icon's x-bind:title below
+// whether an object is currently clipping its overflowing content
+function object_overflow_hidden(obj) {
+	return getComputedStyle(obj).overflow == 'hidden';
+}
+
 function object_transparency_percent(obj) {
 	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
 }
@@ -358,6 +363,43 @@ document.addEventListener('DOMContentLoaded', function() {
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
+
+	// Toggle whether content bigger than the object's box is cut off or spills
+	// out of it. Absent means visible, the browser default and what hotglue has
+	// always done, so only 'hidden' is ever stored.
+	//
+	// Text placeholder rather than an icon, like the link/undo/redo buttons -
+	// this menu needs a proper icon set and the placeholders should look like
+	// placeholders. The label is the ACTION, not the state: it says what
+	// clicking will do, and the tooltip says what is true now.
+	elem = document.createElement('div');
+	elem.style.alignItems = 'center';
+	elem.style.backgroundColor = '#eee';
+	elem.style.border = '1px solid #000';
+	elem.style.boxSizing = 'border-box';
+	elem.style.display = 'flex';
+	elem.style.fontSize = '11px';
+	elem.style.height = '32px';
+	elem.style.justifyContent = 'center';
+	elem.style.lineHeight = '32px';
+	elem.style.textAlign = 'center';
+	elem.style.width = '32px';
+	elem.setAttribute('x-data', '{ clipped: false }');
+	elem.setAttribute('x-bind:title', "clipped ? " +
+		"'content bigger than this object is cut off - click to let it show' : " +
+		"'content bigger than this object spills out - click to cut it off'");
+	elem.setAttribute('x-on:glue-menu-activate',
+		"clipped = object_overflow_hidden($.glue.owner($el))");
+	elem.innerHTML = '<small x-text="clipped ? \'show\' : \'clip\'">clip</small>';
+	elem.addEventListener('click', function(e) {
+		var obj = $.glue.owner(this);
+		obj.style.overflow = object_overflow_hidden(obj) ? '' : 'hidden';
+		$.glue.object.save(obj);
+		// refresh the label and tooltip through Alpine's reactive state, the
+		// same way the transparency button refreshes its percentage
+		this.dispatchEvent(new CustomEvent('glue-menu-activate'));
+	});
+	$.glue.contextmenu.register('object', 'object-overflow', elem, 4);
 
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/object/object-zindex.png';

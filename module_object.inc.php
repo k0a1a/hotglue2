@@ -252,6 +252,13 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-opacity'])) {
 		elem_css($elem, 'opacity', $obj['object-opacity']);
 	}
+	// whether content bigger than the object's box is cut off or spills out.
+	// Absent means visible, which is the browser default and what hotglue has
+	// always done - so only 'hidden' is ever stored, and an object that has
+	// never been touched keeps exactly the markup it had.
+	if (!empty($obj['object-overflow'])) {
+		elem_css($elem, 'overflow', $obj['object-overflow']);
+	}
 	elem_css($elem, 'position', 'absolute');
 	if (!empty($obj['object-top'])) {
 		elem_css($elem, 'top', $obj['object-top']);
@@ -353,6 +360,11 @@ function object_alter_save($args)
 		$obj['object-opacity'] = elem_css($elem, 'opacity');
 	} else {
 		unset($obj['object-opacity']);
+	}
+	if (elem_css($elem, 'overflow') !== NULL) {
+		$obj['object-overflow'] = elem_css($elem, 'overflow');
+	} else {
+		unset($obj['object-overflow']);
 	}
 	if (elem_css($elem, 'top') !== NULL) {
 		$obj['object-top'] = elem_css($elem, 'top');
