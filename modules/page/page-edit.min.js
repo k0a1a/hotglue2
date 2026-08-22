@@ -441,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.style.width = '32px';
 	// text placeholder, like the other new buttons - this menu wants a real
 	// icon set eventually
+	elem.className = 'glue-btn-label';
 	elem.innerHTML = '<small>' +
 		($.glue.conf.page.layout_mode == 'centered' ? 'wide' : 'centre') + '</small>';
 	elem.title = $.glue.conf.page.layout_mode == 'centered' ?

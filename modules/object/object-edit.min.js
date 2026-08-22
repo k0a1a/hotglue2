@@ -393,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		"'content bigger than this object spills out - click to cut it off'");
 	elem.setAttribute('x-on:glue-menu-activate',
 		"clipped = object_overflow_hidden($.glue.owner($el))");
+	elem.className = 'glue-btn-label';
 	elem.innerHTML = '<small x-text="clipped ? \'show\' : \'clip\'">clip</small>';
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);

@@ -764,6 +764,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.title = 'turn the selected text into a link, or edit a link';
 	// text placeholder until this menu gets a proper icon set, like the
 	// other buttons here have
+	elem.className = 'glue-btn-label';
 	elem.innerHTML = '<small>link</small>';
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
@@ -799,6 +800,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.style.lineHeight = '32px';
 	elem.style.textAlign = 'center';
 	elem.title = 'switch between editing the text as it looks and editing its HTML source';
+	elem.className = 'glue-btn-label';
 	elem.textContent = '</>';
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);

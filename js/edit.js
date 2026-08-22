@@ -1605,6 +1605,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.style.textAlign = 'center';
 	elem.title = 'undo the last change';
 	// text placeholder until this menu gets a proper icon set
+	elem.className = 'glue-btn-label';
 	elem.innerHTML = '<small>undo</small>';
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
@@ -1627,6 +1628,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	redo_elem.style.textAlign = 'center';
 	redo_elem.title = 'redo the last undone change';
 	// text placeholder until this menu gets a proper icon set
+	redo_elem.className = 'glue-btn-label';
 	redo_elem.innerHTML = '<small>redo</small>';
 	redo_elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();

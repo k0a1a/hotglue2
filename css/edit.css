@@ -301,3 +301,13 @@
 	font-size: 11px;
 	margin-bottom: 10px;
 }
+
+.glue-btn-label {
+	/* Menu buttons that are a text label rather than an icon, until this menu
+	   gets a proper icon set. Text in a div gets the I-beam cursor and can be
+	   selected by dragging, neither of which any other button here does - the
+	   rest are <img>. This makes them behave like the icons they stand in for. */
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
