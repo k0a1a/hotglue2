@@ -1,384 +1,475 @@
 # SOW — Mobile Guided View (`js/mobile-guided.js`)
 
-Status: to implement. Branch: `ng`.
+Status: **implemented on `ng`** (`4ee9dc0` … `4809d62`). This document now records the
+design as built, and the measurements that forced each decision. Where an earlier
+draft of this SOW specified something different, that is called out — the reversals
+cost debugging round trips and are kept so nobody re-derives them.
+
 Goal: make fixed-canvas Hotglue pages readable and navigable on phones WITHOUT
-reflowing or moving any content. Pages stay pixel-exact; we add a pan/zoom viewing
-layer for small screens only.
+reflowing or moving any content. Pages stay pixel-exact; a pan/zoom viewing layer is
+added for small screens only.
 
-## Summary
+## Summary — the whole behaviour in four steps
 
-On small screens, when a page is wider than the viewport, load `js/mobile-guided.js`
-which:
-1. Lands the viewer at a sensible ENTRY POINT (top-most content), zoomed to a scale
-   where text there is READABLE (or, for image-only pages, fit to the content).
-2. Lets the user freely PAN (drag in all directions) and ZOOM (pinch in AND out) to
-   explore the rest of the composition.
+1. **Open showing 75% of the canvas WIDTH**, anchored at the canvas origin. Not 100%:
+   the last quarter is one drag away, and 75% is that much more legible. Width
+   specifically, not whichever dimension is limiting — see *The zoom floor* below,
+   which is the reason.
+2. **Zoom in to the canvas origin at NATURAL SIZE** (`scale = 1`), where the page
+   looks exactly as authored. One continuous 1.5s move, after a 0.5s dwell.
+3. From there the visitor **pinch-zooms freely** (out as far as that opening view, in
+   as far as they like) and **drags** to reach the rest.
+4. **Double-tap toggles the whole composition into view** and back to natural size. The
+   browser's pinch range cannot reach contain-fit on a large canvas, so this moves the
+   transform instead, which is subject to no floor at all.
 
-This is VIEWING-mode only, small-screen only. It must NOT affect the editor, desktop
+This is VIEWING-mode only, small-screen only. It does NOT affect the editor, desktop
 viewing, or the stored page data. Nothing about the page is reordered or reflowed.
+
+### It deliberately does not inspect the content
+
+The script never looks at what is on the page — no font measurement, no
+text-led/image-led classification, no entry-point selection. An earlier design (and an
+earlier draft of this SOW) specified all three. Each was a guess and each guessed wrong
+on a real page:
+
+- Entry-point selection chose a **68x21px label reading "\*ZINES"** at x=1279 over the
+  **500x715 poster** at (31,30) that actually opens `content/zinecamp2015`. Adding a
+  size floor to fix that only moved the guess around.
+- Readable-scale-from-font-size landed `content/mort` at a scale where its median image
+  rendered **57px across**.
+- Ratio-based classification existed only to feed those two.
+
+A fixed fraction of the width, and natural size, need no guesses and behave identically
+on every page and in every browser. The simplification removed 105 lines net.
+
+Geometry is still needed, and is read from the **inline styles Hotglue writes on every
+object** (`el.style.left/top/width/height`, falling back to `offsetWidth/Height`), so it
+is correct before a single image has finished loading.
 
 ## Activation conditions (all must hold)
 
-- Viewing mode (NOT the editor — confirm the edit-mode guard).
-- Small screen (define a viewport-width threshold, e.g. <= 768px; prefer viewport
-  width over user-agent sniffing).
-- Page content width > viewport width (a page that already fits needs NO
-  intervention — leave it alone).
+- **Viewing mode.** Gated in `common.inc.php` — the script is loaded in the `else`
+  branch of the `$add_glue` test, so it is never present in the editor at all. This is
+  a load-time gate, not a runtime one, deliberately: the editor is not a mobile-viewing
+  surface and the script must never fight the editor's own drag/resize handling.
+- **The page has objects.** No `.object` elements ⇒ return.
+- **Small screen**: layout viewport width ≤ **768px**.
+- **Canvas wider than the viewport.** A page that already fits needs no intervention.
 
-If any fails, do nothing (normal rendering).
+`?guided=1` / `?guided=0` override the last two (see *Dev/QA overrides*). Neither can
+override the view-mode gate.
 
-## Determining the initial zoom + entry point
+## Mechanism — where scale and translation live
 
-Hotglue pages are absolute-positioned; content is scattered, coordinates may be
-NEGATIVE, and there may be NO content at literal (0,0). Always derive the bounding box
-from the actual min/max across objects — never assume an origin at (0,0). (Measured:
-`content/mort` starts at y = **-13**.)
+- **Scale lives in a CSS `transform` PERMANENTLY.** Native page zoom cannot be set or
+  animated programmatically: `visualViewport.scale` is read-only, and scale is only
+  settable via the viewport meta at parse time. The reveal must also abort on touch, so
+  handing scale off to native zoom would mean swapping coordinate spaces at the exact
+  moment the user's finger lands.
+- **Everything sits in one wrapper (`#hg-mg-canvas`) under a single uniform
+  `scale()`**, so relative positions are exact and no object moves with respect to any
+  other. The wrapper is `position:absolute; top:0; left:0; transform-origin:0 0`, and
+  objects are `position:absolute`, so the canvas must sit at the origin of a positioned
+  ancestor for every offset to survive untouched.
+- **Translation converts to DOCUMENT scrolling**, with `body` itself sized to the scaled
+  canvas (`canvasW * scale` by `canvasH * scale`). Native momentum panning is kept for
+  free. Only a NEGATIVE pan — the centring case, when the scaled canvas is narrower or
+  shorter than the viewport — stays in the transform, because a scroll offset cannot go
+  negative.
+- The transform reads right-to-left: `translate(-pan) scale(s) translate(-min)` — shift
+  the bounding box to the origin, then scale, then pan. Pan is in post-scale
+  (document) px.
 
-### Classifying the page: text-led or image-led
+### The bounding box
 
-Do NOT branch on the boolean "does this page contain any text object?" — it misroutes
-real pages. Measured: `content/mort` has exactly **1 text object among 95** (92 images,
-2 iframes), so a boolean test sends a visually image-only page down the text path and
-anchors it on a lone 100x100 box at y = -13 whose font is inherited (i.e. unknowable
-server-side).
+Coordinates go NEGATIVE on real pages, so the box is min/max across all objects — never
+assume an origin at (0,0), and never assume content exists there:
 
-Branch on a RATIO instead: treat a page as text-led only when text is a meaningful
-share of it. Start at **>15% of positioned objects** (or a comparable share of
-bounding-box area) and tune against the two test pages:
-
-| page | text / objects | | verdict |
+| page | objects | origin | canvas |
 |---|---|---|---|
-| `content/zinecamp2015` | 32 / 65 | 49% | text-led |
-| `content/mort` | 1 / 95 | 1% | image-led |
+| `content/zinecamp2015` | 65 | 32, 30 | 1642 x 5976 |
+| `content/mort` | 95 | 28, **-13** | 4220 x 17590 |
+| `content/wide` | 26 | 285, 100 | 6990 x 954 |
 
-### A. Text-led pages (the common case)
+## The zoom floor — a flat 0.25, and nothing moves it
 
-- **Entry point = the first SUBSTANTIAL object in reading order, of ANY type** —
-  top-most (smallest `object-top`), then left-most (`object-left`), filtered by a size
-  floor of `max(1000px², 2% of the largest object's area)`. Anchor the initial view
-  there, NOT at geometric (0,0) — (0,0) may be empty.
-  - An earlier draft said "the top-most TEXT element". That is wrong on real pages,
-    for two reasons. Restricting to text ignores the object that actually opens the
-    page when it happens to be a graphic: on `content/zinecamp2015` it selected a
-    68x21px label reading "*ZINES" at x=1279, skipping the 500x715 ZINE CAMP poster at
-    (31,30). And without a size floor, being one pixel higher beats being two hundred
-    times larger.
-  - Order GEOMETRICALLY, never by DOM order. Hotglue objects are absolutely
-    positioned; their DOM order reflects creation order and z-index and routinely
-    bears no relation to where they appear on the canvas.
-  - Entry POSITION and readable SCALE are independent: position comes from all
-    objects, scale from text alone. Changing one must not disturb the other.
-- **Readable scale**: pick a scale so the BODY text at the entry region renders at a
-  comfortable size after scaling (target ~16px CSS, hard floor ~12px). Formula:
-  `scale = target_px / entry_region_font_px`.
-  - Target the DOMINANT/body text size in the entry region, NOT the largest heading
-    (a 72px title would zoom out too far) and NOT the single smallest caption (an 8px
-    caption would zoom in absurdly). Sample the body-ish text near the entry point.
-  - Apply a floor and ceiling to the resulting scale so outliers don't produce absurd
-    zoom (e.g. clamp scale to a sane range).
-  - Do NOT factor in `devicePixelRatio`. An earlier draft required this; it is wrong.
-    A CSS pixel is already density-normalised, so 16 CSS px is the same apparent size
-    on a retina phone as on a low-DPI one, and multiplying by DPR would make text
-    roughly three times too large on a modern handset. Worse, it would deliberately
-    reintroduce a bug we hit for real: keying anything off device pixels made the page
-    behave differently on a 1080p laptop panel than on a 1440p external display, via
-    the OS scale factor. Everything here works in CSS px, on purpose.
+Measured on device, on both engines: **the browser will not zoom out past 0.25**, i.e.
+a quarter of the layout viewport. Four readings, and every one bottomed out on the same
+number:
 
-### B. Image-led pages (real example: `content/mort/`)
-
-- No usable font to key on. Instead **fit to the content bounding box width** so the
-  visual composition is viewable, then let the user pinch to explore. Do NOT zoom into
-  one image arbitrarily — show the composition, let them navigate.
-- If the page has a token text object or two (as `content/mort` does), ignore them for
-  scale purposes. They are not what the visitor came for.
-
-### Data source: measure client-side (server-side data is NOT sufficient)
-
-**Decided by measurement, not preference.** An earlier draft made server-side parsing
-the primary path with client-side as a fallback. Counting the real test pages reversed
-that: explicit `text-font-size` is present on only a minority of text objects.
-
-| page | text objects | with explicit `text-font-size` | |
-|---|---|---|---|
-| `content/zinecamp2015` | 32 | 10 | **31%** |
-| `content/mort` | 1 | 0 | **0%** |
-
-69% of zinecamp's text inherits its size from the stylesheet, so the object files
-cannot answer "how large does this text actually render?" — the single number the
-readable scale depends on.
-
-**Worse than incomplete: server-side data is actively WRONG here.** The inherited
-default is `.text { font-size: 18px }` (`modules/text/text.css:5`), overridden inline
-only when the author changes it. Rendering `content/zinecamp2015` and counting what
-the browser actually gets:
-
-| size | source | count |
-|---|---|---|
-| **18px** | inherited default | **20** |
-| 17px | inline | 8 |
-| 11px | inline | 1 |
-| 9px | inline | 1 |
-
-The dominant body size is **18px** (20 of 30 text objects). But the 10 objects with an
-inline size are unrepresentative of the page, so a server-side-only reading concludes
-the dominant size is **17px** — the wrong answer, not just a partial one. Any scale
-derived from it is wrong by ~6% here, and there is no guarantee the error stays that
-small on another page. Measure the rendered page.
-
-NOTE: 18px being a known CSS default does NOT make it safe to hardcode — per-site
-`user_code` CSS can override it, which is precisely what measuring absorbs.
-
-- **Client-side measurement is the PRIMARY path.** Measure the RENDERED page: find the
-  text elements near the entry point and read their true size via
-  `getBoundingClientRect()` / `getComputedStyle()`, then compute the scale from that.
-  For image-led pages, measure the content bounding box from rendered elements. This
-  also absorbs the cases object files can never cover: inherited sizes, non-px units,
-  and web fonts whose rendered metrics differ from what was declared.
-- **v1 needs NO PHP beyond loading the script.** Computing entirely client-side means
-  `render_page()` and the viewport emission are left alone — worth keeping in mind,
-  since the canvas-width override there was deliberately reverted off `ng`. Add a
-  server-side hint later ONLY if the render-then-adjust flash proves visible in
-  practice.
-- **Reference (not the v1 path):** the object files in `head/` do carry
-  `object-top`/`object-left`/`object-width`/`object-height` for every object, plus
-  `text-font-size` on the minority of text objects that set it explicitly. Example
-  object file:
-  ```
-  type:text
-  module:text
-  object-top:886.111133863897px
-  object-left:1277.10076976117px
-  object-width:269.777777671814px
-  object-height:465.777777671814px
-  text-font-size:11px
-  ...text...
-  ```
-  Geometry from these files is reliable and would be enough for the bounding box, the
-  text/image ratio and the entry-point PICK. Only the readable SCALE is unavailable,
-  because it depends on font sizes that mostly aren't recorded — which is why v1
-  measures everything client-side rather than splitting the work across two sources.
-  NOTE: no existing helper does this. A `_page_canvas_width()` in `module_glue.inc.php`
-  previously walked these same files for `object-left`/`object-width` and would have
-  been the natural thing to extend, but it was reverted off `ng` with the rest of the
-  earlier mobile work. Write it fresh — it is a `scandir()` + `load_object()` loop, and
-  `load_object()` is still present.
-- **Client-side fallback (robust):** server data is NOT one-size-fits-all — some text
-  has no explicit `text-font-size` (inherits from stylesheet), sizes may be non-px,
-  web fonts may render differently, and image-only pages have no font lines at all
-  (real example: `content/mort/head/*` has zero `font` matches). So when server-side
-  data is absent/ambiguous, fall back to measuring the RENDERED page client-side:
-  find text elements near the entry point, measure their actual pixel size
-  (`getBoundingClientRect` / computed style), compute scale from that. For image-only
-  pages, measure the content bounding box from rendered elements.
-- Implementation choice (decide during build): compute entry+scale server-side and
-  pass to `mobile-guided.js` as data attributes / a small inline config, OR compute
-  entirely client-side on load, OR hybrid (server hint + client verify). Hybrid is
-  most robust; pure client-side is simplest and handles all edge cases at the cost of
-  a brief render-then-adjust. Start with whichever is simpler to get correct;
-  correctness of the readable scale matters more than avoiding a flash.
-
-## Pan & zoom behaviour
-
-- After landing at the entry point + readable scale, the user can **pan freely**
-  (drag in all directions) — they know there's more because the page is clearly
-  larger than the screen.
-- **Pinch to zoom BOTH IN AND OUT.** NOTE: production hotglue.me only allows zoom-IN,
-  not out. The cause is NOT `maximum-scale` / `user-scalable` — neither is set
-  anywhere in this codebase. It is the viewport's `width=` value: when the declared
-  width exceeds the device width, browsers clamp MINIMUM zoom to the scale at which
-  that width fits, so you cannot zoom out past fit-to-canvas. On `ng` the
-  canvas-width override that caused this has already been reverted — `html_finalize()`
-  in `html.inc.php` now emits a fixed `width=device-width, initial-scale=1`.
-  **VERIFIED on a real phone (2026-08-21): pinch-zoom-out works. No work required.**
-  This also confirms the diagnosis — removing the `width=` override was what fixed it,
-  so relaxing `maximum-scale` would have been a no-op. Whatever viewport is emitted in
-  future, keep it free of `maximum-scale` and `user-scalable=no`, and do NOT reinstate
-  a canvas-width `width=` value: that is what broke zoom-out in the first place.
-- Prefer NATIVE touch pan/zoom where possible (momentum/inertia feels better than
-  custom JS panning). Only hand-roll if native can't deliver the initial-scale +
-  entry-point positioning.
-- **Do NOT auto-zoom.** (An earlier design considered auto-zooming-in after a
-  drag-while-zoomed-out; it was DROPPED — inferring intent and overriding the user's
-  gesture is annoying. The user zooms in/out themselves.)
-- OPTIONAL (nice-to-have, user-initiated): double-tap to zoom to the readable scale
-  centered on the tapped point. Standard gesture, no intent-guessing. Add only if
-  cheap; not required for v1.
-
-## Initial "Powers of Ten" reveal (IN for v1)
-
-On arrival, briefly pull back to show the WHOLE page (so the user grasps the
-composition and understands there's more than fits the screen), then smoothly zoom/pan
-IN to the entry point at the readable scale. This teaches spatial awareness with zero
-UI chrome — the user learns "this is a big canvas I can explore" by seeing it happen.
-
-**Pull back to CONTAIN-fit — the whole canvas, both axes — floored so it cannot
-degenerate.** Hotglue canvases are far taller than a phone is:
-
-| | canvas | aspect | fit-width @360 | contain-fit |
+| | viewport | docWidth | min scale reached | visible at min |
 |---|---|---|---|---|
-| `content/zinecamp2015` | 1642 x 5976 | 1 : 3.6 | 0.219 | 0.109 |
-| `content/mort` | 4220 x 17590 | 1 : 4.2 | 0.085 | 0.037 |
-| phone (measured) | 360 x 649 | 1 : 1.8 | | |
+| Firefox, `zinecamp2015` | 360x649 | 3315 (padded) | 0.2500 | 1440x2596 = 4x |
+| Firefox, `mort` | 360x649 | 4220 (unpadded) | 0.2500 | 1440x2596 = 4x |
+| Chrome, `zinecamp2015` | 411x750 | 3275 (padded) | 0.2500 | 1644x3000 = 4x |
+| Chrome, `mort` | 411x750 | 4220 (unpadded) | 0.2500 | 1644x3000 = 4x |
 
-An earlier draft specified fit-WIDTH here, reasoning that contain-fitting something as
-extreme as `content/mort` yields an unrecognisable sliver. Reviewed on a device, that
-was the wrong call: fit-width leaves `zinecamp` still overflowing **2.0 screens
-vertically**, so the composition is never actually seen and the reveal has nothing to
-reveal. Contain-fit shows all of it.
+Two engines, two pages, two viewport widths, padded documents and unpadded ones —
+0.2500 every time, and exactly 4x the layout viewport in each case (360→1440, 411→1644,
+649→2596, 750→3000). Taken with `minimum-scale` both declared and omitted, via the
+`?minscale=0` switch, with `CACHE_TIME` at 0 so nothing came from cache.
 
-Guard the degenerate case with a FLOOR instead of by abandoning contain-fit: never
-pull back further than **a quarter of fit-width**. On zinecamp the floor is 0.055 and
-contain-fit (x0.9 for margin) gives 0.098, so the floor is not reached; it exists for
-a future pathologically tall TEXT page. `content/mort` is image-led and skips the
-reveal entirely, so the case that motivated the original fit-width decision never
-actually runs.
+### What this replaces
 
-Note the pulled-back canvas is then NARROWER than the screen (160px on a 360px phone),
-so it must be CENTRED. A scroll offset cannot express that — scroll cannot go
-negative — so the centring offset has to stay in the transform.
+An earlier version of this document stated the floor as
+`max(minimum-scale, viewport / documentWidth)` and built three mechanisms on it. All
+three are wrong, and the code no longer contains any of them:
 
-Spec (get these right or the reveal goes from charming to annoying):
-- **Animation**: start at 90% of the contain-fit scale (whole canvas on screen with a
-  margin), floored at a quarter of fit-width; end at the computed readable scale at the
-  entry point. Continuous zoom+pan between the two — an Eames-style continuous move,
-  NOT a cut. Prefer CSS transforms/transitions (GPU-accelerated) over per-frame JS.
-  Measured on a 360px phone this is a 9.1x move; at fit-width it was 5.4x.
-- **SKIP the reveal on image-led pages.** Their target IS composition-fit, so start and
-  end scales nearly coincide and the move is imperceptible — measured start-to-end
-  zoom ratio:
-  - `content/zinecamp2015` (text-led): `0.178 -> ~0.89` = **~5x**, a real move.
-  - `content/mort` (image-led): `0.069 -> 0.092` = **1.33x**, not worth animating.
-  Land image-led pages directly at composition-fit. If a reveal is wanted for them
-  later it needs a DIFFERENT target (e.g. zoom in to the dominant image), which is a
-  separate design question — not v1.
-- **Brief**: **1.5s** for the whole zoom/pan move. Long enough to register the
-  composition, short enough it never reads as a loading screen. Tune on a real device
-  if needed, but err shorter — past ~2.5s it starts to feel like one.
-- **Interruptible on TOUCH, not on movement**: abort on `touchstart`/`pointerdown` —
-  any touch, including a plain tap. Do NOT wait for drag or pinch movement to be
-  detected first: if you do, the opening pixels of the user's gesture fight the
-  running animation, which feels broken. Abort by reading the computed transform
-  matrix, writing it back as an inline style and dropping the transition, so control
-  is handed over at exactly the current scale/position with no visual jump. Never
-  trap the user in a non-skippable intro.
-- **Once per page load; replays across pages, not within one.** The reveal plays on
-  arrival at each page, including internal links to OTHER pages. It must NOT play for
-  same-page anchor jumps. No flag or bookkeeping is needed to achieve this: Hotglue
-  view-mode navigation is plain full-page loads (verified — no `pushState` /
-  `hashchange` anywhere in view-mode JS), while a same-page fragment jump is a
-  same-document navigation that never re-parses the document, so the script simply
-  does not re-run. Play unconditionally on load and both halves of the rule hold.
-  NOTE: back-navigation restored from bfcache also does not re-run the script, so the
-  reveal is skipped and the user's prior position is kept — which is the wanted
-  behaviour.
-- **Respect `prefers-reduced-motion`**: if the user has OS-level reduced-motion set,
-  SKIP the animation entirely and land directly at the readable zoom. Accessibility
-  requirement (zoom animation can cause motion sickness) — not optional.
-- After the reveal (or the skip), the user is at the readable scale/entry point and
-  free pan/zoom (below) takes over.
+- **Document padding is gone.** Widening the document with blank space to lower
+  `viewport / documentWidth` cannot work, because the floor does not depend on document
+  width. `zinecamp2015` was carrying 1673px of blank canvas to "lower the zoom floor to
+  0.1086" and the floor stayed at 0.25. It bought nothing and cost a screenful of empty
+  space to scroll into.
+- **`minimum-scale=0.1` does nothing.** Engines clamp a declared minimum-scale to 0.25.
+  Removing it via `?minscale=0` changed no reading. It is harmless but not load-bearing;
+  `html.inc.php` still carries it pending a decision to delete it.
+- **The width-keying rationale evaporates.** Commit `4809d62` gave up contain-fit and
+  settled for 75%-of-width specifically because "an opening pulled back further than
+  fit-width can never be returned to". The real constraint is simply
+  `startScale > 0.25`, which has nothing to do with fit-width.
 
-## Out of scope for v1 (note, don't build)
+The `0.2199 against a fit-width of 0.2192` measurement quoted in `4809d62` — the reading
+that founded the old rule — could not be reproduced on hardware, and a flat 0.25 floor
+makes it impossible. It most likely came from desktop Chrome's responsive-design mode,
+which does not clamp the way a device does. **Do not measure viewport behaviour in
+responsive-design mode.**
 
-- Any content reordering / linearization / stacked mobile view. That is a SEPARATE,
-  author-driven approach: the author opts a page in and MARKS which elements belong
-  in a curated mobile stack, which is then derived in Y-order with author override.
-  It was specified in MOBILE-VIEW-DESIGN.md, which has since been reverted off `ng`
-  (recover with `git show 6e6bd6b:MOBILE-VIEW-DESIGN.md` if needed). This SOW is
-  pan/zoom of the intact composition only.
-- Per-page author controls / mobile annotations (also part of that separate approach).
-- Remembering the visitor's zoom/position per page across visits — parked for later.
-  If built: prefer `localStorage` keyed by page name over a cookie, since a cookie is
-  re-sent on EVERY http request for no benefit here. Note it interacts with the
-  reveal — a restored zoom means either skipping the reveal on that page, or
-  animating to the saved scale instead of the computed readable one. Decide then.
+### The consequence: a fixed 20x window
+
+Both engines clamp pinch to `[0.25, 5]`. What the visitor sees is
+`browserZoom × transform`, so our transform decides *where* that 20x window sits:
+
+```
+reachable scales = [0.25 × T, 5 × T]        T = our transform scale
+```
+
+Parked at natural size (`T = 1`) the window is `[0.25, 5]`: natural size is in it, and
+4x pulled back is the far edge. **Anything further out than 4x the layout viewport is
+unreachable by pinch, on any page, on any device.** That is a platform constant, not
+something to tune.
+
+Two rules follow, and they are the whole of the current design:
+
+1. The opening view must sit inside the window: `startScale > 0.25`, with a margin.
+2. Where the whole composition lies outside the window — which is most large canvases —
+   it has to be reached by moving the transform instead. That is the double-tap toggle.
+
+### Opening scale
+
+```
+startScale = max(0.25 × 1.25, min(1, fitWidth / 0.75)) × zoomComp
+```
+
+The `0.3125` clamp is what makes the opening returnable. Its cost is real and worth
+stating plainly: at 0.3125 the opening shows at most 3.2x the viewport width, so on a
+large canvas it is **not** the whole composition.
+
+| page | vw 274 (Chrome stock) | vw 360 (Firefox) | vw 411 (Chrome 100%) |
+|---|---|---|---|
+| `content/zinecamp2015` | 0.3125 — 53% of width | 0.3125 — 70% | 0.3337 — 75% |
+| `content/mort` | 0.3125 — 21% | 0.3125 — 27% | 0.3125 — 31% |
+| `content/wide` | 0.3125 — 13% | 0.3125 — 16% | 0.3125 — 19% |
+
+Only `zinecamp2015` at a wide viewport still gets the intended 75%; everything else is
+held back by the floor. The reveal is still a 3.2x move, so it continues to say "there
+is more here than fits" — it just no longer claims to show all of it. The double-tap
+gives that back.
+
+
+### The layout viewport is not a device constant
+
+`documentElement.clientWidth` is the input every scale divides by, and it is **not a
+property of the phone**. Measured on one handset, same page, same session:
+
+| | layout viewport |
+|---|---|
+| Firefox Android | 360 x 649 |
+| Chrome, stock (page zoom 150%) | **274 x 500** |
+| Chrome, page zoom 100% | 411 x 750 |
+
+Two effects stack. The engines disagree on the CSS-px basis for the same panel (Firefox
+360 vs Chrome 411, a DPR difference) *before* zoom enters. Then Chrome applies a default
+page zoom that **follows the OS display/font-size setting**, whose own default varies
+with the device's screen size. 150% is what this device ships with — not a user tweak —
+and `411 / 1.5 = 274`, `750 / 1.5 = 500`, exactly.
+
+Page zoom needs no compensation: unlike pinch zoom it resizes the layout viewport rather
+than multiplying on top of it, so `clientWidth` reports the truth and everything
+downstream stays consistent. The problem is only that its value cannot be predicted, so
+**no scale here may be expressed as a bare constant tuned to one device**. Since the
+floor is a flat 0.25 of whatever the layout viewport turns out to be, expressing the
+opening relative to the floor makes reachability hold for every `vw` automatically.
+
+### Landing scale is 1.0 — natural size
+
+Anything derived from fitting the canvas to the screen lands zoomed OUT by construction:
+fit-width on `content/zinecamp2015` is 0.2192, at which its 18px body text renders
+**4px**. The reveal would end with nothing legible and nothing zoomed into. At 1:1 the
+page appears exactly as authored, which is both the readable scale and the honest one,
+and needs no content inspection to arrive at. No cap is needed — 1.0 IS natural size, so
+it cannot upscale anything.
+
+Both the opening and the landing are anchored at the canvas origin, so on a tall page
+the reveal is a pure zoom with no pan. Centring (the negative-pan branch) engages only
+when the scaled canvas is smaller than the viewport on an axis — the normal case for a
+wide, short canvas like `content/wide`.
+
+## Restored pinch level — the recurring trap
+
+Mobile browsers remember the visitor's pinch level per tab and restore it on reload.
+**Our transform and the browser's zoom MULTIPLY**, so a page reloaded at 0.1 rendered a
+tenth of its intended size. It cannot be reset from here: `initial-scale` is only
+advisory on a reload, and forcing re-evaluation means mutating the viewport meta, which
+Firefox ignores. So it is measured (`visualViewport.scale`) and divided out:
+
+```
+zoomComp = 1 / clamp(0.25, 4, zoom0)
+```
+
+Clamped, because fully compensating a 0.1 restore would mean a 10x transform and a
+document tens of thousands of pixels across. The layout viewport does not move with
+zoom, so every measured figure stays correct; only the scales handed to the transform
+need adjusting.
+
+That multiplication is the trap that keeps recurring — it also broke a double-tap
+overview toggle and killed zoom-out entirely when the document was sized to the
+viewport. **Any scale set from script is only meaningful relative to the browser's
+current zoom.**
+
+## Double-tap — the other window
+
+The pinch window is 20x wide and fixed. Parked at natural size it reaches 4x pulled
+back, which on a large canvas is nowhere near the composition — `content/mort` tops out
+at 34% of its width, measured. So the composition is offered as a deliberate gesture
+rather than by fighting the floor.
+
+- **Double-tap** animates the transform to contain-fit (`min(vw/canvasW, vh/canvasH)`,
+  x0.95 for a margin) over `TOGGLE_MS` = 400ms.
+- **Double-tap again** returns to natural size, **centred on whatever was tapped** —
+  so the overview doubles as a way to choose where to go next, which is the standard
+  map gesture and needs no new UI.
+- Pinch works normally inside each state. The two states are two positions of the same
+  20x window.
+- **It compensates for the current pinch level** (`visualViewport.scale`, clamped to
+  `[0.25, 4]` exactly as the load-time compensation does). Without this, double-tapping
+  while pinched out to the floor lands at a quarter of the intended scale. This is the
+  third place the transform-times-browser-zoom multiplication has bitten; it is the
+  reason the earlier double-tap was removed in `4809d62`, and it is a bug, not a reason
+  the gesture cannot work.
+- **Armed only once the view has settled**, in `handoff()`. During the reveal a touch
+  means ABORT, not toggle.
+- `width=device-width` already disables the browser's own double-tap zoom on both
+  engines, so there is nothing to compete with.
+- A `dblclick` listener mirrors it for desktop iteration under `?guided=1`.
+
+**Not a continuous zoom-out past 0.25**, which is not buildable: once the browser
+clamps, `visualViewport.scale` stops moving, so there is no signal for how much further
+the fingers are still spreading — the gesture is swallowed. Reacting on `touchend` with
+a discrete step would read as the zoom sticking and then lurching. A deliberate,
+animated, user-initiated move is honest about what we can and cannot see.
+
+Implementation notes that are load-bearing:
+
+- Scroll cannot be transitioned, so the current scroll is folded back into the transform
+  before animating and handed back to scroll in `handoff()` at the end — the same
+  pattern the reveal uses.
+- The backstop timer (`TOGGLE_MS + 250`) must not fire a second time after
+  `transitionend` has already handed over. By then the visitor may have panned, and
+  re-running `handoff()` would yank them back to wherever the toggle landed.
+- `transitionend` BUBBLES; filter on `target` and `propertyName` here too.
+
+## The reveal ("Powers of Ten")
+
+On arrival, hold the pulled-back view briefly so the composition registers, then move
+continuously in to natural size at the origin. This teaches spatial awareness with zero
+UI chrome — the visitor learns "this is a big canvas I can explore" by seeing it happen.
+
+Constants (`js/mobile-guided.js`):
+
+| | |
+|---|---|
+| `REVEAL_DWELL_MS` | 500 — hold at the pulled-back view before moving |
+| `REVEAL_MS` | 1500 — the zoom/pan move |
+| `REVEAL_EASE` | `cubic-bezier(.3,.7,.2,1)` |
+| `LOAD_WAIT_MS` | 2500 — cap on waiting for images |
+
+- **One continuous CSS transform transition**, not a cut and not per-frame JS.
+- **Wait for `window.load` (capped at 2.5s), then for the page to be VISIBLE, then
+  dwell.** The script is deferred, so it runs before a single image has painted;
+  animating from there spends the pulled-back view on a blank page. Visibility is
+  gated on `visibilitychange` explicitly — a page opened in a background tab must still
+  have its reveal when the visitor finally looks.
+- **Interruptible on TOUCH, not on movement**: abort on `touchstart`/`pointerdown` in
+  the capture phase — any touch, including a plain tap. Do NOT wait to classify the
+  gesture as a drag or pinch first: if you do, the opening pixels of the gesture fight
+  the running animation and it feels broken. The abort reads the computed transform
+  matrix and hands over from exactly there, so there is no visual jump. Never trap the
+  visitor in a non-skippable intro.
+- **Respect `prefers-reduced-motion`**: skip the animation entirely and land directly at
+  natural size. Accessibility requirement — zoom animation can cause motion sickness.
+- **Once per page load; replays across pages, not within one.** No flag or bookkeeping
+  is needed: Hotglue view-mode navigation is plain full-page loads (verified — no
+  `pushState` / `hashchange` anywhere in view-mode JS), while a same-page fragment jump
+  never re-parses the document, so the script simply does not re-run. Back-navigation
+  restored from bfcache likewise does not re-run it, so the reveal is skipped and the
+  visitor's prior position is kept — which is the wanted behaviour.
+
+An earlier draft specified pulling back to **contain-fit** (the whole canvas, both axes,
+floored at a quarter of fit-width) and **skipping the reveal on image-led pages**. Both
+are gone: contain-fit is below the zoom floor and therefore unreturnable (consequence 1
+above), and with no classification there is no image-led branch to skip. The reveal now
+plays on every activating page.
+
+## Pinch-zoom-out — works, within the 0.25 floor
+
+**VERIFIED on a real phone (2026-08-22): pinch-zoom-out works on both engines**, down to
+the flat 0.25 floor documented above. `minimum-scale=0.1` turned out not to be what made
+it work — it is clamped to 0.25 and removing it changes nothing.
+
+Production hotglue.me only allows zoom-IN. The cause is NOT `maximum-scale` /
+`user-scalable` — neither is set anywhere in this codebase. It is the viewport's
+`width=` value: when the declared width exceeds the device width, browsers clamp minimum
+zoom to the scale at which that width fits, so you cannot zoom out past fit-to-canvas.
+On `ng` that canvas-width override was reverted; `html_finalize()` now emits
+`width=device-width, initial-scale=1, minimum-scale=0.1`, the last of which is inert.
+
+Regression-check only: any change that reinstates a `width=<canvas>` viewport breaks
+this again. Never add `user-scalable=no` or `maximum-scale`.
+
+**Open, small:** whether to delete `minimum-scale=0.1` from `html.inc.php` now that it is
+measured to do nothing. Left in for the moment, behind the `?minscale=0` switch that was
+built to test it.
 
 ## Browser landmines (measured, not theorised)
 
-Each of these cost a debugging round trip. They are recorded so the next person does
-not rediscover them.
+Each of these cost a debugging round trip.
 
 - **Never use `window.innerWidth` for the scale math. Use
-  `document.documentElement.clientWidth`.** innerWidth is the VISUAL viewport and is
+  `document.documentElement.clientWidth`.** `innerWidth` is the VISUAL viewport and is
   not trustworthy: Chrome desktop reported 512 against a real 497 (it counts the
   scrollbar), and Firefox reported **1572 for a 393px viewport** and 1440 for a 360px
-  one — 4x out, on both desktop responsive-design mode and Android. Every scale
-  divides by this, so the pull-back computed 0.66 instead of 0.16 and the reveal
-  collapsed from 5x to 1.35x. It also made behaviour depend on WHICH PHYSICAL DISPLAY
-  the window was on, through the OS scale factor. clientWidth is the layout viewport,
-  in CSS px, stable under both pinch-zoom and display scaling.
-- **Do not rely on the DOCUMENT scrolling.** Sizing a block wider than `body` and
-  expecting the viewport to scroll works in Chrome and silently fails in Firefox,
-  which reported `scrollWidth` 1460 while setting `scrollLeftMax` to **0.43** and
-  refusing to scroll at all — so `window.scrollTo` and direct `scrollLeft` assignment
-  both did nothing, and the view snapped back to the canvas origin. Use an explicit
-  scroll container: a fixed, viewport-sized box with an inner sizer of
-  `canvasW x scale`, so scrolling is an ordinary element with properly sized content.
-  Confirmed on-device that this keeps native momentum panning.
+  one — 4x out, on both desktop responsive-design mode and Android. Every scale divides
+  by this, so the pull-back computed 0.66 instead of 0.16 and the reveal collapsed from
+  5x to 1.35x. It also made behaviour depend on WHICH PHYSICAL DISPLAY the window was
+  on, via the OS scale factor. `clientWidth` is the layout viewport, in CSS px, stable
+  under both pinch-zoom and display scaling.
+
+- **Size `body` ITSELF and let the DOCUMENT scroll. Do not use a fixed-position scroll
+  container, and do not overflow `body` with an oversized child.** Both wrong answers
+  were tried:
+  - An oversized DIV inside `body` fails in Firefox, which reported `scrollWidth` 1460
+    while setting `scrollLeftMax` to **0.43** and refusing to scroll at all — so
+    `window.scrollTo` and direct `scrollLeft` assignment both did nothing and the view
+    snapped back to the origin. That failure is specifically about a CHILD overflowing
+    `body`.
+  - A fixed, viewport-sized box with an inner sizer (which an earlier draft of this SOW
+    prescribed as the fix for the above) breaks pinch-zoom: a fixed box is pinned to the
+    LAYOUT viewport while pinch acts on the VISUAL one, so zooming out merely shrinks the
+    box into blank space, and with no document overflow the browser may refuse to zoom
+    out at all. Pinch-zoom in AND out is a hard requirement and it needs real document
+    overflow.
+
+  `body`'s own box is ordinary scroll content and avoids both, which is why it is sized
+  rather than wrapped.
+
+- **Everything works in CSS px. Do NOT factor in `devicePixelRatio`.** A CSS pixel is
+  already density-normalised. An earlier draft required multiplying by DPR; it would
+  make text roughly three times too large on a modern handset, and it would deliberately
+  reintroduce a bug already hit for real — keying anything off device pixels made the
+  page behave differently on a 1080p laptop panel than on a 1440p external display, via
+  the OS scale factor.
+
 - **`transitionend` BUBBLES.** Filter on `event.target` and `propertyName`, or a
-  transition on any descendant object ends the reveal early. No hotglue CSS currently
+  transition on any descendant object ends the reveal early. No Hotglue CSS currently
   transitions `.object`, but per-site `user_code` CSS could add one at any time.
-- **`requestAnimationFrame` does not fire while the document is hidden.** Do not gate
-  the reveal on it; gate on `visibilitychange` explicitly, so a page opened in a
-  background tab still has its reveal when the visitor finally looks.
+
+- **`requestAnimationFrame` does not fire while the document is hidden.** Do not gate the
+  reveal on it; gate on `visibilitychange` explicitly.
+
 - **A phone's console is not reachable from the dev machine**, which is why `?debug=1`
-  below exists. Diagnosing this class of bug by reasoning from symptoms failed
-  repeatedly; asking the browser directly (`scrollLeftMax`) settled it immediately.
+  exists. Diagnosing this class of bug by reasoning from symptoms failed repeatedly;
+  asking the browser directly (`scrollLeftMax`, `visualViewport.scale`) settled it
+  immediately.
 
 ## Dev/QA overrides (not A/B infrastructure)
 
-- `?guided=1` forces activation on a wide screen; `?guided=0` forces it off on a
-  phone. For desktop iteration and for side-by-side comparison on a device.
-- `?debug=1` paints the computed state onto the page itself — viewports, canvas box,
-  classification ratio, scales, entry point, requested vs achieved scroll — and
-  refreshes once the reveal has finished. Inert without the parameter.
-- Neither may override the view-mode guard: this must never load in the editor.
-- These are NOT an A/B mechanism. Hotglue has no analytics, tracking or event
-  collection of any kind and no datastore but flat files, so there is nothing to
-  measure against; and a URL parameter cannot bucket organic traffic anyway. They are
-  for qualitative comparison — hand someone a phone and toggle.
+- `?guided=1` forces activation on a wide screen; `?guided=0` forces it off on a phone.
+  For desktop iteration and side-by-side comparison on a device.
+- `?debug=1` paints the computed state onto the page itself — viewport, canvas box and
+  origin, fit-width, opening and target scale, restored-zoom
+  compensation, requested vs achieved scroll — and refreshes once the reveal has
+  finished. It also POLLS (every 250ms) to report how far the browser ACTUALLY lets the
+  visitor pinch out, versus how far the opening view needs. Polled rather than driven by
+  `visualViewport`'s resize event because that event proved undependable: three
+  on-device runs returned no reading at all, which could equally mean "the zoom never
+  changed" or "the event never fired". It samples three independent witnesses —
+  `visualViewport.scale`, `innerWidth` (the visual viewport, so it moves with pinch even
+  where the event is silent) and Gecko's `scrollLeftMax` — so that no single engine's
+  quirk can hide a change. All three sitting still while you pinch means zoom-out is
+  genuinely blocked. Inert without the parameter.
+- Neither may override the view-mode gate: this must never load in the editor.
+- These are NOT an A/B mechanism. Hotglue has no analytics, tracking or event collection
+  of any kind and no datastore but flat files, so there is nothing to measure against;
+  and a URL parameter cannot bucket organic traffic anyway. They are for qualitative
+  comparison — hand someone a phone and toggle.
 
 ## Constraints
 
-- `js/mobile-guided.js` is VANILLA JS (consistent with the dejQuery'd `ng` editor).
-  No jQuery.
-- Loads ONLY in viewing mode on small screens meeting the activation conditions.
-  Must not load in the editor or affect desktop.
+- `js/mobile-guided.js` is VANILLA JS (consistent with the dejQuery'd `ng` editor). No
+  jQuery.
+- Loaded from `common.inc.php` with `html_add_js(..., 3, true)` — deferred, so the
+  objects it measures are parsed before it runs.
+- Loaded **unminified regardless of `USE_MIN_FILES`** for now: there is no `.min.js` pair
+  yet, and `USE_MIN_FILES` defaults to true, so keying off it would 404 in any default
+  install. If a minified copy is ever shipped, follow the project's ACTUAL convention —
+  there is no build pipeline at all (no bundler, no `package.json`, no terser config; see
+  MODERNIZATION.md's "Build tooling" row), and the existing `*.min.js` pairs were produced
+  by a small one-off script. Do not hand-minify.
 - Must not modify stored page data — this is a pure view-layer overlay.
 - Must not break pages that already fit (activation condition guards this).
-- If a minified copy is shipped, follow the project's ACTUAL convention: there is no
-  build pipeline at all — no bundler, no `package.json`, no terser config. See
-  MODERNIZATION.md's "Build tooling" row: the project is deliberately no-build, and
-  minified copies are produced by a small one-off script, matching today's
-  `*.min.js` pairs. Do not hand-minify.
-- Test on REAL pages of both types: a text-led page (`content/zinecamp2015/`, 1642 x
-  5976, 32 text / 65 objects) and an image-led page (`content/mort/`, 4220 x 17590,
-  1 text / 95 objects). Confirm the text page lands readable at a sensible entry point
-  — measured: top-most text sits at x=1279 of a 1642px canvas, i.e. 78% across, so
-  anchoring at (0,0) would land on empty canvas — and that the image page fits the
-  composition. Test on actual phone viewport sizes, not just a narrowed desktop
-  window.
 
-## Definition of done
+## Out of scope (noted, not built)
 
-- On arrival at a wider-than-viewport TEXT-LED page on a small screen, the "Powers of
-  Ten" reveal plays: the WHOLE canvas shown briefly, then a smooth continuous
-  1.5s zoom/pan to the readable entry point. It is interruptible (any touch aborts
-  it), plays on each page load but never on a same-page anchor jump, and is SKIPPED
-  when `prefers-reduced-motion` is set.
-- After the reveal/skip, a text-led page sits zoomed to a readable scale at the
-  top-most text element; the user can pan and pinch-zoom (in AND out) freely.
-- An image-led page lands DIRECTLY at composition-fit with no reveal; pan/pinch works.
-- Pages are classified text-led vs image-led by RATIO, not by a boolean "has any
-  text" test — `content/mort` (1 text object of 95) must classify as image-led.
+- Any content reordering / linearization / stacked mobile view. That is a SEPARATE,
+  author-driven approach: the author opts a page in and MARKS which elements belong in a
+  curated mobile stack, derived in Y-order with author override. It was specified in
+  MOBILE-VIEW-DESIGN.md, which has since been reverted off `ng` (recover with
+  `git show 6e6bd6b:MOBILE-VIEW-DESIGN.md`). This work is pan/zoom of the intact
+  composition only.
+- Per-page author controls / mobile annotations (also part of that separate approach).
+- Remembering the visitor's zoom/position per page across visits. If built: prefer
+  `localStorage` keyed by page name over a cookie, since a cookie is re-sent on EVERY
+  http request for no benefit here. Note it interacts with the reveal — a restored zoom
+  means either skipping the reveal on that page, or animating to the saved scale instead
+  of natural size.
+- Auto-zoom of any kind. An early design considered auto-zooming-in after a
+  drag-while-zoomed-out; DROPPED — inferring intent and overriding the user's gesture is
+  annoying. Zoom is user-initiated.
+
+## Definition of done — all met
+
+- On arrival at a wider-than-viewport page on a small screen, the reveal plays: the
+  opening view held for 0.5s, then a smooth continuous 1.5s zoom to natural size at the
+  canvas origin. ✔
+- It aborts on any touch, plays on each page load but never on a same-page anchor jump,
+  and is SKIPPED when `prefers-reduced-motion` is set. ✔
+- After the reveal or the skip, the visitor can pan and pinch-zoom in AND out freely, and
+  **can always return to the view the reveal opened with** — guaranteed by clamping the
+  opening above the measured 0.25 floor rather than by any device assumption. ✔
+- Double-tap reaches the whole composition and returns to natural size centred on the
+  tapped point, compensating for the current pinch level. ✔
 - Bounding boxes are computed from actual min/max and handle NEGATIVE coordinates
-  (`content/mort` starts at y = -13).
-- Entry point and readable scale are measured CLIENT-SIDE from the rendered page.
-  Correct on text whose size is inherited rather than declared — which is 69% of
-  `content/zinecamp2015`'s text objects, so this is the common case, not an edge one.
-- ~~Pinch-zoom-OUT works.~~ **DONE — verified on a real phone, 2026-08-21.** Already
-  satisfied on `ng` by the revert of the canvas-width viewport override; no code
-  needed. Only regression-check it: any change that reinstates a `width=<canvas>`
-  viewport would break it again.
-- No auto-zoom; zoom is user-initiated. (Optional double-tap-to-readable if cheap.)
-- `mobile-guided.js` is vanilla, loaded only under the activation conditions, and
-  doesn't touch stored data.
+  (`content/mort` starts at y = -13). ✔
+- No content inspection: no font measurement, no page classification, no entry-point
+  selection. ✔
+- Pinch-zoom-OUT works — verified on a real phone, both engines, 2026-08-22, down to the
+  platform's flat 0.25 floor. ✔
+- `mobile-guided.js` is vanilla, loaded only under the activation conditions, and doesn't
+  touch stored data. ✔
+
+Tested against a text page (`content/zinecamp2015`, 1642 x 5976), an image page
+(`content/mort`, 4220 x 17590, origin y = -13) and a wide-and-short page
+(`content/wide`, 6990 x 954, which exercises the floor clamp and the centring branch), on
+actual phone viewport sizes rather than a narrowed desktop window — and never in
+responsive-design mode, which does not reproduce the pinch clamp.

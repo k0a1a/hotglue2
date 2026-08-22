@@ -40,6 +40,14 @@
 	var REVEAL_MS = 1500;
 	var REVEAL_DWELL_MS = 500;	// hold at the pulled-back view before moving
 	var REVEAL_EASE = 'cubic-bezier(.3,.7,.2,1)';
+	var TOGGLE_MS = 400;		// double-tap zoom between the two views
+	// The browser's pinch range, MEASURED on device - see the note at
+	// startScale. Both blink and gecko clamp to these, whatever the viewport
+	// meta declares, so they are constants of the platform and not settings.
+	var PINCH_FLOOR = 0.25;
+	// How far above the floor the opening view must sit to stay returnable.
+	// A quarter, so a rounding difference between engines cannot strand it.
+	var FLOOR_MARGIN = 1.25;
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
 	var SMALL_SCREEN_PX = 768;
 
@@ -114,6 +122,16 @@
 
 		var fitWidth = vw / canvasW;
 
+		// NO document padding. An earlier version widened the document with
+		// blank space, believing the zoom-out floor was
+		// max(minimum-scale, viewport / documentWidth) and could be lowered by
+		// growing the denominator. Measured on device, on both engines, at two
+		// viewport sizes, padded and unpadded: the floor sat at exactly 0.2500
+		// every time. It does not depend on document width at all. The padding
+		// was buying nothing and costing a screenful of blank canvas to scroll
+		// into, so it is gone.
+		DBG.docWidth = Math.round(canvasW) + ' (= canvas; padding does not move the floor)';
+
 		// Mobile browsers remember the visitor's pinch level per tab and restore
 		// it on reload, so the page can load already zoomed out and everything
 		// we draw comes out tiny - our transform and the browser's zoom
@@ -124,74 +142,84 @@
 		// stays correct; only the scales we hand to the transform need adjusting.
 		// Clamped, because fully compensating a 0.1 restore would mean a 10x
 		// transform and a document tens of thousands of pixels across.
-		// Give the visitor real control of the zoom-out range.
-		//
-		// The floor is max(minimum-scale, viewport / documentWidth) - purely a
-		// WIDTH rule. On a tall canvas the whole page needs a smaller scale than
-		// fit-width, so it can never be reached: there is no more width to
-		// justify zooming out, even though there is plenty more height. Fix that
-		// by widening the DOCUMENT with empty space, until fitting its width
-		// also fits the canvas height.
-		//
-		// Only when it actually helps: on a canvas so large that the spec's 0.1
-		// floor binds anyway, padding would add blank space and buy nothing.
-		var padTo = Math.max(canvasW, vw * canvasH / vh);
-		if (Math.max(0.1, vw / padTo) >= Math.max(0.1, fitWidth)) {
-			padTo = canvasW;
-		}
-		DBG.docWidth = Math.round(padTo) + (padTo > canvasW ?
-			' (canvas ' + Math.round(canvasW) + ' + ' + Math.round(padTo - canvasW) +
-			' blank, to lower the zoom floor to ' + (vw / padTo).toFixed(4) + ')' : ' (no padding)');
-
 		var zoom0 = (window.visualViewport && window.visualViewport.scale) || 1;
 		var zoomComp = 1 / Math.min(4, Math.max(0.25, zoom0));
 		if (Math.abs(zoom0 - 1) > 0.01) {
 			DBG.restoredZoom = zoom0.toFixed(3) + ' -> compensating x' + zoomComp.toFixed(2);
 		}
 
-		// Open showing 75% of the canvas WIDTH - and width specifically, not
-		// whichever dimension happens to be limiting.
+		// Open showing 75% of the canvas WIDTH, but never further out than the
+		// visitor can pinch back to.
 		//
-		// Measured on a device: the browser refuses to zoom out past the point
-		// where the document width fills the screen, so the floor is
-		//     max(minimum-scale, viewport / documentWidth)
-		// and because the document IS the canvas times our transform, the two
-		// cancel: the effective floor is vw/canvasW = fit-width, no matter what
-		// transform we use. (Confirmed both ways - at natural size the floor
-		// measured 0.2199 against a fit-width of 0.2192; landing at fit-width
-		// made the document exactly viewport-wide and zoom-out stopped dead.)
+		// THE FLOOR IS A FLAT 0.25, and nothing we do moves it. An earlier
+		// version had it as max(minimum-scale, viewport / documentWidth), which
+		// would make it depend on our own transform and on the padding. Four
+		// on-device readings killed that: blink and gecko, two pages, two
+		// viewport widths (360 and 411), padded documents and unpadded ones,
+		// and every single one bottomed out at 0.2500 - which is exactly a
+		// quarter of the layout viewport in each case (360->1440, 411->1644).
+		// Declaring minimum-scale=0.1 changes nothing; engines clamp it.
 		//
-		// So an opening view pulled back further than fit-width can never be
-		// returned to. On a tall canvas, showing 75% of the HEIGHT needs 0.1448
-		// while the floor is 0.2192 - unreachable for good. Keyed to width it is
-		// always reachable, since fit-width shows MORE than the 75% we open at.
-		// Also never open further out than the floor itself. The viewport spec
-		// stops minimum-scale at 0.1, so a canvas more than 10x the viewport
-		// width cannot be zoomed out to fit at all - content/wide, at 6990px on
-		// a 360px screen, would open at 0.069 against a floor of 0.100 and be
-		// stranded. Clamping to 0.1 opens it slightly tighter than 75% (52% of
-		// its width) but keeps step 3 honest: whatever we open with, the visitor
-		// can get back to.
-		var startScale = Math.max(0.1, Math.min(1, fitWidth / 0.75)) * zoomComp;
+		// So the pinch range is a fixed 20x window, [0.25, 5] of whatever our
+		// transform is, and the only rule that matters here is that the opening
+		// view must sit inside it: startScale > PINCH_FLOOR. Everything the old
+		// comment reasoned about fit-width was answering a constraint that does
+		// not exist.
+		//
+		// The cost is real and worth stating plainly. At 0.3125 the opening can
+		// show at most 3.2x the viewport width, so on a large canvas it is NOT
+		// the whole composition - content/mort opens on 27% of its width. The
+		// double-tap toggle below exists to give that back, because a transform
+		// is not subject to any of this.
+		var startScale = Math.max(PINCH_FLOOR * FLOOR_MARGIN,
+			Math.min(1, fitWidth / 0.75)) * zoomComp;
 
 		// Report how far the browser ACTUALLY lets the visitor pinch out, versus
 		// how far the opening view needs. Guessing at this from symptoms has
 		// been unreliable; ask the browser.
-		if (debugOn() && window.visualViewport) {
-			var minSeen = 1;
-			window.visualViewport.addEventListener('resize', function () {
-				var s = window.visualViewport.scale;
-				if (s < minSeen - 0.001) {
-					minSeen = s;
-					DBG.zoomFloor = s.toFixed(4) + '  (need ' + startScale.toFixed(4) +
-						' for the 75% view; fit-width is ' + fitWidth.toFixed(4) + ')';
-					DBG.visibleAtFloor = Math.round(vw / s) + 'x' + Math.round(vh / s) +
-						' of ' + Math.round(canvasW) + 'x' + Math.round(canvasH) +
-						' = ' + Math.round(Math.min(100, vw / s / canvasW * 100)) + '% w, ' +
-						Math.round(Math.min(100, vh / s / canvasH * 100)) + '% h';
-					showDebug();
-				}
-			});
+		//
+		// POLLED, not event-driven. visualViewport's resize event is the
+		// obvious source and it is not dependable: three on-device runs came
+		// back with no reading at all, which could equally mean "the zoom never
+		// changed" or "the event never fired", and those need telling apart.
+		// So sample, and sample three independent witnesses, because no single
+		// one is trustworthy on both engines:
+		//   visualViewport.scale - the direct answer, where it updates
+		//   innerWidth           - the VISUAL viewport, so it grows as you
+		//                          pinch out even if the event stays silent
+		//                          (and reads 4x out on firefox android, which
+		//                          is fine - we only watch it CHANGE)
+		//   scrollLeftMax        - gecko-only, recomputed against the visual
+		//                          viewport, so it shrinks as innerWidth grows
+		// If all three sit still while you pinch, zoom-out is genuinely blocked.
+		if (debugOn()) {
+			var minScale = Infinity, maxInner = 0, minSLM = Infinity;
+			var hasSLM = ('scrollLeftMax' in docEl);
+			setInterval(function () {
+				var s = (window.visualViewport && window.visualViewport.scale) || 1;
+				var iw = window.innerWidth;
+				if (s < minScale) minScale = s;
+				if (iw > maxInner) maxInner = iw;
+				if (hasSLM && docEl.scrollLeftMax < minSLM) minSLM = docEl.scrollLeftMax;
+				// What the browser zoom has to reach to show the opening view
+				// again: the transform is parked at targetScale, so the visitor
+				// makes up the rest.
+				var need = startScale / targetScale;
+				DBG.pinch = 'scale now ' + s.toFixed(4) + ', min seen ' + minScale.toFixed(4) +
+					' - need ' + need.toFixed(4) + ' to regain the opening view';
+				DBG.pinchInner = 'innerWidth now ' + iw + ', max seen ' + maxInner;
+				DBG.pinchSLM = hasSLM ?
+					('scrollLeftMax now ' + Math.round(docEl.scrollLeftMax) +
+						', min seen ' + Math.round(minSLM)) : 'n/a (blink)';
+				// Canvas px on screen at the furthest pinch reached. Document px
+				// are canvas px times the transform, hence the divide.
+				var visW = vw / minScale / targetScale, visH = vh / minScale / targetScale;
+				DBG.visibleAtMin = Math.round(visW) + 'x' + Math.round(visH) +
+					' of ' + Math.round(canvasW) + 'x' + Math.round(canvasH) +
+					' = ' + Math.round(Math.min(100, visW / canvasW * 100)) + '% w, ' +
+					Math.round(Math.min(100, visH / canvasH * 100)) + '% h';
+				showDebug();
+			}, 250);
 		}
 
 		DBG.forced = forced;
@@ -234,10 +262,7 @@
 				'translate(' + (-minX) + 'px,' + (-minY) + 'px)';
 		}
 		function sizeSizer(scale) {
-			// padTo, not canvasW - the extra is empty space that exists only to
-			// lower the browser's zoom-out floor. See the note where it is
-			// computed.
-			document.body.style.width = (padTo * scale) + 'px';
+			document.body.style.width = (canvasW * scale) + 'px';
 			document.body.style.height = (canvasH * scale) + 'px';
 		}
 		// A NEGATIVE result means the canvas is smaller than the viewport on
@@ -250,34 +275,27 @@
 			};
 		}
 
-		// Land at the canvas ORIGIN, filling the screen on whichever axis is
-		// TIGHTER, and pan along the other. No content inspection, so nothing
-		// to guess wrong.
-		//
-		// Fitting the WIDTH only makes sense for a tall canvas. On a wide one it
-		// is backwards: content/wide is 6990x954, so fit-width is scale 0.0515
-		// and renders the whole page as a 360x49px strip inside a 649px-tall
-		// viewport - almost all screen wasted and nothing legible. Taking the
-		// LARGER of the two ratios ("cover") means one dimension always fits
-		// exactly and the visitor pans along the longer one, which is the right
-		// reading mode in both orientations.
-		var fitHeight = vh / canvasH;
-		// Land at NATURAL size. Anything derived from fitting the canvas to the
-		// screen lands zoomed OUT by construction - fit-width on
-		// content/zinecamp2015 is scale 0.295, at which 18px text renders 5px -
-		// so the reveal would end with nothing legible and nothing zoomed into.
-		// At 1:1 the page appears exactly as authored, which is both the
-		// readable scale and the honest one, and needs no content inspection to
-		// arrive at. The visitor pans from there.
+		// Land at the canvas ORIGIN at NATURAL size. Anything derived from
+		// fitting the canvas to the screen lands zoomed OUT by construction -
+		// fit-width on content/zinecamp2015 is 0.2192, at which its 18px body
+		// text renders 4px - so the reveal would end with nothing legible and
+		// nothing zoomed into. At 1:1 the page appears exactly as authored,
+		// which is both the readable scale and the honest one, and needs no
+		// content inspection to arrive at. The visitor pans from there.
 		// No cap needed: 1.0 IS natural size, so it cannot upscale anything.
 		var targetScale = 1 * zoomComp;
-		DBG.fitHeight = fitHeight.toFixed(4);
+		DBG.fitHeight = (vh / canvasH).toFixed(4);
 		var end = panFor(targetScale);
 		sizeSizer(targetScale);
 		DBG.targetScale = targetScale.toFixed(4);
 
+		// Where the view settled after the last move. The toggle animates from
+		// here, and a transform cannot be read back reliably mid-gesture.
+		var cur = { scale: 1, panX: 0, panY: 0 };
+
 		function handoff(scale, panX, panY) {
 			canvas.style.transition = '';
+			cur.scale = scale; cur.panX = panX; cur.panY = panY;
 			sizeSizer(scale);
 			// A negative pan means "centre me" - a scroll offset cannot express
 			// that, so keep only that residue in the transform.
@@ -299,13 +317,121 @@
 			DBG.scrollMax = ('scrollLeftMax' in docEl) ?
 				(Math.round(docEl.scrollLeftMax) + ',' + Math.round(docEl.scrollTopMax)) : 'n/a';
 			if (debugOn()) setTimeout(showDebug, 50);
+			armToggle();
+		}
+
+		// --- double-tap: toggle between natural size and the whole canvas ----
+		// The browser's pinch range is a fixed 20x window, [0.25, 5], and our
+		// transform decides WHERE that window sits, since what the visitor sees
+		// is browserZoom x transform. Parked at natural size the window reaches
+		// 4x pulled back and no further - nowhere near the whole composition on
+		// a large canvas (content/mort: 34% of its width, measured). So offer
+		// the other window explicitly, as a deliberate gesture rather than by
+		// fighting the floor: double-tap animates the TRANSFORM to contain-fit,
+		// double-tap again returns to natural size centred on what was tapped.
+		// A transform is ours, so neither end is subject to the floor at all.
+		//
+		// Not a continuous zoom-out past 0.25, which is not buildable: once the
+		// browser clamps, visualViewport.scale stops moving, so we get no signal
+		// for how much further the fingers are still spreading. The gesture is
+		// swallowed. A discrete, animated, user-initiated move is honest about
+		// that instead of pretending to track a gesture we cannot see.
+		function pinchNow() {
+			var z = (window.visualViewport && window.visualViewport.scale) || 1;
+			return Math.min(4, Math.max(0.25, z));
+		}
+		// Pan that centres a canvas point, clamped to the content, falling back
+		// to centring when the scaled canvas is smaller than the viewport.
+		function panCentredOn(scale, cx, cy) {
+			var cw = canvasW * scale, ch = canvasH * scale;
+			return {
+				x: cw <= vw ? -(vw - cw) / 2 :
+					Math.max(0, Math.min((cx - minX) * scale - vw / 2, cw - vw)),
+				y: ch <= vh ? -(vh - ch) / 2 :
+					Math.max(0, Math.min((cy - minY) * scale - vh / 2, ch - vh))
+			};
+		}
+		// Page coordinates are document coordinates, so the current scroll is
+		// already folded in; only the centring residue has to come back out.
+		function canvasPointAt(pageX, pageY) {
+			return {
+				x: (pageX + Math.min(cur.panX, 0)) / cur.scale + minX,
+				y: (pageY + Math.min(cur.panY, 0)) / cur.scale + minY
+			};
+		}
+		var atOverview = false, toggling = false;
+		function toggleView(pageX, pageY) {
+			if (toggling) return;
+			toggling = true;
+			var at = canvasPointAt(pageX, pageY);
+			// x0.95 for a margin, so the composition does not touch the edges.
+			var want = atOverview ? 1 :
+				Math.min(vw / canvasW, vh / canvasH) * 0.95;
+			// Compensate for wherever the visitor's pinch currently sits, the
+			// same way the load-time compensation does - our transform and the
+			// browser's zoom multiply, and this is the third place that has
+			// bitten. Without it, double-tapping while pinched out to the floor
+			// would land at a quarter of the intended scale.
+			var scale = want / pinchNow();
+			var pan = atOverview ? panCentredOn(scale, at.x, at.y) : panFor(scale);
+			atOverview = !atOverview;
+
+			// Scroll cannot be transitioned, so fold it back into the transform
+			// before animating, then hand it back to scroll at the end.
+			window.scrollTo(0, 0);
+			apply(cur.scale, cur.panX, cur.panY);
+			canvas.getBoundingClientRect();		// make the start state stick
+			canvas.style.transition = 'transform ' + TOGGLE_MS + 'ms ' + REVEAL_EASE;
+			apply(scale, pan.x, pan.y);
+			var settled = false;
+			var settle = function (ev) {
+				// transitionend BUBBLES - only our own transform counts.
+				if (ev && (ev.target !== canvas || ev.propertyName !== 'transform')) return;
+				// The backstop timer must not fire a SECOND time after
+				// transitionend has already handed over: by then the visitor may
+				// have panned, and re-running handoff would yank them back to
+				// where the toggle happened to land.
+				if (settled) return;
+				settled = true;
+				canvas.removeEventListener('transitionend', settle);
+				toggling = false;
+				handoff(scale, pan.x, pan.y);
+			};
+			canvas.addEventListener('transitionend', settle);
+			setTimeout(settle, TOGGLE_MS + 250);	// in case the event is missed
+		}
+
+		var tapAt = 0, tapX = 0, tapY = 0, armed = false;
+		function onTap(ev) {
+			var t = (ev.changedTouches && ev.changedTouches[0]) || ev;
+			var now = Date.now();
+			if (now - tapAt < 350 &&
+					Math.abs(t.pageX - tapX) < 40 && Math.abs(t.pageY - tapY) < 40) {
+				tapAt = 0;
+				toggleView(t.pageX, t.pageY);
+			} else {
+				tapAt = now; tapX = t.pageX; tapY = t.pageY;
+			}
+		}
+		// Armed only once the view has settled, so it cannot fire while the
+		// reveal is still running - a touch there means ABORT, not toggle.
+		// width=device-width already disables the browser's own double-tap
+		// zoom on both engines, so there is nothing to compete with.
+		function armToggle() {
+			if (armed) return;
+			armed = true;
+			window.addEventListener('touchend', onTap);
+			window.addEventListener('dblclick', function (ev) {
+				toggleView(ev.pageX, ev.pageY);		// desktop, for ?guided=1
+			});
 		}
 
 		// --- the reveal ------------------------------------------------------
-		// Pull back to contain-fit - the WHOLE canvas, both axes. Fit-width
-		// alone left content/zinecamp2015 overflowing 2.0 screens vertically, so
-		// the composition was never actually seen. Floored so a freakishly tall
-		// or wide canvas cannot open on unrecognisable mush.
+		// Open at startScale, anchored at the canvas origin - 75% of the WIDTH,
+		// or the 0.3125 clamp where that is further out than the visitor could
+		// ever pinch back to. Both ends of the move are at the origin, so
+		// on a tall canvas this is a pure zoom; the centring branch in panFor()
+		// engages only for a canvas smaller than the viewport on an axis.
 		var start = panFor(startScale);
 		apply(startScale, start.x, start.y);
 		DBG.startScale = startScale.toFixed(4);
