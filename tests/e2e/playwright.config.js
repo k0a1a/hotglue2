@@ -40,6 +40,7 @@ module.exports = defineConfig({
 	],
 	webServer: {
 		command: `php -S 127.0.0.1:${PORT} tests/e2e/server-router.php`,
+		env: { HG_MIN: process.env.HG_MIN || '' },
 		cwd: require('path').resolve(__dirname, '../..'),
 		// probe a static asset: it is served by the router's passthrough and
 		// always 200s, whereas any page URL depends on content that the tests

@@ -509,9 +509,14 @@ Each of these cost a debugging round trip.
   jQuery.
 - Loaded from `common.inc.php` with `html_add_js(..., 3, true)` — deferred, so the
   objects it measures are parsed before it runs.
-- Loaded **unminified regardless of `USE_MIN_FILES`** for now: there is no `.min.js` pair
-  yet, and `USE_MIN_FILES` defaults to true, so keying off it would 404 in any default
-  install. If a minified copy is ever shipped, follow the project's ACTUAL convention —
+- **This is the only script a visitor to a published page downloads.** Everything else
+  in `js/` is editor-only, so this file's size is the one that actually reaches people.
+  It is 30KB of which 59% is comments; `js/mobile-guided.min.js` is the comment-stripped
+  copy at 12KB, and 4KB against 11KB once gzipped. `USE_MIN_FILES` (true by default)
+  chooses between them. Regenerate the copy with `tools/make-min.js` after editing the
+  source — `tests/e2e/min-files.spec.js` fails if it is left behind, and the suite can be
+  run against the minified assets with `HG_MIN=1`.
+- Follow the project's ACTUAL convention for minified copies —
   there is no build pipeline at all (no bundler, no `package.json`, no terser config; see
   MODERNIZATION.md's "Build tooling" row), and the existing `*.min.js` pairs were produced
   by a small one-off script. Do not hand-minify.

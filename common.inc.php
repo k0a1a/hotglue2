@@ -130,10 +130,16 @@ function default_html($add_glue)
 		// It decides for itself whether to activate (small viewport, and a
 		// canvas wider than it) and does nothing otherwise. Deferred so the
 		// objects it measures are parsed before it runs.
-		// Loaded unminified regardless of USE_MIN_FILES for now - there is no
-		// .min.js pair yet, and USE_MIN_FILES defaults to true, so keying off
-		// it would 404 in any default install.
-		html_add_js(base_url().'js/mobile-guided.js', 3, true);
+		// This is the ONLY script a visitor to a published page downloads -
+		// everything else in js/ is editor-only - so its size is the one that
+		// actually reaches people. The source is 30KB, 59% of it comments;
+		// the copy is 12KB, and 4KB against 11KB once gzipped. Regenerate it
+		// with tools/make-min.js after editing the source.
+		if (USE_MIN_FILES) {
+			html_add_js(base_url().'js/mobile-guided.min.js', 3, true);
+		} else {
+			html_add_js(base_url().'js/mobile-guided.js', 3, true);
+		}
 	}
 }
 
