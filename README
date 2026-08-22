@@ -35,8 +35,15 @@ RECENT CHANGES (2026-08)
     validates the URL (refusing javascript: and data:), adds https:// to a
     bare domain while leaving anchors and page names alone, escapes the URL
     into the href, optionally puts a class on the link, and can edit or
-    remove a link you already made. Note text objects are edited as raw HTML
-    source in a textarea, so the markup is visible while editing.
+    remove a link you already made.
+
+  * Text objects are now edited WYSIWYG: the markup stays hidden and a link
+    shows as underlined text, so editing looks like the published page. The
+    HTML source is still what gets stored - the </> button in the text menu
+    switches to editing it directly, which is also how to fix anything the
+    visual editor rewrites. Note the browser's HTML parser canonicalises
+    markup it round-trips: an unquoted attribute gains quotes and an
+    uppercase tag becomes lowercase, both of which render identically.
 
   * Objects: the context menu's id button is now an Object Properties
     dialog, showing the object as the <div> it renders as - id read-only,

@@ -102,6 +102,53 @@ $.glue.text = function()
 				}
 			}
 		},
+		// --- WYSIWYG editing round-trip ---------------------------------
+		//
+		// Text is STORED as raw HTML source. It is VIEWED through
+		// _text_render_content(), which is a one-way projection: it expands
+		// $BASEURL$ and friends, turns relative urls absolute, converts
+		// newlines to <br> and spaces to &nbsp;. Editing the viewed output and
+		// saving it back would bake every one of those in permanently, on the
+		// first edit of every text object.
+		//
+		// So editing does NOT use the view render. It uses this pair, which is
+		// deliberately reversible: no alias expansion, no url rewriting,
+		// nothing encoded. The only transform is newline <-> <br>, and the
+		// <br> elements this inserts are MARKED, so a <br> the author typed
+		// themselves survives as a <br> instead of silently becoming a
+		// newline. Both forms render identically, but rewriting one into the
+		// other would still be us editing their file behind their back.
+		to_editing_html: function(src) {
+			return String(src).replace(/\r\n|\r|\n/g, '<br data-glue-nl="1">');
+		},
+		// node .. the contenteditable element
+		from_editing_html: function(node) {
+			var clone = node.cloneNode(true);
+			// our own line breaks become newlines again
+			clone.querySelectorAll('br[data-glue-nl]').forEach(function(br) {
+				br.replaceWith(document.createTextNode('\n'));
+			});
+			// Browsers wrap new lines in <div> (blink) or insert bare <br>
+			// (gecko) when Enter is pressed, whatever we ask for. Unwrap the
+			// former and mark the latter, so both engines produce the same
+			// source rather than one of them producing stray block elements.
+			clone.querySelectorAll('div, p').forEach(function(block) {
+				block.replaceWith(document.createTextNode('\n'), ...block.childNodes);
+			});
+			clone.querySelectorAll('br:not([data-glue-nl])').forEach(function(br) {
+				if (br.dataset.glueTyped) {
+					br.replaceWith(document.createTextNode('\n'));
+				}
+			});
+			var out = clone.innerHTML;
+			// &nbsp; round-trips as the character it was
+			out = out.replace(/&nbsp;/g, '\xa0');
+			// the zero-width space used to make a trailing <br> visible is
+			// scaffolding, not content
+			out = out.replace(/\u200b/g, '');
+			// a leading newline from unwrapping the first block is an artefact
+			return out.replace(/^\n/, '');
+		},
 		insert_at_cursor: function(elem, s) {
 			// inspired from http://forumsblogswikis.com/2008/07/20/how-to-insert-tabs-in-a-textarea/
 			// this only includes the code for Firefox and Webkit though
@@ -149,7 +196,13 @@ $.glue.text = function()
 		stop_editing: function(elem) {
 			var input = elem.querySelector(':scope > .glue-text-input');
 			var render = elem.querySelector(':scope > .glue-text-render');
-			// copy the rendered textarea value
+			// in WYSIWYG mode the div is where the edits are, so read the
+			// source back out of it before anything else touches it
+			if (render.isContentEditable) {
+				input.value = $.glue.text.from_editing_html(render);
+				render.contentEditable = 'false';
+			}
+			// now show the VIEW render, which is lossy on purpose
 			render.innerHTML = $.glue.text.render_content(input.value, elem.id);
 			elem.classList.remove('glue-text-editing');
 			// disable links, resolve relative urls
@@ -183,6 +236,93 @@ $.glue.live('.text', 'glue-register', function(e) {
 	// and handle a few keycodes
 	var input = this.querySelector(':scope > .glue-text-input');
 	var render = this.querySelector(':scope > .glue-text-render');
+
+	// The contenteditable div needs everything the textarea gets, and for the
+	// same reason: the editor's shortcuts are bound on documentElement, so
+	// while it is being typed into, Delete deletes the object, arrows move it
+	// and Tab cycles the selection. The textarea has stopped propagation since
+	// forever (below); this is the same guard for the other editing surface.
+	['keydown', 'keypress', 'keyup'].forEach(function(type) {
+		render.addEventListener(type, function(e) {
+			if (!this.isContentEditable) {
+				return;
+			}
+			e.stopPropagation();
+		});
+	});
+
+	render.addEventListener('mousedown', function(e) {
+		// same reason as the textarea's handler below - edit.js preventDefaults
+		// mousedown on the canvas, which would stop a caret being placed
+		if (this.isContentEditable) {
+			e.stopPropagation();
+		}
+	});
+
+	render.addEventListener('keydown', function(e) {
+		if (!this.isContentEditable) {
+			return;
+		}
+		if (e.key == 'Escape') {
+			$.glue.text.stop_editing(this.parentElement);
+			e.preventDefault();
+			return;
+		}
+		if (e.key == 'Enter') {
+			// Insert our OWN marked <br> rather than letting the browser
+			// decide: blink wraps the new line in a <div> and gecko inserts a
+			// bare <br>, so without this the same keystroke produces different
+			// source on the two engines. Marked, so it reads back as a newline
+			// while a <br> the author typed stays a <br>.
+			var br = document.createElement('br');
+			br.setAttribute('data-glue-nl', '1');
+			var sel = window.getSelection();
+			if (sel && sel.rangeCount) {
+				var range = sel.getRangeAt(0);
+				range.deleteContents();
+				range.insertNode(br);
+				// a trailing <br> is not rendered unless something follows it
+				var pad = document.createTextNode('​');
+				br.after(pad);
+				range.setStartAfter(br);
+				range.collapse(true);
+				sel.removeAllRanges();
+				sel.addRange(range);
+			}
+			e.preventDefault();
+		}
+	});
+
+	render.addEventListener('paste', function(e) {
+		if (!this.isContentEditable) {
+			return;
+		}
+		// Paste as PLAIN TEXT. Rich paste brings the source document's spans,
+		// styles and classes with it, and they are indistinguishable from
+		// markup the author wrote, so they would end up in the stored file.
+		e.preventDefault();
+		var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+		var sel = window.getSelection();
+		if (!sel || !sel.rangeCount) {
+			return;
+		}
+		var range = sel.getRangeAt(0);
+		range.deleteContents();
+		var parts = String(text).split(/\r\n|\r|\n/);
+		var frag = document.createDocumentFragment();
+		parts.forEach(function(part, i) {
+			if (i) {
+				var br = document.createElement('br');
+				br.setAttribute('data-glue-nl', '1');
+				frag.appendChild(br);
+			}
+			frag.appendChild(document.createTextNode(part));
+		});
+		range.insertNode(frag);
+		range.collapse(false);
+		sel.removeAllRanges();
+		sel.addRange(range);
+	});
 
 	input.addEventListener('mousedown', function(e) {
 		// without this selecting text in the textarea doesn't work because of
@@ -270,17 +410,31 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 			$.glue.sel.deselect(el);
 		});
 	}
-	// make the textarea visible
 	var input = self.querySelector(':scope > .glue-text-input');
 	var render = self.querySelector(':scope > .glue-text-render');
-	input.style.display = 'block';
-	render.style.display = 'none';
 	self.classList.add('glue-text-editing');
-	// set focus and selection
-	input.focus();
-	if (input.setSelectionRange) {
-		input.setSelectionRange(0, 0);
+
+	if (self.classList.contains('glue-text-source')) {
+		// source mode: the textarea, as before
+		input.style.display = 'block';
+		render.style.display = 'none';
+		input.focus();
+		if (input.setSelectionRange) {
+			input.setSelectionRange(0, 0);
+		}
+		return;
 	}
+
+	// WYSIWYG: edit the rendered div itself, so a link shows as underlined
+	// text rather than as its markup. What is shown is the EDITING render
+	// (see to_editing_html) and not the view render - the view render is a
+	// one-way projection and saving it back would bake it into the file.
+	render.innerHTML = $.glue.text.to_editing_html(input.value);
+	render.contentEditable = 'true';
+	render.spellcheck = false;
+	render.style.display = 'block';
+	input.style.display = 'none';
+	render.focus();
 });
 
 // --- "make link" for a selection inside a text object ---------------------
@@ -368,17 +522,12 @@ function text_link_at(value, start, end) {
 	return null;
 }
 
-function text_link_dialog(obj, input, start, end) {
-	var value = input.value;
-	var existing = text_link_at(value, start, end);
-	var selected = value.substring(start, end);
-
-	if (!existing && start === end) {
-		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
-		return;
-	}
-
-	var m = $.glue.modal.open(existing ? 'edit link' : 'make link');
+// The dialog itself, shared by both editing surfaces. opts:
+//   href, cls   .. current values, '' for a new link
+//   note        .. what the dialog is acting on, shown to the user
+//   on_save(href, cls), on_remove (omitted for a new link)
+function text_link_ui(opts) {
+	var m = $.glue.modal.open(opts.on_remove ? 'edit link' : 'make link');
 
 	function field(labelText, value) {
 		var label = document.createElement('label');
@@ -396,13 +545,11 @@ function text_link_dialog(obj, input, start, end) {
 
 	var what = document.createElement('div');
 	what.className = 'glue-modal-note';
-	what.textContent = existing ? 'editing the link around "' +
-		existing.text.replace(/<[^>]*>/g, '').substring(0, 40) + '"'
-		: 'linking "' + selected.replace(/<[^>]*>/g, '').substring(0, 40) + '"';
+	what.textContent = opts.note;
 	m.modal.appendChild(what);
 
-	var url_input = field('URL', existing ? existing.href : 'https://');
-	var class_input = field('class (optional, for your own CSS)', existing ? existing.cls : '');
+	var url_input = field('URL', opts.href || 'https://');
+	var class_input = field('class (optional, for your own CSS)', opts.cls || '');
 
 	var problem = document.createElement('div');
 	problem.className = 'glue-tag-problem';
@@ -412,33 +559,21 @@ function text_link_dialog(obj, input, start, end) {
 		if (!validate()) {
 			return;
 		}
-		var href = text_link_escape_attr(text_link_normalize(url_input.value));
+		var href = text_link_normalize(url_input.value);
 		var cls = class_input.value.trim();
-		var body = existing ? existing.text : selected;
-		var link = '<a href="' + href + '"' +
-			(cls ? ' class="' + text_link_escape_attr(cls) + '"' : '') + '>' + body + '</a>';
-		var from = existing ? existing.from : start;
-		var to = existing ? existing.to : end;
-		splice(from, to, link);
+		m.close();
+		opts.on_save(href, cls);
 	}, m.close);
 
-	if (existing) {
+	if (opts.on_remove) {
 		var remove = document.createElement('button');
 		remove.type = 'button';
 		remove.textContent = 'Remove link';
 		remove.addEventListener('click', function() {
-			// unwrap: keep the text, drop the tags
-			splice(existing.from, existing.to, existing.text);
+			m.close();
+			opts.on_remove();
 		});
 		buttons.row.insertBefore(remove, buttons.row.firstChild);
-	}
-
-	function splice(from, to, str) {
-		input.value = input.value.substring(0, from) + str + input.value.substring(to);
-		var pos = from + str.length;
-		m.close();
-		input.focus();
-		input.setSelectionRange(pos, pos);
 	}
 
 	function validate() {
@@ -452,6 +587,87 @@ function text_link_dialog(obj, input, start, end) {
 	validate();
 	url_input.focus();
 	url_input.select();
+}
+
+// --- source mode: splice literal tags into the textarea's value ----------
+function text_link_dialog(obj, input, start, end) {
+	var value = input.value;
+	var existing = text_link_at(value, start, end);
+	var selected = value.substring(start, end);
+	if (!existing && start === end) {
+		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+		return;
+	}
+	function splice(from, to, str) {
+		input.value = input.value.substring(0, from) + str + input.value.substring(to);
+		var pos = from + str.length;
+		input.focus();
+		input.setSelectionRange(pos, pos);
+	}
+	var plain = (existing ? existing.text : selected).replace(/<[^>]*>/g, '').substring(0, 40);
+	text_link_ui({
+		href: existing ? existing.href : '',
+		cls: existing ? existing.cls : '',
+		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',
+		on_save: function(href, cls) {
+			var body = existing ? existing.text : selected;
+			var link = '<a href="' + text_link_escape_attr(href) + '"' +
+				(cls ? ' class="' + text_link_escape_attr(cls) + '"' : '') + '>' + body + '</a>';
+			splice(existing ? existing.from : start, existing ? existing.to : end, link);
+		},
+		on_remove: existing ? function() {
+			splice(existing.from, existing.to, existing.text);
+		} : null
+	});
+}
+
+// --- WYSIWYG mode: operate on the DOM, where there is no markup to splice -
+function text_link_dialog_dom(obj, render) {
+	var sel = window.getSelection();
+	if (!sel || !sel.rangeCount || !render.contains(sel.anchorNode)) {
+		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+		return;
+	}
+	// The modal takes focus, which collapses the live selection - so keep a
+	// copy of the range now and act on that.
+	var range = sel.getRangeAt(0).cloneRange();
+	var node = sel.anchorNode;
+	var existing = node && node.nodeType == 3 ? node.parentElement : node;
+	existing = existing ? existing.closest('a') : null;
+	if (existing && !render.contains(existing)) {
+		existing = null;
+	}
+	if (!existing && range.collapsed) {
+		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+		return;
+	}
+	var plain = (existing ? existing.textContent : range.toString()).substring(0, 40);
+	text_link_ui({
+		href: existing ? existing.getAttribute('href') || '' : '',
+		cls: existing ? existing.className : '',
+		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',
+		on_save: function(href, cls) {
+			var a = existing;
+			if (!a) {
+				a = document.createElement('a');
+				// extractContents rather than surroundContents: the latter
+				// throws when the selection only partly covers an element
+				a.appendChild(range.extractContents());
+				range.insertNode(a);
+			}
+			a.setAttribute('href', href);
+			if (cls) {
+				a.setAttribute('class', cls);
+			} else {
+				a.removeAttribute('class');
+			}
+			render.focus();
+		},
+		on_remove: existing ? function() {
+			existing.replaceWith(...existing.childNodes);
+			render.focus();
+		} : null
+	});
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -545,11 +761,51 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var input = obj.querySelector(':scope > .glue-text-input');
-		// selectionStart/End survive the textarea losing focus to this click,
-		// which is what makes reading them here work at all
-		text_link_dialog(obj, input, input.selectionStart, input.selectionEnd);
+		var render = obj.querySelector(':scope > .glue-text-render');
+		if (render.isContentEditable) {
+			text_link_dialog_dom(obj, render);
+		} else {
+			// selectionStart/End survive the textarea losing focus to this
+			// click, which is what makes reading them here work at all
+			text_link_dialog(obj, input, input.selectionStart, input.selectionEnd);
+		}
 	});
 	$.glue.contextmenu.register('text', 'text-link', elem);
+
+	// Source-mode toggle. WYSIWYG editing hides the markup, which is the
+	// point, but it also means the browser's HTML parser gets a say in what
+	// ends up stored: hand-written markup comes back canonicalised (an
+	// unquoted attribute gains quotes, an uppercase tag becomes lowercase).
+	// This is the way back to editing the literal source, and the way to fix
+	// anything WYSIWYG gets wrong.
+	elem = document.createElement('div');
+	elem.style.alignItems = 'center';
+	elem.style.backgroundColor = '#eee';
+	elem.style.border = '1px solid #000';
+	elem.style.boxSizing = 'border-box';
+	elem.style.display = 'flex';
+	elem.style.fontFamily = 'monospace';
+	elem.style.fontSize = '15px';
+	elem.style.height = '32px';
+	elem.style.justifyContent = 'center';
+	elem.style.width = '32px';
+	elem.title = 'switch between editing the text as it looks and editing its HTML source';
+	elem.textContent = '</>';
+	elem.addEventListener('click', function(e) {
+		var obj = $.glue.owner(this);
+		var was_editing = obj.classList.contains('glue-text-editing');
+		if (was_editing) {
+			// commit whatever is on screen before swapping surfaces, so the
+			// two never disagree about what the content is
+			$.glue.text.stop_editing(obj);
+		}
+		obj.classList.toggle('glue-text-source');
+		if (was_editing) {
+			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		}
+	});
+	$.glue.contextmenu.register('text', 'text-source', elem);
+
 
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/text/text-background-color.png';

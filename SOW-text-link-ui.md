@@ -114,28 +114,69 @@ source, or used the 🔗 button's bare `prompt()`.
   sources (`min-files.spec.js` checks this).
 - The created link must survive the normal text-object save/render round-trip.
 
-## Not done: making editing look like viewing
+## Editing now looks like viewing (WYSIWYG)
 
-Raised while building: could the markup be hidden while editing, so a link shows as
-underlined text rather than as `<a href="...">word</a>`?
+Raised while building, and then built: the markup is hidden while editing, so a
+link shows as underlined text rather than as `<a href="...">word</a>`. At a large
+font in a small object the markup was longer than the word it wrapped and swamped
+the box entirely.
 
-Not within this design. A textarea renders plain text only — it cannot show part of
-its value as styled or hidden. The usual trick of overlaying a transparent textarea
-on a highlighted div works for syntax HIGHLIGHTING, where the visible text and the
-source are the same characters, but not for HIDING markup, where they are not: the
-two would no longer line up.
+**The blocker was never `contenteditable` itself.** It is that the rendered HTML is
+a lossy projection of the stored source, through five one-way transforms
+(`module_text.inc.php`, `_text_render_content`):
 
-Editing and viewing can only look the same if text editing becomes `contenteditable`
-— which is what this document originally assumed was already true. That is a
-separate and substantial piece of work, and it lands on the two things
-MODERNIZATION.md flags hardest: `text-edit.js` is named the highest-risk file in the
-migration (§8 item 1), and the text content path writes the on-disk format for every
-existing page (§8 item 2). It also brings browser-injected markup in contenteditable,
-which needs normalising or stored HTML degrades with every edit. Worth its own SOW.
+```php
+$s = resolve_aliases($s, $name);        // $BASEURL$, $page$, $rev$, $GLUE$ expanded
+$s = html_encode_str_smart($s);
+$s = str_replace("\n", "<br>\n", $s);   // TEXT_AUTO_BR
+$s = str_replace("\xc2\xa0", '&nbsp;', $s);
+$s = resolve_relative_urls($s);         // relative -> absolute
+```
 
-Note the editor already matches the published page whenever a text object is NOT
-being edited — `.glue-text-render` shows the real rendered HTML. The mismatch is
-confined to the moment the textarea is open.
+Editing that output and saving `innerHTML` back would bake every one of them in on
+the first edit of every text object: `$BASEURL$` becomes a hardcoded domain, relative
+links become absolute, every newline becomes a literal `<br>`.
+
+So editing does NOT use the view render. `$.glue.text.to_editing_html()` /
+`from_editing_html()` are a separate, deliberately reversible pair: no alias
+expansion, no url rewriting, nothing encoded. The only transform is
+newline <-> `<br>`, and the `<br>` elements it inserts are MARKED
+(`data-glue-nl`), so a `<br>` the author typed themselves survives as a `<br>`
+rather than silently becoming a newline. Both forms render identically, but
+rewriting one into the other is still editing someone's file behind their back.
+
+`tests/e2e/text-roundtrip.spec.js` is the guard: it opens each of thirteen content
+samples, changes nothing, closes, and compares stored bytes. Ten are byte-identical.
+The three that change are the browser's HTML parser canonicalising markup, and are
+pinned by name:
+
+| stored | after a no-edit round trip |
+|---|---|
+| `raw & here` | `raw &amp; here` (invalid, repaired) |
+| `<A HREF="...">` | `<a href="...">` |
+| `href=x` | `href="x"` |
+
+All three render identically. Everything that mattered survives: aliases, relative
+links, anchors, authored `<br>`, newlines, entities, inline tags, link classes.
+
+**The storage format is unchanged** - same `content` property, same raw HTML, no new
+encoding, no migration.
+
+Also handled, because a contenteditable div is not a textarea:
+
+- **Keyboard isolation.** The editor's shortcuts are bound on `documentElement`, so
+  without stopping propagation Delete deletes the object being typed into and the
+  arrows move it. The textarea had this; the div needed its own.
+- **Enter inserts our own marked `<br>`.** Left alone, blink wraps the new line in a
+  `<div>` and gecko inserts a bare `<br>`, so the same keystroke would produce
+  different source on the two engines.
+- **Paste is forced to plain text.** Rich paste brings the source document's spans,
+  styles and classes, and they are indistinguishable from markup the author wrote.
+- **A source-mode toggle** (`</>` in the text menu) puts the textarea back. It is the
+  way to edit literal markup, and the way to repair anything WYSIWYG canonicalises.
+
+The link dialog therefore has two implementations: DOM manipulation in WYSIWYG mode,
+and the original string splicing in source mode.
 
 ## Definition of done
 
