@@ -225,6 +225,30 @@ downstream stays consistent. The problem is only that its value cannot be predic
 floor is a flat 0.25 of whatever the layout viewport turns out to be, expressing the
 opening relative to the floor makes reachability hold for every `vw` automatically.
 
+### Landing position: on content, not on empty canvas
+
+The canvas origin is the leftmost and topmost object **anywhere on the page**,
+which need not be anywhere near where the reveal ends. On `content/mort` the
+leftmost object sits at x=28 but 2230px DOWN the page, and the topmost object is
+off at x=644 — so landing at the origin left **157px of a 384px screen** empty to
+the left and **249px** empty above. Only one of five test pages is affected, but
+that one is real and the waste is 41% of the width.
+
+`landingPan()` trims it: the leftmost object within the first screenful sets the
+horizontal landing, and then — **once the horizontal shift is known, because it
+decides what is on screen** — the topmost object still visible sets the vertical
+one. `LANDING_MARGIN` (8 canvas px) keeps the content off the very edge, and both
+are clamped so they can never scroll past the content.
+
+Measured on device afterwards: 8px and 8px, exactly the margin. Pages whose
+content already starts at the origin (`zinecamp2015`, `start`) are untouched at
+`0,0`.
+
+This is **not** the entry-point selection removed in `4809d62`. That tried to
+choose which object was worth showing and guessed wrong — a 68x21px label over a
+500x715 poster. This chooses nothing; it only declines to land on blank canvas,
+and looks at no objects beyond the ones already on screen where the reveal ends.
+
 ### Landing scale is 1.0 — natural size
 
 Anything derived from fitting the canvas to the screen lands zoomed OUT by construction:

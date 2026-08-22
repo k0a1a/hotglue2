@@ -29,8 +29,14 @@ module.exports = defineConfig({
 		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
+	// Both engines, because hotglue's editor keeps meeting places where they
+	// differ: gecko reports innerWidth 4x out on android, refuses to scroll an
+	// overflowing child that blink scrolls happily, and wraps a new line in a
+	// bare <br> where blink wraps it in a <div>. Run with --project=chromium to
+	// narrow it down when something fails.
 	projects: [
 		{ name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+		{ name: 'firefox', use: { ...devices['Desktop Firefox'] } },
 	],
 	webServer: {
 		command: `php -S 127.0.0.1:${PORT} tests/e2e/server-router.php`,
