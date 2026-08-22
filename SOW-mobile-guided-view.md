@@ -11,10 +11,9 @@ added for small screens only.
 
 ## Summary — the whole behaviour in four steps
 
-1. **Open showing 75% of the canvas WIDTH**, anchored at the canvas origin. Not 100%:
-   the last quarter is one drag away, and 75% is that much more legible. Width
-   specifically, not whichever dimension is limiting — see *The zoom floor* below,
-   which is the reason.
+1. **Open showing 75% of the canvas's LIMITING dimension**, anchored at the canvas
+   origin (centred on the other axis). Not 100%: the last quarter is one drag away, and
+   75% is that much more legible.
 2. **Zoom in to the canvas origin at NATURAL SIZE** (`scale = 1`), where the page
    looks exactly as authored. One continuous 1.5s move, after a 0.5s dwell.
 3. From there the visitor **pinch-zooms freely** (out as far as that opening view, in
@@ -153,32 +152,53 @@ Parked at natural size (`T = 1`) the window is `[0.25, 5]`: natural size is in i
 unreachable by pinch, on any page, on any device.** That is a platform constant, not
 something to tune.
 
-Two rules follow, and they are the whole of the current design:
+The rule that follows is **not** "clamp everything into the window". It is:
 
-1. The opening view must sit inside the window: `startScale > 0.25`, with a margin.
-2. Where the whole composition lies outside the window — which is most large canvases —
-   it has to be reached by moving the transform instead. That is the double-tap toggle.
+> Where a view we need lies outside the window — which is the opening view on any large
+> canvas — it must be reached by moving the TRANSFORM, not by pinching. That is what the
+> double-tap toggle is for.
 
 ### Opening scale
 
 ```
-startScale = max(0.25 × 1.25, min(1, fitWidth / 0.75)) × zoomComp
+openBase   = min(1, min(fitWidth, fitHeight) / 0.75)      // contain-fit / 0.75
+startScale = openBase × zoomComp
 ```
 
-The `0.3125` clamp is what makes the opening returnable. Its cost is real and worth
-stating plainly: at 0.3125 the opening shows at most 3.2x the viewport width, so on a
-large canvas it is **not** the whole composition.
+75% of whichever dimension is **limiting**, with **no floor** — the opening is allowed
+to sit below what the visitor can pinch back out to. Two separate corrections got it
+here, and both are worth keeping written down because each looks like a bug from the
+outside.
 
-| page | vw 274 (Chrome stock) | vw 360 (Firefox) | vw 411 (Chrome 100%) |
+**Limiting, not width.** Keyed to width alone, a tall page opens on a thin horizontal
+band: `content/zinecamp2015` is 1642x5976, so 75% of its width is only 37% of its
+height, and the visitor sees a strip across the top rather than a composition. Taking
+the more constrained dimension shows 75% of that one and 100% of the other:
+
+| page @ vw 360 | width rule | limiting rule | reveal move |
 |---|---|---|---|
-| `content/zinecamp2015` | 0.3125 — 53% of width | 0.3125 — 70% | 0.3337 — 75% |
-| `content/mort` | 0.3125 — 21% | 0.3125 — 27% | 0.3125 — 31% |
-| `content/wide` | 0.3125 — 13% | 0.3125 — 16% | 0.3125 — 19% |
+| `content/zinecamp2015` | 0.2923 — 75% w, **37% h** | 0.1448 — 100% w, 75% h | 6.9x |
+| `content/mort` | 0.1137 — 75% w, **32% h** | 0.0492 — 100% w, 75% h | 20.3x |
+| `content/wide` | 0.0687 — 75% w, 100% h | 0.0687 — unchanged | 14.6x |
 
-Only `zinecamp2015` at a wide viewport still gets the intended 75%; everything else is
-held back by the floor. The reveal is still a 3.2x move, so it continues to say "there
-is more here than fits" — it just no longer claims to show all of it. The double-tap
-gives that back.
+A wide, short canvas is unaffected, since width is limiting there anyway — the rule
+generalizes rather than special-casing orientation.
+
+**No floor.** Since an opening below 0.25 cannot be returned to *by pinch*, it was
+briefly clamped to `0.25 × 1.25 = 0.3125`. That kept the guarantee and destroyed the
+view: `content/wide` opened on 16% of its composition and `content/mort` on 27%, which
+read — correctly — as having no pulled-back view at all. A reveal that pulls back by a
+sixth is not a reveal.
+
+The clamp was only ever needed because pinch was the only way back. Double-tap is not
+subject to the floor, so the guarantee survives by a different route: double-tap returns
+to `openBase` exactly, and the whole composition is a pinch further out from there,
+since `openBase` is contain-fit divided by 0.75 and `0.25 × openBase` is comfortably
+below contain-fit.
+| `content/zinecamp2015` | 0.2923 | [0.0258, 0.516] | yes |
+
+So the opening is reached by double-tapping out and pinching back in, rather than by
+pinch alone. Reveal moves are 3.4x, 8.8x and 14.6x respectively.
 
 
 ### The layout viewport is not a device constant
@@ -241,20 +261,28 @@ overview toggle and killed zoom-out entirely when the document was sized to the
 viewport. **Any scale set from script is only meaningful relative to the browser's
 current zoom.**
 
-## Double-tap — the other window
+## Double-tap — back to how it opened
 
-The pinch window is 20x wide and fixed. Parked at natural size it reaches 4x pulled
-back, which on a large canvas is nowhere near the composition — `content/mort` tops out
-at 34% of its width, measured. So the composition is offered as a deliberate gesture
-rather than by fighting the floor.
+The pinch window is 20x wide and fixed. Parked at natural size it reaches 4x pulled back
+and no further, which does not reach the opening view on a large canvas — `content/mort`
+opens at 0.1137 against a floor of 0.25. So the opening view is offered as a deliberate
+gesture rather than by fighting the floor.
 
-- **Double-tap** animates the transform to contain-fit (`min(vw/canvasW, vh/canvasH)`,
-  x0.95 for a margin) over `TOGGLE_MS` = 400ms.
-- **Double-tap again** returns to natural size, **centred on whatever was tapped** —
-  so the overview doubles as a way to choose where to go next, which is the standard
+- **Double-tap** animates the transform back to `openBase` — **the exact scale and pan
+  the reveal opened with** — over `TOGGLE_MS` = 400ms. Verified: the resulting transform
+  string is identical to the one the reveal starts from, centring residue included.
+- **Double-tap again** returns to natural size, **centred on whatever was tapped** — so
+  the pulled-back view doubles as a way to choose where to go next, which is the standard
   map gesture and needs no new UI.
 - Pinch works normally inside each state. The two states are two positions of the same
   20x window.
+- **The whole composition is still reachable**, by pinching OUT from the opening view:
+  that state's window is `[0.25 × openBase, 5 × openBase]`, and contain-fit is
+  `0.75 × openBase`, comfortably inside it. This holds by construction now that
+  `openBase` is defined as contain-fit ÷ 0.75, on any canvas and any viewport.
+- **Degenerate case guarded:** a canvas barely larger than the screen puts `openBase` at
+  natural size, which would leave the toggle with two identical states. It falls back to
+  contain-fit there. The reveal is imperceptible on those pages for the same reason.
 - **It compensates for the current pinch level** (`visualViewport.scale`, clamped to
   `[0.25, 4]` exactly as the load-time compensation does). Without this, double-tapping
   while pinched out to the floor lands at a quarter of the intended scale. This is the
@@ -458,10 +486,11 @@ Each of these cost a debugging round trip.
 - It aborts on any touch, plays on each page load but never on a same-page anchor jump,
   and is SKIPPED when `prefers-reduced-motion` is set. ✔
 - After the reveal or the skip, the visitor can pan and pinch-zoom in AND out freely, and
-  **can always return to the view the reveal opened with** — guaranteed by clamping the
-  opening above the measured 0.25 floor rather than by any device assumption. ✔
-- Double-tap reaches the whole composition and returns to natural size centred on the
-  tapped point, compensating for the current pinch level. ✔
+  **can always return to the view the reveal opened with** — via double-tap plus pinch,
+  since the transform is not subject to the browser's 0.25 pinch floor. ✔
+- Double-tap returns to the exact view the reveal opened with, and again to natural size
+  centred on the tapped point, compensating for the current pinch level. The whole
+  composition is a pinch further out from there. ✔
 - Bounding boxes are computed from actual min/max and handle NEGATIVE coordinates
   (`content/mort` starts at y = -13). ✔
 - No content inspection: no font measurement, no page classification, no entry-point

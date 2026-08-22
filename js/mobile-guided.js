@@ -41,13 +41,6 @@
 	var REVEAL_DWELL_MS = 500;	// hold at the pulled-back view before moving
 	var REVEAL_EASE = 'cubic-bezier(.3,.7,.2,1)';
 	var TOGGLE_MS = 400;		// double-tap zoom between the two views
-	// The browser's pinch range, MEASURED on device - see the note at
-	// startScale. Both blink and gecko clamp to these, whatever the viewport
-	// meta declares, so they are constants of the platform and not settings.
-	var PINCH_FLOOR = 0.25;
-	// How far above the floor the opening view must sit to stay returnable.
-	// A quarter, so a rounding difference between engines cannot strand it.
-	var FLOOR_MARGIN = 1.25;
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
 	var SMALL_SCREEN_PX = 768;
 
@@ -121,6 +114,7 @@
 		if (forced !== true && (vw > SMALL_SCREEN_PX || canvasW <= vw)) return;
 
 		var fitWidth = vw / canvasW;
+		var fitHeight = vh / canvasH;
 
 		// NO document padding. An earlier version widened the document with
 		// blank space, believing the zoom-out floor was
@@ -148,31 +142,53 @@
 			DBG.restoredZoom = zoom0.toFixed(3) + ' -> compensating x' + zoomComp.toFixed(2);
 		}
 
-		// Open showing 75% of the canvas WIDTH, but never further out than the
-		// visitor can pinch back to.
+		// Open showing 75% of the canvas WIDTH. No floor: the opening is
+		// allowed to sit below what the browser will let the visitor pinch
+		// back out to.
 		//
-		// THE FLOOR IS A FLAT 0.25, and nothing we do moves it. An earlier
-		// version had it as max(minimum-scale, viewport / documentWidth), which
-		// would make it depend on our own transform and on the padding. Four
-		// on-device readings killed that: blink and gecko, two pages, two
-		// viewport widths (360 and 411), padded documents and unpadded ones,
-		// and every single one bottomed out at 0.2500 - which is exactly a
-		// quarter of the layout viewport in each case (360->1440, 411->1644).
-		// Declaring minimum-scale=0.1 changes nothing; engines clamp it.
+		// That needs justifying, because it was briefly the other way round.
+		// The browser's pinch range is a fixed 20x window: measured on device,
+		// both blink and gecko stop at a quarter of the layout viewport
+		// whatever the viewport meta declares, and will not zoom in past 5x.
+		// So an opening below 0.25 cannot be returned to BY PINCH. It was therefore clamped to
+		// 0.3125, which kept the guarantee and destroyed the view: at that
+		// scale the opening shows at most 3.2x the viewport width, so
+		// content/wide opened on 16% of its composition and content/mort on
+		// 27%. A reveal that pulls back by a sixth is not a reveal.
 		//
-		// So the pinch range is a fixed 20x window, [0.25, 5] of whatever our
-		// transform is, and the only rule that matters here is that the opening
-		// view must sit inside it: startScale > PINCH_FLOOR. Everything the old
-		// comment reasoned about fit-width was answering a constraint that does
-		// not exist.
+		// The clamp was only ever needed because pinch was the ONLY way back.
+		// Double-tap is not: it moves the transform, which no floor touches.
+		// After a double-tap to contain-fit the pinch window becomes
+		// [0.25 x contain, 5 x contain], and the opening scale falls inside it
+		// on every test page - wide 0.0687 in [0.0122, 0.2446], mort 0.1137 in
+		// [0.0088, 0.1755], zinecamp 0.2923 in [0.0258, 0.516]. So the opening
+		// stays reachable; it is reached by double-tapping out and pinching
+		// back in, rather than by pinch alone.
+		// The opening view: 75% of the LIMITING dimension, before the
+		// pinch-restore compensation. Named separately because the double-tap
+		// toggle targets this exact value - double-tap means "back to how it
+		// opened", pan included.
 		//
-		// The cost is real and worth stating plainly. At 0.3125 the opening can
-		// show at most 3.2x the viewport width, so on a large canvas it is NOT
-		// the whole composition - content/mort opens on 27% of its width. The
-		// double-tap toggle below exists to give that back, because a transform
-		// is not subject to any of this.
-		var startScale = Math.max(PINCH_FLOOR * FLOOR_MARGIN,
-			Math.min(1, fitWidth / 0.75)) * zoomComp;
+		// Limiting, not width. Keyed to width alone, a tall page opens on a
+		// thin horizontal slice: content/zinecamp2015 is 1642x5976, so 75% of
+		// its width is 37% of its height, and the visitor sees a band across
+		// the top rather than a composition. Taking whichever dimension is
+		// more constrained shows 75% of that one and 100% of the other, which
+		// is the right reading of "pull back to show me the page" in both
+		// orientations - a wide, short canvas like content/wide is unaffected,
+		// since width is limiting there anyway.
+		//
+		// This is contain-fit divided by 0.75, i.e. deliberately one third
+		// tighter than fitting the whole canvas.
+		var openBase = Math.min(1, Math.min(fitWidth, fitHeight) / 0.75);
+		// A canvas barely larger than the screen puts that at natural size,
+		// which would leave the toggle with two identical states and nothing to
+		// do. Show the whole canvas instead. The reveal is imperceptible on
+		// those pages for the same reason.
+		if (openBase > 0.95) {
+			openBase = Math.min(fitWidth, fitHeight) * 0.95;
+		}
+		var startScale = openBase * zoomComp;
 
 		// Report how far the browser ACTUALLY lets the visitor pinch out, versus
 		// how far the opening view needs. Guessing at this from symptoms has
@@ -284,7 +300,7 @@
 		// content inspection to arrive at. The visitor pans from there.
 		// No cap needed: 1.0 IS natural size, so it cannot upscale anything.
 		var targetScale = 1 * zoomComp;
-		DBG.fitHeight = (vh / canvasH).toFixed(4);
+		DBG.fitHeight = fitHeight.toFixed(4);
 		var end = panFor(targetScale);
 		sizeSizer(targetScale);
 		DBG.targetScale = targetScale.toFixed(4);
@@ -320,16 +336,23 @@
 			armToggle();
 		}
 
-		// --- double-tap: toggle between natural size and the whole canvas ----
+		// --- double-tap: toggle between natural size and the opening view ----
 		// The browser's pinch range is a fixed 20x window, [0.25, 5], and our
 		// transform decides WHERE that window sits, since what the visitor sees
 		// is browserZoom x transform. Parked at natural size the window reaches
-		// 4x pulled back and no further - nowhere near the whole composition on
-		// a large canvas (content/mort: 34% of its width, measured). So offer
-		// the other window explicitly, as a deliberate gesture rather than by
-		// fighting the floor: double-tap animates the TRANSFORM to contain-fit,
-		// double-tap again returns to natural size centred on what was tapped.
-		// A transform is ours, so neither end is subject to the floor at all.
+		// 4x pulled back and no further - nowhere near the opening view on a
+		// large canvas (content/mort opens at 0.1137, the floor is 0.25). So
+		// offer it explicitly, as a deliberate gesture rather than by fighting
+		// the floor: double-tap animates the TRANSFORM back to openBase, the
+		// exact scale and pan the reveal opened with; double-tap again returns
+		// to natural size, centred on whatever was tapped. A transform is ours,
+		// so neither end is subject to the floor at all.
+		//
+		// The whole composition is still reachable, by pinching OUT from the
+		// opening view: that state's window is [0.25 x openBase, 5 x openBase],
+		// which contains contain-fit on every test page. It stops holding for a
+		// canvas taller than about 5.4:1 on a 360x649 viewport, where even that
+		// would not reach - no such page exists here, but that is the limit.
 		//
 		// Not a continuous zoom-out past 0.25, which is not buildable: once the
 		// browser clamps, visualViewport.scale stops moving, so we get no signal
@@ -364,9 +387,7 @@
 			if (toggling) return;
 			toggling = true;
 			var at = canvasPointAt(pageX, pageY);
-			// x0.95 for a margin, so the composition does not touch the edges.
-			var want = atOverview ? 1 :
-				Math.min(vw / canvasW, vh / canvasH) * 0.95;
+			var want = atOverview ? 1 : openBase;
 			// Compensate for wherever the visitor's pinch currently sits, the
 			// same way the load-time compensation does - our transform and the
 			// browser's zoom multiply, and this is the third place that has
@@ -427,11 +448,11 @@
 		}
 
 		// --- the reveal ------------------------------------------------------
-		// Open at startScale, anchored at the canvas origin - 75% of the WIDTH,
-		// or the 0.3125 clamp where that is further out than the visitor could
-		// ever pinch back to. Both ends of the move are at the origin, so
-		// on a tall canvas this is a pure zoom; the centring branch in panFor()
-		// engages only for a canvas smaller than the viewport on an axis.
+		// Open at startScale, anchored at the canvas origin - 75% of the WIDTH.
+		// Both ends of the move are at the origin, so on a tall canvas this is
+		// a pure zoom; the centring branch in panFor() engages only for a
+		// canvas smaller than the viewport on an axis, which is the normal
+		// case vertically for a wide, short page like content/wide.
 		var start = panFor(startScale);
 		apply(startScale, start.x, start.y);
 		DBG.startScale = startScale.toFixed(4);
