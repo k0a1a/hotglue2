@@ -621,27 +621,17 @@ function html_finalize(&$cache = false)
 	// relying on native horizontal/vertical scrolling (and pinch-zoom,
 	// deliberately not disabled here) rather than a shrunk-to-fit page
 	//
-	// minimum-scale is set here rather than adjusted from javascript: browsers
-	// parse the viewport at load and firefox ignores later changes to it, so a
-	// scripted value silently does nothing on exactly the devices that need it.
-	//
-	// UNDER TEST - 0.1 may be actively harmful. It was added believing the
-	// default stop is around 25% and that the spec's 0.1 would beat it. Two
-	// on-device readings say otherwise: both blink and gecko bottomed out at
-	// exactly 0.2500 with it declared, while an earlier reading taken WITHOUT
-	// it stopped at 0.2199 - below 0.25, and equal to that page's fit-width.
-	// The reading that fits both: engines clamp a DECLARED minimum-scale into
-	// [0.25, 5], so 0.1 silently becomes 0.25, and declaring it at all replaces
-	// the more generous default of "you may zoom out until the document fits".
-	// ?minscale=0 omits it so the two can be compared on a real device; drop
-	// the switch once that settles, keeping whichever wins.
+	// No minimum-scale. One was declared here at 0.1, believing the default
+	// zoom-out stop was around 25% and that the spec's 0.1 would beat it.
+	// Measured on device, both blink and gecko, with it declared and with it
+	// omitted: the floor is a flat 0.25 either way, and it does not depend on
+	// document width. Engines clamp a declared minimum-scale into [0.25, 5], so
+	// 0.1 was silently becoming 0.25 and the line did nothing at all.
+	// See SOW-mobile-guided-view.md - the guided view works within that floor
+	// rather than trying to argue with it.
 	//
 	// Never add user-scalable=no or maximum-scale: zoom must stay free.
-	$viewport = 'width=device-width, initial-scale=1';
-	if (!isset($_GET['minscale']) || $_GET['minscale'] !== '0') {
-		$viewport .= ', minimum-scale=0.1';
-	}
-	$ret .= '<meta name="viewport" content="'.htmlspecialchars($viewport, ENT_COMPAT, 'UTF-8').'">'.nl();
+	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
 	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();

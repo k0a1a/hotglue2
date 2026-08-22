@@ -107,8 +107,11 @@ number:
 
 Two engines, two pages, two viewport widths, padded documents and unpadded ones —
 0.2500 every time, and exactly 4x the layout viewport in each case (360→1440, 411→1644,
-649→2596, 750→3000). Taken with `minimum-scale` both declared and omitted, via the
-`?minscale=0` switch, with `CACHE_TIME` at 0 so nothing came from cache.
+649→2596, 750→3000). Taken with `minimum-scale` both declared and omitted, via a
+temporary `?minscale=0` switch (since removed along with the declaration), and with
+`CACHE_TIME` at 0 so nothing came from cache. Note `controller.inc.php` keys its cache on
+the page name alone, so if caching is ever enabled, a query-param A/B like that one will
+silently serve one variant's HTML for the other.
 
 ### What this replaces
 
@@ -121,9 +124,10 @@ three are wrong, and the code no longer contains any of them:
   width. `zinecamp2015` was carrying 1673px of blank canvas to "lower the zoom floor to
   0.1086" and the floor stayed at 0.25. It bought nothing and cost a screenful of empty
   space to scroll into.
-- **`minimum-scale=0.1` does nothing.** Engines clamp a declared minimum-scale to 0.25.
-  Removing it via `?minscale=0` changed no reading. It is harmless but not load-bearing;
-  `html.inc.php` still carries it pending a decision to delete it.
+- **`minimum-scale=0.1` did nothing, and is gone.** Engines clamp a declared
+  minimum-scale into `[0.25, 5]`, so 0.1 was silently becoming 0.25. Omitting it changed
+  no reading. `html_finalize()` now emits a plain
+  `width=device-width, initial-scale=1`.
 - **The width-keying rationale evaporates.** Commit `4809d62` gave up contain-fit and
   settled for 75%-of-width specifically because "an opening pulled back further than
   fit-width can never be returned to". The real constraint is simply
@@ -325,21 +329,20 @@ plays on every activating page.
 
 **VERIFIED on a real phone (2026-08-22): pinch-zoom-out works on both engines**, down to
 the flat 0.25 floor documented above. `minimum-scale=0.1` turned out not to be what made
-it work — it is clamped to 0.25 and removing it changes nothing.
+it work — it was clamped to 0.25, changed no measurement either way, and has been
+removed.
 
 Production hotglue.me only allows zoom-IN. The cause is NOT `maximum-scale` /
 `user-scalable` — neither is set anywhere in this codebase. It is the viewport's
 `width=` value: when the declared width exceeds the device width, browsers clamp minimum
 zoom to the scale at which that width fits, so you cannot zoom out past fit-to-canvas.
-On `ng` that canvas-width override was reverted; `html_finalize()` now emits
-`width=device-width, initial-scale=1, minimum-scale=0.1`, the last of which is inert.
+On `ng` that canvas-width override was reverted; `html_finalize()` now emits a plain
+`width=device-width, initial-scale=1`.
 
-Regression-check only: any change that reinstates a `width=<canvas>` viewport breaks
-this again. Never add `user-scalable=no` or `maximum-scale`.
-
-**Open, small:** whether to delete `minimum-scale=0.1` from `html.inc.php` now that it is
-measured to do nothing. Left in for the moment, behind the `?minscale=0` switch that was
-built to test it.
+Regression-check only: any change that reinstates a `width=<canvas>` viewport breaks this
+again. Never add `user-scalable=no` or `maximum-scale`, and do not re-add
+`minimum-scale` — it cannot lower the floor, and the belief that it could cost several
+rounds of debugging.
 
 ## Browser landmines (measured, not theorised)
 
