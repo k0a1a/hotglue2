@@ -19,6 +19,222 @@ require_once('util.inc.php');
 // (they can be easier than that one though)
 
 
+/**
+ *	Object Properties: user-supplied classes and attributes.
+ *
+ *	Both are stored on the object and merged into the container <div> at render
+ *	time. Validation lives here, in the RENDER path, rather than only where the
+ *	editor writes them - glue.update_object is a generic key/value setter, so
+ *	anything that only guards the write can be walked around with one POST.
+ *	Filtering as we render is the gate that actually holds.
+ *
+ *	Attribute NAMES are the dangerous half, and not for the obvious reason.
+ *	html.inc.php:228 emits them with htmlspecialchars(..., ENT_NOQUOTES), which
+ *	deliberately leaves quotes alone - so a name of  x" onload="alert(1)  would
+ *	close the attribute and inject an event handler. Values are emitted with
+ *	ENT_COMPAT and are safe. Hence the strict name charset below: it is load
+ *	bearing, not tidiness.
+ */
+
+// letters, digits and dashes, starting with a letter - covers data-*, aria-*,
+// role, title, name, and rejects everything that could break out
+define('OBJECT_ATTR_NAME_RE', '/^[a-zA-Z][a-zA-Z0-9-]*$/');
+// one CSS class token
+define('OBJECT_CLASS_TOKEN_RE', '/^-?[A-Za-z_][A-Za-z0-9_-]*$/');
+
+/**
+ *	attribute names the user may not set on an object container
+ *
+ *	@return array lowercase names
+ */
+function object_attr_denylist()
+{
+	return [
+		// identity and layout are hotglue's, not the user's
+		'id',			// the editor's primary handle (selection, save, undo)
+		'class',		// managed by the separate class field
+		'style',		// would let a user override the absolute positioning
+						// that IS hotglue; object styling has its own path
+		// would fight the editor's own behaviour
+		'contenteditable',
+		'draggable',
+	];
+}
+
+/**
+ *	is this attribute name allowed on an object container?
+ *
+ *	@param string $name attribute name
+ *	@return bool
+ */
+function object_attr_allowed($name)
+{
+	$name = strtolower(trim($name));
+	if (!preg_match(OBJECT_ATTR_NAME_RE, $name)) {
+		return false;
+	}
+	// every inline event handler - JS belongs in page-level /code
+	if (substr($name, 0, 2) == 'on') {
+		return false;
+	}
+	return !in_array($name, object_attr_denylist());
+}
+
+/**
+ *	filter a class string down to the tokens that are valid CSS class names
+ *
+ *	@param string $str space-separated tokens
+ *	@return array valid tokens
+ */
+function object_filter_classes($str)
+{
+	$out = [];
+	foreach (preg_split('/\s+/', trim((string)$str)) as $token) {
+		if ($token !== '' && preg_match(OBJECT_CLASS_TOKEN_RE, $token)) {
+			$out[] = $token;
+		}
+	}
+	return $out;
+}
+
+/**
+ *	decode the stored object-attributes property
+ *
+ *	Stored as a single line of JSON, which suits the flat file format: it never
+ *	contains a raw newline (save_object strips those from every value anyway,
+ *	module_glue.inc.php), and a colon inside it is harmless because the parser
+ *	splits each line on the FIRST colon only.
+ *
+ *	@param string $str stored value
+ *	@return array name=>value, only the entries that pass validation
+ */
+function object_decode_attributes($str)
+{
+	if (empty($str)) {
+		return [];
+	}
+	$decoded = @json_decode($str, true);
+	if (!is_array($decoded)) {
+		log_msg('warn', 'object: could not decode object-attributes '.quot($str));
+		return [];
+	}
+	$out = [];
+	foreach ($decoded as $name=>$val) {
+		if (is_array($val) || is_object($val)) {
+			continue;
+		}
+		if (object_attr_allowed($name)) {
+			$out[strtolower(trim($name))] = (string)$val;
+		} else {
+			log_msg('warn', 'object: dropping disallowed attribute '.quot($name));
+		}
+	}
+	return $out;
+}
+
+
+/**
+ *	save an object's user classes and custom attributes
+ *
+ *	The editor could write these with glue.update_object directly - this exists
+ *	so a bad value is REJECTED with a reason instead of being stored and then
+ *	silently dropped at render time. Client-side validation is for feedback;
+ *	this is where a save actually gets refused.
+ *
+ *	Note the render path filters independently (object_alter_render_early), and
+ *	has to: glue.update_object is a generic key/value setter, so this service
+ *	cannot be the only check without being trivially bypassed.
+ *
+ *	@param array $args arguments
+ *		key 'name' is the object name
+ *		key 'classes' space-separated user class tokens (optional, '' clears)
+ *		key 'attributes' name=>value map of custom attributes (optional)
+ *	@return array response
+ *		true if successful
+ */
+function object_set_properties($args)
+{
+	if (empty($args['name'])) {
+		return response('Required argument "name" missing', 400);
+	}
+	load_modules('glue');
+
+	$update = ['name'=>$args['name']];
+	$remove = [];
+
+	if (isset($args['classes'])) {
+		$raw = preg_split('/\s+/', trim((string)$args['classes']), -1, PREG_SPLIT_NO_EMPTY);
+		$bad = [];
+		foreach ($raw as $token) {
+			if (!preg_match(OBJECT_CLASS_TOKEN_RE, $token)) {
+				$bad[] = $token;
+			}
+		}
+		if (count($bad)) {
+			return response('Invalid class name(s): '.quot(implode(' ', $bad)).' - use letters, digits, - and _, not starting with a digit', 400);
+		}
+		if (count($raw)) {
+			$update['object-custom-class'] = implode(' ', $raw);
+		} else {
+			$remove[] = 'object-custom-class';
+		}
+	}
+
+	if (isset($args['attributes'])) {
+		if (!is_array($args['attributes'])) {
+			return response('Argument "attributes" must be an object', 400);
+		}
+		$attrs = [];
+		foreach ($args['attributes'] as $name=>$val) {
+			$name = strtolower(trim((string)$name));
+			if ($name === '') {
+				continue;
+			}
+			if (is_array($val) || is_object($val)) {
+				return response('Attribute '.quot($name).' must have a text value', 400);
+			}
+			if (!preg_match(OBJECT_ATTR_NAME_RE, $name)) {
+				return response('Invalid attribute name '.quot($name).' - use letters, digits and dashes, starting with a letter', 400);
+			}
+			if (substr($name, 0, 2) == 'on') {
+				return response('Attribute '.quot($name).' can\'t be set here - inline event handlers are not allowed, put javascript in the page\'s code instead', 400);
+			}
+			if (in_array($name, object_attr_denylist())) {
+				if ($name == 'style') {
+					return response('Attribute "style" can\'t be set here - the object\'s position and size are managed by the object itself', 400);
+				}
+				return response('Attribute '.quot($name).' can\'t be set here - it is managed by hotglue', 400);
+			}
+			$attrs[$name] = (string)$val;
+		}
+		if (count($attrs)) {
+			// one line of JSON - see object_decode_attributes()
+			$update['object-attributes'] = json_encode($attrs, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+		} else {
+			$remove[] = 'object-attributes';
+		}
+	}
+
+	// nothing is written until every field has passed, so a rejected save
+	// cannot leave half the properties updated
+	if (1 < count($update)) {
+		$ret = update_object($update);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	foreach ($remove as $attr) {
+		$ret = object_remove_attr(['name'=>$args['name'], 'attr'=>$attr]);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	return response(true);
+}
+
+register_service('object.set_properties', 'object_set_properties', ['auth'=>true]);
+
+
 function object_alter_render_early($args)
 {
 	$elem = &$args['elem'];
@@ -47,9 +263,20 @@ function object_alter_render_early($args)
 		elem_css($elem, 'z-index', $obj['object-zindex']);
 	}
 	// custom class: appended alongside the internal classes (safe, classes
-	// don't collide) so the user's own CSS/JS can target this object
+	// don't collide) so the user's own CSS/JS can target this object. Filtered
+	// to valid class tokens - APPENDED, so a user can never remove or replace
+	// the classes the editor and the modules key off.
 	if (!empty($obj['object-custom-class'])) {
-		elem_add_class($elem, $obj['object-custom-class']);
+		foreach (object_filter_classes($obj['object-custom-class']) as $token) {
+			elem_add_class($elem, $token);
+		}
+	}
+
+	// custom attributes, denylist-filtered (see the note at the top)
+	if (!empty($obj['object-attributes'])) {
+		foreach (object_decode_attributes($obj['object-attributes']) as $name=>$val) {
+			elem_attr($elem, $name, $val);
+		}
 	}
 
 	return true;

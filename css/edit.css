@@ -195,3 +195,102 @@
 	margin-left: 5px;
 }
 
+
+/* Object Properties modal - the object shown as the <div> it renders as, with
+   the parts hotglue owns as plain text and the editable parts as inputs sitting
+   inline where they belong. Monospace throughout, because it is meant to read
+   as markup rather than as a form. */
+
+.glue-modal-tag {
+	/* wider than the plain modal: a tag with attributes needs the room */
+	width: 460px;
+}
+
+.glue-tag {
+	background: #f6f6f6;
+	border: 1px solid #ddd;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.8;
+	overflow-x: auto;
+	padding: 8px;
+	white-space: nowrap;
+}
+
+.glue-tag-line {
+	/* each attribute on its own line, so long values don't reflow the tag */
+	align-items: center;
+	display: flex;
+}
+
+.glue-tag-line > span {
+	/* the literal parts carry their own spacing and indentation, and a flex
+	   item collapses leading whitespace - so keep it verbatim */
+	white-space: pre;
+}
+
+.glue-tag-name {
+	color: #000;
+	font-weight: bold;
+}
+
+.glue-tag-punct {
+	color: #999;
+}
+
+.glue-tag-fixed {
+	/* set by hotglue: shown so the user can see it, never editable */
+	color: #666;
+	cursor: text;
+	user-select: all;
+}
+
+.glue-tag-input {
+	background: #fff;
+	border: 1px solid #bbb;
+	box-sizing: border-box;
+	font-family: monospace;
+	font-size: 12px;
+	min-width: 60px;
+	padding: 1px 3px;
+}
+
+.glue-tag-attr-name {
+	width: 110px;
+}
+
+.glue-tag-attr-value {
+	width: 150px;
+}
+
+.glue-tag-invalid {
+	background: #ffecec;
+	border-color: #c00;
+}
+
+.glue-tag-remove {
+	background: none;
+	border: 0;
+	color: #999;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	margin-left: 6px;
+	padding: 0 4px;
+}
+
+.glue-tag-remove:hover {
+	color: #c00;
+}
+
+.glue-tag-add {
+	font-size: 11px;
+	margin-top: 8px;
+}
+
+.glue-tag-problem {
+	color: #c00;
+	font-size: 11px;
+	margin: 6px 0;
+	min-height: 14px;
+}

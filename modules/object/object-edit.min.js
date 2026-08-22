@@ -13,41 +13,187 @@ function object_transparency_percent(obj) {
 	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
 }
 
-// modal shown by the "get id" icon: read-only object id (for linking to
-// it), plus an editable custom class field (object-custom-class) for the
-// object's own CSS/JS scripting - see module_object.inc.php's
-// object_alter_render_early() for how it gets applied when the page renders.
-// note: the object's real id is the internal dotted name (page.rev.objid)
-// and stays that way always - it's load-bearing for the whole editor
-// (selection, save, undo, etc. all key off it), so it's not user-editable
-function object_id_modal_show(obj, data) {
-	var name = obj.id.split('.').pop();
-	var full_name = $.glue.page+'.'+name;
+// Object Properties modal, shown by the object-target icon.
+//
+// The object is presented AS the <div> it renders as, with the fixed parts as
+// plain text and the editable parts as inputs sitting inline where they belong:
+//
+//   <div id="page.rev.123" class="text object |your classes|" |name|="|value|" >
+//
+// That is the point of it - it shows what an object actually is rather than
+// describing it, and the same view teaches which parts hotglue owns.
+//
+// The object's real id is the internal dotted name (page.rev.objid) and stays
+// that way always: it is load-bearing for the whole editor - selection, save,
+// undo and cross-page linking all key off it - so it is displayed for copying
+// and is never an input.
+//
+// Validation here is for feedback only. The save is gated server-side by
+// object.set_properties, and independently filtered at render time, because
+// glue.update_object is a generic key/value setter and anything guarded only
+// in the browser can be walked around with one POST.
+
+// classes the editor puts on an object while it is being worked on - never
+// part of the object's stored identity, so they must not appear as "system"
+var GLUE_TRANSIENT_CLASSES = ['glue-selected', 'glue-text-editing'];
+
+var ATTR_NAME_RE = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+var CLASS_TOKEN_RE = /^-?[A-Za-z_][A-Za-z0-9_-]*$/;
+// mirrors object_attr_denylist() in module_object.inc.php
+var ATTR_DENYLIST = ['id', 'class', 'style', 'contenteditable', 'draggable'];
+
+function object_attr_problem(name) {
+	name = name.toLowerCase().trim();
+	if (name === '') {
+		return false;
+	}
+	if (!ATTR_NAME_RE.test(name)) {
+		return 'use letters, digits and dashes, starting with a letter';
+	}
+	if (name.indexOf('on') === 0) {
+		return 'inline event handlers are not allowed - put javascript in the page\'s code';
+	}
+	if (name == 'style') {
+		return 'the object\'s position and size are managed by the object itself';
+	}
+	if (ATTR_DENYLIST.indexOf(name) != -1) {
+		return 'managed by hotglue';
+	}
+	return false;
+}
+
+function object_class_problem(str) {
+	var tokens = str.trim().split(/\s+/).filter(function(t) { return t !== ''; });
+	for (var i = 0; i < tokens.length; i++) {
+		if (!CLASS_TOKEN_RE.test(tokens[i])) {
+			return 'invalid class name "' + tokens[i] + '" - letters, digits, - and _, not starting with a digit';
+		}
+	}
+	return false;
+}
+
+function object_properties_modal_show(obj, data) {
+	var full_name = $.glue.page + '.' + obj.id.split('.').pop();
 	var custom_class = data['object-custom-class'] || '';
+	var custom_tokens = custom_class.trim().split(/\s+/).filter(function(t) { return t !== ''; });
+
+	// whatever the object is wearing right now, minus the user's own classes
+	// and minus the editor's transient ones, is what hotglue owns
+	var system_classes = Array.from(obj.classList).filter(function(c) {
+		return custom_tokens.indexOf(c) == -1 && GLUE_TRANSIENT_CLASSES.indexOf(c) == -1;
+	});
+
+	var stored_attrs = {};
+	if (data['object-attributes']) {
+		try {
+			stored_attrs = JSON.parse(data['object-attributes']) || {};
+		} catch (err) {
+			$.glue.error('This object\'s custom attributes could not be read and have been left alone.');
+			stored_attrs = {};
+		}
+	}
 
 	var backdrop = document.createElement('div');
 	backdrop.className = 'glue-modal-backdrop glue-ui';
-
 	var modal = document.createElement('div');
-	modal.className = 'glue-modal';
+	modal.className = 'glue-modal glue-modal-tag';
 
-	function field(labelText, value, readonly) {
-		var label = document.createElement('label');
-		label.className = 'glue-modal-field';
+	function txt(parent, str, cls) {
 		var span = document.createElement('span');
-		span.textContent = labelText;
-		var input = document.createElement('input');
-		input.type = 'text';
-		input.value = value;
-		input.readOnly = !!readonly;
-		label.appendChild(span);
-		label.appendChild(input);
-		modal.appendChild(label);
-		return input;
+		span.className = cls || 'glue-tag-punct';
+		span.textContent = str;
+		parent.appendChild(span);
+		return span;
 	}
 
-	field('id (for linking to this object)', full_name, true);
-	var class_input = field('class (for your own CSS/JS)', custom_class, false);
+	// --- the tag itself ---------------------------------------------------
+	var tag = document.createElement('div');
+	tag.className = 'glue-tag';
+
+	var line1 = document.createElement('div');
+	line1.className = 'glue-tag-line';
+	txt(line1, '<div', 'glue-tag-name');
+	txt(line1, ' id=');
+	var id_val = txt(line1, '"' + full_name + '"', 'glue-tag-fixed');
+	id_val.title = 'the object\'s id - select and copy it to target this object from the page\'s code';
+	tag.appendChild(line1);
+
+	var line2 = document.createElement('div');
+	line2.className = 'glue-tag-line';
+	txt(line2, '  class=');
+	txt(line2, '"');
+	txt(line2, system_classes.join(' '), 'glue-tag-fixed').title =
+		'set by hotglue - these can\'t be changed, your own classes are added after them';
+	txt(line2, system_classes.length ? ' ' : '');
+	var class_input = document.createElement('input');
+	class_input.type = 'text';
+	class_input.className = 'glue-tag-input';
+	class_input.value = custom_class;
+	class_input.placeholder = 'your classes';
+	class_input.setAttribute('aria-label', 'your own classes, space separated');
+	line2.appendChild(class_input);
+	txt(line2, '"');
+	tag.appendChild(line2);
+
+	// --- custom attribute rows --------------------------------------------
+	var attrs_wrap = document.createElement('div');
+	tag.appendChild(attrs_wrap);
+
+	function add_attr_row(name, value) {
+		var row = document.createElement('div');
+		row.className = 'glue-tag-line';
+		txt(row, '  ');
+		var name_input = document.createElement('input');
+		name_input.type = 'text';
+		name_input.className = 'glue-tag-input glue-tag-attr-name';
+		name_input.value = name || '';
+		name_input.placeholder = 'name';
+		name_input.setAttribute('aria-label', 'attribute name');
+		row.appendChild(name_input);
+		txt(row, '=');
+		txt(row, '"');
+		var value_input = document.createElement('input');
+		value_input.type = 'text';
+		value_input.className = 'glue-tag-input glue-tag-attr-value';
+		value_input.value = value || '';
+		value_input.placeholder = 'value';
+		value_input.setAttribute('aria-label', 'attribute value');
+		row.appendChild(value_input);
+		txt(row, '"');
+		var remove = document.createElement('button');
+		remove.type = 'button';
+		remove.className = 'glue-tag-remove';
+		remove.textContent = '×';
+		remove.title = 'remove this attribute';
+		remove.addEventListener('click', function() {
+			row.remove();
+			validate();
+		});
+		row.appendChild(remove);
+		attrs_wrap.appendChild(row);
+		name_input.addEventListener('input', validate);
+		value_input.addEventListener('input', validate);
+		return name_input;
+	}
+
+	var line_end = document.createElement('div');
+	line_end.className = 'glue-tag-line';
+	txt(line_end, '>', 'glue-tag-name');
+	tag.appendChild(line_end);
+	modal.appendChild(tag);
+
+	var add = document.createElement('button');
+	add.type = 'button';
+	add.className = 'glue-tag-add';
+	add.textContent = '+ attribute';
+	add.addEventListener('click', function() {
+		add_attr_row('', '').focus();
+	});
+	modal.appendChild(add);
+
+	var problem = document.createElement('div');
+	problem.className = 'glue-tag-problem';
+	modal.appendChild(problem);
 
 	var buttons = document.createElement('div');
 	buttons.className = 'glue-modal-buttons';
@@ -61,18 +207,86 @@ function object_id_modal_show(obj, data) {
 	buttons.appendChild(ok);
 	modal.appendChild(buttons);
 
+	// --- validation (feedback only - the server is the gate) --------------
+	function rows() {
+		return Array.from(attrs_wrap.querySelectorAll('.glue-tag-line'));
+	}
+	function validate() {
+		var msg = false;
+		class_input.classList.remove('glue-tag-invalid');
+		var class_msg = object_class_problem(class_input.value);
+		if (class_msg) {
+			class_input.classList.add('glue-tag-invalid');
+			msg = class_msg;
+		}
+		var seen = {};
+		rows().forEach(function(row) {
+			var name_input = row.querySelector('.glue-tag-attr-name');
+			name_input.classList.remove('glue-tag-invalid');
+			var name = name_input.value.toLowerCase().trim();
+			var attr_msg = object_attr_problem(name);
+			if (name !== '' && seen[name]) {
+				attr_msg = '"' + name + '" is set twice';
+			}
+			if (name !== '') {
+				seen[name] = true;
+			}
+			if (attr_msg) {
+				name_input.classList.add('glue-tag-invalid');
+				if (!msg) {
+					msg = name === '' ? attr_msg : '"' + name + '": ' + attr_msg;
+				}
+			}
+		});
+		problem.textContent = msg || '';
+		ok.disabled = !!msg;
+		return !msg;
+	}
+	class_input.addEventListener('input', validate);
+
+	Object.keys(stored_attrs).forEach(function(name) {
+		add_attr_row(name, stored_attrs[name]);
+	});
+	validate();
+
 	function close() {
 		backdrop.remove();
 	}
 
 	ok.addEventListener('click', function() {
-		var new_class = class_input.value.trim();
-		if (new_class) {
-			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-custom-class': new_class });
-		} else if (custom_class) {
-			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-custom-class' });
+		if (!validate()) {
+			return;
 		}
-		close();
+		var attributes = {};
+		rows().forEach(function(row) {
+			var name = row.querySelector('.glue-tag-attr-name').value.toLowerCase().trim();
+			if (name !== '') {
+				attributes[name] = row.querySelector('.glue-tag-attr-value').value;
+			}
+		});
+		$.glue.backend({
+			method: 'object.set_properties',
+			name: obj.id,
+			classes: class_input.value.trim(),
+			attributes: attributes
+		}, function(resp) {
+			if (resp['#error']) {
+				// the server refused - keep the modal open with the reason
+				problem.textContent = resp['#data'] || resp['#error'];
+				return;
+			}
+			// Reflect the class change live, so the editor shows what the
+			// page will. Only the classList is touched: the object is NOT
+			// re-registered, because $.glue.object.unregister() does not clear
+			// edit.js's reg_objs guard, so a register() after it silently does
+			// nothing and the object loses its Moveable until a reload.
+			// Nothing about a class or attribute change needs re-registering.
+			custom_tokens.forEach(function(t) { obj.classList.remove(t); });
+			class_input.value.trim().split(/\s+/)
+				.filter(function(t) { return t !== ''; })
+				.forEach(function(t) { obj.classList.add(t); });
+			close();
+		});
 	});
 	cancel.addEventListener('click', close);
 	backdrop.addEventListener('click', function(e) {
@@ -246,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/object/object-target.png';
 	elem.alt = 'btn';
-	elem.title = 'get this object\'s id (for linking to it), or assign a custom class';
+	elem.title = 'object properties: id, classes and custom attributes';
 	elem.width = 32;
 	elem.height = 32;
 	elem.addEventListener('click', function(e) {
@@ -256,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.error(data['#error']);
 				return;
 			}
-			object_id_modal_show(obj, data['#data']);
+			object_properties_modal_show(obj, data['#data']);
 		}, false);
 	});
 	$.glue.contextmenu.register('object', 'object-target', elem);
