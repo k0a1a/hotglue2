@@ -41,9 +41,6 @@ const positions = (page) => page.evaluate(() => Object.fromEntries(
 // CSS #id selector, so address them by attribute rather than escaping.
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 
-const selectAll = (page, ids) => page.evaluate(
-	(list) => list.forEach((id) => window.$.glue.sel.select(document.getElementById(id))), ids);
-
 const selected = (page) => page.evaluate(() =>
 	Array.from(document.querySelectorAll('.glue-selected')).map((el) => el.id).sort());
 
@@ -65,12 +62,10 @@ test('dragging one of several selected objects moves them all by the same delta'
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 3);
 
-		// Selected through the API rather than by shift-clicking, because
-		// shift-click multi-select of TEXT objects is currently broken - see
-		// the regression test in text-selection.spec.js. What is under test
-		// here is the drag synchronisation, which is reached the same way
-		// either route.
-		await selectAll(page, [ids.a, ids.b]);
+		// Selected the way a user does it. This only works since the
+		// $.glue.live delegation fix - see text-selection.spec.js.
+		await byId(page, ids.a).click();
+		await byId(page, ids.b).click({ modifiers: ['Shift'] });
 		expect(await selected(page)).toEqual([ids.a, ids.b].sort());
 
 		const before = await positions(page);
@@ -90,7 +85,8 @@ test('a group drag persists every selected object, border offset cancelled',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 3);
 
-		await selectAll(page, [ids.a, ids.b]);
+		await byId(page, ids.a).click();
+		await byId(page, ids.b).click({ modifiers: ['Shift'] });
 		await drag(page, [175, 150], 120, 60);
 
 		// Both members save on glue-movestop (js/edit.js:1048), so wait for the

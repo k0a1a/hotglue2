@@ -94,17 +94,51 @@ $.glue.error = function()
 // throughout for the glue-* custom event bus. Defined here rather than in
 // edit.js since some modules using them (e.g. page_browser.js) load on
 // pages that never load edit.js.
+var live_handlers = {};
+
 $.glue.live = function(selector, eventName, handler) {
-	document.addEventListener(eventName, function(e) {
-		var matched = e.target.closest ? e.target.closest(selector) : null;
-		if (matched) {
+	if (!live_handlers[eventName]) {
+		live_handlers[eventName] = [];
+		document.addEventListener(eventName, function(e) {
+			// Resolve EVERY registered selector against the event target
+			// before invoking any handler, then invoke. This is what jQuery's
+			// delegation did - it walked target to root once, up front, and
+			// built its handler queue from that - and code here depends on it.
+			//
+			// An earlier version registered a separate document listener per
+			// live() call, so each one evaluated closest() at the moment it
+			// ran and therefore saw class changes made by handlers that ran
+			// before it, within the same dispatch. That broke text objects:
+			// live('.object', 'click') in edit.js adds .glue-selected, and
+			// live('.text.glue-selected', 'click') in text-edit.js then
+			// matched the class that had just been added, so a FIRST click
+			// went straight into text editing and shift-clicking a second
+			// text object deselected the first - making multi-select of text
+			// impossible. Covered by tests/e2e/text-selection.spec.js.
+			//
+			// Only one registered selector depends on mutable state
+			// (.text.glue-selected); the rest are static classes and ids, so
+			// this changes nothing else.
+			var regs = live_handlers[eventName];
+			var matched = [];
+			for (var i=0; i < regs.length; i++) {
+				var el = e.target.closest ? e.target.closest(regs[i].selector) : null;
+				if (el) {
+					matched.push({ elem: el, handler: regs[i].handler });
+				}
+			}
 			var args = [e];
 			if (e.detail !== undefined && e.detail !== null) {
 				args = args.concat(e.detail);
 			}
-			handler.apply(matched, args);
-		}
-	}, false);
+			// registration order, as before - the queue is fixed now, so a
+			// handler registering another live() mid-dispatch cannot join it
+			for (var j=0; j < matched.length; j++) {
+				matched[j].handler.apply(matched[j].elem, args);
+			}
+		}, false);
+	}
+	live_handlers[eventName].push({ selector: selector, handler: handler });
 };
 
 $.glue.trigger = function(target, eventName, data) {
