@@ -33,6 +33,9 @@ define('AUTH_PASSWORD', 'e2e-secret');
 // exercise the real sources, not whatever .min.js pair happens to be stale
 define('USE_MIN_FILES', false);
 define('CACHE_TIME', 0);
+// verbose logging into the throwaway content dir, so a failing test can be
+// diagnosed from content-e2e/log.txt instead of by guesswork
+define('LOG_LEVEL', 'debug');
 
 chdir($root);
 require $root.(preg_match('#/json\.php$#', $path) ? '/json.php' : '/index.php');
