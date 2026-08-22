@@ -9,3 +9,13 @@
 # not source. log.txt stays tracked as an empty placeholder.
 /content/*
 !/content/log.txt
+
+# dev-only e2e tooling (see MODERNIZATION.md section 11) - hotglue itself
+# stays no-build and has no runtime npm dependencies
+/node_modules/
+/test-results/
+/playwright-report/
+
+# hermetic content directory the e2e suite writes to, created and torn
+# down per run - never the real /content
+/content-e2e/

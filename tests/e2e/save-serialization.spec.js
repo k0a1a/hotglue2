@@ -1,0 +1,145 @@
+// Save-serialization equivalence - MODERNIZATION.md section 11, last scenario,
+// against the risk in section 8 item 2:
+//
+//   "edit.js's save path serializes objects to literal HTML strings that are
+//    the on-disk storage format for every existing page. Changing how that
+//    serialization happens risks corrupting or mis-rendering already-published
+//    pages on next load."
+//
+// The migration that motivated this has already landed, so a literal
+// before/after diff is no longer available. The durable equivalent is pinning
+// the two properties that actually protect stored pages:
+//
+//   1. a save is IDEMPOTENT - opening a page and saving without editing must
+//      leave the bytes on disk exactly as they were. If this breaks, every
+//      page mutates a little every time somebody opens it.
+//   2. save() only owns the ATTRIBUTES. Object body content (a text object's
+//      words) travels a different path - glue.update_object - and a save must
+//      never touch it.
+
+const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
+
+// Canonical stored forms, i.e. what hotglue itself writes. Note iframe-url is
+// protocol-relative; see the normalization test at the bottom for why.
+const TEXT = {
+	type: 'text', module: 'text',
+	'object-left': '120px', 'object-top': '80px',
+	'object-width': '200px', 'object-height': '40px', 'object-zindex': '100',
+	'text-background-color': 'transparent', 'text-font-size': '17px',
+};
+const IFRAME = {
+	type: 'iframe', module: 'iframe',
+	'object-left': '400px', 'object-top': '300px',
+	'object-width': '320px', 'object-height': '240px', 'object-zindex': '101',
+	'iframe-url': '//example.org/',
+};
+
+// Save every object on the page the way glue-movestop does, and wait for the
+// backend to acknowledge each one.
+async function saveAll(page) {
+	await page.evaluate(() => Promise.all(
+		Array.from(document.querySelectorAll('.object')).map((el) => new Promise((res) => {
+			window.$.glue.backend(
+				{ method: 'glue.save_state', html: window.$.glue.object.to_html(el) }, res);
+		}))));
+}
+
+test('a no-op save leaves the stored bytes untouched', async ({ page, hg }) => {
+	hg.addObject('100000000001', TEXT, 'HELLO');
+	hg.addObject('100000000002', IFRAME);
+	const before = Object.fromEntries(hg.ids().map((id) => [id, hg.readObjectRaw(id)]));
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+	await saveAll(page);
+
+	for (const id of hg.ids()) {
+		expect(hg.readObjectRaw(id), `object ${id} was rewritten by an unedited save`)
+			.toBe(before[id]);
+	}
+});
+
+test('serialization is stable across a save and reload', async ({ page, hg }) => {
+	hg.addObject('100000000001', TEXT, 'HELLO');
+	hg.addObject('100000000002', IFRAME);
+
+	const serialize = () => page.evaluate(() => Object.fromEntries(
+		Array.from(document.querySelectorAll('.object'))
+			.map((el) => [el.id, window.$.glue.object.to_html(el)])));
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+	const first = await serialize();
+	await saveAll(page);
+
+	await page.reload();
+	await waitForEditor(page, 2);
+	expect(await serialize()).toEqual(first);
+});
+
+test('saving a text object does not clobber its content', async ({ page, hg }) => {
+	// The textarea and render div are stripped before serialization
+	// (modules/text/text-edit.js:945) precisely so the words are not sent
+	// through save_state. If that ever changes, every text object on every
+	// page loses its content on the next save - the worst failure this suite
+	// exists to catch.
+	const body = 'HELLO\nsecond line <b>with markup</b> & an ampersand';
+	hg.addObject('100000000001', TEXT, body);
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	expect(await page.evaluate(() => window.$.glue.object.to_html(
+		document.querySelector('.object'))), 'serialized text object must carry no body')
+		.not.toContain('HELLO');
+
+	await saveAll(page);
+	expect(hg.readObject('100000000001').content).toBe(body);
+});
+
+test('a moved object persists its new position and nothing else', async ({ page, hg }) => {
+	hg.addObject('100000000001', TEXT, 'HELLO');
+	const before = hg.readObject('100000000001').attrs;
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await page.evaluate(() => {
+		const el = document.querySelector('.object');
+		el.style.left = '300px';
+		el.style.top = '210px';
+	});
+	await saveAll(page);
+
+	await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('300px');
+	const after = hg.readObject('100000000001').attrs;
+	expect(after['object-top']).toBe('210px');
+	// every other attribute must be exactly as it was
+	for (const k of Object.keys(before)) {
+		if (k === 'object-left' || k === 'object-top') continue;
+		expect(after[k], `attribute ${k} changed during a move`).toBe(before[k]);
+	}
+	expect(Object.keys(after).sort(), 'a move invented or dropped attributes')
+		.toEqual(Object.keys(before).sort());
+});
+
+test('iframe urls are normalized to protocol-relative, then stay put', async ({ page, hg }) => {
+	// module_iframe.inc.php:88 renders src as strstr(url, '//') and :48 stores
+	// it back the same way, so a stored absolute URL is rewritten to
+	// protocol-relative by the first save. That is deliberate (the same page
+	// has to work over http and https), but it IS a lossy rewrite of stored
+	// data, so it is pinned here: one normalization, and stable thereafter.
+	hg.addObject('100000000001', { ...IFRAME, 'iframe-url': 'https://example.org/path' });
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await saveAll(page);
+	await expect.poll(() => hg.readObject('100000000001').attrs['iframe-url'])
+		.toBe('//example.org/path');
+
+	const normalized = hg.readObjectRaw('100000000001');
+	await page.reload();
+	await waitForEditor(page, 1);
+	await saveAll(page);
+	expect(hg.readObjectRaw('100000000001'), 'iframe url normalization is not idempotent')
+		.toBe(normalized);
+});

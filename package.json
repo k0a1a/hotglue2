@@ -1,0 +1,13 @@
+{
+  "name": "hotglue-e2e",
+  "private": true,
+  "description": "Dev-only tooling for hotglue's Playwright end-to-end suite. Hotglue itself is deliberately no-build: nothing here is bundled, compiled or shipped, and the application has no runtime npm dependencies. See MODERNIZATION.md section 11.",
+  "scripts": {
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.js",
+    "test:e2e:ui": "playwright test --config tests/e2e/playwright.config.js --ui",
+    "test:e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
