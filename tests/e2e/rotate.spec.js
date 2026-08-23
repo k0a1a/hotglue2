@@ -208,6 +208,108 @@ test('the handles stay outside at an angle that is not a right one',
 		}
 	});
 
+test('the menus follow the object round when it is turned', async ({ page, hg }) => {
+	// The menus were positioned from offsetLeft/offsetTop, which describe
+	// where the element was LAID OUT and know nothing about the transform on
+	// top of it. A 90 degree turn swaps the object's visual width and height
+	// about its centre, so the column and the row ended up drawn across it
+	// instead of beside it.
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'object-width': '260px', 'object-height': '90px',
+		'transform-flip': 'rotate(90deg)',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await select(page, a);
+
+	const obj = await byId(page, a).boundingBox();
+	const items = await page.evaluate(() =>
+		[...document.querySelectorAll('.glue-contextmenu-left, .glue-contextmenu-top')]
+			.map((e) => {
+				const b = e.getBoundingClientRect();
+				return { id: e.id, x: b.x, y: b.y, width: b.width, height: b.height };
+			}));
+	expect(items.length, 'no menu was open, so this proved nothing').toBeGreaterThan(0);
+
+	const over = items.filter((i) =>
+		i.x < obj.x + obj.width && obj.x < i.x + i.width &&
+		i.y < obj.y + obj.height && obj.y < i.y + i.height).map((i) => i.id);
+	expect(over, 'menu buttons are lying across the turned object').toEqual([]);
+});
+
+test('the menus move as soon as the handle is released', async ({ page, hg }) => {
+	// they used to be placed once, when the object was selected, so they only
+	// caught up with a turn after a click away and a click back
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'object-width': '240px', 'object-height': '80px',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await select(page, a);
+
+	const menuTop = () => page.evaluate(() => {
+		const e = document.querySelector('.glue-contextmenu-top');
+		const b = e.getBoundingClientRect();
+		return { x: b.x, y: b.y };
+	});
+	const before = await menuTop();
+
+	await dragHandle(page, a, 90);
+	// no deselect, no reselect - just the release
+	const after = await menuTop();
+	expect(after, 'the menu stayed where it was').not.toEqual(before);
+
+	// and it is where it should be: clear of the object's new box
+	const obj = await byId(page, a).boundingBox();
+	const items = await page.evaluate(() =>
+		[...document.querySelectorAll('.glue-contextmenu-left, .glue-contextmenu-top')]
+			.map((e) => {
+				const b = e.getBoundingClientRect();
+				return { id: e.id, x: b.x, y: b.y, width: b.width, height: b.height };
+			}));
+	const over = items.filter((i) =>
+		i.x < obj.x + obj.width && obj.x < i.x + i.width &&
+		i.y < obj.y + obj.height && obj.y < i.y + i.height).map((i) => i.id);
+	expect(over, 'menu buttons are lying across the turned object').toEqual([]);
+});
+
+test('undoing a turn takes the menus and handles back with it',
+	async ({ page, hg }) => {
+		// undo puts the object back; nothing else tells the chrome drawn
+		// around it - Moveable's box comes from its own cached rect and the
+		// menu is placed around the object's visual box
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-width': '240px', 'object-height': '80px',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+
+		const boxes = () => page.evaluate(() => {
+			const m = document.querySelector('.glue-contextmenu-top').getBoundingClientRect();
+			const h = document.querySelector('.moveable-control.moveable-e').getBoundingClientRect();
+			return { menu: Math.round(m.y), handle: Math.round(h.x) };
+		});
+		const before = await boxes();
+
+		await dragHandle(page, a, 90);
+		await expect.poll(() => degOf(page, a)).toBe(90);
+		const turned = await boxes();
+		expect(turned, 'nothing moved when the object turned').not.toEqual(before);
+
+		await page.keyboard.press('Control+z');
+		await expect.poll(() => degOf(page, a)).toBe(0);
+		// back where they started, without a click anywhere. Within a couple
+		// of pixels: the re-rendered object comes back without the 2px border
+		// $.glue.sel.select() draws around a selected one, so everything
+		// measured against its edges sits that much closer in.
+		await expect.poll(async () => {
+			const now = await boxes();
+			return Math.abs(now.menu - before.menu) <= 3 &&
+				Math.abs(now.handle - before.handle) <= 3;
+		}, { message: 'the chrome did not come back with the object' }).toBe(true);
+	});
+
 test('a locked object offers no rotation handle', async ({ page, hg }) => {
 	// object-lock is what module_lock.inc.php turns into the .locked class
 	const a = hg.addObject('100000000001', { ...ATTRS, 'object-lock': 'locked' }, 'A');

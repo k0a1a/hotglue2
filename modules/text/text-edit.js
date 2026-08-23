@@ -1157,8 +1157,17 @@ document.addEventListener('DOMContentLoaded', function() {
 			elem.appendChild(render);
 			elem.id = data['name'];
 			// default width and height is set in the css
-			// randomly pick one of the default colors
-			if ($.glue.conf.object.default_colors) {
+			//
+			// The background is the last colour used on this page - the one
+			// at the head of the colour picker's swatch row - so a run of new
+			// objects comes out in the palette being worked in rather than in
+			// a random one each time. Falls back to the random pick from
+			// $.glue.conf.object.default_colors on a page where nothing has
+			// been coloured yet, which is what it always did.
+			var recent = $.glue.colorpicker.recent();
+			if (recent.length) {
+				elem.style.backgroundColor = recent[0];
+			} else if ($.glue.conf.object.default_colors) {
 				var rand = Math.floor(Math.random()*$.glue.conf.object.default_colors.length);
 				elem.style.backgroundColor = $.glue.conf.object.default_colors[rand];
 			}

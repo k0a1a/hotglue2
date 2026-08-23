@@ -646,6 +646,12 @@ $.glue.colorpicker = function()
 	});
 
 	return {
+		// The colours used on this page, most recent first, as the swatch row
+		// shows them. Live: it includes what has been picked since the page
+		// loaded, not just what was stored when it did.
+		recent: function() {
+			return recent_colors().slice();
+		},
 		// the pointer position popovers open near - tracked here because this
 		// is where the document-wide click listener already lives
 		last_click: function() {
@@ -753,7 +759,110 @@ $.glue.contextmenu = function()
 		}
 	});
 
+	// Where the menu items go, geometry only - no DOM insertion, no events -
+	// so it can be run again when the object changes shape or angle under
+	// them without rebuilding the menu.
+	//
+	// From the object's VISUAL box, not its layout box. offsetLeft and
+	// offsetTop describe where the element was laid out and know nothing
+	// about the transform on top of it, so a rotated object got its menus
+	// drawn around the rectangle it would have occupied unrotated - a 90
+	// degree turn leaves the column and the row sitting across the object
+	// instead of beside it. getBoundingClientRect() is the rectangle actually
+	// on screen, rotation included; page coordinates are what the menu items
+	// (absolutely positioned in body) need, hence the scroll offsets, and it
+	// makes $.glue.canvas.origin() unnecessary here since the rect already
+	// accounts for any wrapper the objects sit in.
+	//
+	// reveal .. fade the items in as they are placed. True the first time
+	// they appear; false when they are only being moved, which must not
+	// restart the animation under the pointer.
+	var place_items = function(obj, reveal) {
+		var obj_rect = obj.getBoundingClientRect();
+		for (var i=0; i < 2; i++) {
+			var target;
+			var cur_left = obj_rect.left+window.scrollX;
+			var cur_top = obj_rect.top+window.scrollY;
+			var offset = 48; // menu offset (when can't calculate height or width)
+			if (i == 0) {
+				target = top;
+				// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
+				// TODO (later): can be improved
+				if (left.length) {
+					if (cur_left-outer_width(left[0].elem, true) < 0) {
+						cur_left = outer_width(left[0].elem, true) + offset;
+					}
+				// if left menu is empty shift top menu right by 48px (to make fisrt icon visible)
+				// TODO: calculate offset dynamically
+				} else {
+					if (cur_left-offset < 0) {
+						cur_left = offset;
+					}
+				}
+			} else {
+				target = left;
+				// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
+				// TODO (later): can be improved
+				if (top.length) {
+					if (cur_top-outer_height(top[0].elem, true) < 0) {
+						cur_top = outer_height(top[0].elem, true);
+					}
+				// if top menu is empty shift left menu down by 48px (to make fisrt icon visible)
+				// TODO: calculate offset dynamically
+				} else {
+					if (cur_top-offset < 0) {
+						cur_top = offset;
+					}
+				}
+			}
+			for (var j=0; j < target.length; j++) {
+				var item = target[j].elem;
+				if (target == top) {
+					item.style.left = cur_left+'px';
+					var temp_top = cur_top-outer_height(item, true);
+					if (temp_top < 0) {
+						temp_top = 0;
+					}
+					item.style.top = temp_top+'px';
+					var cur_width = outer_width(item, true);
+				} else {
+					var temp_left = cur_left-outer_width(item, true);
+					if (temp_left < 0) {
+						temp_left = 0;
+					}
+					item.style.left = temp_left+'px';
+					item.style.top = cur_top+'px';
+					var cur_height = outer_height(item, true);
+				}
+				// check if we still want to show the icon ;)
+				if (getComputedStyle(item).display == 'none') {
+					continue;
+				}
+				// show it for real
+				if (target == left) {
+					cur_top += cur_height;
+				} else {
+					cur_left += cur_width;
+				}
+				if (reveal) {
+					item.style.visibility = '';
+					item.style.display = 'none';
+					fade_in(item, 333);
+				}
+			}
+		}
+	};
+
 	return {
+		// Runs the placement again for the menu that is already open, for
+		// whatever has just changed the object's shape or angle under it. The
+		// alternative - hide() and show() - would rebuild the whole menu and
+		// fade it back in, which reads as a flicker after every resize.
+		reposition: function() {
+			if (owner) {
+				place_items(owner, false);
+			}
+		},
 		hide: function() {
 			if (owner) {
 				while (left.length) {
@@ -873,78 +982,22 @@ $.glue.contextmenu = function()
 					}
 				}
 			}
-			// position items
+			// put the items in the DOM and let them say whether they want
+			// to be here at all, then place them
 			for (var i=0; i < 2; i++) {
-				var target;
-				var canvas_origin = $.glue.canvas.origin();
-				var cur_left = obj.offsetLeft+canvas_origin.x;
-				var cur_top = obj.offsetTop+canvas_origin.y;
-				var offset = 48; // menu offset (when can't calculate height or width)
-				if (i == 0) {
-					target = top;
-					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
-					// TODO (later): can be improved
-					if (left.length) {
-						if (cur_left-outer_width(left[0].elem, true) < 0) {
-							cur_left = outer_width(left[0].elem, true) + offset;
-						}
-					// if left menu is empty shift top menu right by 48px (to make fisrt icon visible)
-					// TODO: calculate offset dynamically
-					} else {
-						if (cur_left-offset < 0) {
-							cur_left = offset;
-						}
-					}
-				} else {
-					target = left;
-					// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
-					// TODO (later): can be improved
-					if (top.length) {
-						if (cur_top-outer_height(top[0].elem, true) < 0) {
-							cur_top = outer_height(top[0].elem, true);
-						}
-					// if top menu is empty shift left menu down by 48px (to make fisrt icon visible)
-					// TODO: calculate offset dynamically
-					} else {
-						if (cur_top-offset < 0) {
-							cur_top = offset;
-						}
-					}
-				}
-				// add items to dom
+				var target = (i == 0) ? top : left;
 				for (var j=0; j < target.length; j++) {
-					// set crucial css properties
-					target[j].elem.id = 'glue-contextmenu-'+target[j].name;
-					if (target == left) {
-						target[j].elem.classList.add('glue-contextmenu-left');
-					} else {
-						target[j].elem.classList.add('glue-contextmenu-top');
-					}
-					target[j].elem.classList.add('glue-ui');
-					target[j].elem.style.position = 'absolute';
-					target[j].elem.style.visibility = 'hidden';
-					target[j].elem.style.zIndex = '201';
-					// add to dom and move
-					document.body.appendChild(target[j].elem);
-					if (target == top) {
-						target[j].elem.style.left = cur_left+'px';
-						var temp_top = cur_top-outer_height(target[j].elem, true);
-						if (temp_top < 0) {
-							temp_top = 0;
-						}
-						target[j].elem.style.top = temp_top+'px';
-						var cur_width = outer_width(target[j].elem, true);
-					} else {
-						var temp_left = cur_left-outer_width(target[j].elem, true);
-						if (temp_left < 0) {
-							temp_left = 0;
-						}
-						target[j].elem.style.left = temp_left+'px';
-						target[j].elem.style.top = cur_top+'px';
-						var cur_height = outer_height(target[j].elem, true);
-					}
+					var item = target[j].elem;
+					item.id = 'glue-contextmenu-'+target[j].name;
+					item.classList.add(target == left ?
+						'glue-contextmenu-left' : 'glue-contextmenu-top');
+					item.classList.add('glue-ui');
+					item.style.position = 'absolute';
+					item.style.visibility = 'hidden';
+					item.style.zIndex = '201';
+					document.body.appendChild(item);
 					// set owner and trigger event
-					$.glue.owner(target[j].elem, obj);
+					$.glue.owner(item, obj);
 					// Alpine's own MutationObserver-based init is async, but
 					// icons here get detached/reattached on every hide()/
 					// show() - without this, the glue-menu-activate trigger
@@ -954,24 +1007,12 @@ $.glue.contextmenu = function()
 					// no-op on an already-initialized element, safe to call
 					// every time)
 					if (window.Alpine) {
-						Alpine.initTree(target[j].elem);
+						Alpine.initTree(item);
 					}
-					$.glue.trigger(target[j].elem, 'glue-menu-activate');
-					// check if we still want to show the icon ;)
-					if (getComputedStyle(target[j].elem).display == 'none') {
-						continue;
-					}
-					// show it for real
-					if (target == left) {
-						cur_top += cur_height;
-					} else {
-						cur_left += cur_width;
-					}
-					target[j].elem.style.visibility = '';
-					target[j].elem.style.display = 'none';
-					fade_in(target[j].elem, 333);
+					$.glue.trigger(item, 'glue-menu-activate');
 				}
 			}
+			place_items(obj, true);
 			owner = obj;
 			// reset prev_owner as well
 			prev_owner = false;
@@ -1495,10 +1536,15 @@ $.glue.object = function()
 	// buries the handle INSIDE the object at 180°, where that edge is now on
 	// the left - which is exactly what it did.
 	//
-	// The angle comes from Moveable's getRect() rather than from the object's
-	// style, so this agrees with wherever Moveable itself decided to draw the
-	// handles, including for a flipped object, whose matrix it reads as a
-	// rotation too.
+	// The angle is read off the ELEMENT's own computed matrix - the same thing
+	// Moveable reads to decide where to draw the handles, and true the moment
+	// the element changes. Moveable's getRect() was the obvious source and is
+	// the wrong one: its rect is cached and updateRect() only schedules a
+	// recompute, so anything that changes an object and immediately replaces
+	// its handles - an undo, most of all - measured the angle the object had
+	// a moment ago and pinned the offsets to it. Reading the matrix also
+	// covers a flipped object, whose matrix is a rotation as far as both this
+	// and Moveable are concerned.
 	// returns false when there is nothing to place yet, which is how the
 	// retry below knows to come back
 	var place_handles = function(obj) {
@@ -1510,9 +1556,20 @@ $.glue.object = function()
 		if (!box) {
 			return false;
 		}
-		var rad = (m.getRect().rotation || 0)*Math.PI/180;
-		var cos = Math.cos(rad);
-		var sin = Math.sin(rad);
+		// matrix(a, b, c, d, e, f): the first column is the x axis after the
+		// transform, so its angle is the element's rotation
+		var cos = 1;
+		var sin = 0;
+		var matrix = getComputedStyle(obj).transform;
+		var parts = /^matrix\(([^)]+)\)$/.exec(matrix);
+		if (parts) {
+			var n = parts[1].split(',').map(parseFloat);
+			var len = Math.sqrt(n[0]*n[0]+n[1]*n[1]);
+			if (len) {
+				cos = n[0]/len;
+				sin = n[1]/len;
+			}
+		}
 		var placed = 0;
 		box.querySelectorAll('.moveable-control.moveable-direction').forEach(function(el) {
 			var dir = (el.className.match(/moveable-(nw|ne|sw|se|n|e|s|w)(?:\s|$)/) || [])[1];
@@ -1773,6 +1830,9 @@ $.glue.object = function()
 					$.glue.object.save(obj);
 					$.glue.trigger(obj, 'glue-resizestop');
 					$.glue.canvas.update(obj);
+					// the object is a different shape now, so the menu around
+					// it is in the wrong place until it is told
+					$.glue.contextmenu.reposition();
 				});
 			}
 
@@ -1911,6 +1971,24 @@ $.glue.undo = function()
 		live.innerHTML = fresh.innerHTML;
 	}
 
+	// The object has just been put back at whatever size, place and angle it
+	// had, so the chrome drawn AROUND it is describing the object as it was a
+	// moment ago: Moveable's box and handles come from its own cached rect,
+	// and the context menu is placed around the object's visual box. Neither
+	// is told by anything else.
+	//
+	// Called from the render callback rather than from step(), because the
+	// restore goes through glue.render_object - by the time step() returns,
+	// the DOM has not changed yet, and measuring then reads the old object.
+	function refresh_chrome(live) {
+		var m = $.glue.object.moveable_of(live);
+		if (m) {
+			m.updateRect();
+		}
+		$.glue.object.place_handles(live);
+		$.glue.contextmenu.reposition();
+	}
+
 	function render_and_apply(id, live, is_new) {
 		$.glue.backend({ method: 'glue.render_object', name: id, edit: true }, function(data) {
 			if (!data || data['#error']) {
@@ -1922,6 +2000,7 @@ $.glue.undo = function()
 			}
 			last_html.set(live, $.glue.object.to_html(live));
 			$.glue.canvas.update(live);
+			refresh_chrome(live);
 		}, false);
 	}
 

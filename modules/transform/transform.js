@@ -146,6 +146,9 @@ $.glue.live('.object', 'glue-select', function(e) {
 			$.glue.object.save(obj);
 			m.updateRect();
 			$.glue.object.place_handles(obj);
+			// the object's visual box has turned with it, and the menu is
+			// placed around that box
+			$.glue.contextmenu.reposition();
 		});
 	}
 	m.rotatable = true;

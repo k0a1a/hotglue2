@@ -445,3 +445,46 @@ test('the sample is square and the hex field fits eight digits',
 		expect(await input.evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
 			'the hex value does not fit its field').toBe(true);
 	});
+
+test('a new text object takes the last colour used on the page',
+	async ({ page, hg }) => {
+		// so a run of new objects comes out in the palette being worked in,
+		// rather than in a different random colour each time
+		hg.addObject('page', { 'page-recent-colors': '#3355ff,#ff0000' });
+		await page.goto(hg.editUrl());
+		await page.waitForFunction(() => window.$ && window.$.glue && window.$.glue.object);
+
+		// the "new" menu opens on a click on empty canvas
+		await page.mouse.click(500, 400);
+		await page.getByTitle('add a new text object').click();
+		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
+
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.text.object')).backgroundColor))
+			.toBe('rgb(51, 85, 255)');
+	});
+
+test('and falls back to a random default on a page with no colours yet',
+	async ({ page, hg }) => {
+		await page.goto(hg.editUrl());
+		await page.waitForFunction(() => window.$ && window.$.glue && window.$.glue.object);
+
+		await page.mouse.click(500, 400);
+		await page.getByTitle('add a new text object').click();
+		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
+
+		const bg = await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.text.object')).backgroundColor);
+		const defaults = await page.evaluate(() => $.glue.conf.object.default_colors);
+		expect(defaults.length, 'no default colours are configured at all').toBeGreaterThan(0);
+		// whichever one it picked, it is one of them
+		const asRgb = await page.evaluate((list) => list.map((c) => {
+			const d = document.createElement('div');
+			d.style.backgroundColor = c;
+			document.body.appendChild(d);
+			const v = getComputedStyle(d).backgroundColor;
+			d.remove();
+			return v;
+		}), defaults);
+		expect(asRgb).toContain(bg);
+	});

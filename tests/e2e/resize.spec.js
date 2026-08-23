@@ -174,3 +174,31 @@ test('the handles sit outside the object, not across it', async ({ page, hg }) =
 		}
 	}
 });
+
+test('the menu is still around the object after a resize, with no reselect',
+	async ({ page, hg }) => {
+		// the menu is placed around the object's box, and resizing changes
+		// that box - it used to take a deselect and a reselect to catch up,
+		// so a grown object ended up with its own menu lying across it
+		const a = seed(hg);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await byId(page, a).click();
+		await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
+
+		// grow it in both directions, then look without touching anything else
+		await dragHandle(page, 'se', 140, 120);
+
+		const obj = await byId(page, a).boundingBox();
+		const items = await page.evaluate(() =>
+			[...document.querySelectorAll('.glue-contextmenu-left, .glue-contextmenu-top')]
+				.map((e) => {
+					const b = e.getBoundingClientRect();
+					return { id: e.id, x: b.x, y: b.y, width: b.width, height: b.height };
+				}));
+		expect(items.length, 'no menu was open, so this proved nothing').toBeGreaterThan(0);
+		const over = items.filter((i) =>
+			i.x < obj.x + obj.width && obj.x < i.x + i.width &&
+			i.y < obj.y + obj.height && obj.y < i.y + i.height).map((i) => i.id);
+		expect(over, 'menu buttons are lying across the resized object').toEqual([]);
+	});
