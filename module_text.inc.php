@@ -277,6 +277,16 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-font-weight']);
 	}
+	// text-decoration - underline and strikethrough, which share one CSS
+	// property and are therefore stored as one value ('underline',
+	// 'line-through', or both). Nothing stored this before the font popover
+	// existed, and a property that is not on this list is dropped on save, so
+	// without it the two toggles would look right until the page reloaded.
+	if (elem_css($elem, 'text-decoration') !== NULL) {
+		$obj['text-text-decoration'] = elem_css($elem, 'text-decoration');
+	} else {
+		unset($obj['text-text-decoration']);
+	}
 	// letter-spacing
 	if (elem_css($elem, 'letter-spacing') !== NULL) {
 		$obj['text-letter-spacing'] = elem_css($elem, 'letter-spacing');
@@ -424,6 +434,10 @@ function text_alter_render_early($args)
 	// font-weight
 	if (!empty($obj['text-font-weight'])) {
 		elem_css($elem, 'font-weight', $obj['text-font-weight']);
+	}
+	// text-decoration (see text_alter_save)
+	if (!empty($obj['text-text-decoration'])) {
+		elem_css($elem, 'text-decoration', $obj['text-text-decoration']);
 	}
 	// letter-spacing
 	if (!empty($obj['text-letter-spacing'])) {

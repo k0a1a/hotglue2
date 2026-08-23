@@ -48,7 +48,8 @@ Checked against the tree on 2026-08-23.
 
 ### In this directory, NOT yet built
 
-- **SOW-text-controls-redesign.md** — collapse the text menu's eight formatting buttons
+- **SOW-text-controls-redesign.md** — *(the Font popover is now BUILT; the Spacing
+  popover and the padding relocation are not.)* Collapse the text menu's eight formatting buttons
   into Font and Spacing popovers plus a standalone Color button, and move padding out to
   object properties. Reconciled against the tree on 2026-08-23: the paragraphs marked
   **CHECKED** are what the code actually does, and three of them change the plan — the
@@ -94,7 +95,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **308 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **330 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
@@ -106,6 +107,12 @@ Shipped 2026-08-22/23:
   shall interfere with page elements". They now sit 5px clear of it, and the offset
   turns with the object: as a margin it was screen-space, so it pushed handles INTO
   anything rotated past 90°.
+- **Font popover** — face, size and style in one panel, replacing three buttons that
+  each had to be cycled or dragged. Two-state B/I/U/S toggles (the controls style the
+  whole object, so there is no partial state), a size field that is not capped by its
+  slider, and `text-decoration` finally stored — nothing saved it before, so underline
+  and strikethrough would have vanished on reload. Built on `$.glue.popover`, the colour
+  picker's placement rule lifted out so every panel lands the same way.
 - **A smaller colour picker, with the page's recent colours** — roughly half its old
   250x315, plus the last five colours used on that page as swatches above the hex field,
   stored on the page object (`page-recent-colors`) so they are there for whoever opens

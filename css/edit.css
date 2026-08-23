@@ -452,6 +452,29 @@
 	cursor: pointer;
 }
 
+.glue-popover {
+	/* An editor panel that opens beside the object being edited - the font
+	   popover, and whatever comes after it. Deliberately the colour picker's
+	   chrome, since that is the panel everything else is being matched to:
+	   vanilla-picker draws itself #f2f2f2 with a silver hairline and a soft
+	   drop shadow, and these are those values. Position comes from
+	   $.glue.popover in js/edit.js; z-index 450 is the picker's, above the
+	   objects (199), the menus (200/201) and the resize handles (300), below
+	   the modal backdrop (500). */
+	position: fixed;
+	z-index: 450;
+	box-sizing: border-box;
+	padding: 6px;
+	background: #f2f2f2;
+	box-shadow: 0 0 0 1px silver, 0 0 10px 1px rgba(0, 0, 0, 0.4);
+	color: #444;
+	font-family: sans-serif;
+	font-size: 11px;
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
 .glue-slider {
 	/* the bar $.glue.rangeslider draws next to a menu button while it is
 	   being dragged. Same frame as the icon buttons - 1px black, near-white

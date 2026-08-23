@@ -670,6 +670,291 @@ function text_link_dialog_dom(obj, render) {
 	});
 }
 
+//
+// --- font popover ----------------------------------------------------------
+//
+// Face, size and style in one panel, replacing three buttons: one that cycled
+// through the installed faces a click at a time, one that had to be dragged to
+// change the size, and one that cycled bold -> italic -> both -> normal.
+//
+// SCOPE IS THE WHOLE OBJECT, like every other control in this menu: they all
+// read getComputedStyle(obj) and write obj.style.*. Nothing here styles a
+// selection - text objects are edited as raw HTML in a textarea, so there is
+// no execCommand to lean on, and per-selection styling would mean wrapping
+// ranges by hand the way the link dialog does. That is a much bigger job and
+// its own decision; until then the toggles are two-state, because with one
+// object there is no third, partial state to be in.
+//
+// The panel behaves like the colour picker: placed in the nearest free space
+// beside the object rather than over it, applied live so the judgement can be
+// made by eye, closed by a click outside or Escape.
+//
+
+var text_font_popover_elem = false;
+
+function text_font_popover_close()
+{
+	if (text_font_popover_elem) {
+		text_font_popover_elem.remove();
+		text_font_popover_elem = false;
+	}
+}
+
+// one row: a label and whatever control it names
+function _text_font_row(label)
+{
+	var row = document.createElement('div');
+	row.className = 'glue-font-row';
+	if (label) {
+		var l = document.createElement('div');
+		l.className = 'glue-font-label';
+		l.textContent = label;
+		row.appendChild(l);
+	}
+	return row;
+}
+
+function text_font_popover(obj)
+{
+	// a second click on the button closes it again
+	var was_for = text_font_popover_elem ? $.glue.owner(text_font_popover_elem) : false;
+	text_font_popover_close();
+	if (was_for === obj) {
+		return;
+	}
+
+	var cs = getComputedStyle(obj);
+	var size = parseInt(cs.fontSize);
+	if (isNaN(size) || size < 1) {
+		size = 16;
+	}
+	// The old size control kept line-height in step with font-size, holding
+	// whatever ratio was in effect (including one set deliberately through the
+	// separate line-height control). Keep doing that, or changing the size
+	// through this panel would quietly flatten it.
+	var line_height = parseFloat(cs.lineHeight);
+	var ratio = (!isNaN(line_height) && size) ? line_height/size : 1.2;
+
+	var pop = document.createElement('div');
+	pop.className = 'glue-popover glue-font-popover glue-ui';
+	$.glue.owner(pop, obj);
+
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	// --- row 1: face ------------------------------------------------------
+	var fonts = [];
+	var woff_fonts = [];
+	$.glue.text.get_fonts(fonts, woff_fonts);
+	var select = document.createElement('select');
+	select.className = 'glue-font-face';
+	var cur_face = cs.fontFamily;
+	var option = function(parent, name) {
+		var o = document.createElement('option');
+		o.value = name;
+		// the name of a face, set in that face - the point of the list
+		o.style.fontFamily = name;
+		o.textContent = name.replace(/["\']/g, '');
+		if (name === cur_face) {
+			o.selected = true;
+		}
+		parent.appendChild(o);
+		return o;
+	};
+	// whatever the object is set to now goes first if it is not one of the
+	// offered faces (an inherited default, or a face that has since been
+	// removed), so the list never misreports what is on screen
+	if (fonts.indexOf(cur_face) == -1) {
+		option(select, cur_face);
+	}
+	var uploaded = [];
+	var installed = [];
+	fonts.forEach(function(f) {
+		(woff_fonts.indexOf(f) == -1 ? installed : uploaded).push(f);
+	});
+	// uploaded fonts first and named as such: they are the ones the author
+	// went and added, and hunting for them in an alphabetical run of system
+	// faces is the thing the old cycling button was worst at
+	[['your fonts', uploaded], ['fonts', installed]].forEach(function(g) {
+		if (!g[1].length) {
+			return;
+		}
+		var group = document.createElement('optgroup');
+		group.label = g[0];
+		g[1].forEach(function(f) {
+			option(group, f);
+		});
+		select.appendChild(group);
+	});
+	select.addEventListener('change', function() {
+		obj.style.fontFamily = this.value;
+		save();
+		// remembered as the default for newly created text objects, as the
+		// old face button did (page_set_last_font(), site-wide)
+		$.glue.conf.text.last_font = this.value;
+		$.glue.backend({ method: 'page.set_last_font', font: this.value });
+	});
+	var face_row = _text_font_row(false);
+	face_row.appendChild(select);
+	pop.appendChild(face_row);
+
+	// --- row 2: size ------------------------------------------------------
+	var range = document.createElement('input');
+	range.type = 'range';
+	range.className = 'glue-font-size-slider';
+	range.min = 8;
+	range.max = 100;
+	range.step = 1;
+	range.value = Math.max(8, Math.min(100, size));
+	var field = document.createElement('input');
+	field.type = 'number';
+	field.className = 'glue-font-size-field';
+	field.min = 1;
+	field.value = size;
+
+	var apply_size = function(px, commit) {
+		obj.style.fontSize = px+'px';
+		obj.style.lineHeight = (px*ratio)+'px';
+		if (commit) {
+			save();
+			$.glue.conf.text.last_font_size = obj.style.fontSize;
+			$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
+			$.glue.conf.text.last_line_height = obj.style.lineHeight;
+			$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
+		}
+	};
+	range.addEventListener('input', function() {
+		field.value = this.value;
+		apply_size(parseInt(this.value, 10), false);
+	});
+	range.addEventListener('change', function() {
+		apply_size(parseInt(this.value, 10), true);
+	});
+	field.addEventListener('input', function() {
+		var px = parseInt(this.value, 10);
+		if (isNaN(px) || px < 1) {
+			return;
+		}
+		// The field is NOT capped by the slider: display type runs well past
+		// the end of a sensible drag range. The slider just parks at its own
+		// maximum and the field keeps the real number.
+		range.value = Math.max(8, Math.min(100, px));
+		apply_size(px, false);
+	});
+	field.addEventListener('change', function() {
+		var px = parseInt(this.value, 10);
+		if (isNaN(px) || px < 1) {
+			this.value = parseInt(getComputedStyle(obj).fontSize);
+			return;
+		}
+		apply_size(px, true);
+	});
+	var size_row = _text_font_row('size');
+	size_row.appendChild(range);
+	size_row.appendChild(field);
+	pop.appendChild(size_row);
+
+	// --- row 3: style -----------------------------------------------------
+	//
+	// Four independent toggles, any combination valid. Underline and
+	// strikethrough are the fiddly pair: they are ONE css property, so they
+	// are read and written together as a list rather than one overwriting the
+	// other. Neither was stored at all before this panel - see
+	// text_alter_save() in module_text.inc.php.
+	var decoration = function() {
+		var d = cs.textDecorationLine || cs.textDecoration || '';
+		return {
+			underline: /underline/.test(d),
+			strike: /line-through/.test(d)
+		};
+	};
+	var weight = parseInt(cs.fontWeight, 10);
+	var state = {
+		bold: cs.fontWeight == 'bold' || (!isNaN(weight) && 600 <= weight),
+		italic: cs.fontStyle == 'italic',
+		underline: decoration().underline,
+		strike: decoration().strike
+	};
+
+	var write_decoration = function() {
+		var parts = [];
+		if (state.underline) {
+			parts.push('underline');
+		}
+		if (state.strike) {
+			parts.push('line-through');
+		}
+		// empty string REMOVES the property, which is what makes the object
+		// file lose the attribute again (text_alter_save unsets what is not
+		// there); 'none' would be stored forever
+		obj.style.textDecoration = parts.join(' ');
+	};
+
+	var style_row = _text_font_row('style');
+	[
+		['bold', 'bold', function() {
+			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
+		}],
+		['italic', 'italic', function() {
+			obj.style.fontStyle = state.italic ? 'italic' : 'normal';
+		}],
+		['underline', 'underline', write_decoration],
+		['strike', 'strikethrough', write_decoration]
+	].forEach(function(t) {
+		var b = document.createElement('div');
+		b.className = 'glue-font-toggle glue-font-toggle-'+t[0];
+		// the button is a T wearing the effect it applies
+		b.textContent = 'T';
+		b.title = t[1];
+		b.dataset.style = t[0];
+		if (state[t[0]]) {
+			b.classList.add('glue-font-toggle-on');
+		}
+		b.addEventListener('click', function() {
+			state[t[0]] = !state[t[0]];
+			this.classList.toggle('glue-font-toggle-on', state[t[0]]);
+			t[2]();
+			save();
+		});
+		style_row.appendChild(b);
+	});
+	pop.appendChild(style_row);
+
+	// --- place it ---------------------------------------------------------
+	pop.style.visibility = 'hidden';
+	document.body.appendChild(pop);
+	text_font_popover_elem = pop;
+	$.glue.popover.place(pop, $.glue.popover.pointer());
+	pop.style.visibility = '';
+}
+
+// closed by a click anywhere outside it, like the colour picker. Capture
+// phase, so it closes even when something else stops the click.
+document.documentElement.addEventListener('click', function(e) {
+	if (text_font_popover_elem && !text_font_popover_elem.contains(e.target)) {
+		text_font_popover_close();
+	}
+}, true);
+
+document.documentElement.addEventListener('keydown', function(e) {
+	if (e.key == 'Escape') {
+		text_font_popover_close();
+	}
+});
+
+// and it does not stay behind when the object it belongs to is dropped or
+// dragged away from under it
+$.glue.live('.object', 'glue-deselect', function(e) {
+	if (text_font_popover_elem && $.glue.owner(text_font_popover_elem) === this) {
+		text_font_popover_close();
+	}
+});
+
+$.glue.live('.object', 'glue-movestart', function(e) {
+	text_font_popover_close();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
@@ -852,68 +1137,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
 
 	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-font-size.png';
-	elem.alt = 'btn';
-	elem.width = 32;
-	elem.height = 32;
-	elem.setAttribute('x-data', "{ tip: 'drag to change font size, click to reset to default one' }");
-	elem.setAttribute('x-bind:title', 'tip');
-	elem.setAttribute('x-on:glue-menu-activate', 'text_font_size_sync($el)');
-	elem.addEventListener('mousedown', function(e) {
-		var obj = $.glue.owner(this);
-		// we assume px here
-		var orig_val = parseInt(getComputedStyle(obj).fontSize);
-		if (isNaN(orig_val)) {
-			orig_val = 10;
-		}
-		// preserve whatever line-height-to-font-size ratio is currently in
-		// effect (falls back to a sane readable default) so line-height
-		// scales along with font-size instead of staying fixed - this
-		// also correctly keeps a previously custom-set ratio (via the
-		// separate "change line height" control) rather than resetting it
-		var orig_line_height = parseFloat(getComputedStyle(obj).lineHeight);
-		var line_height_ratio = (!isNaN(orig_line_height) && orig_val) ? orig_line_height/orig_val : 1.2;
-		var no_change = true;
-		var that = this;
-		$.glue.slider(e, function(x, y) {
-			var val = Math.floor(orig_val+y/6);
-			if (val < 0) {
-				val = 0;
-			}
-			obj.style.fontSize = val+'px';
-			obj.style.lineHeight = (val*line_height_ratio)+'px';
-			Alpine.$data(that).tip = 'drag to change font size ('+val+'px), click to reset to default one';
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset font-size if there was no change at all - line-height
-			// is left alone here, since it has its own dedicated reset
-			// (the separate "change line height" control) and a plain
-			// click on this button shouldn't discard an unrelated,
-			// deliberately customized line-height
-			if (no_change) {
-				obj.style.fontSize = '';
-				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-font-size' });
-				Alpine.$data(that).tip = 'drag to change font size ('+getComputedStyle(obj).fontSize+'px), click to reset to default one';
-			} else {
-				$.glue.object.save(obj);
-				// remember as the site-wide default for newly created text
-				// objects (see the "new text" handler above) - this
-				// includes line-height, which this drag also sets
-				// alongside font-size (see line_height_ratio above)
-				$.glue.conf.text.last_font_size = obj.style.fontSize;
-				$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
-				$.glue.conf.text.last_line_height = obj.style.lineHeight;
-				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
-			}
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.contextmenu.register('text', 'text-font-size', elem);
-
-	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/text/text-font-color.png';
 	elem.alt = 'btn';
 	elem.title = 'change font color';
@@ -939,111 +1162,20 @@ document.addEventListener('DOMContentLoaded', function() {
 	// this also requires the glue-deselect handler above
 	$.glue.contextmenu.register('text', 'text-font-color', elem);
 
-	elem = document.createElement('div');
-	elem.className = 'glue-text-font-family';
-	elem.style.height = '32px';
-	elem.style.width = '32px';
-	elem.title = 'add fonts ⚙';
-	elem.addEventListener('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var fonts = [];
-		var woff_fonts = [];
-		$.glue.text.get_fonts(fonts, woff_fonts);
-		// check if current font is a woff-font
-		var cur = getComputedStyle(obj).fontFamily;
-		var faceElem = document.getElementById('glue-contextmenu-text-font-face');
-		for (i=0; i < woff_fonts.length; i++) {
-			if (cur === woff_fonts[i]) {
-				// current font is a woff-font
-				faceElem.classList.add('glue-text-font-face');
-				faceElem.classList.remove('glue-text-font-family');
-				faceElem.title = cur+' | add fonts ⚙';
-				return;
-			}
-		}
-		// not a woff-font
-		faceElem.classList.remove('glue-text-font-face');
-		faceElem.classList.add('glue-text-font-family');
-		faceElem.title = cur+' | add fonts ⚙';
-	});
+	// --- font popover ----------------------------------------------------
+	//
+	// One button in place of the three that used to be here (size, face,
+	// style). It opens the panel built by text_font_popover() below, which
+	// looks and behaves like the colour picker: it goes in the nearest free
+	// space beside the object rather than over it ($.glue.popover), applies
+	// live, reads the object's current values when it opens, and closes on a
+	// click outside or Escape.
+	elem = $.glue.icon('font-face', 'font: face, size and style');
 	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var fonts = [];
-		var woff_fonts = [];
-		$.glue.text.get_fonts(fonts, woff_fonts);
-		// DEBUG
-		//console.log(fonts);
-		//console.log(woff_fonts);
-		// search for current font
-		var cur = getComputedStyle(obj).fontFamily;
-		var n = false;
-		for (var i=0; i < fonts.length; i++) {
-			if (cur === fonts[i]) {
-				// pick the next one
-				if (i+1 < fonts.length) {
-					n = i+1;
-				} else {
-					n = 0;
-				}
-				break;
-			}
-		}
-		// otherwise fall back to the first one
-		if (n === false && fonts.length) {
-			n = 0;
-		}
-		if (n !== false) {
-			obj.style.fontFamily = fonts[n];
-			// check if woff-font
-			var is_woff = false;
-			for (var i=0; i < woff_fonts.length; i++) {
-				if (woff_fonts[i] == fonts[n]) {
-					is_woff = true;
-					break;
-				}
-			}
-			if (is_woff) {
-				this.classList.add('glue-text-font-face');
-				this.classList.remove('glue-text-font-family');
-			} else {
-				this.classList.remove('glue-text-font-face');
-				this.classList.add('glue-text-font-family');
-			}
-			this.title = fonts[n]+' | add fonts ⚙';
-			$.glue.object.save(obj);
-			// remember as the site-wide default for newly created text
-			// objects (see the "new text" handler above)
-			$.glue.conf.text.last_font = fonts[n];
-			$.glue.backend({ method: 'page.set_last_font', font: fonts[n] });
-		}
+		text_font_popover($.glue.owner(this));
+		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-font-face', elem);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-font-style.png';
-	elem.alt = 'btn';
-	elem.title = 'change font style';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var computed = getComputedStyle(obj);
-		if (computed.fontStyle == 'normal' && (computed.fontWeight == 'bold' || computed.fontWeight == '700')) {
-			obj.style.fontStyle = 'italic';
-			obj.style.fontWeight = 'normal';
-		} else if (computed.fontStyle == 'italic' && (computed.fontWeight == 'normal' || computed.fontWeight == '400')) {
-			obj.style.fontStyle = 'italic';
-			obj.style.fontWeight = 'bold';
-		} else if (computed.fontStyle == 'italic' && (computed.fontWeight == 'bold' || computed.fontWeight == '700')) {
-			obj.style.fontStyle = 'normal';
-			obj.style.fontWeight = 'normal';
-		} else {
-			obj.style.fontStyle = 'normal';
-			obj.style.fontWeight = 'bold';
-		}
-		$.glue.object.save(obj);
-	});
-	$.glue.contextmenu.register('text', 'text-font-style', elem);
+	$.glue.contextmenu.register('text', 'text-font', elem);
 
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/text/text-line-height.png';

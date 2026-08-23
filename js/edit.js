@@ -211,6 +211,101 @@ $.glue.color = function()
 // and-reopen clicks, instead of farbtastic's original continuous drag-to-
 // preview wheel - vanilla-picker's onChange fires live while dragging,
 // matching that.
+// Where a popover goes. "No menu or interface shall interfere with page
+// elements" applies to the editor's own panels too: opening one at the
+// pointer puts it squarely on top of the object being edited, which is the
+// one thing the author needs to watch while editing it. So a popover goes in
+// the nearest free space AROUND the selection instead - right, below, left or
+// above, whichever is closest to where the pointer was and still fits on
+// screen. Any candidate that fits is by construction clear of the object,
+// since each one is placed past one of its edges.
+//
+// Pulled out of the colour picker so that the panels that came after it -
+// the font popover, and whatever follows - land in the same places for the
+// same reasons, rather than each growing its own idea of "near the button".
+$.glue.popover = function()
+{
+	var GAP = 10;
+
+	var clamp = function(v, max) {
+		return Math.max(0, Math.min(max, v));
+	};
+
+	return {
+		// w, h .. the popover's size in px
+		// p .. where the pointer was, in viewport coordinates (optional)
+		// returns { x, y } in viewport coordinates
+		place_for: function(w, h, p) {
+			var vw = document.documentElement.clientWidth;
+			var vh = document.documentElement.clientHeight;
+			if (!p) {
+				p = { x: Math.round(vw/2), y: Math.round(vh/2) };
+			}
+
+			// What has to stay visible, as one box: the object being edited,
+			// plus the menu the popover was opened from - both the column
+			// down its left and the row across its top, and the page menu for
+			// the buttons that have no object at all. Covering the menu is not
+			// as bad as covering the object, but it is the row the button that
+			// opened this lives in, and the free canvas is right there.
+			var sel = false;
+			document.querySelectorAll('.glue-selected, .glue-contextmenu-left, ' +
+				'.glue-contextmenu-top, .glue-menu').forEach(function(el) {
+				var b = el.getBoundingClientRect();
+				sel = sel ? {
+					left: Math.min(sel.left, b.left), top: Math.min(sel.top, b.top),
+					right: Math.max(sel.right, b.right), bottom: Math.max(sel.bottom, b.bottom)
+				} : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+			});
+
+			var x = clamp(p.x-w/2, vw-w);
+			var y = clamp(p.y-h/2, vh-h);
+			if (sel) {
+				// the clamp on each candidate is along the axis it is NOT
+				// placed on, so keeping it on screen cannot slide it back
+				// over the object
+				var best = false;
+				var best_d = Infinity;
+				[
+					{ x: sel.right+GAP, y: clamp(p.y-h/2, vh-h) },
+					{ x: clamp(p.x-w/2, vw-w), y: sel.bottom+GAP },
+					{ x: sel.left-GAP-w, y: clamp(p.y-h/2, vh-h) },
+					{ x: clamp(p.x-w/2, vw-w), y: sel.top-GAP-h }
+				].forEach(function(c) {
+					if (c.x < 0 || c.y < 0 || vw < c.x+w || vh < c.y+h) {
+						return;
+					}
+					var d = Math.pow(c.x+w/2-p.x, 2)+Math.pow(c.y+h/2-p.y, 2);
+					if (d < best_d) {
+						best_d = d;
+						best = c;
+					}
+				});
+				if (best) {
+					x = best.x;
+					y = best.y;
+				}
+				// else: nothing fits beside it (a selection bigger than the
+				// window), and being on screen matters more than being clear
+			}
+			return { x: Math.round(x), y: Math.round(y) };
+		},
+		// Puts an already-built, already-in-the-DOM popover where place_for()
+		// says. It must be position:fixed and laid out (so it has a size) by
+		// the time this is called.
+		place: function(elem, p) {
+			var at = $.glue.popover.place_for(elem.offsetWidth, elem.offsetHeight, p);
+			elem.style.left = at.x+'px';
+			elem.style.top = at.y+'px';
+			return at;
+		},
+		// where the pointer last was, which is what a popover opens near
+		pointer: function() {
+			return $.glue.colorpicker.last_click();
+		}
+	};
+}();
+
 $.glue.colorpicker = function()
 {
 	var change_func = false;
@@ -296,83 +391,21 @@ $.glue.colorpicker = function()
 		}
 	};
 
-	// Where the popup goes. "No menu or interface shall interfere with page
-	// elements" applies to this too: opening it at the pointer put it
-	// squarely on top of the object being recoloured, which is the one thing
-	// the author needs to watch while picking. So it goes in the nearest free
-	// space AROUND the selection instead - right, below, left or above,
-	// whichever is closest to where the pointer was and still fits on screen.
-	// Any candidate that fits is by construction clear of the object, since
-	// each one is placed past one of its edges.
-	var GAP = 10;
-
+	// Where the popup goes - see $.glue.popover, which is this rule pulled out
+	// so every popover in the editor obeys it.
 	var place_popup = function() {
 		var wrapper = anchor.querySelector('.picker_wrapper');
 		if (!wrapper) {
 			return;
 		}
-		var w = wrapper.offsetWidth;
-		var h = wrapper.offsetHeight;
-		var vw = document.documentElement.clientWidth;
-		var vh = document.documentElement.clientHeight;
-		var clamp = function(v, max) {
-			return Math.max(0, Math.min(max, v));
-		};
-		var p = last_click;
-		if (!p) {
-			p = { x: Math.round(vw/2), y: Math.round(vh/2) };
-		}
-
-		// What has to stay visible, as one box in viewport coordinates: the
-		// object being recoloured, plus the menu it was opened from - both
-		// the column down its left and the row across its top, and the page
-		// menu for the buttons that have no object at all. Covering the menu
-		// is not as bad as covering the object, but it is the row the button
-		// that opened this lives in, and the free canvas is right there.
-		var sel = false;
-		document.querySelectorAll('.glue-selected, .glue-contextmenu-left, ' +
-			'.glue-contextmenu-top, .glue-menu').forEach(function(el) {
-			var b = el.getBoundingClientRect();
-			sel = sel ? {
-				left: Math.min(sel.left, b.left), top: Math.min(sel.top, b.top),
-				right: Math.max(sel.right, b.right), bottom: Math.max(sel.bottom, b.bottom)
-			} : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
-		});
-
-		var x = clamp(p.x-w/2, vw-w);
-		var y = clamp(p.y-h/2, vh-h);
-		if (sel) {
-			// the clamp on each candidate is along the axis it is NOT placed
-			// on, so keeping it on screen cannot slide it over the object
-			var best = false;
-			var best_d = Infinity;
-			[
-				{ x: sel.right+GAP, y: clamp(p.y-h/2, vh-h) },
-				{ x: clamp(p.x-w/2, vw-w), y: sel.bottom+GAP },
-				{ x: sel.left-GAP-w, y: clamp(p.y-h/2, vh-h) },
-				{ x: clamp(p.x-w/2, vw-w), y: sel.top-GAP-h }
-			].forEach(function(c) {
-				if (c.x < 0 || c.y < 0 || vw < c.x+w || vh < c.y+h) {
-					return;
-				}
-				var d = Math.pow(c.x+w/2-p.x, 2)+Math.pow(c.y+h/2-p.y, 2);
-				if (d < best_d) {
-					best_d = d;
-					best = c;
-				}
-			});
-			if (best) {
-				x = best.x;
-				y = best.y;
-			}
-			// else: nothing fits beside it (a selection bigger than the
-			// window), and being on screen matters more than being clear
-		}
 		// popup_bottom puts the wrapper's top-left at the anchor, and
 		// css/edit.css takes away the margin vanilla-picker leaves for the
-		// arrow, so these are the popup's own coordinates
-		anchor.style.left = Math.round(x)+'px';
-		anchor.style.top = Math.round(y)+'px';
+		// arrow, so what $.glue.popover works out for the wrapper is where
+		// the anchor goes
+		var at = $.glue.popover.place_for(wrapper.offsetWidth, wrapper.offsetHeight,
+			last_click);
+		anchor.style.left = at.x+'px';
+		anchor.style.top = at.y+'px';
 	};
 
 	// vanilla-picker builds its DOM on the first show(), so the row is
@@ -455,6 +488,11 @@ $.glue.colorpicker = function()
 	});
 
 	return {
+		// the pointer position popovers open near - tracked here because this
+		// is where the document-wide click listener already lives
+		last_click: function() {
+			return last_click ? { x: last_click.x, y: last_click.y } : false;
+		},
 		hide: function(cancel) {
 			if (shown) {
 				cancelled = (cancel === true);

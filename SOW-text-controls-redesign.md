@@ -1,6 +1,21 @@
 # SOW — Text controls redesign (Font / Spacing / Color)
 
-Status: to implement. Branch: `ng`.
+Status: **Font popover BUILT 2026-08-23** (`text_font_popover()` in
+`modules/text/text-edit.js`, tests in `tests/e2e/text-font-popover.spec.js`). Still to
+do: the Spacing popover, and moving padding out to object properties. Branch: `ng`.
+
+Decisions taken while building, so the record is not just the plan:
+- **Toggles are two-state** — option (a) under Row 3. Per-selection styling was not
+  built and stays a separate question.
+- **`$.glue.popover` now exists** (`js/edit.js`), the colour picker's placement lifted
+  out: it decides where a panel goes so every popover lands in the same places for the
+  same reasons. The Spacing popover should use it and skip re-deciding.
+- **`text-decoration` is now stored**, as `text-text-decoration`, saved and rendered by
+  `module_text.inc.php` alongside `text-font-style` / `text-font-weight`.
+- The three buttons the panel replaces (`text-font-size`, `text-font-face`,
+  `text-font-style`) are gone from the menu. Line height, letter spacing, word spacing,
+  align, padding, colour, background, link and source are all still their own buttons.
+
 Reconciled against the tree on 2026-08-23 — the paragraphs marked **CHECKED** are what
 the code actually does, and three of them change the plan. Read those before starting.
 

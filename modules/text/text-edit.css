@@ -75,3 +75,93 @@
 .glue-font5 {
 	font-family: 'Times New Roman', Times, serif;
 }
+
+/* --- font popover -------------------------------------------------------
+ *
+ * Face, size and style in one panel (text_font_popover() in text-edit.js).
+ * The frame itself is .glue-popover in css/edit.css - the colour picker's
+ * chrome, since that is the panel this one is meant to match. What is here is
+ * only the three rows.
+ */
+
+.glue-font-popover {
+	width: 200px;
+}
+
+.glue-font-row {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	margin-bottom: 5px;
+}
+
+.glue-font-row:last-child {
+	margin-bottom: 0;
+}
+
+.glue-font-label {
+	/* the row labels line up, so the controls do too */
+	width: 26px;
+	flex: 0 0 auto;
+	color: #666;
+}
+
+.glue-font-face {
+	width: 100%;
+	font-size: 11px;
+	box-sizing: border-box;
+}
+
+.glue-font-size-slider {
+	flex: 1 1 auto;
+	min-width: 0;
+	/* the browser's own blue thumb against this grey chrome is the one thing
+	   that looks borrowed; the rest of the editor's controls are black */
+	accent-color: #333;
+}
+
+.glue-font-size-field {
+	/* wide enough for three digits: the field deliberately accepts sizes past
+	   the slider's end */
+	width: 44px;
+	flex: 0 0 auto;
+	font-size: 11px;
+	box-sizing: border-box;
+}
+
+.glue-font-toggle {
+	/* each toggle is the letter T wearing the effect it applies */
+	width: 26px;
+	height: 26px;
+	box-sizing: border-box;
+	border: 1px solid #000;
+	background: #fff;
+	color: #000;
+	font-family: serif;
+	font-size: 15px;
+	line-height: 24px;
+	text-align: center;
+	cursor: pointer;
+}
+
+.glue-font-toggle-on {
+	/* pressed, and legible as such against the panel */
+	background: #333;
+	color: #fff;
+}
+
+.glue-font-toggle-bold {
+	font-weight: bold;
+}
+
+.glue-font-toggle-italic {
+	font-style: italic;
+}
+
+.glue-font-toggle-underline {
+	text-decoration: underline;
+}
+
+.glue-font-toggle-strike {
+	text-decoration: line-through;
+}
