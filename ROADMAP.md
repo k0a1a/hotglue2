@@ -46,6 +46,18 @@ Checked against the tree on 2026-08-23.
   records what was measured before anything was built, including two things the original
   plan got wrong.
 
+### In this directory, NOT yet built
+
+- **SOW-text-controls-redesign.md** — collapse the text menu's eight formatting buttons
+  into Font and Spacing popovers plus a standalone Color button, and move padding out to
+  object properties. Reconciled against the tree on 2026-08-23: the paragraphs marked
+  **CHECKED** are what the code actually does, and three of them change the plan — the
+  controls style the whole object rather than a selection (so the spec'd three-state
+  toggles have no partial state to read), `text-decoration` is stored nowhere at all (so
+  underline/strikethrough are a storage change, not just a UI one), and there is no
+  reusable popover component yet (the colour picker's placement would have to be lifted
+  out first).
+
 ### In git history only
 
 - **MOBILE-VIEW-DESIGN.md** — the author-curated "mark elements mobile-friendly →
