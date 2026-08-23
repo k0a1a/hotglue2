@@ -292,6 +292,85 @@ $.glue.colorpicker = function()
 		}
 	};
 
+	// Where the popup goes. "No menu or interface shall interfere with page
+	// elements" applies to this too: opening it at the pointer put it
+	// squarely on top of the object being recoloured, which is the one thing
+	// the author needs to watch while picking. So it goes in the nearest free
+	// space AROUND the selection instead - right, below, left or above,
+	// whichever is closest to where the pointer was and still fits on screen.
+	// Any candidate that fits is by construction clear of the object, since
+	// each one is placed past one of its edges.
+	var GAP = 10;
+
+	var place_popup = function() {
+		var wrapper = anchor.querySelector('.picker_wrapper');
+		if (!wrapper) {
+			return;
+		}
+		var w = wrapper.offsetWidth;
+		var h = wrapper.offsetHeight;
+		var vw = document.documentElement.clientWidth;
+		var vh = document.documentElement.clientHeight;
+		var clamp = function(v, max) {
+			return Math.max(0, Math.min(max, v));
+		};
+		var p = last_click;
+		if (!p) {
+			p = { x: Math.round(vw/2), y: Math.round(vh/2) };
+		}
+
+		// What has to stay visible, as one box in viewport coordinates: the
+		// object being recoloured, plus the menu it was opened from - both
+		// the column down its left and the row across its top, and the page
+		// menu for the buttons that have no object at all. Covering the menu
+		// is not as bad as covering the object, but it is the row the button
+		// that opened this lives in, and the free canvas is right there.
+		var sel = false;
+		document.querySelectorAll('.glue-selected, .glue-contextmenu-left, ' +
+			'.glue-contextmenu-top, .glue-menu').forEach(function(el) {
+			var b = el.getBoundingClientRect();
+			sel = sel ? {
+				left: Math.min(sel.left, b.left), top: Math.min(sel.top, b.top),
+				right: Math.max(sel.right, b.right), bottom: Math.max(sel.bottom, b.bottom)
+			} : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+		});
+
+		var x = clamp(p.x-w/2, vw-w);
+		var y = clamp(p.y-h/2, vh-h);
+		if (sel) {
+			// the clamp on each candidate is along the axis it is NOT placed
+			// on, so keeping it on screen cannot slide it over the object
+			var best = false;
+			var best_d = Infinity;
+			[
+				{ x: sel.right+GAP, y: clamp(p.y-h/2, vh-h) },
+				{ x: clamp(p.x-w/2, vw-w), y: sel.bottom+GAP },
+				{ x: sel.left-GAP-w, y: clamp(p.y-h/2, vh-h) },
+				{ x: clamp(p.x-w/2, vw-w), y: sel.top-GAP-h }
+			].forEach(function(c) {
+				if (c.x < 0 || c.y < 0 || vw < c.x+w || vh < c.y+h) {
+					return;
+				}
+				var d = Math.pow(c.x+w/2-p.x, 2)+Math.pow(c.y+h/2-p.y, 2);
+				if (d < best_d) {
+					best_d = d;
+					best = c;
+				}
+			});
+			if (best) {
+				x = best.x;
+				y = best.y;
+			}
+			// else: nothing fits beside it (a selection bigger than the
+			// window), and being on screen matters more than being clear
+		}
+		// popup_bottom puts the wrapper's top-left at the anchor, and
+		// css/edit.css takes away the margin vanilla-picker leaves for the
+		// arrow, so these are the popup's own coordinates
+		anchor.style.left = Math.round(x)+'px';
+		anchor.style.top = Math.round(y)+'px';
+	};
+
 	// vanilla-picker builds its DOM on the first show(), so the row is
 	// (re)placed then rather than at construction
 	var build_swatches = function() {
@@ -372,17 +451,14 @@ $.glue.colorpicker = function()
 			cancelled = false;
 
 			document.body.appendChild(anchor);
-			var p = last_click;
-			if (!p) {
-				p = { x: Math.round(window.innerWidth/2), y: Math.round(window.innerHeight/2) };
-			}
-			anchor.style.left = p.x+'px';
-			anchor.style.top = p.y+'px';
-			// Open upwards or downwards depending on which way there is room.
-			// The library fixes this at construction and does not flip on its
-			// own, so a button near the top of the window put the popup off
-			// the top of the screen - measured at y=-68 for a button at 246.
-			picker.setOptions({ popup: (p.y < 340) ? 'bottom' : 'top' });
+			// Always 'bottom', which is the only one of vanilla-picker's four
+			// popup positions that puts the wrapper's top-left exactly at the
+			// anchor. Which side of the object it ends up on is decided by
+			// place_popup() below, from the popup's real size - the library
+			// fixes its own choice at construction and never flips, which is
+			// how a button near the top of the window used to put the popup
+			// off the top of the screen entirely (measured at y=-68).
+			picker.setOptions({ popup: 'bottom' });
 
 			if (typeof def != 'string' || def.length == 0) {
 				// set a sane default
@@ -394,6 +470,8 @@ $.glue.colorpicker = function()
 			shown = true;
 			picker.show();
 			build_swatches();
+			// after the swatches, since they are part of what makes it tall
+			place_popup();
 		}
 	};
 }();

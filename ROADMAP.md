@@ -82,7 +82,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **290 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **298 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
@@ -97,7 +97,8 @@ Shipped 2026-08-22/23:
 - **A smaller colour picker, with the page's recent colours** — roughly half its old
   250x315, plus the last five colours used on that page as swatches above the hex field,
   stored on the page object (`page-recent-colors`) so they are there for whoever opens
-  the page next. It writes a `rotate(Ndeg)` term into the
+  the page next. It opens in the nearest free space beside the object rather than at the
+  pointer, which used to put it on top of the thing being recoloured. It writes a `rotate(Ndeg)` term into the
   object's own transform, alongside whatever flip the flip button set — the two used to
   overwrite each other, which was invisible from either control on its own. A
   90°-per-click button was built first and dropped: once the handle existed it was a

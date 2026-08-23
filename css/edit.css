@@ -375,6 +375,21 @@
 	padding: 0.3em !important;
 }
 
+.picker_wrapper.popup {
+	/* No speech-bubble tail (see .picker_arrow below), and therefore none of
+	   the 1.5em margin vanilla-picker leaves around the popup to make room
+	   for one: place_popup() in js/edit.js positions the popup itself, and
+	   this is what makes the anchor its exact top-left corner. */
+	margin: 0 !important;
+}
+
+.picker_arrow {
+	/* The popup no longer opens at the pointer - it is placed in free space
+	   beside the object - so a tail pointing back at a corner of itself says
+	   nothing. */
+	display: none !important;
+}
+
 .layout_default.picker_wrapper > * {
 	margin: 0.3em !important;
 }

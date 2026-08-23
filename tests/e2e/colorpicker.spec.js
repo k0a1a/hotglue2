@@ -39,10 +39,16 @@ for (const [name, centered] of [['infinite', false], ['centered', true]]) {
 		const pb = await popup.boundingBox();
 		const viewport = page.viewportSize();
 
-		expect(Math.abs(pb.x - bb.x), 'the picker should sit beside its button').toBeLessThan(120);
 		expect(pb.y, 'the picker opened off the top of the window').toBeGreaterThanOrEqual(0);
 		expect(pb.y + pb.height, 'the picker opened off the bottom of the window')
 			.toBeLessThanOrEqual(viewport.height + 1);
+		expect(pb.x, 'the picker opened off the left of the window').toBeGreaterThanOrEqual(0);
+		expect(pb.x + pb.width, 'the picker opened off the right of the window')
+			.toBeLessThanOrEqual(viewport.width + 1);
+		// near the button that opened it, if no longer pinned to it: it is
+		// placed beside the OBJECT now, and the button is beside the object
+		expect(Math.abs(pb.y - bb.y), 'the picker is nowhere near its button')
+			.toBeLessThan(400);
 
 		// and nothing paints over it - objects go up to z-index 199 and the
 		// one being recoloured is by definition right underneath
@@ -160,4 +166,76 @@ test('the list keeps five, without repeats', async ({ page, hg }) => {
 	await expect(page.locator('.picker_wrapper')).toBeHidden();
 	await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
 		.toBe('#abcdef,#333333,#111111,#222222,#444444');
+});
+
+// --- placement -----------------------------------------------------------
+//
+// "No menu or interface shall interfere with page elements" (the hotglue
+// design codex) applies to the picker too, and it applies hardest here: it
+// used to open at the pointer, which is inside the object as often as not, so
+// it covered the very thing being recoloured. It goes beside the object now -
+// right, below, left or above, whichever is nearest to the pointer and still
+// fits on screen.
+
+const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width &&
+	a.y < b.y + b.height && b.y < a.y + a.height;
+
+test('the picker does not cover the object it is recolouring', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const obj = await page.locator(`[id="${a}"]`).boundingBox();
+	const pick = await page.locator('.picker_wrapper').boundingBox();
+	expect(overlaps(pick, obj), 'the picker is sitting on top of the object').toBe(false);
+});
+
+test('nor the menu it was opened from', async ({ page, hg }) => {
+	// covering the row the button lives in is not as bad as covering the
+	// object, but the free canvas is right there
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const pick = await page.locator('.picker_wrapper').boundingBox();
+	const items = await page.evaluate(() =>
+		[...document.querySelectorAll('.glue-contextmenu-left, .glue-contextmenu-top')]
+			.map((e) => {
+				const b = e.getBoundingClientRect();
+				return { id: e.id, x: b.x, y: b.y, width: b.width, height: b.height };
+			}));
+	expect(items.length, 'no menu was open, so this proved nothing').toBeGreaterThan(0);
+	const hit = items.filter((i) => overlaps(pick, i)).map((i) => i.id);
+	expect(hit, 'the picker is covering menu buttons').toEqual([]);
+});
+
+test('it moves to the other side when there is no room on the first',
+	async ({ page, hg }) => {
+		// an object hard against the right edge of the window has no free
+		// space to its right, which is where the picker would rather go
+		const viewport = page.viewportSize();
+		const a = hg.addObject('100000000001', OBJ(viewport.width - 260, 250), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		const obj = await page.locator(`[id="${a}"]`).boundingBox();
+		const pick = await page.locator('.picker_wrapper').boundingBox();
+		expect(overlaps(pick, obj), 'the picker is sitting on top of the object').toBe(false);
+		expect(pick.x + pick.width, 'the picker hangs off the right of the window')
+			.toBeLessThanOrEqual(viewport.width + 1);
+	});
+
+test('the speech-bubble tail is gone', async ({ page, hg }) => {
+	// it pointed back at a corner of the popup itself once the popup stopped
+	// opening at the pointer
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	expect(await page.locator('.picker_arrow').evaluate((e) =>
+		getComputedStyle(e).display)).toBe('none');
 });
