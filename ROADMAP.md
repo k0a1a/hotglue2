@@ -82,9 +82,15 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **250 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **272 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
+- **Free object rotation** — Moveable's rotation handle, shown while an object is
+  selected, snapping to 15° with shift held. It writes a `rotate(Ndeg)` term into the
+  object's own transform, alongside whatever flip the flip button set — the two used to
+  overwrite each other, which was invisible from either control on its own. A
+  90°-per-click button was built first and dropped: once the handle existed it was a
+  second, worse way to the same value.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
   described as coming from, finally written. `js/mobile-guided.js` is the only script a
   visitor to a published page downloads, and now ships at 4KB gzipped instead of 11KB.
@@ -215,14 +221,15 @@ Features and niceties not yet spec'd — the running to-do:
   (`modules/page_browser/page_browser.js:68`). Objects are the missing half —
   `glue.clone_object` derives its target page from the source object's own name, so it
   can only ever clone within one page.
-- **Object rotate at an arbitrary angle** — 90° rotation and flipping already ship, and
-  have since long before `ng`: `modules/transform/transform.js` puts both in the object
-  context menu, and `module_transform.inc.php` persists whatever `transform` value they
-  produce. (Under the attribute name `transform-flip`, which is a misnomer — it holds the
-  rotation too.) So the *feature* is not missing; what is missing is a free angle rather
-  than a four-step cycle, which is where Moveable's rotatable would actually earn its
-  place. Re-scoped from "rotate / flip / mirror — low-hanging", which was simply wrong
-  about what the tree contains.
+- **Adopt the range slider for the remaining drag controls.** `$.glue.rangeslider`
+  (`js/edit.js`) draws a visible bar next to a menu button while it is dragged, in the
+  toolbar's own frame — the readout Superglue's editor has. It was built for rotation,
+  which then went to direct manipulation instead, so **nothing drives it yet**: the
+  candidates are the buttons that already change a number by being dragged invisibly —
+  transparency and border width (`modules/object/object-edit.js`), font size, line height
+  and letter spacing (`modules/text/text-edit.js`), page background position
+  (`modules/page/page-edit.js`). It is covered by `tests/e2e/rangeslider.spec.js` in both
+  orientations, so adopting it is a call, not a build. If nothing adopts it, delete it.
 - **New uploader / better upload handling** — client-side resize/transcode before
   upload, which cuts media bloat at source rather than after it lands.
 - **Link target auto-select** — `_blank` for external links, `_self` for internal ones,

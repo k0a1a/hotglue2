@@ -1938,6 +1938,163 @@ $.glue.slider = function()
 	};
 }();
 
+// A VISIBLE range control for the menu buttons that change a number by being
+// dragged. $.glue.slider() above is only the drag mechanics and draws
+// nothing, so what the value is doing has to be inferred from the object
+// changing under the pointer; this wraps it in the readout Superglue's editor
+// has, so the value is something you can see.
+//
+// The bar is drawn AWAY from the object, along the axis of the menu the
+// button sits in: a button in the left-hand column gets a horizontal bar
+// running left, a button in the top row gets a vertical bar running up.
+// contextmenu.show() puts those two menus on the object's left and top edges
+// and marks their items .glue-contextmenu-left / -top, so following that
+// class is what keeps the bar pointing out into empty canvas instead of lying
+// across the object being edited.
+//
+// The handle tracks the pointer 1:1 - the full range spans TRACK px and the
+// value comes from how far the pointer has moved since mousedown - so it
+// reads as a real slider even though the pointer starts on the button and
+// never actually touches the bar.
+$.glue.rangeslider = function()
+{
+	var TRACK = 200;	// px along the axis: the whole range spans this
+	var GAP = 6;		// px between the button and the bar
+	var DEAD = 3;		// px of movement before this counts as a drag at all
+
+	return {
+		// button .. the menu element to drive the value from
+		// opts.min, opts.max .. ends of the range
+		// opts.value() .. the value to open at, read at mousedown
+		// opts.change(v, ev) .. called live while dragging
+		// opts.stop(v, moved, ev) .. called once on release. 'moved' is false
+		//   for a press that never became a drag, which is how a button can
+		//   be a slider and still do something else on a plain click
+		// opts.snap .. step to snap to while shift is held
+		// opts.wrap .. true to wrap around the ends instead of clamping, for
+		//   a value that is cyclic (an angle) rather than bounded
+		attach: function(button, opts) {
+			var min = opts.min;
+			var max = opts.max;
+			var span = max-min;
+
+			button.addEventListener('mousedown', function(e) {
+				// which way the menu this button is in runs
+				var vertical = button.classList.contains('glue-contextmenu-top');
+				var start = opts.value();
+				var bar = false;
+				var handle = false;
+				var moved = false;
+				var last = start;
+
+				var value_at = function(dx, dy, ev) {
+					// up and right increase, matching the bar as it is drawn
+					var px = vertical ? -dy : dx;
+					var v = start + px/TRACK*span;
+					if (ev && ev.shiftKey && opts.snap) {
+						v = Math.round(v/opts.snap)*opts.snap;
+					}
+					if (opts.wrap) {
+						v = min + (((v-min) % span)+span) % span;
+					} else {
+						v = Math.max(min, Math.min(max, v));
+					}
+					return v;
+				};
+
+				var place = function(v) {
+					var frac = (v-min)/span;
+					if (frac < 0) {
+						frac = 0;
+					} else if (1 < frac) {
+						frac = 1;
+					}
+					if (vertical) {
+						handle.style.top = ((1-frac)*TRACK)+'px';
+					} else {
+						handle.style.left = (frac*TRACK)+'px';
+					}
+				};
+
+				var show = function() {
+					// The menu buttons are absolutely positioned in body, so
+					// the bar is too, and the rect has to be put back into
+					// page coordinates for that to line up once the page is
+					// scrolled.
+					var box = button.getBoundingClientRect();
+					bar = document.createElement('div');
+					bar.className = 'glue-slider glue-ui '+
+						(vertical ? 'glue-slider-v' : 'glue-slider-h');
+					handle = document.createElement('div');
+					handle.className = 'glue-slider-handle';
+					bar.appendChild(handle);
+					if (vertical) {
+						bar.style.width = box.width+'px';
+						bar.style.height = TRACK+'px';
+						bar.style.left = (box.left+window.scrollX)+'px';
+						bar.style.top = (box.top+window.scrollY-TRACK-GAP)+'px';
+					} else {
+						bar.style.width = TRACK+'px';
+						bar.style.height = box.height+'px';
+						bar.style.left = (box.left+window.scrollX-TRACK-GAP)+'px';
+						bar.style.top = (box.top+window.scrollY)+'px';
+					}
+					document.body.appendChild(bar);
+					place(start);
+				};
+
+				$.glue.slider(e, function(dx, dy, ev) {
+					if (!moved) {
+						if (Math.max(Math.abs(dx), Math.abs(dy)) < DEAD) {
+							return;
+						}
+						moved = true;
+						show();
+					}
+					last = value_at(dx, dy, ev);
+					place(last);
+					if (typeof opts.change == 'function') {
+						opts.change(last, ev);
+					}
+				}, function(dx, dy, ev) {
+					if (bar) {
+						bar.remove();
+						bar = false;
+					}
+					if (moved) {
+						// The press starts on the button and the release
+						// happens wherever the drag went, so the click the
+						// browser synthesises afterwards is dispatched on
+						// their common ancestor - body. A click on body means
+						// "deselect" to $.glue.sel below, so without this the
+						// object loses its selection at the end of every
+						// drag, taking the menu and this very button with it.
+						// Capture phase, since that handler is on
+						// documentElement too.
+						var swallow = function(cev) {
+							cev.stopPropagation();
+							cev.preventDefault();
+							document.documentElement.removeEventListener('click', swallow, true);
+						};
+						document.documentElement.addEventListener('click', swallow, true);
+						// belt and braces: if no click follows at all (a
+						// release outside the window, say) the listener must
+						// not sit there and eat the next real one
+						setTimeout(function() {
+							document.documentElement.removeEventListener('click', swallow, true);
+						}, 200);
+					}
+					if (typeof opts.stop == 'function') {
+						opts.stop(last, moved, ev);
+					}
+				});
+				e.preventDefault();
+			});
+			return button;
+		}
+	};
+}();
+
 $.glue.stack = function()
 {
 	var default_z = 100;

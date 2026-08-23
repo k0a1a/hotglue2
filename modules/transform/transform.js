@@ -7,6 +7,64 @@
  *	See the file COPYING for more details.
  */
 
+//
+// An object's flip and its rotation are two terms in ONE css transform
+// property, which module_transform.inc.php stores whole (under the attribute
+// name transform-flip, which predates there being a rotation in it). So the
+// flip button and the rotation handle below have to edit their own term and
+// leave the other one alone, and neither may go through
+// getComputedStyle(): computed style resolves the
+// function list down to a single matrix(), in which a rotation and a flip are
+// no longer distinguishable - a rotated object would read back as some
+// matrix() that matches none of the flip states, and flipping it would
+// overwrite the rotation. The element's own .style still reflects the
+// function list as it was literally assigned, so that is what is parsed.
+//
+
+function transform_term(obj, re)
+{
+	var m = (obj.style.getPropertyValue('transform') || '').match(re);
+	return m ? m[0] : '';
+}
+
+// replaces (or removes, when 'term' is empty) the one function matching 're',
+// keeping everything else in the transform in place
+function transform_set_term(obj, re, term)
+{
+	var cur = obj.style.getPropertyValue('transform') || '';
+	var m = cur.match(re);
+	if (m) {
+		cur = cur.replace(m[0], '');
+	}
+	if (term) {
+		cur += ' '+term;
+	}
+	cur = cur.replace(/\s+/g, ' ').trim();
+	obj.style.setProperty('transform', cur);
+}
+
+var TRANSFORM_FLIP_RE = /matrix\([^)]*\)/;
+var TRANSFORM_ROTATE_RE = /rotate\(-?\d+(?:\.\d+)?deg\)/;
+
+function transform_rotation(obj)
+{
+	var m = transform_term(obj, TRANSFORM_ROTATE_RE).match(/-?\d+(?:\.\d+)?/);
+	return m ? parseFloat(m[0]) : 0;
+}
+
+// deg is normalized into 0..359 and rounded: whole degrees keep the stored
+// value short and the regex above simple, and 0 is stored as no term at all
+// so an object that has been rotated back to straight looks exactly like one
+// that never was
+function transform_set_rotation(obj, deg)
+{
+	deg = Math.round(deg) % 360;
+	if (deg < 0) {
+		deg += 360;
+	}
+	transform_set_term(obj, TRANSFORM_ROTATE_RE, deg ? 'rotate('+deg+'deg)' : '');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -20,52 +78,66 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.height = 32;
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		var val = getComputedStyle(obj).getPropertyValue('transform');
-		if (val == 'matrix(-1, 0, 0, -1, 0, 0)') {
-			obj.style.setProperty('transform', 'matrix(1, 0, 0, -1, 0, 0)');
-		} else if (val == 'matrix(1, 0, 0, -1, 0, 0)') {
-			obj.style.setProperty('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
-		} else if (val == 'matrix(-1, 0, 0, 1, 0, 0)') {
-			obj.style.setProperty('transform', '');
+		// cycle: none -> both axes -> horizontal -> vertical -> none
+		var val = transform_term(obj, TRANSFORM_FLIP_RE).replace(/\s+/g, '');
+		var next;
+		if (val == 'matrix(-1,0,0,-1,0,0)') {
+			next = 'matrix(1, 0, 0, -1, 0, 0)';
+		} else if (val == 'matrix(1,0,0,-1,0,0)') {
+			next = 'matrix(-1, 0, 0, 1, 0, 0)';
+		} else if (val == 'matrix(-1,0,0,1,0,0)') {
+			next = '';
 		} else {
-			obj.style.setProperty('transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+			next = 'matrix(-1, 0, 0, -1, 0, 0)';
 		}
+		transform_set_term(obj, TRANSFORM_FLIP_RE, next);
 		$.glue.object.save(obj);
 	});
 	$.glue.contextmenu.register('object', 'object-transform-flip', elem, 5);
+});
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/transform/transform-rotate.png';
-	elem.alt = 'btn';
-	elem.title = 'rotate object 90°';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		// read the literal (not computed) inline style here, unlike the
-		// flip button above - getComputedStyle() always resolves transform
-		// functions down to a single matrix(), which would make a
-		// previously-set rotate(Ndeg) impossible to read back out; the
-		// element's own .style, however, still reflects whatever function
-		// list was literally assigned, so any existing rotate(Ndeg) term
-		// can be found and replaced while leaving a flip matrix (if any)
-		// untouched
-		var cur = obj.style.getPropertyValue('transform') || '';
-		var deg = 0;
-		var m = cur.match(/rotate\((-?\d+)deg\)/);
-		if (m) {
-			deg = parseInt(m[1], 10);
-			cur = cur.replace(m[0], '').replace(/\s+/g, ' ').trim();
-		}
-		// cycle 0 -> 90 -> 180 -> 270 -> 0
-		deg = (deg+90) % 360;
-		var next = cur;
-		if (deg != 0) {
-			next = (cur ? cur+' ' : '')+'rotate('+deg+'deg)';
-		}
-		obj.style.setProperty('transform', next);
-		$.glue.object.save(obj);
-	});
-	$.glue.contextmenu.register('object', 'object-transform-rotate', elem, 6);
+//
+// Rotation is direct manipulation only: Moveable's own handle, shown while an
+// object is selected the way the resize handles are (js/edit.js). There was a
+// 90°-per-click button in the object menu until the handle existed, at which
+// point it was a second, worse way to do the same thing - the artwork for it
+// is still in this directory. Hold shift to land on multiples of 15.
+//
+var transform_rotate_bound = new WeakSet();
 
+$.glue.live('.object', 'glue-select', function(e) {
+	var obj = this;
+	var m = $.glue.object.moveable_of(obj);
+	if (!m || obj.classList.contains('locked')) {
+		return;
+	}
+	if (!transform_rotate_bound.has(obj)) {
+		transform_rotate_bound.add(obj);
+		var start_deg = 0;
+		// e.dist is the rotation accumulated since rotateStart. Moveable's
+		// absolute e.rotation is NOT usable here: it comes from the matrix it
+		// reads off the element, so a flipped object starts life at 180° as
+		// far as Moveable is concerned and the object would jump on the first
+		// move. Adding the delta to what the element actually stores keeps
+		// the two independent.
+		m.on('rotateStart', function(ev) {
+			start_deg = transform_rotation(obj);
+		}).on('rotate', function(ev) {
+			var deg = start_deg+ev.dist;
+			if (ev.inputEvent && ev.inputEvent.shiftKey) {
+				deg = Math.round(deg/15)*15;
+			}
+			transform_set_rotation(obj, deg);
+		}).on('rotateEnd', function(ev) {
+			$.glue.object.save(obj);
+		});
+	}
+	m.rotatable = true;
+});
+
+$.glue.live('.object', 'glue-deselect', function(e) {
+	var m = $.glue.object.moveable_of(this);
+	if (m) {
+		m.rotatable = false;
+	}
 });

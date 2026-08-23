@@ -25,6 +25,10 @@ $.glue.live('.object', 'glue-object-lock', function(e) {
 		if (m) {
 			m.draggable = false;
 			m.resizable = false;
+			// modules/transform/transform.js turns this on while an object is
+			// selected; locking one that is already selected has to take it
+			// away again, or the rotation handle stays live
+			m.rotatable = false;
 		}
 		// small workaround for textarea resize handle
 		if (this.classList.contains('text')) {
@@ -54,6 +58,7 @@ function lock_toggle(iconElem) {
 			// appears in the context menu of a selected object, but check
 			// explicitly rather than assume)
 			m.resizable = obj.classList.contains('resizable') && obj.classList.contains('glue-selected');
+			m.rotatable = obj.classList.contains('glue-selected');
 		}
 		nowLocked = false;
 	} else {
@@ -61,6 +66,7 @@ function lock_toggle(iconElem) {
 		if (m) {
 			m.draggable = false;
 			m.resizable = false;
+			m.rotatable = false;
 		}
 		if (obj.classList.contains('text')) {
 			var ta = obj.querySelector(':scope > textarea');

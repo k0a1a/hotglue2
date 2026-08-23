@@ -8,6 +8,15 @@
 	display: none !important;
 }
 
+.moveable-rotation-line {
+	/* Moveable's rotation handle hangs off the box on a connector that
+	   carries .moveable-line as well, which the rule above hides outright -
+	   put this one back, and in the same black as the handles rather than
+	   Moveable's blue */
+	display: block !important;
+	background: #000 !important;
+}
+
 .moveable-control-box {
 	/* objects can have a z-index up to 199 ($.glue.stack); Moveable's
 	   control box defaults to z-index 10, which a same-position object can
@@ -300,6 +309,44 @@
 	color: #666;
 	font-size: 11px;
 	margin-bottom: 10px;
+}
+
+.glue-slider {
+	/* the bar $.glue.rangeslider draws next to a menu button while it is
+	   being dragged. Same frame as the icon buttons - 1px black, near-white
+	   fill - so it reads as part of the same toolbar, and it sits above the
+	   menu items themselves (z-index 201, set inline by contextmenu.show) */
+	position: absolute;
+	box-sizing: border-box;
+	border: 1px solid #000;
+	background-color: rgba(255, 255, 255, 0.85);
+	z-index: 202;
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.glue-slider-handle {
+	/* one black line across the bar, marking where in the range the value
+	   is. Positioned along the bar by rangeslider itself; the offsets pull
+	   it back by half its own thickness so it straddles the position rather
+	   than starting at it */
+	position: absolute;
+	background-color: #333;
+}
+
+.glue-slider-h .glue-slider-handle {
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	margin-left: -1px;
+}
+
+.glue-slider-v .glue-slider-handle {
+	left: 0;
+	right: 0;
+	height: 3px;
+	margin-top: -1px;
 }
 
 .glue-btn-label {
