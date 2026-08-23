@@ -245,6 +245,76 @@ $.glue.colorpicker = function()
 	// coloured. Below the modal backdrop at 500.
 	anchor.style.zIndex = '450';
 
+	// The last few colours used ON THIS PAGE, offered as swatches above the
+	// hex field. Stored on the page object as page-recent-colors and handed
+	// back by module_page.inc.php as $.glue.conf.page.recent_colors, so they
+	// belong to the page and are there for whoever opens it next - unlike the
+	// last-typeface memory in module_text.inc.php, which is deliberately
+	// site-wide. A page's palette is part of that page's design.
+	var RECENT_MAX = 5;
+	var recent = false;		// read lazily: conf is emitted after this file
+	var swatches = document.createElement('div');
+	swatches.className = 'glue-picker-recent glue-ui';
+
+	var recent_colors = function() {
+		if (recent === false) {
+			var stored = ($.glue.conf.page && $.glue.conf.page.recent_colors) || '';
+			recent = String(stored).split(',').filter(function(c) {
+				return /^#[0-9a-f]{6}$/i.test(c);
+			});
+		}
+		return recent;
+	};
+
+	var remember_color = function(hex) {
+		// vanilla-picker hands back 8 hex digits (it keeps an alpha channel
+		// internally even with alpha:false); the swatches are opaque
+		hex = String(hex).slice(0, 7).toLowerCase();
+		if (!/^#[0-9a-f]{6}$/.test(hex)) {
+			return;
+		}
+		var list = recent_colors();
+		var at = list.indexOf(hex);
+		if (at == 0) {
+			// already the most recent one: nothing to write
+			return;
+		} else if (0 < at) {
+			list.splice(at, 1);
+		}
+		list.unshift(hex);
+		recent = list.slice(0, RECENT_MAX);
+		if ($.glue.page) {
+			$.glue.backend({
+				method: 'glue.update_object',
+				name: $.glue.page+'.page',
+				'page-recent-colors': recent.join(',')
+			});
+		}
+	};
+
+	// vanilla-picker builds its DOM on the first show(), so the row is
+	// (re)placed then rather than at construction
+	var build_swatches = function() {
+		swatches.textContent = '';
+		recent_colors().forEach(function(hex) {
+			var sw = document.createElement('div');
+			sw.className = 'glue-picker-swatch';
+			sw.style.backgroundColor = hex;
+			sw.title = hex;
+			sw.addEventListener('click', function(e) {
+				// not silent: this should update the object live, exactly as
+				// dragging in the gradient does
+				picker.setColor(hex);
+				e.stopPropagation();
+			});
+			swatches.appendChild(sw);
+		});
+		var editor = anchor.querySelector('.picker_editor');
+		if (editor && editor.parentNode) {
+			editor.parentNode.insertBefore(swatches, editor);
+		}
+	};
+
 	// note: the "transparent" toggle farbtastic used to offer here was never
 	// actually used by any module (transparency is handled by a separate
 	// opacity slider on objects), so alpha support is not carried over
@@ -262,8 +332,11 @@ $.glue.colorpicker = function()
 				return;
 			}
 			shown = false;
-			if (!cancelled && typeof finish_func == 'function') {
-				finish_func(color.hex);
+			if (!cancelled) {
+				remember_color(color.hex);
+				if (typeof finish_func == 'function') {
+					finish_func(color.hex);
+				}
 			}
 			anchor.remove();
 		}
@@ -320,6 +393,7 @@ $.glue.colorpicker = function()
 
 			shown = true;
 			picker.show();
+			build_swatches();
 		}
 	};
 }();

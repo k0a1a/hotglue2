@@ -62,23 +62,35 @@ test('the handle rotates the object and stores the angle', async ({ page, hg }) 
 	await select(page, a);
 
 	await dragHandle(page, a, 90);
-	const deg = await degOf(page, a);
-	expect(Math.abs(deg - 90), `handle drag gave ${deg}°`).toBeLessThan(6);
+	expect(await degOf(page, a)).toBe(90);
 	await expect.poll(() => hg.readObject('100000000001').attrs['transform-flip'])
-		.toMatch(/rotate\(\d+deg\)/);
+		.toBe('rotate(90deg)');
 });
 
-test('holding shift lands on 15 degree steps', async ({ page, hg }) => {
+test('rotation snaps to 15 degree steps by default', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await select(page, a);
 
-	// a deliberately untidy angle
-	await dragHandle(page, a, 40, { shift: true });
+	// a deliberately untidy angle: an object meant to be straight should not
+	// end up at 7° because the pointer was a few pixels out
+	await dragHandle(page, a, 40);
 	const deg = await degOf(page, a);
 	expect(deg % 15, `${deg}° is not a multiple of 15`).toBe(0);
 	expect(deg).toBeGreaterThan(0);
+});
+
+test('holding shift releases it to any angle', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await select(page, a);
+
+	await dragHandle(page, a, 40, { shift: true });
+	const deg = await degOf(page, a);
+	// close to the 40 asked for, and therefore NOT snapped to 30 or 45
+	expect(Math.abs(deg - 40), `shift-drag gave ${deg}°`).toBeLessThanOrEqual(4);
 });
 
 test('the handle appears with the selection and goes with it', async ({ page, hg }) => {

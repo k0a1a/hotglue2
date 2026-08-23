@@ -82,11 +82,20 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **272 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **286 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
-- **Free object rotation** — Moveable's rotation handle, shown while an object is
-  selected, snapping to 15° with shift held. It writes a `rotate(Ndeg)` term into the
+- **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
+  top is where the menu is), snapping to 15° by default with shift releasing it to any
+  angle — the opposite of the usual binding, on the grounds that a heading accidentally
+  left at 7° is the startling outcome, not a constrained one.
+- **Handles outside the object** — resize handles used to straddle the edge, half of
+  each lying over the author's content, against the design codex's "no menu or interface
+  shall interfere with page elements". They now sit 5px clear of it.
+- **A smaller colour picker, with the page's recent colours** — roughly half its old
+  250x315, plus the last five colours used on that page as swatches above the hex field,
+  stored on the page object (`page-recent-colors`) so they are there for whoever opens
+  the page next. It writes a `rotate(Ndeg)` term into the
   object's own transform, alongside whatever flip the flip button set — the two used to
   overwrite each other, which was invisible from either control on its own. A
   90°-per-click button was built first and dropped: once the handle existed it was a
@@ -188,6 +197,23 @@ from reading the code:
   (not the raw property, which looked perfectly fine while broken), fetches it, and A/B's
   the button against a deliberately broken icon to prove the mask paints. Plus a check
   that the generated files are well-formed and stripped.
+- **Parametric entry, wherever a control has a number behind it** — *(not for now; noted
+  so the shape is agreed before controls get built one at a time.)* Every direct-
+  manipulation control in the editor is a gesture with an exact value underneath it, and
+  the value is currently unreachable: you can drag an object to roughly 300px, but not
+  type 300. The proposal is one consistent affordance — a marked corner on the button or
+  handle, which opens a small entry UI for the number itself. Candidates: size,
+  position, rotation, z-index/layering, exact colour values, font size, and more as they
+  turn up.
+
+  Worth doing once, as a pattern, rather than six times as six dialogs: the marker, the
+  panel and the commit/cancel behaviour should be the same wherever it appears, or it
+  stops reading as a single affordance. Note the pieces that already exist and should be
+  folded in rather than duplicated — the colour picker's hex field is exactly this idea
+  (and is what made shrinking the picker safe), the Object Properties dialog already
+  edits some values as text, and `$.glue.rangeslider` is the drag half of the same
+  problem. If the contextual per-object toolbar above is ever picked up, this belongs
+  inside it.
 - **Local JS build** — partly addressed and deliberately stopped short. `tools/make-min.js`
   now generates a `.min.js` copy by stripping whole-line comments, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source, so the

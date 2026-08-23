@@ -101,7 +101,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // object is selected the way the resize handles are (js/edit.js). There was a
 // 90°-per-click button in the object menu until the handle existed, at which
 // point it was a second, worse way to do the same thing - the artwork for it
-// is still in this directory. Hold shift to land on multiples of 15.
+// is still in this directory.
+//
+// It snaps to 15° BY DEFAULT and shift releases it to any angle, which is the
+// opposite way round from most editors. The reason is that the thing being
+// rotated is a page element, and the reader will notice a heading that sits
+// at 7° when it was meant to be straight: losing precision by accident is the
+// startling outcome here, so precision is the deliberate one.
 //
 var transform_rotate_bound = new WeakSet();
 
@@ -124,7 +130,7 @@ $.glue.live('.object', 'glue-select', function(e) {
 			start_deg = transform_rotation(obj);
 		}).on('rotate', function(ev) {
 			var deg = start_deg+ev.dist;
-			if (ev.inputEvent && ev.inputEvent.shiftKey) {
+			if (!ev.inputEvent || !ev.inputEvent.shiftKey) {
 				deg = Math.round(deg/15)*15;
 			}
 			transform_set_rotation(obj, deg);

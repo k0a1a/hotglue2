@@ -133,3 +133,44 @@ test('a resize does not move the object', async ({ page, hg }) => {
 	// none of e/s/se move the top-left anchor
 	expect(after, 'resizing shifted the object').toEqual(before);
 });
+
+test('the handles sit outside the object, not across it', async ({ page, hg }) => {
+	// "No menu or interface shall interfere with page elements" - the hotglue
+	// design codex, and the early menu mock-up in hotglue-misc
+	// (visuals/hotglue-menu-early-sq.jpg) draws every control clear of the
+	// box. Moveable centres each handle ON the edge instead, leaving half of
+	// it lying over the author's content, so css/edit.css pushes each one out
+	// along its own axis.
+	//
+	// Worth a test rather than trusting the stylesheet: Moveable's CSS is
+	// injected by css-styled, which prefixes its selectors with a generated
+	// class, so its own .moveable-control outranks anything written here
+	// short of !important - the offsets can look perfectly correct in the
+	// file and do nothing at all.
+	const a = seed(hg);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await byId(page, a).click();
+	await expect(page.locator('.moveable-control').first()).toBeVisible();
+
+	const obj = await byId(page, a).boundingBox();
+	const handles = await page.evaluate(() =>
+		[...document.querySelectorAll('.moveable-control.moveable-direction')].map((e) => {
+			const b = e.getBoundingClientRect();
+			return { dir: (e.className.match(/moveable-(n|e|s|w|ne|nw|se|sw)\b/) || [])[1],
+				left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+		}));
+	expect(handles.length).toBe(3);
+
+	// clear of the object's edge, with the 5px gap css/edit.css leaves
+	for (const h of handles) {
+		if (h.dir.includes('e')) {
+			expect(h.left, `the ${h.dir} handle lies over the object`)
+				.toBeGreaterThanOrEqual(obj.x + obj.width + 4);
+		}
+		if (h.dir.includes('s')) {
+			expect(h.top, `the ${h.dir} handle lies over the object`)
+				.toBeGreaterThanOrEqual(obj.y + obj.height + 4);
+		}
+	}
+});

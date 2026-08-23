@@ -21,9 +21,14 @@
 	/* objects can have a z-index up to 199 ($.glue.stack); Moveable's
 	   control box defaults to z-index 10, which a same-position object can
 	   then win the hit-test against at their shared corner/edge pixels,
-	   making resize handles unclickable. jQuery UI's own resize handles
-	   used z-index 99999 for the same reason - matched here */
-	z-index: 99999 !important;
+	   making resize handles unclickable. jQuery UI's own resize handles used
+	   99999 and that was matched here at first, which put the handles above
+	   every piece of editor UI as well: the colour picker (450) is opened
+	   from the menu of the very object whose handles then painted over it.
+	   300 keeps them clear of any object while leaving the editor's own
+	   layers - menus at 200/201, container handles at 400, picker at 450,
+	   modals at 500 - on top, where they belong. */
+	z-index: 300 !important;
 }
 
 .moveable-control {
@@ -34,6 +39,45 @@
 	background: rgba(204, 204, 204, 0.5) !important;
 	border: 1px solid #000 !important;
 	border-radius: 0 !important;
+}
+
+/* Handles sit OUTSIDE the object rather than straddling its edge: "no menu or
+   interface shall interfere with page elements" (the hotglue design codex -
+   the early menu mock-up in hotglue-misc, visuals/hotglue-menu-early-sq.jpg,
+   has every control outside the box). Moveable centres each 14px control on
+   the edge with margin: -7px, which leaves half of it lying over the content;
+   these push each handle back out along the axis it belongs to - -19px to
+   clear the edge on the near side, 5px on the far side - the extra 5px being
+   a gap, so the handle reads as sitting beside the object rather than glued
+   to its border. Written
+   for all eight directions even though hotglue renders e/s/se, so none of
+   them lands half-in if that list ever grows.
+   !important for the same reason the rules above it need it: Moveable's own
+   stylesheet is injected by css-styled, which prefixes every selector with a
+   generated class, so .moveable-control there outranks .moveable-control.
+   moveable-e here no matter how specific this side gets. */
+.moveable-control.moveable-n,
+.moveable-control.moveable-ne,
+.moveable-control.moveable-nw {
+	margin-top: -19px !important;
+}
+
+.moveable-control.moveable-s,
+.moveable-control.moveable-se,
+.moveable-control.moveable-sw {
+	margin-top: 5px !important;
+}
+
+.moveable-control.moveable-w,
+.moveable-control.moveable-nw,
+.moveable-control.moveable-sw {
+	margin-left: -19px !important;
+}
+
+.moveable-control.moveable-e,
+.moveable-control.moveable-ne,
+.moveable-control.moveable-se {
+	margin-left: 5px !important;
 }
 
 .moveable-control::after {
@@ -309,6 +353,64 @@
 	color: #666;
 	font-size: 11px;
 	margin-bottom: 10px;
+}
+
+/* The colour picker, vendored as vanilla-picker, opens at 250x315 - a big
+   box for one swatch of colour, and it lands on top of the object being
+   coloured. Roughly halved here: the gradient square stops being square (it
+   is a saturation/lightness field, not a picture, and it does not need to be
+   as tall as it is wide), the whole thing narrows, and the controls come down
+   to the size of the rest of the editor's chrome. The hex field is what makes
+   this safe to shrink - an exact colour can always be typed.
+
+   !important throughout: vanilla-picker injects its stylesheet at runtime,
+   after this file, at equal specificity, so nothing here lands without it. */
+.layout_default.picker_wrapper {
+	width: 15em !important;			/* font-size is 10px here, so 150px */
+	padding: 0.3em !important;
+}
+
+.layout_default.picker_wrapper > * {
+	margin: 0.3em !important;
+}
+
+.layout_default .picker_sl::before {
+	/* the gradient field's aspect ratio, 100% being square */
+	padding-bottom: 62% !important;
+}
+
+.layout_default .picker_slider,
+.layout_default .picker_selector {
+	padding: 0.7em !important;
+}
+
+.layout_default.picker_wrapper input,
+.layout_default.picker_wrapper button {
+	font-size: 11px !important;
+}
+
+.layout_default .picker_editor {
+	width: 5.6em !important;
+}
+
+.glue-picker-recent {
+	/* the last few colours used on this page, on their own line directly
+	   above the hex field / sample / Ok row. order:1 puts it in the wrapped
+	   section with those, and a full-width flex line of its own keeps it
+	   above rather than beside them */
+	order: 1;
+	flex: 1 0 100%;
+	display: flex;
+	gap: 4px;
+	margin: 0.3em !important;
+}
+
+.glue-picker-swatch {
+	width: 18px;
+	height: 18px;
+	box-sizing: border-box;
+	border: 1px solid #000;
+	cursor: pointer;
 }
 
 .glue-slider {

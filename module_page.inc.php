@@ -330,6 +330,17 @@ function page_render_page_late($args)
 		html_add_js_var('$.glue.conf.page.container_width', $layout['width']);
 		html_add_js_var('$.glue.conf.page.container_min', PAGE_MIN_CONTAINER_WIDTH);
 		html_add_js_var('$.glue.conf.page.container_max', PAGE_MAX_CONTAINER_WIDTH);
+		// the last few colours used on THIS page, shown as swatches in the
+		// colour picker ($.glue.colorpicker in js/edit.js, which writes them
+		// back through glue.update_object). Per page, unlike the last
+		// typeface/font size memory in module_text.inc.php which is
+		// site-wide: a palette belongs to the design of one page.
+		load_modules('glue');
+		$page_obj = load_object(['name'=>$args['page'].'.page']);
+		if (!$page_obj['#error'] && !empty($page_obj['#data']['page-recent-colors'])) {
+			html_add_js_var('$.glue.conf.page.recent_colors',
+				$page_obj['#data']['page-recent-colors']);
+		}
 	}
 	if ($layout['mode'] != 'centered') {
 		return false;
