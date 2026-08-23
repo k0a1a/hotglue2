@@ -113,34 +113,73 @@ from reading the code:
   for instance); a hotglue install can host many authors who do not trust each other, so
   dial that back — keep per-object code scoped to classes and attributes, with JS staying
   in `/code`.
-- **Icon set refresh** — *(danja is introducing a new set before hotglue.me is updated,
-  so this lands ahead of shipping.)* Six buttons currently carry a text label as a
-  placeholder and all are marked `.glue-btn-label`, which is the list of what needs
-  drawing:
+- **Icon set refresh** — *(in progress. The first batch of the SuperGlue SVG set landed
+  2026-08-23; more are being produced over the coming weeks, ahead of hotglue.me being
+  updated.)*
+
+  **Wiring is done and proven.** `tools/prep-icons.js` regenerates `img/icons/` from the
+  upstream artwork (54 icons, 206K → 38K: the source files are ~85% Inkscape metadata,
+  RDF and attribution blocks that a mask never reads). `$.glue.icon(name, title)` in
+  `js/glue.js` builds a button from a file in there by plain name. Adding an icon is now
+  a drop-in: put the file upstream, re-run the tool, call `$.glue.icon('thing')`.
+
+  The icons are **one colour plus transparency, and that colour is white** — invisible on
+  this editor's light chrome. So they are applied as a CSS `mask-image` with the visible
+  colour coming from `.glue-btn-icon` in `css/edit.css`, which is also what buys
+  hover/on/off states. An `<img src=…>` could not do either. Buttons stay `<div>`s.
+
+  The mask sits on `.glue-btn-icon::before`, not on the button, because a mask clips the
+  element it is set on — border and background included — and the button needs both: the
+  PNGs carry a frame in their artwork, and without one the line art dissolves into
+  whatever object is underneath (a magenta background, a photo). So the button draws a
+  1px black border and an 85%-opaque white fill — the set is one dark colour with no
+  highlights of its own, so it wants maximum contrast behind it — and
+  `::before` carries the glyph and its hover colour. `--glue-icon` still lives on the
+  button and inherits down, so swapping artwork at runtime is unaffected.
+
+  Wired so far: `clone` (the first one, replacing a PNG), `undo`, `redo`, `hyperlink`,
+  and the layout toggle via `composition-mode-absolute`/`-centered`. The icon shows the
+  mode you are switching TO, preserving the old split where the tooltip describes the
+  present and the button names the destination.
+
+  **Still needs drawing** — the two placeholders the batch does not cover, still on
+  `.glue-btn-label`:
 
   | label | what it does | file |
   |---|---|---|
-  | `undo` / `redo` | undo stack | `js/edit.js` |
-  | `link` | make/edit a link in a text object | `modules/text/text-edit.js` |
   | `</>` | switch that object between WYSIWYG and HTML source | `modules/text/text-edit.js` |
   | `clip` / `show` | object clips or spills its overflow | `modules/object/object-edit.js` |
-  | `centre` / `wide` | page layout mode | `modules/page/page-edit.js` |
 
-  Two mechanical notes for whoever wires them up. **It is not a `src` swap**: the
-  existing icons are `<img src=… alt="btn" width=32 height=32>`, whereas a placeholder is
-  a `<div>` carrying inline box styles plus `.glue-btn-label`, so each one converts back
-  to an `<img>` and sheds both. And **an SVG referenced through `<img>` cannot be
-  recoloured by CSS** — if the set is SVG and colour-following-the-theme is wanted
-  (the old note asked for "CSS-colorable"), they need to be inlined or used as
-  `mask-image`, which is a different wiring again. Today's 65 icons are all PNG.
+  Both are STATEFUL, so each wants two icons or one with a clear on-state. `clip`/`show`
+  flips live through Alpine (no reload), so wiring it will also need a way to change an
+  element's `--glue-icon` after construction — `$.glue.icon()` only sets it at build time.
 
-  Four of these are STATEFUL — `clip`/`show`, `centre`/`wide`, and to a degree
-  `</>` — so each needs two icons or one icon with a clear on-state, not just a picture.
-  They currently swap their label text through Alpine, and the tooltip says what is
-  true now while the label says what clicking will do; worth preserving that split.
+  **Unresolved: licensing.** The upstream files declare CC BY-NC-SA 3.0
+  (`cc:prohibits CommercialUse`), credited to VERBALVISU.AL / SuperGlue project. Hotglue
+  is GPLv3, which does not permit adding a non-commercial restriction to a distributed
+  work, so this has to be settled before release — presumably by relicensing the set,
+  which needs whoever holds the rights (the credit names both VERBALVISU.AL as author and
+  the SuperGlue project as publisher). `tools/prep-icons.js` strips the per-file
+  attribution blocks, so if attribution turns out to be required it needs to live in one
+  NOTICE file rather than 54 copies.
 
-  Beyond the placeholders: match the style rigorously when extending the set, cover
-  interaction states (hover/active/disabled), and keep the tooltips.
+  **Open decision:** the set is 54 icons against today's 65 PNGs and does not map
+  one-to-one. Mixing PNG and SVG shows seams at high zoom and on HiDPI, so at some point
+  it is worth deciding whether the new set replaces all of them or only fills gaps.
+
+  **Landmine, hit once already:** a relative `url()` inside a custom property resolves
+  against the stylesheet that uses the `var()`, not the document — so `img/icons/x.svg`
+  set on an element was fetched from `/css/img/icons/x.svg` (because `css/edit.css` is
+  where the `var()` is consumed), 404'd, and every icon vanished. A mask that fails to
+  load masks *everything* out, so the buttons painted nothing at all: correct size,
+  correct position, still clickable, `toBeVisible()` still true, just no pixels. Nothing
+  logged an error. `$.glue.icon()` now resolves against `document.baseURI` before setting
+  the property.
+
+  `tests/e2e/icons.spec.js` guards that: it reads the mask URL as the browser resolved it
+  (not the raw property, which looked perfectly fine while broken), fetches it, and A/B's
+  the button against a deliberately broken icon to prove the mask paints. Plus a check
+  that the generated files are well-formed and stripped.
 - **Local JS build** — partly addressed and deliberately stopped short. `tools/make-min.js`
   now generates a `.min.js` copy by stripping whole-line comments, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source, so the
