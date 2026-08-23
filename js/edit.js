@@ -341,6 +341,26 @@ $.glue.popover = function()
 		current: function() {
 			return open_panel;
 		},
+		// A colour button for a panel: the shared icon, opening the picker on
+		// whatever property the caller names. One of these rather than one
+		// per panel, so that "the colour of this thing" always looks and
+		// behaves the same wherever it turns up.
+		// title .. the tooltip, e.g. 'border colour'
+		// current() .. the colour to open on
+		// change(col) .. called live as the picker is dragged
+		// done(col) .. called once when the picker closes
+		color_button: function(title, current, change, done) {
+			var b = $.glue.icon('color-quadrant', title);
+			b.classList.add('glue-popover-color');
+			// the panels' own controls are 26px; the toolbar's are 32
+			b.style.width = '26px';
+			b.style.height = '26px';
+			b.addEventListener('click', function(e) {
+				$.glue.colorpicker.show(current(), false, change, done);
+				e.stopPropagation();
+			});
+			return b;
+		},
 		// The small "reset" a panel offers for its own properties: it clears
 		// them rather than writing defaults into them, so the object file
 		// drops the attributes and the object goes back to looking like one

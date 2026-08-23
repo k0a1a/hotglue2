@@ -701,12 +701,33 @@
 	box-sizing: border-box;
 }
 
-.glue-border-color {
+.glue-popover-color {
+	/* the colour button a panel puts next to whatever it colours */
 	flex: 0 0 auto;
 	cursor: pointer;
 }
 
-.glue-border-color::before {
+.glue-popover-color::before {
 	-webkit-mask-size: 22px 22px;
 	mask-size: 22px 22px;
+}
+
+.glue-popover-disclosure {
+	/* the "advanced" fold in the edge panel */
+	color: #666;
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.glue-popover-disclosure:hover {
+	color: #000;
+}
+
+.glue-popover-advanced {
+	/* set off from the rows above it, since it is a different mechanism
+	   rather than more of the same */
+	border-top: 1px solid #ddd;
+	padding-top: 5px;
+	margin-bottom: 5px;
 }

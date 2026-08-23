@@ -53,7 +53,9 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(3);
+	// three on the panel itself; the advanced fold has two more of its own
+	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-slider'))
+		.toHaveCount(3);
 	await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 	// the sliders reach "fully round" and no further: half the shorter side
 	// of the object as it is actually drawn, padding and selection border
@@ -298,12 +300,95 @@ test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 		.toBe(false);
 });
 
+// --- advanced: the glow --------------------------------------------------
+//
+// A blob of colour behind the content. Deliberately a different mechanism
+// from the fade: the fade is a mask and takes the text with it, while this is
+// a background and leaves the text sharp - which is the whole point of it.
+
+const advanced = (page) => pop(page).locator('.glue-popover-advanced');
+
+test('the advanced section is folded away until it is asked for',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		await expect(advanced(page)).toBeHidden();
+		await pop(page).locator('.glue-popover-disclosure').click();
+		await expect(advanced(page)).toBeVisible();
+		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(2);
+	});
+
+test('the glow applies, stores its ingredients and reaches the published page',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+
+		const spread = advanced(page).locator('.glue-popover-field').first();
+		// a tenth of a percent is the step: the difference between a blob
+		// that hugs the text and one that fills the box is a few percent
+		await spread.fill('45.5');
+		await spread.dispatchEvent('input');
+		await spread.dispatchEvent('change');
+
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+		expect(await cssOf(page, a, 'backgroundImage')).toContain('radial-gradient');
+		await expect.poll(() => attrs(hg)['object-glow-spread']).toBe('45.5');
+		// the gradient itself is not what gets stored
+		expect(JSON.stringify(attrs(hg))).not.toContain('gradient');
+
+		await page.goto(`/?${hg.pageName}`);
+		const published = await page.evaluate(() => {
+			const el = document.querySelector('.object');
+			return [el.className, getComputedStyle(el).backgroundImage,
+				getComputedStyle(el).maskImage];
+		});
+		expect(published[0]).toContain('glue-glow');
+		expect(published[1]).toContain('radial-gradient');
+		// a background, not a mask: the content stays sharp
+		expect(published[2]).toBe('none');
+	});
+
+test('the glow paints, and a glow of zero takes itself off', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'text-background-color': 'transparent',
+		'object-glow-color': '#ff8c42', 'object-glow-spread': '45',
+		'object-glow-alpha': '90',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	const box = await byId(page, a).boundingBox();
+	const clip = { x: box.x, y: box.y, width: box.width, height: box.height };
+	const glowing = await page.screenshot({ clip });
+	await byId(page, a).evaluate((e) => e.classList.remove('glue-glow'));
+	const plain = await page.screenshot({ clip });
+	expect(glowing.equals(plain), 'the glow is not painting anything').toBe(false);
+
+	// and back to nothing at all, rather than a glow of zero
+	await open(page, a);
+	await pop(page).locator('.glue-popover-disclosure').click();
+	const spread = advanced(page).locator('.glue-popover-field').first();
+	await spread.fill('0');
+	await spread.dispatchEvent('input');
+	await spread.dispatchEvent('change');
+	await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
+	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-glow-color']).toBe(undefined);
+});
+
 test('zero removes the attributes rather than storing them', async ({ page, hg }) => {
 	// an object dragged back to square should look exactly like one nobody
 	// ever touched
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'object-border-radius': '24px', 'object-edge-fade': '30px',
-			'object-border-width': '5px' }, 'A');
+			'object-border-width': '5px', 'object-glow-color': '#ff8c42',
+			'object-glow-spread': '40' }, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
@@ -317,6 +402,7 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await expect(field(page, ROUND)).toHaveValue('0');
 	await expect(field(page, FADE)).toHaveValue('0');
 	await expect(pop(page).locator('.glue-border-style')).toHaveValue('solid');
+	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
 });
 
 test('media inside an object rounds with it', async ({ page, hg }) => {

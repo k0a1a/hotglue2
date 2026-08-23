@@ -255,3 +255,28 @@ test('a click outside closes it, and Escape closes it', async ({ page, hg }) => 
 	await page.keyboard.press('Escape');
 	await expect(pop(page)).toHaveCount(0);
 });
+
+test('the text colour lives in the panel now, not in the menu',
+	async ({ page, hg }) => {
+		// it was a button of its own until this panel existed; the colour of
+		// the type belongs with how the type looks
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		expect(await page.locator('#glue-contextmenu-text-font-color').count(),
+			'the standalone font colour button is still in the menu').toBe(0);
+
+		await pop(page).locator('.glue-popover-color').click();
+		await expect(page.locator('.picker_wrapper')).toBeVisible();
+		// the panel stays open while the picker is used
+		await expect(pop(page)).toHaveCount(1);
+
+		const hex = page.locator('.picker_editor input');
+		await hex.fill('#3366cc');
+		await hex.press('Enter');
+		await expect.poll(() => cssOf(page, a, 'color')).toBe('rgb(51, 102, 204)');
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-font-color'])
+			.toBe('rgb(51, 102, 204)');
+	});

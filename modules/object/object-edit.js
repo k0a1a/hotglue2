@@ -374,6 +374,31 @@ function object_set_fade(obj, px)
 	}
 }
 
+function object_glow(obj)
+{
+	return {
+		color: obj.style.getPropertyValue('--glue-glow-color').trim() || '#ff8844',
+		spread: parseFloat(obj.style.getPropertyValue('--glue-glow-spread')) || 40,
+		alpha: parseFloat(obj.style.getPropertyValue('--glue-glow-alpha')) || 80,
+		on: obj.classList.contains('glue-glow')
+	};
+}
+
+function object_set_glow(obj, g)
+{
+	if (!g) {
+		obj.style.removeProperty('--glue-glow-color');
+		obj.style.removeProperty('--glue-glow-spread');
+		obj.style.removeProperty('--glue-glow-alpha');
+		obj.classList.remove('glue-glow');
+		return;
+	}
+	obj.style.setProperty('--glue-glow-color', g.color);
+	obj.style.setProperty('--glue-glow-spread', g.spread);
+	obj.style.setProperty('--glue-glow-alpha', g.alpha);
+	obj.classList.add('glue-glow');
+}
+
 function object_edge_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-edge-popover');
@@ -460,34 +485,133 @@ function object_edge_popover(obj)
 	});
 	style_row.appendChild(select);
 
-	var colour = $.glue.icon('border-color', 'border colour');
+	var colour = $.glue.popover.color_button('border colour',
+		function() {
+			return getComputedStyle(obj).borderTopColor;
+		},
+		function(col) {
+			obj.style.borderColor = col;
+			ensure_width();
+		},
+		function(col) {
+			save();
+		});
 	colour.classList.add('glue-border-color');
-	colour.style.width = '26px';
-	colour.style.height = '26px';
-	colour.addEventListener('click', function(e) {
-		$.glue.colorpicker.show(getComputedStyle(obj).borderTopColor, false,
-			function(col) {
-				obj.style.borderColor = col;
-				ensure_width();
-			}, function(col) {
-				save();
-			});
-		e.stopPropagation();
-	});
 	style_row.appendChild(colour);
 	pop.appendChild(style_row);
+
+	// --- advanced: the glow ----------------------------------------------
+	//
+	// A blob of colour behind the content, which is a different mechanism
+	// from the fade above and worth keeping apart from it: the fade is a
+	// mask, so it takes the text with it, while this is a background and
+	// leaves the text sharp. Folded away because most objects will never want
+	// it, and the panel is already four rows.
+	var adv_toggle = $.glue.popover.row(false);
+	var adv_label = document.createElement('div');
+	adv_label.className = 'glue-popover-disclosure';
+	adv_toggle.appendChild(adv_label);
+	pop.appendChild(adv_toggle);
+
+	var adv = document.createElement('div');
+	adv.className = 'glue-popover-advanced';
+	adv.style.display = 'none';
+	pop.appendChild(adv);
+
+	var open_adv = false;
+	var sync_disclosure = function() {
+		adv_label.textContent = (open_adv ? '\u25be' : '\u25b8')+' advanced';
+		adv.style.display = open_adv ? '' : 'none';
+	};
+	adv_label.addEventListener('click', function() {
+		open_adv = !open_adv;
+		sync_disclosure();
+		// it just changed height, and it is placed by its size
+		$.glue.popover.place(pop, $.glue.popover.pointer());
+	});
+	sync_disclosure();
+
+	var glow = object_glow(obj);
+	var write_glow = function(commit) {
+		object_set_glow(obj, glow);
+		if (commit) {
+			save();
+		}
+	};
+
+	var spread = $.glue.popover.number_row('glow', {
+		// a tenth of a percent: the difference between a blob that hugs the
+		// text and one that fills the box is a few percent, so whole numbers
+		// were too coarse a step to find it with
+		min: 0, max: 100, step: 0.1, decimals: 1, unit: '%',
+		value: glow.on ? glow.spread : 0,
+		apply: function(pct, commit) {
+			glow.spread = pct;
+			// a glow of zero is no glow: the properties come off entirely, so
+			// the object file drops them
+			if (pct <= 0) {
+				object_set_glow(obj, false);
+				if (commit) {
+					save();
+				}
+				return;
+			}
+			write_glow(commit);
+		}
+	});
+	adv.appendChild(spread.row);
+
+	var strength = $.glue.popover.number_row('opacity', {
+		min: 0, max: 100, step: 1, unit: '%',
+		value: glow.alpha,
+		apply: function(pct, commit) {
+			glow.alpha = pct;
+			if (0 < glow.spread) {
+				write_glow(commit);
+			}
+		}
+	});
+	adv.appendChild(strength.row);
+
+	var glow_row = $.glue.popover.row('color');
+	var glow_colour = $.glue.popover.color_button('glow colour',
+		function() {
+			return glow.color;
+		},
+		function(col) {
+			glow.color = col;
+			// a colour with no radius shows nothing; give it one
+			if (glow.spread <= 0) {
+				glow.spread = 40;
+				spread.set(40);
+			}
+			write_glow(false);
+		},
+		function(col) {
+			save();
+		});
+	glow_colour.classList.add('glue-glow-color');
+	glow_row.appendChild(glow_colour);
+	adv.appendChild(glow_row);
 
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset(
 		'back to square corners, a hard edge and no border', function() {
+			// everything this panel owns comes off, and THEN it is saved -
+			// one write, and nothing left behind that the save happened
+			// before
 			obj.style.borderRadius = '';
 			object_set_fade(obj, 0);
 			object_set_border(obj, 0);
+			object_set_glow(obj, false);
 			save();
 			radius.set(0);
 			fade.set(0);
 			border.set(0);
 			select.value = 'solid';
+			glow = object_glow(obj);
+			spread.set(0);
+			strength.set(glow.alpha);
 		}));
 	pop.appendChild(footer);
 

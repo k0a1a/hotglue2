@@ -896,11 +896,26 @@ function text_font_popover(obj)
 		style_row.appendChild(b);
 	});
 
-	// Clears what THIS panel sets - face, size and the four style properties.
+	// The text's colour, on the same row: it belongs with how the type looks,
+	// and it was a button of its own in the menu until this panel existed.
+	style_row.appendChild($.glue.popover.color_button('text colour',
+		function() {
+			return getComputedStyle(obj).color;
+		},
+		function(col) {
+			obj.style.color = col;
+		},
+		function(col) {
+			save();
+		}));
+
+	// Clears what THIS panel sets - face, size, the four style properties and
+	// the colour.
 	// Line height is left alone deliberately: the size row moves it to keep
 	// the ratio, but it belongs to the spacing panel, which has its own reset.
 	style_row.appendChild($.glue.popover.reset(
-		'back to the default face, size and style', function() {
+		'back to the default face, size, style and colour', function() {
+			obj.style.color = '';
 			obj.style.fontFamily = '';
 			obj.style.fontSize = '';
 			obj.style.fontWeight = '';
@@ -1268,26 +1283,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
 
-	elem = $.glue.icon('font-color', 'change font color');
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var col = getComputedStyle(obj).color;
-		if (e.shiftKey) {
-			col = prompt('Enter font color (e.g. #ff0000 or rgb(255, 0, 0))', col);
-			if (!col) {
-				return;
-			}
-		}
-		$.glue.colorpicker.show(col, false, function(col) {
-			obj.style.color = col;
-		}, function (col) {
-			$.glue.object.save(obj);
-			colorpicker_shown = false;
-		});
-		colorpicker_shown = true;
-	});
-	// this also requires the glue-deselect handler above
-	$.glue.contextmenu.register('text', 'text-font-color', elem);
 
 	// --- font popover ----------------------------------------------------
 	//

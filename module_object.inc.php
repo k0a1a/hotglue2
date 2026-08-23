@@ -277,6 +277,19 @@ function object_alter_render_early($args)
 			elem_css($elem, 'border-color', $obj['object-border-color']);
 		}
 	}
+	// A soft blob of colour behind the content - see .glue-glow in
+	// css/main.css. Like the fade above, what is stored is the ingredients
+	// (a colour, a radius and a strength) rather than the gradient itself.
+	if (!empty($obj['object-glow-color'])) {
+		elem_css($elem, '--glue-glow-color', $obj['object-glow-color']);
+		if (!empty($obj['object-glow-spread'])) {
+			elem_css($elem, '--glue-glow-spread', $obj['object-glow-spread']);
+		}
+		if (!empty($obj['object-glow-alpha'])) {
+			elem_css($elem, '--glue-glow-alpha', $obj['object-glow-alpha']);
+		}
+		elem_add_class($elem, 'glue-glow');
+	}
 	// A soft edge: the NUMBER is stored, and one rule in css/main.css builds
 	// the mask from it - see .glue-edge-fade there. Storing the gradient
 	// itself would put commas and quotes in the object file and write the
@@ -416,8 +429,15 @@ function object_alter_save($args)
 	} else {
 		unset($obj['object-border-color']);
 	}
-	// see object_render_object(): the number is what is stored, and the
-	// class comes back with it
+	// see object_render_object(): the ingredients are what is stored, and the
+	// class comes back with them
+	foreach (['color', 'spread', 'alpha'] as $part) {
+		if (elem_css($elem, '--glue-glow-'.$part) !== NULL) {
+			$obj['object-glow-'.$part] = elem_css($elem, '--glue-glow-'.$part);
+		} else {
+			unset($obj['object-glow-'.$part]);
+		}
+	}
 	if (elem_css($elem, '--glue-fade') !== NULL) {
 		$obj['object-edge-fade'] = elem_css($elem, '--glue-fade');
 	} else {
