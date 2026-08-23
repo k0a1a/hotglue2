@@ -9,6 +9,9 @@
  *
  *   node tools/prep-icons.js ../superglue-ng/documentation/UI-icons-SVG-nobg img/icons
  *
+ * An "extra" subdirectory of the source, if there is one, is converted after
+ * the rest and REPLACES same-named icons - that is what upstream uses it for.
+ *
  * Re-run it whenever the upstream set changes; img/icons is generated, and
  * hand-editing anything in it will be overwritten.
  */
@@ -98,23 +101,41 @@ var existing = fs.existsSync(dst) ? fs.readdirSync(dst).filter(function(f) {
 }) : [];
 var written = {};
 
-var before = 0, after = 0, n = 0;
-fs.readdirSync(src).filter(function(f) {
-	return /\.svg$/i.test(f);
-}).sort().forEach(function(f) {
-	var raw = fs.readFileSync(path.join(src, f), 'utf8');
-	var out = strip(raw);
-	// icon_font_size.svg -> font-size.svg
-	var name = f.replace(/^icon_/, '').replace(/_/g, '-')
-	            .replace(/[()]/g, '').replace(/-+/g, '-').replace(/-\.svg$/, '.svg');
-	fs.writeFileSync(path.join(dst, name), out);
-	written[name] = true;
-	before += Buffer.byteLength(raw);
-	after += Buffer.byteLength(out);
-	n++;
-});
+var before = 0, after = 0, n = 0, extras = 0;
 
-console.log(n + ' icons: ' + (before / 1024).toFixed(1) + 'K -> ' +
+function convert(dir) {
+	var count = 0;
+	fs.readdirSync(dir).filter(function(f) {
+		return /\.svg$/i.test(f);
+	}).sort().forEach(function(f) {
+		var raw = fs.readFileSync(path.join(dir, f), 'utf8');
+		var out = strip(raw);
+		// icon_font_size.svg -> font-size.svg
+		var name = f.replace(/^icon_/, '').replace(/_/g, '-')
+		            .replace(/[()]/g, '').replace(/-+/g, '-').replace(/-\.svg$/, '.svg');
+		fs.writeFileSync(path.join(dst, name), out);
+		written[name] = true;
+		before += Buffer.byteLength(raw);
+		after += Buffer.byteLength(out);
+		count++;
+	});
+	return count;
+}
+
+n = convert(src);
+
+// An "extra" subdirectory holds REPLACEMENTS: same names as icons in the set
+// above, redrawn. Converted after the main pass so they win - which is the
+// whole point of them, and the reason this runs the directory rather than
+// leaving anyone to copy one file in by hand and have the next regeneration
+// quietly undo it.
+var extra_dir = path.join(src, 'extra');
+if (fs.existsSync(extra_dir) && fs.statSync(extra_dir).isDirectory()) {
+	extras = convert(extra_dir);
+}
+
+console.log(n + ' icons' + (extras ? ' (+' + extras + ' from extra/, replacing)' : '') +
+            ': ' + (before / 1024).toFixed(1) + 'K -> ' +
             (after / 1024).toFixed(1) + 'K (' +
             Math.round(100 - after / before * 100) + '% smaller)');
 

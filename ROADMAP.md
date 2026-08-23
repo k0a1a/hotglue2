@@ -168,7 +168,9 @@ from reading the code:
 
   **Wiring is done and proven.** `tools/prep-icons.js` regenerates `img/icons/` from the
   upstream artwork (54 icons, 206K → 38K: the source files are ~85% Inkscape metadata,
-  RDF and attribution blocks that a mask never reads). `$.glue.icon(name, title)` in
+  RDF and attribution blocks that a mask never reads). An `extra/` subdirectory of the
+  source holds REDRAWN replacements under the same names, and the tool converts those
+  last so they win — copying one in by hand would be undone by the next regeneration. `$.glue.icon(name, title)` in
   `js/glue.js` builds a button from a file in there by plain name. Adding an icon is now
   a drop-in: put the file upstream, re-run the tool, call `$.glue.icon('thing')`.
 
