@@ -28,6 +28,8 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 const pop = (page) => page.locator('.glue-font-popover');
+// the panel's own rows, not the ones inside the advanced fold
+const own = (page) => page.locator('.glue-font-popover > .glue-popover-row');
 const toggle = (page, which) => page.locator(`.glue-font-toggle-${which}`);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
@@ -51,8 +53,11 @@ test('one button opens the panel, and the three it replaced are gone',
 		await open(page, a);
 
 		await expect(page.locator('.glue-font-face')).toBeVisible();
-		await expect(page.locator('.glue-popover-slider')).toBeVisible();
+		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(1);
 		await expect(page.locator('.glue-font-toggle')).toHaveCount(4);
+		// the reset lives in the fold, not among the rows above it: it clears
+		// the whole panel, which is more than these rows set
+		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
 
 		for (const gone of ['text-font-size', 'text-font-face', 'text-font-style']) {
 			expect(await page.locator(`#glue-contextmenu-${gone}`).count(),
@@ -84,7 +89,7 @@ test('it reads the object it was opened on', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	await expect(page.locator('.glue-popover-field')).toHaveValue('37');
+	await expect(own(page).locator('.glue-popover-field')).toHaveValue('37');
 	await expect(toggle(page, 'bold')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'underline')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'italic')).not.toHaveClass(/glue-font-toggle-on/);
@@ -98,8 +103,8 @@ test('the size field and slider stay in step, and the field is not capped',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = page.locator('.glue-popover-field');
-		const slider = page.locator('.glue-popover-slider');
+		const field = own(page).locator('.glue-popover-field');
+		const slider = own(page).locator('.glue-popover-slider');
 
 		await field.fill('42');
 		await field.dispatchEvent('input');
@@ -126,7 +131,7 @@ test('a size change is stored, and keeps line-height in proportion',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = page.locator('.glue-popover-field');
+		const field = own(page).locator('.glue-popover-field');
 		await field.fill('30');
 		await field.dispatchEvent('input');
 		await field.dispatchEvent('change');
@@ -268,7 +273,7 @@ test('the text colour lives in the panel now, not in the menu',
 		expect(await page.locator('#glue-contextmenu-text-font-color').count(),
 			'the standalone font colour button is still in the menu').toBe(0);
 
-		await pop(page).locator('.glue-popover-color').click();
+		await own(page).locator('.glue-popover-color').click();
 		await expect(page.locator('.picker_wrapper')).toBeVisible();
 		// the panel stays open while the picker is used
 		await expect(pop(page)).toHaveCount(1);
@@ -280,3 +285,55 @@ test('the text colour lives in the panel now, not in the menu',
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-font-color'])
 			.toBe('rgb(51, 102, 204)');
 	});
+
+test('the text shadow stores its ingredients and reaches the published page',
+	async ({ page, hg }) => {
+		// text-shadow with no offset: a halo around the letters rather than a
+		// shadow beside them. Stored like the object glow - a radius, a
+		// strength and a colour - with the value composed in css/main.css, so
+		// the shadow itself exists in one place rather than in the editor and
+		// the renderer both.
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+
+		const fold = pop(page).locator('.glue-popover-advanced');
+		const radius = fold.locator('.glue-popover-field').nth(3);
+		await radius.fill('8');
+		await radius.dispatchEvent('input');
+		await radius.dispatchEvent('change');
+
+		await expect(byId(page, a)).toHaveClass(/glue-text-shadow/);
+		expect(await cssOf(page, a, 'textShadow')).toContain('8px');
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-radius'])
+			.toBe('8');
+		expect(JSON.stringify(hg.readObject('100000000001').attrs),
+			'the composed shadow got into the object file').not.toContain('rgba(');
+
+		await page.goto(`/?${hg.pageName}`);
+		const published = await page.evaluate(() => {
+			const el = document.querySelector('.object');
+			return [el.className, getComputedStyle(el).textShadow];
+		});
+		expect(published[0]).toContain('glue-text-shadow');
+		expect(published[1]).toContain('8px');
+	});
+
+test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001',
+		{ ...ATTRS, 'text-shadow-radius': '8', 'text-shadow-color': '#ff0000' }, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await pop(page).locator('.glue-popover-disclosure').click();
+
+	const radius = pop(page).locator('.glue-popover-advanced .glue-popover-field').nth(3);
+	await radius.fill('0');
+	await radius.dispatchEvent('input');
+	await radius.dispatchEvent('change');
+	await expect(byId(page, a)).not.toHaveClass(/glue-text-shadow/);
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-radius'])
+		.toBe(undefined);
+});

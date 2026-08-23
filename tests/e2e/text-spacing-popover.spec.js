@@ -1,7 +1,9 @@
-// The spacing popover: line height, letter spacing, word spacing, alignment
-// and a reset, in place of four buttons - three that had to be dragged (where
-// a click on the same button quietly meant "reset") and one that cycled left
-// -> centre -> right -> justify.
+// Spacing and alignment: line height, letter spacing, word spacing, the four
+// alignments and a reset. Four buttons once - three that had to be dragged,
+// where a click on the same button quietly meant "reset", and one that cycled
+// left -> centre -> right -> justify - then a panel of its own, and now the
+// advanced fold of the font panel, since it is the same subject and most
+// objects never touch it.
 //
 // The units matter and are not arbitrary. The three spacings are written in
 // em, which is what the controls they replace wrote: it keeps them
@@ -22,8 +24,8 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const spacingBtn = (page) => page.getByTitle(/spacing: line, letter and word/);
-const pop = (page) => page.locator('.glue-spacing-popover');
+const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const pop = (page) => page.locator('.glue-font-popover .glue-popover-advanced');
 const rowField = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
 const rowSlider = (page, n) => pop(page).locator('.glue-popover-slider').nth(n);
 const alignBtn = (page, which) => pop(page).locator(`[data-align="${which}"]`);
@@ -39,9 +41,12 @@ async function open(page, id) {
 	if (!(await obj.evaluate((e) => e.classList.contains('glue-selected')))) {
 		await obj.click();
 	}
-	await expect(spacingBtn(page)).toBeVisible();
+	await expect(fontBtn(page)).toBeVisible();
 	await page.waitForTimeout(400);		// the menu fades in
-	await spacingBtn(page).click();
+	await fontBtn(page).click();
+	await expect(page.locator('.glue-font-popover')).toBeVisible();
+	// spacing lives in the fold, which starts closed
+	await page.locator('.glue-popover-disclosure').click();
 	await expect(pop(page)).toBeVisible();
 }
 
@@ -52,19 +57,20 @@ async function setRow(page, n, value) {
 	await field.dispatchEvent('change');
 }
 
-test('one button opens the panel, and the four it replaced are gone',
+test('the fold holds all of it, and the buttons it replaced are gone',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(3);
+		// line, letter, word - plus the text shadow's radius and fade
+		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(5);
 		await expect(pop(page).locator('.glue-align-btn')).toHaveCount(4);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 
 		for (const gone of ['text-line-height', 'text-letter-spacing',
-			'text-word-spacing', 'text-align']) {
+			'text-word-spacing', 'text-align', 'text-spacing']) {
 			expect(await page.locator(`#glue-contextmenu-${gone}`).count(),
 				`${gone} is still in the menu`).toBe(0);
 		}
@@ -175,6 +181,30 @@ test('the four alignment buttons set alignment, and show which one is on',
 		}
 	});
 
+test('the reset in the fold clears the whole panel, not just the spacing',
+	async ({ page, hg }) => {
+		// it is one panel now, so one reset: face, size, style, colour and
+		// spacing all go back to what an untouched object has
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'text-font-size': '40px', 'text-font-weight': 'bold',
+			'text-font-family': 'Georgia, serif', 'text-font-color': '#ff0000',
+			'text-letter-spacing': '0.2em', 'text-align': 'right',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		await pop(page).locator('.glue-popover-reset').click();
+		for (const gone of ['text-font-size', 'text-font-weight', 'text-font-family',
+			'text-font-color', 'text-letter-spacing', 'text-align']) {
+			await expect.poll(() => attrs(hg)[gone],
+				`${gone} survived the reset`).toBe(undefined);
+		}
+		// and the controls above the fold say so too
+		await expect(page.locator('.glue-font-toggle-bold'))
+			.not.toHaveClass(/glue-font-toggle-on/);
+	});
+
 test('reset clears the properties rather than writing defaults into them',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', {
@@ -222,18 +252,6 @@ test('the spacing survives a reload and reaches the published page',
 		});
 		expect(published).toEqual(['3px', 'right']);
 	});
-
-test('only one panel is open at a time', async ({ page, hg }) => {
-	// they would fight over the same free space beside the object
-	const a = hg.addObject('100000000001', ATTRS, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await open(page, a);
-
-	await page.getByTitle(/font: face, size and style/).click();
-	await expect(page.locator('.glue-font-popover')).toHaveCount(1);
-	await expect(pop(page)).toHaveCount(0);
-});
 
 test('a click outside closes it, and Escape closes it', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');

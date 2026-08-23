@@ -94,3 +94,16 @@ a, a:link, a:visited, a:active, a:hover {
 			transparent) calc(var(--glue-glow-spread) * 1%),
 		transparent 100%);
 }
+
+.glue-text-shadow {
+	/* A halo behind the text itself. Like the glow above it, what is stored
+	   is the ingredients - a radius, a strength and a colour - and the value
+	   is composed here, once. text-shadow has no spread of its own, so the
+	   radius is the blur and the strength is the colour's alpha. */
+	--glue-shadow-radius: 6;
+	--glue-shadow-alpha: 80;
+	--glue-shadow-color: #000;
+	text-shadow: 0 0 calc(var(--glue-shadow-radius) * 1px)
+		color-mix(in srgb, var(--glue-shadow-color)
+			calc(var(--glue-shadow-alpha) * 1%), transparent);
+}

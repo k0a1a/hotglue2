@@ -507,29 +507,10 @@ function object_edge_popover(obj)
 	// mask, so it takes the text with it, while this is a background and
 	// leaves the text sharp. Folded away because most objects will never want
 	// it, and the panel is already four rows.
-	var adv_toggle = $.glue.popover.row(false);
-	var adv_label = document.createElement('div');
-	adv_label.className = 'glue-popover-disclosure';
-	adv_toggle.appendChild(adv_label);
-	pop.appendChild(adv_toggle);
-
-	var adv = document.createElement('div');
-	adv.className = 'glue-popover-advanced';
-	adv.style.display = 'none';
+	var fold = $.glue.popover.fold(pop, 'advanced');
+	pop.appendChild(fold.toggle);
+	var adv = fold.body;
 	pop.appendChild(adv);
-
-	var open_adv = false;
-	var sync_disclosure = function() {
-		adv_label.textContent = (open_adv ? '\u25be' : '\u25b8')+' advanced';
-		adv.style.display = open_adv ? '' : 'none';
-	};
-	adv_label.addEventListener('click', function() {
-		open_adv = !open_adv;
-		sync_disclosure();
-		// it just changed height, and it is placed by its size
-		$.glue.popover.place(pop, $.glue.popover.pointer());
-	});
-	sync_disclosure();
 
 	var glow = object_glow(obj);
 	var write_glow = function(commit) {

@@ -909,84 +909,18 @@ function text_font_popover(obj)
 			save();
 		}));
 
-	// Clears what THIS panel sets - face, size, the four style properties and
-	// the colour.
-	// Line height is left alone deliberately: the size row moves it to keep
-	// the ratio, but it belongs to the spacing panel, which has its own reset.
-	style_row.appendChild($.glue.popover.reset(
-		'back to the default face, size, style and colour', function() {
-			obj.style.color = '';
-			obj.style.fontFamily = '';
-			obj.style.fontSize = '';
-			obj.style.fontWeight = '';
-			obj.style.fontStyle = '';
-			obj.style.textDecoration = '';
-			save();
-			// the panel is now describing something that is no longer there,
-			// so every control is read back off the object
-			var now = getComputedStyle(obj);
-			size_row.set(parseInt(now.fontSize, 10) || 16);
-			var d = now.textDecorationLine || now.textDecoration || '';
-			var w = parseInt(now.fontWeight, 10);
-			state.bold = now.fontWeight == 'bold' || (!isNaN(w) && 600 <= w);
-			state.italic = now.fontStyle == 'italic';
-			state.underline = /underline/.test(d);
-			state.strike = /line-through/.test(d);
-			Object.keys(toggles).forEach(function(k) {
-				toggles[k].classList.toggle('glue-font-toggle-on', state[k]);
-			});
-			var found = false;
-			[].forEach.call(select.options, function(o) {
-				if (o.value === now.fontFamily) {
-					o.selected = true;
-					found = true;
-				}
-			});
-			if (!found) {
-				// the object is back to a face the list does not offer, which
-				// is the usual outcome: it inherits one now
-				var o = document.createElement('option');
-				o.value = now.fontFamily;
-				o.style.fontFamily = now.fontFamily;
-				o.textContent = now.fontFamily.replace(/["']/g, '');
-				o.selected = true;
-				select.insertBefore(o, select.firstChild);
-			}
-		}));
 	pop.appendChild(style_row);
 
-	$.glue.popover.show(pop);
-}
+	// --- advanced: spacing and alignment ---------------------------------
+	//
+	// A panel of its own until now, opened from a button of its own. It is
+	// the same subject - how the type sits - and most objects never touch it,
+	// so it folds away here instead of taking a second button in the menu.
+	var fold = $.glue.popover.fold(pop, 'advanced');
+	pop.appendChild(fold.toggle);
+	var adv = fold.body;
+	pop.appendChild(adv);
 
-//
-// --- spacing popover -------------------------------------------------------
-//
-// Line height, letter spacing, word spacing and alignment, replacing four
-// buttons: three that had to be dragged (with a click on the same button
-// meaning "reset", which nothing told you) and one that cycled left ->
-// centre -> right -> justify.
-//
-// Units: the three spacings are written in em, which is what the controls
-// they replace wrote and what keeps them proportional if the type is resized
-// later. Line height is shown as a MULTIPLE of the font size rather than a
-// length, since that is how anyone reasons about it - 1.2, not 21.6px.
-//
-// The reset button clears all four properties. Emptying the style makes the
-// object file drop the attributes entirely (text_alter_save() stores only
-// what is set), so a reset object is byte-identical to one nobody ever
-// touched, rather than one carrying "normal" forever.
-//
-
-function text_spacing_popover(obj)
-{
-	var pop = $.glue.popover.open(obj, 'glue-spacing-popover');
-	if (!pop) {
-		return;
-	}
-
-	var save = function() {
-		$.glue.object.save(obj);
-	};
 	// em is relative to the object's own font size, so every read and write
 	// below goes through it
 	var em = function() {
@@ -1020,7 +954,7 @@ function text_spacing_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(line.row);
+	adv.appendChild(line.row);
 
 	var letter = $.glue.popover.number_row('letter', {
 		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em',
@@ -1032,7 +966,7 @@ function text_spacing_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(letter.row);
+	adv.appendChild(letter.row);
 
 	var word = $.glue.popover.number_row('word', {
 		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em',
@@ -1044,7 +978,7 @@ function text_spacing_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(word.row);
+	adv.appendChild(word.row);
 
 	// --- alignment --------------------------------------------------------
 	//
@@ -1092,28 +1026,152 @@ function text_spacing_popover(obj)
 	});
 	sync_align();
 
-	// The reset rides on the end of the alignment row rather than taking a
-	// line of its own - the panel is already five rows tall and this is a
-	// small thing.
-	align_row.appendChild($.glue.popover.reset(
-		'back to the default line height, spacing and alignment', function() {
-			obj.style.lineHeight = '';
-			obj.style.letterSpacing = '';
-			obj.style.wordSpacing = '';
-			obj.style.textAlign = '';
+	adv.appendChild(align_row);
+
+
+	// --- a halo behind the text ------------------------------------------
+	//
+	// text-shadow with no offset: a glow around the letters rather than a
+	// shadow beside them. Same three ingredients as the object glow, and
+	// stored the same way - a radius, a strength and a colour, composed in
+	// css/main.css.
+	var shadow = {
+		radius: parseFloat(obj.style.getPropertyValue('--glue-shadow-radius')) || 0,
+		alpha: parseFloat(obj.style.getPropertyValue('--glue-shadow-alpha')) || 80,
+		color: obj.style.getPropertyValue('--glue-shadow-color').trim() || '#000000'
+	};
+	var write_shadow = function(commit) {
+		if (shadow.radius <= 0) {
+			obj.style.removeProperty('--glue-shadow-radius');
+			obj.style.removeProperty('--glue-shadow-alpha');
+			obj.style.removeProperty('--glue-shadow-color');
+			obj.classList.remove('glue-text-shadow');
+		} else {
+			obj.style.setProperty('--glue-shadow-radius', shadow.radius);
+			obj.style.setProperty('--glue-shadow-alpha', shadow.alpha);
+			obj.style.setProperty('--glue-shadow-color', shadow.color);
+			obj.classList.add('glue-text-shadow');
+		}
+		if (commit) {
 			save();
-			// the panel now says something that is no longer true, so it is
-			// read back off the object rather than assumed
+		}
+	};
+
+	var shadow_radius = $.glue.popover.number_row('shadow', {
+		min: 0, max: 40, step: 0.5, decimals: 1, unit: 'px',
+		value: shadow.radius,
+		apply: function(px, commit) {
+			shadow.radius = px;
+			write_shadow(commit);
+		}
+	});
+	adv.appendChild(shadow_radius.row);
+
+	var shadow_alpha = $.glue.popover.number_row('fade', {
+		min: 0, max: 100, step: 1, unit: '%',
+		value: shadow.alpha,
+		apply: function(pct, commit) {
+			shadow.alpha = pct;
+			if (0 < shadow.radius) {
+				write_shadow(commit);
+			}
+		}
+	});
+	adv.appendChild(shadow_alpha.row);
+
+	var shadow_row = $.glue.popover.row('color');
+	shadow_row.appendChild($.glue.popover.color_button('shadow colour',
+		function() {
+			return shadow.color;
+		},
+		function(col) {
+			shadow.color = col;
+			// a colour with no radius shows nothing; give it one
+			if (shadow.radius <= 0) {
+				shadow.radius = 6;
+				shadow_radius.set(6);
+			}
+			write_shadow(false);
+		},
+		function(col) {
+			save();
+		}));
+	adv.appendChild(shadow_row);
+
+	// One reset for the whole panel, in the fold: everything about the type,
+	// including what the rows above set. Clearing the properties rather than
+	// writing defaults into them is what makes the object file drop the
+	// attributes, so a reset object is byte-identical to one nobody ever
+	// touched.
+	var reset_row = $.glue.popover.row(false);
+	reset_row.appendChild($.glue.popover.reset(
+		'back to the default typeface, size, style, colour and spacing',
+		function() {
+			['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'textDecoration',
+				'color', 'lineHeight', 'letterSpacing', 'wordSpacing', 'textAlign']
+				.forEach(function(prop) {
+					obj.style[prop] = '';
+				});
+			shadow.radius = 0;
+			write_shadow(false);
+			save();
+
+			// every control now says something that is no longer true
 			var now = getComputedStyle(obj);
+			size_row.set(parseInt(now.fontSize, 10) || 16);
 			line.set(to_em(now.lineHeight, 1.2));
 			letter.set(to_em(now.letterSpacing, 0));
 			word.set(to_em(now.wordSpacing, 0));
 			sync_align();
+			shadow_radius.set(0);
+			var d = now.textDecorationLine || now.textDecoration || '';
+			var w = parseInt(now.fontWeight, 10);
+			state.bold = now.fontWeight == 'bold' || (!isNaN(w) && 600 <= w);
+			state.italic = now.fontStyle == 'italic';
+			state.underline = /underline/.test(d);
+			state.strike = /line-through/.test(d);
+			Object.keys(toggles).forEach(function(k) {
+				toggles[k].classList.toggle('glue-font-toggle-on', state[k]);
+			});
+			var found = false;
+			[].forEach.call(select.options, function(o) {
+				if (o.value === now.fontFamily) {
+					o.selected = true;
+					found = true;
+				}
+			});
+			if (!found) {
+				var o = document.createElement('option');
+				o.value = now.fontFamily;
+				o.style.fontFamily = now.fontFamily;
+				o.textContent = now.fontFamily.replace(/["']/g, '');
+				o.selected = true;
+				select.insertBefore(o, select.firstChild);
+			}
 		}));
-	pop.appendChild(align_row);
+	adv.appendChild(reset_row);
 
 	$.glue.popover.show(pop);
 }
+
+//
+// --- spacing popover -------------------------------------------------------
+//
+// Line height, letter spacing, word spacing and alignment, replacing four
+// buttons: three that had to be dragged (with a click on the same button
+// meaning "reset", which nothing told you) and one that cycled left ->
+// centre -> right -> justify.
+//
+// Units: the three spacings are written in em, which is what the controls
+// they replace wrote and what keeps them proportional if the type is resized
+// later. Line height is shown as a MULTIPLE of the font size rather than a
+// length, since that is how anyone reasons about it - 1.2, not 21.6px.
+//
+// The reset button clears all four properties. Emptying the style makes the
+// object file drop the attributes entirely (text_alter_save() stores only
+// what is set), so a reset object is byte-identical to one nobody ever
+// touched, rather than one carrying "normal" forever.
+//
 
 document.addEventListener('DOMContentLoaded', function() {
 	//
@@ -1299,18 +1357,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('text', 'text-font', elem);
 
-	// --- spacing popover -------------------------------------------------
-	//
-	// One button in place of the four that used to be here: line height,
-	// letter spacing and word spacing, each of which had to be dragged, and
-	// the alignment cycle. Same panel behaviour as the font popover above.
-	elem = $.glue.icon('vertical-stack-space',
-		'spacing: line, letter and word - and alignment');
-	elem.addEventListener('click', function(e) {
-		text_spacing_popover($.glue.owner(this));
-		e.stopPropagation();
-	});
-	$.glue.contextmenu.register('text', 'text-spacing', elem);
 
 
 	elem = document.createElement('img');

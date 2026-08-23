@@ -85,7 +85,9 @@
  */
 
 .glue-font-popover {
-	width: 200px;
+	/* face, size, style and colour, with spacing and alignment folded away
+	   underneath */
+	width: 250px;
 }
 
 .glue-font-face {
@@ -131,10 +133,6 @@
 	text-decoration: line-through;
 }
 
-.glue-spacing-popover {
-	width: 220px;
-}
-
 .glue-align-btn {
 	/* the toolbar's own icon buttons, reused inside the panel so alignment
 	   looks like what it looks like everywhere else - but at the size of the
@@ -163,13 +161,9 @@
 /* --- link popover ------------------------------------------------------- */
 
 .glue-link-popover {
-	/* wider than the other two: a url is long, and a field it cannot be read
-	   in is a field people paste into blind */
-	width: 280px;
-}
-
-.glue-link-popover .glue-popover-label {
-	width: 34px;
+	/* wider than the others: a url is long, and a field it cannot be read in
+	   is a field people paste into blind */
+	width: 330px;
 }
 
 .glue-link-field {

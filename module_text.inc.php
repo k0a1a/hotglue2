@@ -277,6 +277,14 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-font-weight']);
 	}
+	// the text shadow's ingredients (see text_render_object)
+	foreach (['radius', 'alpha', 'color'] as $part) {
+		if (elem_css($elem, '--glue-shadow-'.$part) !== NULL) {
+			$obj['text-shadow-'.$part] = elem_css($elem, '--glue-shadow-'.$part);
+		} else {
+			unset($obj['text-shadow-'.$part]);
+		}
+	}
 	// text-decoration - underline and strikethrough, which share one CSS
 	// property and are therefore stored as one value ('underline',
 	// 'line-through', or both). Nothing stored this before the font popover
@@ -438,6 +446,19 @@ function text_alter_render_early($args)
 	// text-decoration (see text_alter_save)
 	if (!empty($obj['text-text-decoration'])) {
 		elem_css($elem, 'text-decoration', $obj['text-text-decoration']);
+	}
+	// a halo behind the text - see .glue-text-shadow in css/main.css. The
+	// ingredients are stored and the shadow is composed there, so the value
+	// exists in one place rather than in the editor and the renderer both.
+	if (!empty($obj['text-shadow-radius'])) {
+		elem_css($elem, '--glue-shadow-radius', $obj['text-shadow-radius']);
+		if (!empty($obj['text-shadow-alpha'])) {
+			elem_css($elem, '--glue-shadow-alpha', $obj['text-shadow-alpha']);
+		}
+		if (!empty($obj['text-shadow-color'])) {
+			elem_css($elem, '--glue-shadow-color', $obj['text-shadow-color']);
+		}
+		elem_add_class($elem, 'glue-text-shadow');
 	}
 	// letter-spacing
 	if (!empty($obj['text-letter-spacing'])) {

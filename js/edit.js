@@ -235,67 +235,100 @@ $.glue.popover = function()
 	return {
 		// w, h .. the popover's size in px
 		// p .. where the pointer was, in viewport coordinates (optional)
+		// ignore .. an element to leave out of what must stay visible,
+		//   which is how a panel avoids avoiding ITSELF: it is in the DOM
+		//   before it is placed, and .glue-popover is on the list below
 		// returns { x, y } in viewport coordinates
-		place_for: function(w, h, p) {
+		place_for: function(w, h, p, ignore) {
 			var vw = document.documentElement.clientWidth;
 			var vh = document.documentElement.clientHeight;
 			if (!p) {
 				p = { x: Math.round(vw/2), y: Math.round(vh/2) };
 			}
 
-			// What has to stay visible, as one box: the object being edited,
-			// plus the menu the popover was opened from - both the column
-			// down its left and the row across its top, and the page menu for
-			// the buttons that have no object at all. Covering the menu is not
-			// as bad as covering the object, but it is the row the button that
-			// opened this lives in, and the free canvas is right there.
-			var sel = false;
-			document.querySelectorAll('.glue-selected, .glue-contextmenu-left, ' +
-				'.glue-contextmenu-top, .glue-menu, .glue-popover').forEach(function(el) {
-				var b = el.getBoundingClientRect();
-				sel = sel ? {
-					left: Math.min(sel.left, b.left), top: Math.min(sel.top, b.top),
-					right: Math.max(sel.right, b.right), bottom: Math.max(sel.bottom, b.bottom)
-				} : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
-			});
-
-			var x = clamp(p.x-w/2, vw-w);
-			var y = clamp(p.y-h/2, vh-h);
-			if (sel) {
-				// the clamp on each candidate is along the axis it is NOT
-				// placed on, so keeping it on screen cannot slide it back
-				// over the object
-				var best = false;
-				var best_d = Infinity;
-				[
-					{ x: sel.right+GAP, y: clamp(p.y-h/2, vh-h) },
-					{ x: clamp(p.x-w/2, vw-w), y: sel.bottom+GAP },
-					{ x: sel.left-GAP-w, y: clamp(p.y-h/2, vh-h) },
-					{ x: clamp(p.x-w/2, vw-w), y: sel.top-GAP-h }
-				].forEach(function(c) {
-					if (c.x < 0 || c.y < 0 || vw < c.x+w || vh < c.y+h) {
+			// Two boxes, because they are not equally important. The OBJECT
+			// is what must not be covered - "no menu or interface shall
+			// interfere with page elements". The menu the panel was opened
+			// from, and any panel already open, are better not covered but
+			// are ours to cover if it comes to that.
+			var union = function(sel) {
+				var box = false;
+				document.querySelectorAll(sel).forEach(function(el) {
+					if (ignore && (el === ignore || el.contains(ignore))) {
 						return;
 					}
-					var d = Math.pow(c.x+w/2-p.x, 2)+Math.pow(c.y+h/2-p.y, 2);
-					if (d < best_d) {
-						best_d = d;
-						best = c;
+					var b = el.getBoundingClientRect();
+					if (!b.width && !b.height) {
+						return;
 					}
+					box = box ? {
+						left: Math.min(box.left, b.left), top: Math.min(box.top, b.top),
+						right: Math.max(box.right, b.right), bottom: Math.max(box.bottom, b.bottom)
+					} : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
 				});
-				if (best) {
-					x = best.x;
-					y = best.y;
+				return box;
+			};
+			var obj = union('.glue-selected');
+			var ui = union('.glue-contextmenu-left, .glue-contextmenu-top, ' +
+				'.glue-menu, .glue-popover');
+
+			var overlap = function(x, y, box) {
+				if (!box) {
+					return 0;
 				}
-				// else: nothing fits beside it (a selection bigger than the
-				// window), and being on screen matters more than being clear
-			}
-			return { x: Math.round(x), y: Math.round(y) };
+				var ox = Math.min(x+w, box.right)-Math.max(x, box.left);
+				var oy = Math.min(y+h, box.bottom)-Math.max(y, box.top);
+				return (0 < ox && 0 < oy) ? ox*oy : 0;
+			};
+
+			// Beside each box, on all four sides, plus the pointer itself as
+			// a last resort. Every candidate is clamped on screen rather than
+			// discarded for being off it: a candidate that has to slide back
+			// into view is still better than one that lands on the object.
+			var candidates = [];
+			[obj, ui && obj ? {
+				left: Math.min(obj.left, ui.left), top: Math.min(obj.top, ui.top),
+				right: Math.max(obj.right, ui.right), bottom: Math.max(obj.bottom, ui.bottom)
+			} : ui].forEach(function(box) {
+				if (!box) {
+					return;
+				}
+				candidates.push({ x: box.right+GAP, y: p.y-h/2 });
+				candidates.push({ x: p.x-w/2, y: box.bottom+GAP });
+				candidates.push({ x: box.left-GAP-w, y: p.y-h/2 });
+				candidates.push({ x: p.x-w/2, y: box.top-GAP-h });
+			});
+			candidates.push({ x: p.x-w/2, y: p.y-h/2 });
+
+			var best = false;
+			var best_score = false;
+			candidates.forEach(function(c) {
+				var x = clamp(c.x, vw-w);
+				var y = clamp(c.y, vh-h);
+				// covering the object is what disqualifies a position;
+				// covering our own chrome is a tie-breaker; being near where
+				// the pointer was decides the rest
+				var score = [
+					overlap(x, y, obj),
+					overlap(x, y, ui),
+					Math.pow(x+w/2-p.x, 2)+Math.pow(y+h/2-p.y, 2)
+				];
+				if (!best || score[0] < best_score[0] ||
+					(score[0] === best_score[0] && score[1] < best_score[1]) ||
+					(score[0] === best_score[0] && score[1] === best_score[1] &&
+						score[2] < best_score[2])) {
+					best = { x: x, y: y };
+					best_score = score;
+				}
+			});
+			return { x: Math.round(best.x), y: Math.round(best.y) };
 		},
 		// Puts an already-built, already-in-the-DOM popover where place_for()
 		// says. It must be position:fixed and laid out (so it has a size) by
 		// the time this is called.
 		place: function(elem, p) {
-			var at = $.glue.popover.place_for(elem.offsetWidth, elem.offsetHeight, p);
+			var at = $.glue.popover.place_for(elem.offsetWidth, elem.offsetHeight,
+				p, elem);
 			elem.style.left = at.x+'px';
 			elem.style.top = at.y+'px';
 			return at;
@@ -340,6 +373,35 @@ $.glue.popover = function()
 		// what is open, or false - for the handlers below
 		current: function() {
 			return open_panel;
+		},
+		// A folded-away section of a panel: a disclosure row and the body it
+		// shows. Collapsed to start with, because what goes in one is what
+		// most objects will never touch.
+		//
+		// Returns { toggle, body } - append both to the panel, fill the body.
+		// Opening one changes the panel's height, and a panel is placed by
+		// its size, so it is re-placed on every toggle.
+		fold: function(pop, label) {
+			var toggle_row = $.glue.popover.row(false);
+			var disclosure = document.createElement('div');
+			disclosure.className = 'glue-popover-disclosure';
+			toggle_row.appendChild(disclosure);
+
+			var body = document.createElement('div');
+			body.className = 'glue-popover-advanced';
+
+			var open = false;
+			var sync = function() {
+				disclosure.textContent = (open ? '\u25be' : '\u25b8')+' '+label;
+				body.style.display = open ? '' : 'none';
+			};
+			disclosure.addEventListener('click', function() {
+				open = !open;
+				sync();
+				$.glue.popover.place(pop, $.glue.popover.pointer());
+			});
+			sync();
+			return { toggle: toggle_row, body: body };
 		},
 		// A colour button for a panel: the shared icon, opening the picker on
 		// whatever property the caller names. One of these rather than one

@@ -521,13 +521,13 @@
 
 .glue-popover-row {
 	/* one row of a popover: a label, then whatever it names. Built by
-	   $.glue.popover.row() / .number_row(), and shared by the font panel, the
-	   spacing panel and the colour picker's alpha - they are the same control
-	   and should not drift apart. */
+	   $.glue.popover.row() / .number_row(), and shared by every panel and the
+	   colour picker's alpha - they are the same control and should not drift
+	   apart. */
 	display: flex;
 	align-items: center;
-	gap: 5px;
-	margin-bottom: 5px;
+	gap: 7px;
+	margin-bottom: 6px;
 }
 
 .glue-popover-row:last-child {
@@ -535,9 +535,13 @@
 }
 
 .glue-popover-label {
-	/* the row labels line up, so the controls do too */
-	width: 26px;
+	/* The row labels line up, so the controls do too. Wide enough for the
+	   longest of them ("opacity") with air after it: at 26px the sliders
+	   started where the words ended, which read as one crowded thing rather
+	   than a label and a control. */
+	width: 48px;
 	flex: 0 0 auto;
+	padding-right: 4px;
 	color: #666;
 }
 
@@ -689,8 +693,9 @@
 
 
 .glue-edge-popover {
-	/* three number rows, a style dropdown with a colour button, and a reset */
-	width: 215px;
+	/* three number rows, a style dropdown with a colour button, a fold and a
+	   reset - and room to read them */
+	width: 265px;
 }
 
 .glue-border-style {
