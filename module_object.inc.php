@@ -263,14 +263,16 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-border-radius'])) {
 		elem_css($elem, 'border-radius', $obj['object-border-radius']);
 	}
-	// A border of the author's own. The style is implied rather than stored:
-	// there is one kind of border on offer and it is solid, so a width is all
-	// there is to remember. (The editor's selection used to be a border on
-	// this same element, which is why objects could not have one until it
-	// became an outline - see .glue-selected in css/edit.css.)
+	// A border of the author's own. Solid is the default and is NOT stored -
+	// absent means solid, the way absent means visible for overflow - so an
+	// object with an ordinary border carries two attributes rather than
+	// three. (The editor's selection used to be a border on this same
+	// element, which is why objects could not have one at all until it became
+	// an outline - see .glue-selected in css/edit.css.)
 	if (!empty($obj['object-border-width'])) {
 		elem_css($elem, 'border-width', $obj['object-border-width']);
-		elem_css($elem, 'border-style', 'solid');
+		elem_css($elem, 'border-style', !empty($obj['object-border-style']) ?
+			$obj['object-border-style'] : 'solid');
 		if (!empty($obj['object-border-color'])) {
 			elem_css($elem, 'border-color', $obj['object-border-color']);
 		}
@@ -397,8 +399,13 @@ function object_alter_save($args)
 	} else {
 		unset($obj['object-border-radius']);
 	}
-	// border-style is not stored: see object_render_object(), it is implied by
-	// there being a width at all
+	// solid is the default and stays unstored: see object_render_object()
+	if (elem_css($elem, 'border-style') !== NULL &&
+	    elem_css($elem, 'border-style') != 'solid') {
+		$obj['object-border-style'] = elem_css($elem, 'border-style');
+	} else {
+		unset($obj['object-border-style']);
+	}
 	if (elem_css($elem, 'border-width') !== NULL) {
 		$obj['object-border-width'] = elem_css($elem, 'border-width');
 	} else {

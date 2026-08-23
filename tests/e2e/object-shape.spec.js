@@ -198,6 +198,77 @@ test('a border does not move the object when it is selected', async ({ page, hg 
 	expect(await cssOf(page, a, 'outlineStyle')).toBe('dashed');
 });
 
+test('the style dropdown applies, and stores only what is not the default',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'object-border-width': '4px' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		const select = pop(page).locator('.glue-border-style');
+		expect(await select.evaluate((s) =>
+			[...s.options].map((o) => o.value))).toEqual(
+			['solid', 'dashed', 'double', 'groove', 'inset', 'outset', 'ridge']);
+
+		await select.selectOption('double');
+		await expect.poll(() => cssOf(page, a, 'borderTopStyle')).toBe('double');
+		await expect.poll(() => attrs(hg)['object-border-style']).toBe('double');
+
+		// solid is the default and goes back to being unstored, the way
+		// absent means visible for overflow
+		await select.selectOption('solid');
+		await expect.poll(() => attrs(hg)['object-border-style']).toBe(undefined);
+		expect(await cssOf(page, a, 'borderTopStyle')).toBe('solid');
+	});
+
+test('picking a style on an object with no border gives it one',
+	async ({ page, hg }) => {
+		// a style with no width to draw in is invisible, and a control that
+		// appears to do nothing reads as broken
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		await pop(page).locator('.glue-border-style').selectOption('ridge');
+		await expect.poll(() => cssOf(page, a, 'borderTopWidth')).toBe('1px');
+		await expect(field(page, WIDTH)).toHaveValue('1');
+
+		// and it round-trips: a style with no stored width would come back as
+		// no border at all, since the renderer only draws a style when there
+		// is a width to draw it in
+		await expect.poll(() => attrs(hg)['object-border-width']).toBe('1px');
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() => {
+			const cs = getComputedStyle(document.querySelector('.object'));
+			return [cs.borderTopWidth, cs.borderTopStyle];
+		})).toEqual(['1px', 'ridge']);
+	});
+
+test('the colour button recolours the border, and leaves the panel open',
+	async ({ page, hg }) => {
+		// the picker counts as part of the panel that opened it - otherwise
+		// the panel closes the moment the picker is touched, which is the
+		// first thing anyone does with it
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'object-border-width': '6px' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		await pop(page).locator('.glue-border-color').click();
+		await expect(page.locator('.picker_wrapper')).toBeVisible();
+		await expect(pop(page), 'the panel closed when the picker opened')
+			.toHaveCount(1);
+
+		const hex = page.locator('.picker_editor input');
+		await hex.fill('#0000ff');
+		await hex.press('Enter');
+		await expect.poll(() => cssOf(page, a, 'borderTopColor')).toBe('rgb(0, 0, 255)');
+		await expect.poll(() => attrs(hg)['object-border-color']).toBe('rgb(0, 0, 255)');
+	});
+
 test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 	// Each gradient on its own fades one axis and leaves a band straight
 	// through the middle untouched; they are INTERSECTED to fade all four.
@@ -245,6 +316,7 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	// and the panel says what is true now
 	await expect(field(page, ROUND)).toHaveValue('0');
 	await expect(field(page, FADE)).toHaveValue('0');
+	await expect(pop(page).locator('.glue-border-style')).toHaveValue('solid');
 });
 
 test('media inside an object rounds with it', async ({ page, hg }) => {

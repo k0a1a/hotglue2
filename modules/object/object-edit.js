@@ -301,8 +301,9 @@ function object_properties_modal_show(obj, data) {
 // --- edge panel ------------------------------------------------------------
 //
 // What an object's edges look like: rounded corners, a soft fade inwards from
-// each edge, and a border. Three numbers, one panel, same rows and same
-// behaviour as the text module's font and spacing panels ($.glue.popover).
+// each edge, and a border - width, style and colour. One panel, same rows and
+// same behaviour as the text module's font and spacing panels
+// ($.glue.popover).
 //
 // Both are stored in PX. A percentage would keep the shape through a resize -
 // 50% is a pill, or an ellipse on a box that is not square - but hotglue
@@ -340,9 +341,11 @@ function object_set_border(obj, px)
 {
 	if (0 < px) {
 		obj.style.borderWidth = px+'px';
-		// one kind of border, and it is solid - so the style is implied
-		// rather than being a third thing to remember
-		obj.style.borderStyle = 'solid';
+		// solid unless a style has already been chosen - this is also called
+		// BY the style dropdown, to give a style something to draw in
+		if (!obj.style.borderStyle) {
+			obj.style.borderStyle = 'solid';
+		}
 	} else {
 		// emptied rather than set to zero, so the object file drops the
 		// attributes and the object goes back to looking untouched
@@ -420,6 +423,60 @@ function object_edge_popover(obj)
 	});
 	pop.appendChild(border.row);
 
+	// Style and colour on one row: neither is a number, and a border is one
+	// thing to think about rather than three.
+	var style_row = $.glue.popover.row('style');
+	var select = document.createElement('select');
+	select.className = 'glue-border-style';
+	// solid first because it is the default, and the only one that is not
+	// stored - see object_render_object() in module_object.inc.php
+	['solid', 'dashed', 'double', 'groove', 'inset', 'outset', 'ridge']
+		.forEach(function(name) {
+			var o = document.createElement('option');
+			o.value = name;
+			o.textContent = name;
+			if (getComputedStyle(obj).borderTopStyle == name) {
+				o.selected = true;
+			}
+			select.appendChild(o);
+		});
+	// A style or a colour on an object with no border gives it a 1px one:
+	// otherwise nothing happens and the control looks broken, since a style
+	// with no width to draw in is invisible.
+	// Reads the object's OWN width, not the computed one: as soon as a style
+	// is set the computed width becomes 'medium' (3px) whether anyone asked
+	// for it or not, and a width nobody set is a width nobody stores - so the
+	// border would come back on reload as no border at all.
+	var ensure_width = function() {
+		if (!(0 < parseFloat(obj.style.borderWidth))) {
+			object_set_border(obj, 1);
+			border.set(1);
+		}
+	};
+	select.addEventListener('change', function() {
+		obj.style.borderStyle = this.value;
+		ensure_width();
+		save();
+	});
+	style_row.appendChild(select);
+
+	var colour = $.glue.icon('border-color', 'border colour');
+	colour.classList.add('glue-border-color');
+	colour.style.width = '26px';
+	colour.style.height = '26px';
+	colour.addEventListener('click', function(e) {
+		$.glue.colorpicker.show(getComputedStyle(obj).borderTopColor, false,
+			function(col) {
+				obj.style.borderColor = col;
+				ensure_width();
+			}, function(col) {
+				save();
+			});
+		e.stopPropagation();
+	});
+	style_row.appendChild(colour);
+	pop.appendChild(style_row);
+
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset(
 		'back to square corners, a hard edge and no border', function() {
@@ -430,6 +487,7 @@ function object_edge_popover(obj)
 			radius.set(0);
 			fade.set(0);
 			border.set(0);
+			select.value = 'solid';
 		}));
 	pop.appendChild(footer);
 

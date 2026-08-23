@@ -251,7 +251,7 @@ $.glue.popover = function()
 			// opened this lives in, and the free canvas is right there.
 			var sel = false;
 			document.querySelectorAll('.glue-selected, .glue-contextmenu-left, ' +
-				'.glue-contextmenu-top, .glue-menu').forEach(function(el) {
+				'.glue-contextmenu-top, .glue-menu, .glue-popover').forEach(function(el) {
 				var b = el.getBoundingClientRect();
 				sel = sel ? {
 					left: Math.min(sel.left, b.left), top: Math.min(sel.top, b.top),
@@ -458,7 +458,10 @@ $.glue.popover = function()
 // the event.
 document.documentElement.addEventListener('click', function(e) {
 	var pop = $.glue.popover.current();
-	if (pop && !pop.contains(e.target)) {
+	// The colour picker counts as part of whatever panel opened it: a panel
+	// with a colour button on it would otherwise close the moment the picker
+	// was clicked, which is the first thing anyone does with it.
+	if (pop && !pop.contains(e.target) && !e.target.closest('.picker_wrapper')) {
 		$.glue.popover.close();
 	}
 }, true);
