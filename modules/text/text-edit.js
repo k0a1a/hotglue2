@@ -1228,22 +1228,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	// unquoted attribute gains quotes, an uppercase tag becomes lowercase).
 	// This is the way back to editing the literal source, and the way to fix
 	// anything WYSIWYG gets wrong.
-	elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontFamily = 'monospace';
-	elem.style.fontSize = '15px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.width = '32px';
-	elem.style.lineHeight = '32px';
-	elem.style.textAlign = 'center';
-	elem.title = 'switch between editing the text as it looks and editing its HTML source';
-	elem.className = 'glue-btn-label';
-	elem.textContent = '</>';
+	// the icon is the SuperGlue set's super-user, which draws exactly the </>
+	// this button used to spell out as text
+	elem = $.glue.icon('super-user',
+		'switch between editing the text as it looks and editing its HTML source');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var was_editing = obj.classList.contains('glue-text-editing');
@@ -1260,12 +1248,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('text', 'text-source', elem);
 
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-background-color.png';
-	elem.alt = 'btn';
-	elem.title = 'change background color';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('background-color', 'change background color');
 	var colorpicker_shown = false;
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
@@ -1295,12 +1278,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('text', 'text-background-color', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-background-transparent.png';
-	elem.alt = 'btn';
-	elem.title = 'make background transparent';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('background-color-remove', 'make background transparent');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		obj.style.backgroundColor = 'transparent';
@@ -1338,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// space beside the object rather than over it ($.glue.popover), applies
 	// live, reads the object's current values when it opens, and closes on a
 	// click outside or Escape.
-	elem = $.glue.icon('font-face', 'font: face, size and style');
+	elem = $.glue.icon('font-size', 'font: face, size and style');
 	elem.addEventListener('click', function(e) {
 		text_font_popover($.glue.owner(this));
 		e.stopPropagation();

@@ -189,23 +189,24 @@ from reading the code:
   button and inherits down, so swapping artwork at runtime is unaffected.
 
   Wired so far: `clone` (the first one, replacing a PNG), `undo`, `redo`, `hyperlink`,
-  `font-color`, `font-face` (the text menu's Font panel), `vertical-stack-space` (its
-  Spacing panel), the four `align-*` inside that panel, and the layout toggle via
+  `font-color`, `background-color`, `background-color-remove`, `super-user` (the `</>`
+  source toggle, which the artwork spells out exactly), `font-size` (the text menu's Font
+  panel), `vertical-stack-space` (its Spacing panel), the four `align-*` inside that panel, and the layout toggle via
   `composition-mode-absolute`/`-centered`. The icon shows the
   mode you are switching TO, preserving the old split where the tooltip describes the
   present and the button names the destination.
 
-  **Still needs drawing** — the two placeholders the batch does not cover, still on
-  `.glue-btn-label`:
+  **Still needs drawing** — one placeholder left on `.glue-btn-label`:
 
   | label | what it does | file |
   |---|---|---|
-  | `</>` | switch that object between WYSIWYG and HTML source | `modules/text/text-edit.js` |
   | `clip` / `show` | object clips or spills its overflow | `modules/object/object-edit.js` |
 
-  Both are STATEFUL, so each wants two icons or one with a clear on-state. `clip`/`show`
-  flips live through Alpine (no reload), so wiring it will also need a way to change an
-  element's `--glue-icon` after construction — `$.glue.icon()` only sets it at build time.
+  It is STATEFUL, so it wants two icons or one with a clear on-state, and it flips live
+  through Alpine (no reload) — so wiring it will also need a way to change an element's
+  `--glue-icon` after construction, which `$.glue.icon()` only sets at build time. (The
+  `</>` source toggle that used to be here is done: `super-user` in the set draws exactly
+  that glyph.)
 
   **Unresolved: licensing.** The upstream files declare CC BY-NC-SA 3.0
   (`cc:prohibits CommercialUse`), credited to VERBALVISU.AL / SuperGlue project. Hotglue
