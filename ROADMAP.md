@@ -280,15 +280,22 @@ from reading the code:
   button and inherits down, so swapping artwork at runtime is unaffected.
 
   Wired so far: `sheep-icon4` for clone (the joke lands: everyone knows what a cloned
-  sheep is, and the alternative is the two overlapping rectangles every toolbar has —
-  a silhouette rather than line work, which turns to mush at 30px),
-  `undo`, `redo`, `hyperlink`,
-  `font-color`, `background-color`, `background-color-remove`, `super-user` (the `</>`
-  source toggle, which the artwork spells out exactly), `font-size` (the text menu's
-  Font panel), `vertical-stack-space` (its Spacing panel), the four `align-*` inside
-  that panel, and the layout toggle via `composition-mode-absolute`/`-centered` — that
-  last one shows the mode you are switching TO, preserving the old split where the
-  tooltip describes the present and the button names the destination.
+  sheep is, and the alternative is the two overlapping rectangles every toolbar has — a
+  silhouette rather than line work, which turns to mush at 30px), `undo`, `redo`,
+  `hyperlink`, `font-color`, `background-color`, `background-color-remove`, `super-user`
+  (the `</>` source toggle, which the artwork spells out exactly), `font-size` (the text
+  menu's Font panel), `border-radius` (the object's edge panel), `page-background-image`
+  (an object's own background), `color-quadrant` (every colour button, in every panel),
+  the four `align-*` inside the font panel's fold, and the layout toggle via
+  `composition-mode-absolute`/`-centered` — that last one shows the mode you are
+  switching TO, preserving the old split where the tooltip describes the present and the
+  button names the destination.
+
+  Judge new artwork by rendering its ALPHA at 30px, which is what a mask paints: the
+  colour in the file never reaches the screen, so a black drawing and a white one look
+  identical in the toolbar and completely different in a file browser. That is also how
+  an intermediate save containing an embedded PNG was caught masking as a solid black
+  square.
 
   **Still needs drawing** — one placeholder left on `.glue-btn-label`:
 
