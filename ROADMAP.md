@@ -86,7 +86,7 @@ Checked against the tree on 2026-08-23.
 - Editor dejQuery'd → vanilla + Moveable (drag/resize, touch-capable) + Alpine (chrome).
   HiDPI sharp images. PHP8 pass. Color picker later moved to vendored vanilla-picker.
 
-Shipped 2026-08-22/23:
+Shipped 2026-08-22:
 
 - **Mobile view** — DECIDED and shipped as pan/zoom of the intact canvas
   (`js/mobile-guided.js`): an exponentially-paced reveal and a double-tap overview
@@ -98,43 +98,82 @@ Shipped 2026-08-22/23:
 - **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **374 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
-- **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
-  top is where the menu is), snapping to 15° by default with shift releasing it to any
-  angle — the opposite of the usual binding, on the grounds that a heading accidentally
-  left at 7° is the startling outcome, not a constrained one.
-- **Handles outside the object** — resize handles used to straddle the edge, half of
-  each lying over the author's content, against the design codex's "no menu or interface
-  shall interfere with page elements". They now sit 5px clear of it, and the offset
-  turns with the object: as a margin it was screen-space, so it pushed handles INTO
-  anything rotated past 90°.
-- **Spacing popover** — line height, letter spacing, word spacing, alignment and a
-  reset, replacing four buttons: three that had to be dragged (where a click meant
-  "reset", which nothing told you) and the alignment cycle. Spacings in em, line height
-  shown as a multiple; reset clears the properties rather than storing defaults. The
-  text menu is down from thirteen buttons to six.
-- **Font popover** — face, size and style in one panel, replacing three buttons that
-  each had to be cycled or dragged. Two-state B/I/U/S toggles (the controls style the
-  whole object, so there is no partial state), a size field that is not capped by its
-  slider, and `text-decoration` finally stored — nothing saved it before, so underline
-  and strikethrough would have vanished on reload. Built on `$.glue.popover`, the colour
-  picker's placement rule lifted out so every panel lands the same way.
-- **A smaller colour picker, with the page's recent colours** — roughly half its old
-  250x315, plus the last five colours used on that page as swatches above the hex field,
-  stored on the page object (`page-recent-colors`) so they are there for whoever opens
-  the page next — seven of them, which is what the row's width allows. It opens in the nearest free space beside the object rather than at the
-  pointer, which used to put it on top of the thing being recoloured, and it has a
-  transparency slider: the alpha of that one colour, which the object-transparency button
-  cannot express since it fades the whole object at once. Both controls exist for now.
-  The alpha is a slider and a number field in percent — the same row the font and spacing
-  panels use (`$.glue.popover.number_row`) — rather than vanilla-picker's gradient bar,
-  which showed the effect of the value without ever showing the value. It writes a `rotate(Ndeg)` term into the
-  object's own transform, alongside whatever flip the flip button set — the two used to
-  overwrite each other, which was invisible from either control on its own. A
-  90°-per-click button was built first and dropped: once the handle existed it was a
-  second, worse way to the same value.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
   described as coming from, finally written. `js/mobile-guided.js` is the only script a
   visitor to a published page downloads, and now ships at 4KB gzipped instead of 11KB.
+
+Shipped 2026-08-23 — a day on the editor's own chrome:
+
+- **The SuperGlue icon set, first batch wired.** `tools/prep-icons.js` regenerates
+  `img/icons/` from the upstream artwork and honours its `extra/` folder of redraws;
+  `$.glue.icon()` builds a button from one by name. Ten are in use, and the text menu is
+  now almost entirely SVG. Details, including the licence question that still blocks
+  release, under *Icon set refresh* below.
+- **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
+  top is where the menu is), snapping to 15° by default with shift releasing it to any
+  angle: the opposite of the usual binding, on the grounds that a heading accidentally
+  left at 7° is the startling outcome, not a constrained one. It writes a `rotate(Ndeg)`
+  term into the object's own transform, alongside whatever flip the flip button set —
+  the two used to overwrite each other, which was invisible from either control alone. A
+  90°-per-click button was built first and dropped: once the handle existed it was a
+  second, worse way to the same value.
+- **Handles outside the object** — resize handles used to straddle the edge, half of
+  each lying over the author's content, against the design codex's "no menu or interface
+  shall interfere with page elements". They sit 5px clear of it now, and the offset turns
+  with the object: as a margin it was screen-space, so it pushed handles INTO anything
+  rotated past 90°.
+- **The chrome stays aligned to the object it belongs to.** The context menu is placed
+  from the object's VISUAL box rather than its layout box (which a transform does not
+  change), `$.glue.contextmenu.reposition()` runs that placement again on rotateEnd,
+  resizeEnd and after an undo instead of only when the menu is built, and the handle
+  offsets read their angle off the element's own matrix rather than Moveable's cached
+  rect. Each of the three was a different way of describing the object as it was a
+  moment ago.
+- **`$.glue.popover`** — the placement rule ("beside the object, never over it, nearest
+  the pointer that still fits") and the slider-and-field row, lifted out of the colour
+  picker and the text module so the panels cannot drift apart. Three controls use the
+  same row now: font size, the text spacings, and the picker's alpha.
+- **Font popover** — face, size and style in one panel, replacing three buttons that
+  each had to be cycled or dragged. Two-state B/I/U/S toggles (the controls style the
+  whole object, so there is no partial state to show), a size field that is not capped by
+  its slider, and `text-decoration` finally stored — nothing saved it before, so
+  underline and strikethrough would have vanished on reload.
+- **Spacing popover** — line height, letter spacing, word spacing, alignment and a
+  reset, replacing four buttons: three that had to be dragged (where a click meant
+  "reset", which nothing told you) and the alignment cycle. Spacings in em, line height
+  shown as a multiple; reset clears the properties rather than storing defaults. Between
+  the two panels the text menu is down from thirteen buttons to six.
+- **The colour picker, reworked.** Half its old 250x315. It opens in the nearest free
+  space beside the object rather than at the pointer, which used to put it on top of the
+  thing being recoloured, and the speech-bubble tail went with that. Transparency is a
+  slider and a number field in percent rather than vanilla-picker's gradient bar, which
+  showed the effect of the value without ever showing the value — note it is the alpha
+  of that one colour, which the object-transparency button cannot express since it fades
+  everything at once; both controls exist for now. The sample is square, the hex field
+  fits `#rrggbbaa`, and the seven most recent colours on the page are swatches above it,
+  stored as `page-recent-colors` so they are there for whoever opens the page next. A new
+  text object now takes the most recent of them instead of a random colour, so a run of
+  them comes out in the palette being worked in.
+
+Bugs found while building the above, each invisible from reading the code:
+
+- Moveable's control box sat at z-index 99999 (inherited from matching jQuery UI's old
+  handles), which put the resize handles above every piece of editor UI — including the
+  colour picker opened from the menu of the very object whose handles then painted over
+  it. Only visible when a handle happened to land on the picker's gradient square.
+- vanilla-picker builds its wrapper ONCE and reuses it; hiding the picker only detaches
+  the anchor. Anything added to that wrapper is still there next time it opens, so the
+  alpha row grew a copy per open.
+- The flip button read the transform through `getComputedStyle()`, which flattens the
+  function list to a single `matrix()`. A rotated object matched none of the flip states,
+  so flipping it silently wiped the rotation.
+- Two icon names are swapped in the upstream set: `align-left.svg` draws lines centred
+  and `align-center.svg` draws them flush left. The buttons are mapped by what the
+  artwork shows.
+- In the test harness, not the app: `Fixture.readObject()` threw ENOENT for an object
+  file that did not exist yet, which makes `expect.poll()` fail outright instead of
+  retrying — an intermittent failure in whichever test polled before the first save
+  landed.
 
 Bugs the tests found that nobody had reported — worth noting, because each was invisible
 from reading the code:
@@ -170,9 +209,10 @@ from reading the code:
   upstream artwork (54 icons, 206K → 38K: the source files are ~85% Inkscape metadata,
   RDF and attribution blocks that a mask never reads). An `extra/` subdirectory of the
   source holds REDRAWN replacements under the same names, and the tool converts those
-  last so they win — copying one in by hand would be undone by the next regeneration. `$.glue.icon(name, title)` in
-  `js/glue.js` builds a button from a file in there by plain name. Adding an icon is now
-  a drop-in: put the file upstream, re-run the tool, call `$.glue.icon('thing')`.
+  last so they win — copying one in by hand would be undone by the next regeneration.
+  `$.glue.icon(name, title)` in `js/glue.js` builds a button from a file in there by
+  plain name. Adding an icon is a drop-in: put the file upstream, re-run the tool, call
+  `$.glue.icon('thing')`.
 
   The icons are **one colour plus transparency, and that colour is white** — invisible on
   this editor's light chrome. So they are applied as a CSS `mask-image` with the visible
@@ -190,11 +230,11 @@ from reading the code:
 
   Wired so far: `clone` (the first one, replacing a PNG), `undo`, `redo`, `hyperlink`,
   `font-color`, `background-color`, `background-color-remove`, `super-user` (the `</>`
-  source toggle, which the artwork spells out exactly), `font-size` (the text menu's Font
-  panel), `vertical-stack-space` (its Spacing panel), the four `align-*` inside that panel, and the layout toggle via
-  `composition-mode-absolute`/`-centered`. The icon shows the
-  mode you are switching TO, preserving the old split where the tooltip describes the
-  present and the button names the destination.
+  source toggle, which the artwork spells out exactly), `font-size` (the text menu's
+  Font panel), `vertical-stack-space` (its Spacing panel), the four `align-*` inside
+  that panel, and the layout toggle via `composition-mode-absolute`/`-centered` — that
+  last one shows the mode you are switching TO, preserving the old split where the
+  tooltip describes the present and the button names the destination.
 
   **Still needs drawing** — one placeholder left on `.glue-btn-label`:
 
@@ -251,11 +291,13 @@ from reading the code:
   Worth doing once, as a pattern, rather than six times as six dialogs: the marker, the
   panel and the commit/cancel behaviour should be the same wherever it appears, or it
   stops reading as a single affordance. Note the pieces that already exist and should be
-  folded in rather than duplicated — the colour picker's hex field is exactly this idea
-  (and is what made shrinking the picker safe), the Object Properties dialog already
-  edits some values as text, and `$.glue.rangeslider` is the drag half of the same
-  problem. If the contextual per-object toolbar above is ever picked up, this belongs
-  inside it.
+  folded in rather than duplicated — `$.glue.popover.number_row()` is now this idea for
+  three controls (a slider paired with a field that is not capped by it), the colour
+  picker's hex field is it for a colour, the Object Properties dialog already edits some
+  values as text, and `$.glue.rangeslider` is the drag half of the same problem. What is
+  left is the controls that have no panel to put a field in — position, size, z-index —
+  which is where the marked corner comes in. If the contextual per-object toolbar above
+  is ever picked up, this belongs inside it.
 - **Local JS build** — partly addressed and deliberately stopped short. `tools/make-min.js`
   now generates a `.min.js` copy by stripping whole-line comments, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source, so the
