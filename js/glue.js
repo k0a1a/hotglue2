@@ -190,3 +190,32 @@ $.glue.toggle_button = function(elem, sync_fn, toggle_fn, enabled_title, disable
 	elem.setAttribute('x-on:click', toggle_fn+'($el)');
 	return elem;
 };
+
+// builds a menu button backed by the SuperGlue SVG icon set in img/icons.
+// Returns a 32x32 <div>, not an <img>, because the artwork is white on
+// transparent and this editor's chrome is light: the SVG goes in as a CSS
+// mask (see .glue-btn-icon in css/edit.css) and the visible colour, including
+// hover and on/off state, is set in CSS. Callers treat the result exactly
+// like the <img> buttons it sits next to - $.glue.owner(), the click handler
+// and menu/contextmenu.register() all work on any element.
+// name is a file in img/icons without the extension ('clone', 'undo', ...).
+$.glue.icon = function(name, title) {
+	var elem = document.createElement('div');
+	elem.className = 'glue-btn-icon';
+	elem.style.width = '32px';
+	elem.style.height = '32px';
+	// Resolved against the document here rather than left relative. A relative
+	// url() inside a custom property is resolved where the var() is USED, and
+	// that is css/edit.css - so 'img/icons/x.svg' would be fetched from
+	// /css/img/icons/x.svg, 404, and the mask would silently paint nothing at
+	// all (not even a broken-image marker: a mask that fails to load masks
+	// everything out). document.baseURI keeps the property base_url exists for
+	// - it is whatever domain the editor is actually being viewed through,
+	// not the configured BASE_URL.
+	var url = new URL($.glue.base_url+'img/icons/'+name+'.svg', document.baseURI).href;
+	elem.style.setProperty('--glue-icon', 'url("'+url+'")');
+	if (title !== undefined) {
+		elem.title = title;
+	}
+	return elem;
+};

@@ -427,26 +427,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.menu.register('page', elem, 13);
 
 	// centered/infinite layout toggle
-	elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontSize = '11px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.lineHeight = '32px';
-	elem.style.textAlign = 'center';
-	elem.style.width = '32px';
-	// text placeholder, like the other new buttons - this menu wants a real
-	// icon set eventually
-	elem.className = 'glue-btn-label';
-	elem.innerHTML = '<small>' +
-		($.glue.conf.page.layout_mode == 'centered' ? 'wide' : 'centre') + '</small>';
-	elem.title = $.glue.conf.page.layout_mode == 'centered' ?
-		'page content is centered in a fixed-width container - click for the unbounded canvas' :
-		'page content sits on an unbounded canvas - click to center it in a fixed-width container';
+	// The label used to name the destination ("wide" while centered) while the
+	// tooltip described the present, and the icon keeps that split: it shows
+	// the mode you are about to switch TO, not the one you are in. Picked once
+	// here because toggling reloads the page.
+	elem = $.glue.conf.page.layout_mode == 'centered' ?
+		$.glue.icon('composition-mode-absolute',
+			'page content is centered in a fixed-width container - click for the unbounded canvas') :
+		$.glue.icon('composition-mode-centered',
+			'page content sits on an unbounded canvas - click to center it in a fixed-width container');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_layout_toggle();

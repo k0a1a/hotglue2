@@ -749,23 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// text content (it finds and disables them while editing) - this
 	// button just gives an easier way to insert one than hand-typing the
 	// raw HTML into the textarea
-	elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontSize = '11px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.width = '32px';
-	elem.style.lineHeight = '32px';
-	elem.style.textAlign = 'center';
-	elem.title = 'turn the selected text into a link, or edit a link';
-	// text placeholder until this menu gets a proper icon set, like the
-	// other buttons here have
-	elem.className = 'glue-btn-label';
-	elem.innerHTML = '<small>link</small>';
+	elem = $.glue.icon('hyperlink', 'turn the selected text into a link, or edit a link');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var input = obj.querySelector(':scope > .glue-text-input');

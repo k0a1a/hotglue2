@@ -302,12 +302,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// register menu items
 	//
 	var elem;
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/object/object-clone.png';
-	elem.alt = 'btn';
-	elem.title = 'clone object';
-	elem.width = 32;
-	elem.height = 32;
+	// first button on the new SVG icon set (img/icons) - see $.glue.icon
+	elem = $.glue.icon('clone', 'clone object');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {

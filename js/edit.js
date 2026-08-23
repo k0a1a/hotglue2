@@ -1590,46 +1590,16 @@ $.glue.undo = function()
 
 document.addEventListener('DOMContentLoaded', function() {
 	// visible "Undo" entry in the single-click ("new") menu, not just the
-	// Ctrl+Z shortcut - plain text glyph rather than a new binary icon asset
-	var elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontSize = '11px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.width = '32px';
-	elem.style.lineHeight = '32px';
-	elem.style.textAlign = 'center';
-	elem.title = 'undo the last change';
-	// text placeholder until this menu gets a proper icon set
-	elem.className = 'glue-btn-label';
-	elem.innerHTML = '<small>undo</small>';
+	// Ctrl+Z shortcut
+	var elem = $.glue.icon('undo', 'undo the last change');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.undo();
 	});
 	$.glue.menu.register('new', elem, 20);
 
-	// visible "Redo" entry, same styling, next to Undo
-	var redo_elem = document.createElement('div');
-	redo_elem.style.alignItems = 'center';
-	redo_elem.style.backgroundColor = '#eee';
-	redo_elem.style.border = '1px solid #000';
-	redo_elem.style.boxSizing = 'border-box';
-	redo_elem.style.display = 'flex';
-	redo_elem.style.fontSize = '11px';
-	redo_elem.style.height = '32px';
-	redo_elem.style.justifyContent = 'center';
-	redo_elem.style.width = '32px';
-	redo_elem.style.lineHeight = '32px';
-	redo_elem.style.textAlign = 'center';
-	redo_elem.title = 'redo the last undone change';
-	// text placeholder until this menu gets a proper icon set
-	redo_elem.className = 'glue-btn-label';
-	redo_elem.innerHTML = '<small>redo</small>';
+	// visible "Redo" entry, next to Undo
+	var redo_elem = $.glue.icon('redo', 'redo the last undone change');
 	redo_elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.redo();
