@@ -35,18 +35,22 @@ async function select(page, id) {
 	await page.waitForTimeout(400);
 }
 
-// swing the rotation handle around the object's centre to 'angle' degrees
-// clockwise from straight up, which is where the handle sits at rest
-async function dragHandle(page, id, angle, opts = {}) {
+// swing the rotation handle 'sweep' degrees clockwise around the object's
+// centre, from wherever it currently sits. What Moveable reports is the angle
+// swept since the press, so the test does not need to know which edge the
+// handle hangs off - only how far it moved.
+async function dragHandle(page, id, sweep, opts = {}) {
 	const obj = await byId(page, id).boundingBox();
 	const handle = await page.locator('.moveable-rotation-control').first().boundingBox();
 	const cx = obj.x + obj.width/2, cy = obj.y + obj.height/2;
-	const r = cy - (handle.y + handle.height/2);
-	const rad = angle*Math.PI/180;
-	await page.mouse.move(handle.x + handle.width/2, handle.y + handle.height/2);
+	const hx = handle.x + handle.width/2, hy = handle.y + handle.height/2;
+	const r = Math.hypot(hx - cx, hy - cy);
+	const from = Math.atan2(hy - cy, hx - cx);
+	const to = from + sweep*Math.PI/180;
+	await page.mouse.move(hx, hy);
 	await page.mouse.down();
 	if (opts.shift) await page.keyboard.down('Shift');
-	await page.mouse.move(cx + r*Math.sin(rad), cy - r*Math.cos(rad), { steps: 20 });
+	await page.mouse.move(cx + r*Math.cos(to), cy + r*Math.sin(to), { steps: 20 });
 	await page.mouse.up();
 	if (opts.shift) await page.keyboard.up('Shift');
 }
@@ -89,6 +93,16 @@ test('the handle appears with the selection and goes with it', async ({ page, hg
 	// outright for the bounding box Moveable draws - the rotation one has to
 	// survive that or the handle floats unattached
 	await expect(page.locator('.moveable-rotation-line').first()).toBeVisible();
+
+	// out of the RIGHT edge, not above the object: the top row of menu
+	// buttons is up there and the handle used to land in among them
+	const obj = await byId(page, a).boundingBox();
+	const handle = await page.locator('.moveable-rotation-control').first().boundingBox();
+	expect(handle.x, 'the handle should hang off the right edge')
+		.toBeGreaterThan(obj.x + obj.width);
+	const hy = handle.y + handle.height/2;
+	expect(hy).toBeGreaterThan(obj.y);
+	expect(hy).toBeLessThan(obj.y + obj.height);
 
 	await page.mouse.click(50, 50);
 	await expect(page.locator('.moveable-rotation-control')).toHaveCount(0);

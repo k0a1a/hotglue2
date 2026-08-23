@@ -133,6 +133,13 @@ $.glue.live('.object', 'glue-select', function(e) {
 		});
 	}
 	m.rotatable = true;
+	// Out of the middle of the RIGHT edge, where it emerges from the 'e'
+	// resize handle, rather than Moveable's default position above the box:
+	// that is exactly where contextmenu.show() puts the top row of menu
+	// buttons, so the handle landed among them and the two fought over the
+	// same pixels. The right edge is clear - the left-hand column is on the
+	// other side and the top row stops at the object's corner.
+	m.rotationPosition = 'right';
 });
 
 $.glue.live('.object', 'glue-deselect', function(e) {
