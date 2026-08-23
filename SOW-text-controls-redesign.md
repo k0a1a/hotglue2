@@ -54,6 +54,10 @@ slider (its alpha, not the object's opacity).
 - **Color** (standalone button) — UNCHANGED, keeps calling the existing color picker.
   Color is frequent and already works; leave it as its own button.
 
+  *(The picker itself was reworked separately — half the size, placed beside the object,
+  a transparency row and per-page recent colours — and the LINK dialog became a rollout
+  on the same popover machinery as Font and Spacing. Neither changed this plan.)*
+
 **Padding** (the 8th button): REMOVE from the text-controls row. It's the text's inset
 from the object's sides — a property of the object/container, not typography. It is
 ALSO currently BROKEN. Relocate it to the Object Properties feature

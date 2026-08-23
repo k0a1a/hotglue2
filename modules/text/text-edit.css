@@ -159,3 +159,38 @@
 .glue-align-on {
 	background-color: #333 !important;
 }
+
+/* --- link popover ------------------------------------------------------- */
+
+.glue-link-popover {
+	/* wider than the other two: a url is long, and a field it cannot be read
+	   in is a field people paste into blind */
+	width: 280px;
+}
+
+.glue-link-popover .glue-popover-label {
+	width: 34px;
+}
+
+.glue-link-field {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: 11px;
+	box-sizing: border-box;
+}
+
+.glue-link-buttons {
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.glue-link-buttons button {
+	font-size: 11px;
+	padding: 2px 8px;
+	cursor: pointer;
+}
+
+.glue-link-ok {
+	/* the commit, at the end of the row */
+	margin-left: auto;
+}

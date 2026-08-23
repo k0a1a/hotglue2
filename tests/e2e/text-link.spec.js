@@ -53,9 +53,9 @@ async function select(page, id, needle, collapse) {
 }
 
 const openDialog = (page) => page.getByTitle(/turn the selected text into a link/).click();
-const urlField = (page) => page.locator('.glue-modal-field input').first();
-const classField = (page) => page.locator('.glue-modal-field input').nth(1);
-const okButton = (page) => page.locator('.glue-modal-buttons button:has-text("OK")');
+const urlField = (page) => page.locator('.glue-link-field').first();
+const classField = (page) => page.locator('.glue-link-field').nth(1);
+const okButton = (page) => page.locator('.glue-link-buttons button:has-text("OK")');
 
 async function finish(page, id) {
 	await page.evaluate((i) => window.$.glue.text.stop_editing(document.getElementById(i)), id);
@@ -121,7 +121,7 @@ test('javascript: and data: urls are refused', async ({ page, hg }) => {
 
 	for (const bad of ['javascript:alert(1)', 'data:text/html,<script>1</script>']) {
 		await urlField(page).fill(bad);
-		await expect(page.locator('.glue-tag-problem')).toContainText('not allowed');
+		await expect(page.locator('.glue-popover-problem')).toContainText('not allowed');
 		await expect(okButton(page)).toBeDisabled();
 	}
 	await urlField(page).fill('');
@@ -164,7 +164,7 @@ test('an existing link is pre-filled, editable and removable', async ({ page, hg
 	await startEditing(page, a);
 	await select(page, a, 'this', true);
 	await openDialog(page);
-	await page.locator('.glue-modal-buttons button:has-text("Remove link")').click();
+	await page.locator('.glue-link-buttons button:has-text("Remove link")').click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('see this now');
 });
@@ -214,4 +214,86 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 	await expect(ta).toBeFocused();
 	expect(await ta.inputValue(), 'source mode should show the literal markup')
 		.toBe('see <a href="https://example.org/">this</a> now');
+});
+
+// --- the panel, rather than the modal it used to be ----------------------
+//
+// It was a modal: a backdrop across the whole page for two fields and a
+// button, centred on the viewport and therefore usually on top of the very
+// text being linked. It is a rollout beside the object now, on the same
+// machinery as the font and spacing panels - which means it closes the way
+// they do, and that the editor's canvas shortcuts had to learn to leave a
+// focused field alone.
+
+test('the link panel opens beside the object, not over it', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+	await select(page, a, 'world');
+	await openDialog(page);
+
+	const pop = await page.locator('.glue-link-popover').boundingBox();
+	const obj = await byId(page, a).boundingBox();
+	const overlaps = pop.x < obj.x + obj.width && obj.x < pop.x + pop.width &&
+		pop.y < obj.y + obj.height && obj.y < pop.y + pop.height;
+	expect(overlaps, 'the panel is sitting on top of the text it is linking').toBe(false);
+	// and no backdrop over the page
+	expect(await page.locator('.glue-modal-backdrop').count()).toBe(0);
+});
+
+test('Escape closes it without linking anything', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+	await select(page, a, 'world');
+	await openDialog(page);
+
+	await urlField(page).fill('https://example.org');
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-link-popover')).toHaveCount(0);
+	await finish(page, a);
+	await expect.poll(() => hg.readObject('100000000001').content)
+		.not.toContain('<a');
+});
+
+test('Enter in the url field is the same as OK', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+	await select(page, a, 'world');
+	await openDialog(page);
+
+	await urlField(page).fill('https://example.org');
+	await urlField(page).press('Enter');
+	await expect(page.locator('.glue-link-popover')).toHaveCount(0);
+	await finish(page, a);
+	await expect.poll(() => hg.readObject('100000000001').content)
+		.toContain('href="https://example.org"');
+});
+
+test('the canvas shortcuts leave a focused field alone', async ({ page, hg }) => {
+	// Delete is handled on keyup on documentElement and deletes the selected
+	// object; clearing the url field with it took the object with it. Same
+	// for ctrl+a, which selected every object on the page, and the arrows,
+	// which nudged them. The two text editing surfaces had solved this for
+	// themselves by stopping propagation; the editor's own inputs had not.
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+	await select(page, a, 'world');
+	await openDialog(page);
+
+	await urlField(page).fill('https://example.org/a');
+	await urlField(page).press('Control+a');
+	await urlField(page).press('Delete');
+	await urlField(page).press('ArrowLeft');
+
+	// still open, still one object, still selected
+	await expect(page.locator('.glue-link-popover')).toHaveCount(1);
+	await expect(byId(page, a)).toHaveCount(1);
+	await expect(urlField(page)).toHaveValue('');
 });

@@ -83,9 +83,16 @@ class Fixture {
 		return `/?${this.pageName}/edit`;
 	}
 
+	// Teardown races the application: a save the editor started as the test
+	// ended is still landing, and a file that appears while rmSync is walking
+	// the tree makes the rmdir fail with ENOTEMPTY - which fails the test
+	// AFTER every assertion in it has passed. That is the whole family of
+	// unreproducible one-off failures this suite had: always a different
+	// test, always fast, never on a rerun. maxRetries is what rmSync has for
+	// exactly this.
 	destroy() {
 		fs.rmSync(path.join(CONTENT, this.pageName.split('.')[0]), {
-			recursive: true, force: true,
+			recursive: true, force: true, maxRetries: 10, retryDelay: 50,
 		});
 	}
 }

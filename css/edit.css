@@ -497,6 +497,20 @@
 	user-select: none;
 }
 
+.glue-popover-note {
+	/* what a panel is about to act on - which text is being linked, say.
+	   Reads as a caption rather than as a control. */
+	color: #666;
+	margin-bottom: 5px;
+}
+
+.glue-popover-problem {
+	/* why the panel will not commit yet */
+	color: #c00;
+	margin-bottom: 5px;
+	min-height: 14px;
+}
+
 .glue-popover-row {
 	/* one row of a popover: a label, then whatever it names. Built by
 	   $.glue.popover.row() / .number_row(), and shared by the font panel, the

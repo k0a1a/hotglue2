@@ -526,65 +526,101 @@ function text_link_at(value, start, end) {
 //   href, cls   .. current values, '' for a new link
 //   note        .. what the dialog is acting on, shown to the user
 //   on_save(href, cls), on_remove (omitted for a new link)
+// The link panel: a rollout beside the object, not a modal over it.
+//
+// It was a modal, which meant a backdrop across the whole page for what is
+// two fields and a button - and, being centred, it landed on top of the text
+// whose link was being edited. Same panel as the font and spacing ones now:
+// placed in the free space beside the object, closed by Escape or a click
+// outside.
+//
+// Unlike those two it does NOT apply live. They set a property that can be
+// looked at and adjusted; this rewrites the object's markup around a
+// selection, so it commits once, on OK.
+//
+// opts .. obj (what the panel belongs to), note, href, cls,
+//         on_save(href, cls), on_remove (only when editing an existing link)
 function text_link_ui(opts) {
-	var m = $.glue.modal.open(opts.on_remove ? 'edit link' : 'make link');
+	var pop = text_popover_open(opts.obj, 'glue-link-popover');
+	if (!pop) {
+		return;
+	}
 
-	function field(labelText, value) {
-		var label = document.createElement('label');
-		label.className = 'glue-modal-field';
-		var span = document.createElement('span');
-		span.textContent = labelText;
+	var note = document.createElement('div');
+	note.className = 'glue-popover-note';
+	note.textContent = opts.note;
+	pop.appendChild(note);
+
+	function field(label, value) {
+		var row = $.glue.popover.row(label);
 		var inp = document.createElement('input');
 		inp.type = 'text';
+		inp.className = 'glue-link-field';
 		inp.value = value || '';
-		label.appendChild(span);
-		label.appendChild(inp);
-		m.modal.appendChild(label);
+		row.appendChild(inp);
+		pop.appendChild(row);
 		return inp;
 	}
 
-	var what = document.createElement('div');
-	what.className = 'glue-modal-note';
-	what.textContent = opts.note;
-	m.modal.appendChild(what);
-
-	var url_input = field('URL', opts.href || 'https://');
-	var class_input = field('class (optional, for your own CSS)', opts.cls || '');
+	var url_input = field('url', opts.href || 'https://');
+	var class_input = field('class', opts.cls || '');
+	class_input.title = 'optional, for your own CSS';
 
 	var problem = document.createElement('div');
-	problem.className = 'glue-tag-problem';
-	m.modal.appendChild(problem);
+	problem.className = 'glue-popover-problem';
+	pop.appendChild(problem);
 
-	var buttons = $.glue.modal.buttons(m.modal, function() {
-		if (!validate()) {
-			return;
-		}
-		var href = text_link_normalize(url_input.value);
-		var cls = class_input.value.trim();
-		m.close();
-		opts.on_save(href, cls);
-	}, m.close);
-
+	var buttons = $.glue.popover.row(false);
+	buttons.classList.add('glue-link-buttons');
 	if (opts.on_remove) {
 		var remove = document.createElement('button');
 		remove.type = 'button';
 		remove.textContent = 'Remove link';
 		remove.addEventListener('click', function() {
-			m.close();
+			text_popover_close();
 			opts.on_remove();
 		});
-		buttons.row.insertBefore(remove, buttons.row.firstChild);
+		buttons.appendChild(remove);
 	}
+	var ok = document.createElement('button');
+	ok.type = 'button';
+	ok.textContent = 'OK';
+	ok.className = 'glue-link-ok';
+	var save = function() {
+		if (!validate()) {
+			return;
+		}
+		var href = text_link_normalize(url_input.value);
+		var cls = class_input.value.trim();
+		text_popover_close();
+		opts.on_save(href, cls);
+	};
+	ok.addEventListener('click', save);
+	buttons.appendChild(ok);
+	pop.appendChild(buttons);
 
 	function validate() {
 		var msg = text_link_url_problem(url_input.value);
 		url_input.classList.toggle('glue-tag-invalid', !!msg);
 		problem.textContent = msg || '';
-		buttons.ok.disabled = !!msg;
+		ok.disabled = !!msg;
 		return !msg;
 	}
 	url_input.addEventListener('input', validate);
+	// Enter is the same as OK, in either field: this panel commits rather
+	// than applying live, so it needs a way to say "that is the value" from
+	// the keyboard
+	[url_input, class_input].forEach(function(inp) {
+		inp.addEventListener('keydown', function(e) {
+			if (e.key == 'Enter') {
+				e.preventDefault();
+				save();
+			}
+		});
+	});
 	validate();
+
+	text_popover_show(pop);
 	url_input.focus();
 	url_input.select();
 }
@@ -606,6 +642,7 @@ function text_link_dialog(obj, input, start, end) {
 	}
 	var plain = (existing ? existing.text : selected).replace(/<[^>]*>/g, '').substring(0, 40);
 	text_link_ui({
+		obj: obj,
 		href: existing ? existing.href : '',
 		cls: existing ? existing.cls : '',
 		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',
@@ -643,6 +680,7 @@ function text_link_dialog_dom(obj, render) {
 	}
 	var plain = (existing ? existing.textContent : range.toString()).substring(0, 40);
 	text_link_ui({
+		obj: obj,
 		href: existing ? existing.getAttribute('href') || '' : '',
 		cls: existing ? existing.className : '',
 		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',

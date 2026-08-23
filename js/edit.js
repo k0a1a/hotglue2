@@ -2174,7 +2174,29 @@ $.glue.sel = function()
 		}
 	});
 
+	// Keys typed into a form field belong to that field, not to the canvas.
+	// The two listeners below act on the SELECTION - tab cycles objects, the
+	// arrows nudge them, ctrl+a selects all of them, delete deletes them -
+	// and none of that should happen while someone is typing a url into the
+	// link panel or a number into the font panel. Ctrl+Z had its own version
+	// of this check because undo was the case someone hit; the rest were just
+	// as wrong and nobody had tried them from a field yet.
+	//
+	// The two editing surfaces solved this for themselves years ago by
+	// stopping propagation (the textarea, and modules/text/text-edit.js:245
+	// for the contenteditable render). That works for a whole surface; it
+	// does not help the editor's own inputs, which are scattered across
+	// panels and dialogs. contenteditable is still listed here so the render
+	// is covered either way.
+	var typing_in_a_field = function(e) {
+		return !!(e.target && e.target.closest && e.target.closest(
+			'input, textarea, select, [contenteditable=""], [contenteditable="true"]'));
+	};
+
 	document.documentElement.addEventListener('keydown', function(e) {
+		if (typing_in_a_field(e)) {
+			return;
+		}
 		if (e.which == 9) {
 			// cycle through all objects with tab key
 			if (document.querySelectorAll('.glue-selected').length < 2) {
@@ -2320,6 +2342,12 @@ $.glue.sel = function()
 	});
 
 	document.documentElement.addEventListener('keyup', function(e) {
+		// same as above - and this is the listener that matters most, since
+		// DELETE is handled here: pressing it while clearing a url field took
+		// the object with it
+		if (typing_in_a_field(e)) {
+			return;
+		}
 		if (33 == e.which && e.shiftKey && document.querySelectorAll('.glue-selected').length) {
 			// shift+pageup: move objects to top of stack
 			$.glue.undo.begin_batch();
@@ -3258,11 +3286,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			e.preventDefault();
 			return false;
 		} else if (e.ctrlKey && e.which == 90) {
-			// ctrl+z: undo (let native undo handle in-progress text editing -
-			// there's no contenteditable anywhere, text editing is textarea-based)
-			if (document.activeElement && (document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT')) {
-				return;
-			}
+			// ctrl+z: undo. Typing in a field is handled by the guard at the
+			// top of this listener, which leaves the browser's own undo to
+			// the field it belongs to.
 			$.glue.undo.undo();
 			e.preventDefault();
 			return false;

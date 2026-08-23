@@ -95,7 +95,7 @@ Shipped 2026-08-22:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **374 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **382 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
@@ -138,6 +138,10 @@ Shipped 2026-08-23 — a day on the editor's own chrome:
   whole object, so there is no partial state to show), a size field that is not capped by
   its slider, and `text-decoration` finally stored — nothing saved it before, so
   underline and strikethrough would have vanished on reload.
+- **The link panel is a rollout**, not a modal: two fields and a button no longer come
+  with a backdrop across the page, and it opens beside the object instead of centred on
+  the viewport — which is to say, on top of the text being linked. It commits on OK
+  rather than applying live, since it rewrites markup around a selection.
 - **Spacing popover** — line height, letter spacing, word spacing, alignment and a
   reset, replacing four buttons: three that had to be dragged (where a click meant
   "reset", which nothing told you) and the alignment cycle. Spacings in em, line height
@@ -157,6 +161,11 @@ Shipped 2026-08-23 — a day on the editor's own chrome:
 
 Bugs found while building the above, each invisible from reading the code:
 
+- The editor's canvas shortcuts fired while a field had focus: Delete (handled on
+  KEYUP, which is why the earlier keydown guard missed it) deleted the selected object
+  while you cleared a url, ctrl+a selected every object on the page, and the arrows
+  nudged them. The two text editing surfaces had each solved this for themselves by
+  stopping propagation; the editor's own inputs never had one.
 - Moveable's control box sat at z-index 99999 (inherited from matching jQuery UI's old
   handles), which put the resize handles above every piece of editor UI — including the
   colour picker opened from the menu of the very object whose handles then painted over
@@ -170,10 +179,14 @@ Bugs found while building the above, each invisible from reading the code:
 - Two icon names are swapped in the upstream set: `align-left.svg` draws lines centred
   and `align-center.svg` draws them flush left. The buttons are mapped by what the
   artwork shows.
-- In the test harness, not the app: `Fixture.readObject()` threw ENOENT for an object
-  file that did not exist yet, which makes `expect.poll()` fail outright instead of
-  retrying — an intermittent failure in whichever test polled before the first save
-  landed.
+- In the test harness, not the app, and the cause of nearly every unreproducible
+  failure this suite has had: `Fixture.destroy()` removes the page directory in
+  teardown while the editor is still landing a save it started as the test ended, and a
+  file appearing mid-walk makes the rmdir fail with ENOTEMPTY — failing the test AFTER
+  every assertion in it had passed. Always a different test, always fast, never on a
+  rerun. `rmSync`'s `maxRetries` is for exactly this.
+- Also the harness: `Fixture.readObject()` threw ENOENT for an object file that did not
+  exist yet, which makes `expect.poll()` fail outright instead of retrying.
 
 Bugs the tests found that nobody had reported — worth noting, because each was invisible
 from reading the code:
