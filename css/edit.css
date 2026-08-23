@@ -679,3 +679,9 @@
 	background-color: #c00;
 }
 
+
+.glue-edge-popover {
+	/* two number rows and a reset - narrower than the text panels, which
+	   carry a dropdown and four toggles */
+	width: 190px;
+}

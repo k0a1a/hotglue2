@@ -259,6 +259,20 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-overflow'])) {
 		elem_css($elem, 'overflow', $obj['object-overflow']);
 	}
+	// rounded corners
+	if (!empty($obj['object-border-radius'])) {
+		elem_css($elem, 'border-radius', $obj['object-border-radius']);
+	}
+	// A soft edge: the NUMBER is stored, and one rule in css/main.css builds
+	// the mask from it - see .glue-edge-fade there. Storing the gradient
+	// itself would put commas and quotes in the object file and write the
+	// same gradient out in two places (here and the editor) that would have
+	// to agree forever. The class is what turns the rule on, so objects
+	// nobody has faded carry no mask at all.
+	if (!empty($obj['object-edge-fade'])) {
+		elem_css($elem, '--glue-fade', $obj['object-edge-fade']);
+		elem_add_class($elem, 'glue-edge-fade');
+	}
 	elem_css($elem, 'position', 'absolute');
 	if (!empty($obj['object-top'])) {
 		elem_css($elem, 'top', $obj['object-top']);
@@ -365,6 +379,18 @@ function object_alter_save($args)
 		$obj['object-overflow'] = elem_css($elem, 'overflow');
 	} else {
 		unset($obj['object-overflow']);
+	}
+	if (elem_css($elem, 'border-radius') !== NULL) {
+		$obj['object-border-radius'] = elem_css($elem, 'border-radius');
+	} else {
+		unset($obj['object-border-radius']);
+	}
+	// see object_render_object(): the number is what is stored, and the
+	// class comes back with it
+	if (elem_css($elem, '--glue-fade') !== NULL) {
+		$obj['object-edge-fade'] = elem_css($elem, '--glue-fade');
+	} else {
+		unset($obj['object-edge-fade']);
 	}
 	if (elem_css($elem, 'top') !== NULL) {
 		$obj['object-top'] = elem_css($elem, 'top');

@@ -541,7 +541,7 @@ function text_link_at(value, start, end) {
 // opts .. obj (what the panel belongs to), note, href, cls,
 //         on_save(href, cls), on_remove (only when editing an existing link)
 function text_link_ui(opts) {
-	var pop = text_popover_open(opts.obj, 'glue-link-popover');
+	var pop = $.glue.popover.open(opts.obj, 'glue-link-popover');
 	if (!pop) {
 		return;
 	}
@@ -577,7 +577,7 @@ function text_link_ui(opts) {
 		remove.type = 'button';
 		remove.textContent = 'Remove link';
 		remove.addEventListener('click', function() {
-			text_popover_close();
+			$.glue.popover.close();
 			opts.on_remove();
 		});
 		buttons.appendChild(remove);
@@ -592,7 +592,7 @@ function text_link_ui(opts) {
 		}
 		var href = text_link_normalize(url_input.value);
 		var cls = class_input.value.trim();
-		text_popover_close();
+		$.glue.popover.close();
 		opts.on_save(href, cls);
 	};
 	ok.addEventListener('click', save);
@@ -620,7 +620,7 @@ function text_link_ui(opts) {
 	});
 	validate();
 
-	text_popover_show(pop);
+	$.glue.popover.show(pop);
 	url_input.focus();
 	url_input.select();
 }
@@ -730,49 +730,9 @@ function text_link_dialog_dom(obj, render) {
 
 // One panel at a time, whichever it is: two open at once would fight for the
 // same free space beside the object.
-var text_popover_elem = false;
-
-function text_popover_close()
-{
-	if (text_popover_elem) {
-		text_popover_elem.remove();
-		text_popover_elem = false;
-	}
-}
-
-// Opens an empty panel for obj, or closes the one that is open if it is
-// already this panel on this object (so the button toggles). Returns the
-// element to fill with rows, or false when it just closed.
-// cls .. a class naming the panel, e.g. 'glue-font-popover'
-function text_popover_open(obj, cls)
-{
-	var same = text_popover_elem && $.glue.owner(text_popover_elem) === obj &&
-		text_popover_elem.classList.contains(cls);
-	text_popover_close();
-	if (same) {
-		return false;
-	}
-	var pop = document.createElement('div');
-	pop.className = 'glue-popover glue-ui '+cls;
-	$.glue.owner(pop, obj);
-	return pop;
-}
-
-// Puts the filled panel on screen. Measured first, so $.glue.popover can fit
-// it into the free space beside the object - which is why it goes into the
-// DOM invisible rather than being positioned before it has a size.
-function text_popover_show(pop)
-{
-	pop.style.visibility = 'hidden';
-	document.body.appendChild(pop);
-	text_popover_elem = pop;
-	$.glue.popover.place(pop, $.glue.popover.pointer());
-	pop.style.visibility = '';
-}
-
 function text_font_popover(obj)
 {
-	var pop = text_popover_open(obj, 'glue-font-popover');
+	var pop = $.glue.popover.open(obj, 'glue-font-popover');
 	if (!pop) {
 		return;
 	}
@@ -980,7 +940,7 @@ function text_font_popover(obj)
 		}));
 	pop.appendChild(style_row);
 
-	text_popover_show(pop);
+	$.glue.popover.show(pop);
 }
 
 //
@@ -1004,7 +964,7 @@ function text_font_popover(obj)
 
 function text_spacing_popover(obj)
 {
-	var pop = text_popover_open(obj, 'glue-spacing-popover');
+	var pop = $.glue.popover.open(obj, 'glue-spacing-popover');
 	if (!pop) {
 		return;
 	}
@@ -1137,34 +1097,8 @@ function text_spacing_popover(obj)
 		}));
 	pop.appendChild(align_row);
 
-	text_popover_show(pop);
+	$.glue.popover.show(pop);
 }
-
-// closed by a click anywhere outside it, like the colour picker. Capture
-// phase, so it closes even when something else stops the click.
-document.documentElement.addEventListener('click', function(e) {
-	if (text_popover_elem && !text_popover_elem.contains(e.target)) {
-		text_popover_close();
-	}
-}, true);
-
-document.documentElement.addEventListener('keydown', function(e) {
-	if (e.key == 'Escape') {
-		text_popover_close();
-	}
-});
-
-// and it does not stay behind when the object it belongs to is dropped or
-// dragged away from under it
-$.glue.live('.object', 'glue-deselect', function(e) {
-	if (text_popover_elem && $.glue.owner(text_popover_elem) === this) {
-		text_popover_close();
-	}
-});
-
-$.glue.live('.object', 'glue-movestart', function(e) {
-	text_popover_close();
-});
 
 document.addEventListener('DOMContentLoaded', function() {
 	//

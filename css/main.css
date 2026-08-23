@@ -28,3 +28,40 @@ a, a:link, a:visited, a:active, a:hover {
 #hg-centered-wrapper > .object {
 	pointer-events: auto;
 }
+
+.object > img, .object > video, .object > iframe {
+	/* Rounded corners (object-border-radius) apply to the OBJECT, and
+	   border-radius does not clip children - so a text object rounds
+	   correctly, because it paints its own background, while an image or a
+	   video keeps square corners inside the rounded box. Inheriting the
+	   radius rounds the media with the object without reaching for
+	   overflow:hidden, which is the author's own separate decision (the
+	   clip/show toggle). */
+	border-radius: inherit;
+}
+
+.glue-edge-fade {
+	/* A soft edge: the object's content fades out towards its edges instead
+	   of stopping at them. module_object.inc.php stores only the DISTANCE, as
+	   --glue-fade, and adds this class; the gradient lives here so there is
+	   one of it rather than one in the editor and one in the renderer.
+
+	   One radial gradient, measured to the farthest CORNER. A radial fades
+	   the corners before the edges by construction - it is an ellipse, and
+	   the corners are the part of the box furthest from the middle - which is
+	   the look this was chosen for. Measuring to the corner rather than to
+	   the nearest side is what keeps it continuous: at a fade of zero the
+	   transparent stop sits exactly on the corner, so nothing is masked at
+	   all, and the corners soften first as the number grows. To the nearest
+	   side, any fade above zero would cut the corners off outright.
+
+	   The class is on the object rather than the rule being on every .object
+	   because a mask costs a compositing layer, and because a mask that goes
+	   wrong hides its element entirely - not something to hand to objects
+	   nobody has touched. */
+	--glue-fade: 0px;
+	-webkit-mask-image: radial-gradient(farthest-corner at center,
+		#000 calc(100% - var(--glue-fade)), transparent 100%);
+	mask-image: radial-gradient(farthest-corner at center,
+		#000 calc(100% - var(--glue-fade)), transparent 100%);
+}

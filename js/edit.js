@@ -226,6 +226,7 @@ $.glue.color = function()
 $.glue.popover = function()
 {
 	var GAP = 10;
+	var open_panel = false;
 
 	var clamp = function(v, max) {
 		return Math.max(0, Math.min(max, v));
@@ -302,6 +303,43 @@ $.glue.popover = function()
 		// where the pointer last was, which is what a popover opens near
 		pointer: function() {
 			return $.glue.colorpicker.last_click();
+		},
+		// Opens an empty panel for obj, or closes the one that is open if it
+		// is already this panel on this object, so the button toggles.
+		// Returns the element to fill with rows, or false when it just
+		// closed. One panel at a time whichever it is: two open at once would
+		// fight over the same free space beside the object.
+		// cls .. a class naming the panel, e.g. 'glue-font-popover'
+		open: function(obj, cls) {
+			var same = open_panel && $.glue.owner(open_panel) === obj &&
+				open_panel.classList.contains(cls);
+			$.glue.popover.close();
+			if (same) {
+				return false;
+			}
+			var pop = document.createElement('div');
+			pop.className = 'glue-popover glue-ui '+cls;
+			$.glue.owner(pop, obj);
+			return pop;
+		},
+		// Puts the filled panel on screen. It goes into the DOM invisible and
+		// is positioned after, because place() needs its size.
+		show: function(pop) {
+			pop.style.visibility = 'hidden';
+			document.body.appendChild(pop);
+			open_panel = pop;
+			$.glue.popover.place(pop, $.glue.popover.pointer());
+			pop.style.visibility = '';
+		},
+		close: function() {
+			if (open_panel) {
+				open_panel.remove();
+				open_panel = false;
+			}
+		},
+		// what is open, or false - for the handlers below
+		current: function() {
+			return open_panel;
 		},
 		// The small "reset" a panel offers for its own properties: it clears
 		// them rather than writing defaults into them, so the object file
@@ -413,6 +451,35 @@ $.glue.popover = function()
 		}
 	};
 }();
+
+// A panel is closed by a click anywhere outside it, by Escape, by its object
+// being deselected, and by that object being dragged out from under it.
+// Capture phase for the click, so it closes even when something else stops
+// the event.
+document.documentElement.addEventListener('click', function(e) {
+	var pop = $.glue.popover.current();
+	if (pop && !pop.contains(e.target)) {
+		$.glue.popover.close();
+	}
+}, true);
+
+document.documentElement.addEventListener('keydown', function(e) {
+	if (e.key == 'Escape') {
+		$.glue.popover.close();
+	}
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+	$.glue.live('.object', 'glue-deselect', function(e) {
+		var pop = $.glue.popover.current();
+		if (pop && $.glue.owner(pop) === this) {
+			$.glue.popover.close();
+		}
+	});
+	$.glue.live('.object', 'glue-movestart', function(e) {
+		$.glue.popover.close();
+	});
+});
 
 $.glue.colorpicker = function()
 {

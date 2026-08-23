@@ -297,6 +297,107 @@ function object_properties_modal_show(obj, data) {
 	class_input.focus();
 }
 
+//
+// --- edge panel ------------------------------------------------------------
+//
+// What an object's edges look like: rounded corners, and a soft fade inwards
+// from each edge. Two numbers, one panel, same rows and same behaviour as the
+// text module's font and spacing panels ($.glue.popover).
+//
+// Both are stored in PX. A percentage would keep the shape through a resize -
+// 50% is a pill, or an ellipse on a box that is not square - but hotglue
+// stores lengths in px everywhere else, and someone who rounded a corner by
+// 8px wants 8px whatever the object is resized to. The slider reaches "fully
+// round" anyway, because its maximum is half the object's shorter side.
+//
+// The fade is applied here as a custom property plus a class, and drawn by
+// .glue-edge-fade in css/main.css - the object file stores the number only.
+// See object_render_object() in module_object.inc.php for why. It is a radial
+// gradient, so it softens the corners before the edges; the slider's maximum
+// is half the shorter side, which is where it meets itself in the middle.
+//
+
+function object_edge_max(obj)
+{
+	// half the shorter side is a circle for the radius, and a fade that meets
+	// itself in the middle - past either there is nothing further to see
+	return Math.max(10, Math.round(Math.min(obj.offsetWidth, obj.offsetHeight)/2));
+}
+
+function object_edge_radius(obj)
+{
+	var v = parseFloat(getComputedStyle(obj).borderTopLeftRadius);
+	return isNaN(v) ? 0 : v;
+}
+
+function object_edge_fade(obj)
+{
+	var v = parseFloat(obj.style.getPropertyValue('--glue-fade'));
+	return isNaN(v) ? 0 : v;
+}
+
+function object_set_fade(obj, px)
+{
+	if (0 < px) {
+		obj.style.setProperty('--glue-fade', px+'px');
+		obj.classList.add('glue-edge-fade');
+	} else {
+		// empty means the property is gone, which is what makes the object
+		// file drop the attribute again rather than storing a fade of zero
+		obj.style.removeProperty('--glue-fade');
+		obj.classList.remove('glue-edge-fade');
+	}
+}
+
+function object_edge_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-edge-popover');
+	if (!pop) {
+		return;
+	}
+	var max = object_edge_max(obj);
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	var radius = $.glue.popover.number_row('round', {
+		min: 0, max: max, step: 1, unit: 'px',
+		value: object_edge_radius(obj),
+		apply: function(px, commit) {
+			obj.style.borderRadius = (0 < px) ? px+'px' : '';
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(radius.row);
+
+	var fade = $.glue.popover.number_row('fade', {
+		min: 0, max: max, step: 1, unit: 'px',
+		value: object_edge_fade(obj),
+		apply: function(px, commit) {
+			object_set_fade(obj, px);
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(fade.row);
+
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset('back to square corners and a hard edge',
+		function() {
+			obj.style.borderRadius = '';
+			object_set_fade(obj, 0);
+			save();
+			radius.set(0);
+			fade.set(0);
+		}));
+	pop.appendChild(footer);
+
+	$.glue.popover.show(pop);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -365,6 +466,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		return false;
 	});
 	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
+
+	// edges: rounded corners and a soft fade
+	elem = $.glue.icon('border-radius', 'edges: rounded corners and a soft fade');
+	elem.addEventListener('click', function(e) {
+		object_edge_popover($.glue.owner(this));
+		e.stopPropagation();
+	});
+	$.glue.contextmenu.register('object', 'object-edge', elem, 3);
 
 	// Toggle whether content bigger than the object's box is cut off or spills
 	// out of it. Absent means visible, the browser default and what hotglue has

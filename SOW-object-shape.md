@@ -39,12 +39,13 @@ Checked in the tree on 2026-08-23, so the estimate below is not guesswork:
 **Storage:** `object-border-radius`, a length. Save and render alongside `object-opacity`
 in `module_object.inc.php`. Absent means square, so nothing changes for existing pages.
 
-**Units — decide before building:** px is what hotglue stores everywhere else and keeps
+**Units — DECIDED: px.** px is what hotglue stores everywhere else and keeps
 a corner the same when an object is resized; a designer who chose 8px wants 8px.
 Percent survives a resize proportionally and reaches a pill or an ellipse at 50%, which
-is how Superglue's near-circular example is drawn. **Recommendation: px**, with the
-slider's maximum derived from the object's own box (`min(width, height) / 2`, which IS
-fully round), so the circle case is still one drag away.
+is how Superglue's near-circular example is drawn. The slider's maximum is derived from the object's own box
+(`min(width, height) / 2`, which IS fully round), so the circle case is still one drag
+away. Percent would have survived a resize proportionally; px is what hotglue stores
+everywhere else, and someone who rounded by 8px wants 8px.
 
 **The part that is not one line:** `border-radius` does not clip children. A text
 object paints its own background so it rounds correctly, but an image or video object
@@ -84,22 +85,29 @@ mask-that-hides-everything failure on objects nobody has touched.
   the corners more than the edges, which reads as a soft oval rather than a soft
   rectangle.
 
-**Recommendation: the two-gradient version**, since "fade the edges" is what was asked
-for and the degradation is graceful.
+**DECIDED: the radial vignette**, and px for both numbers. Measured to the farthest
+CORNER rather than the nearest side, which is what keeps it continuous — at a fade of
+zero the transparent stop sits exactly on the corner and nothing is masked, and the
+corners soften first as the number grows. To the nearest side, any fade above zero would
+cut the corners off outright.
 
 **Interaction with rounded corners:** none — different properties, they compose.
 
 ## UI
 
-One button each in the object context menu (left column), next to clone and
-transparency, each opening `$.glue.rangeslider` on drag. Live apply while dragging, save
-on release, which is what every other slider in that menu does.
+**DECIDED: one button, "edge", opening a panel with both numbers** - two slider-and-field
+rows and a reset - rather than two buttons each with a drag bar. Same panel as the text
+module's font and spacing ones, which is why the panel scaffolding (`$.glue.popover.open`
+/ `.show` / `.close`, and the click-outside, Escape, deselect and drag handlers) moved
+out of `modules/text/text-edit.js` and into `js/edit.js` when this was built: it now has
+four callers.
 
-**Both need artwork.** Nothing in the current set reads as "corner radius" or "soft
-edge"; the closest are `border-width` and `graphic-shape`, and neither says it. Two
-drawings for the upstream `extra/` folder, and `.glue-btn-label` placeholders until they
-arrive — noting that the roadmap currently has exactly one placeholder left, so this
-adds two back.
+`$.glue.rangeslider` therefore still has none. That decision stands on its own in the
+roadmap: adopt it for the buttons that still drag invisibly, or delete it.
+
+**One button needs artwork.** Nothing in the set reads as "edge treatment"; the closest
+are `border-width` and `graphic-shape`, and neither says it. A `.glue-btn-label`
+placeholder reading "edge" until one is drawn.
 
 ## Tests
 
