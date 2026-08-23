@@ -868,6 +868,7 @@ function text_font_popover(obj)
 	};
 
 	var style_row = $.glue.popover.row('style');
+	var toggles = {};
 	[
 		['bold', 'bold', function() {
 			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
@@ -893,8 +894,52 @@ function text_font_popover(obj)
 			t[2]();
 			save();
 		});
+		toggles[t[0]] = b;
 		style_row.appendChild(b);
 	});
+
+	// Clears what THIS panel sets - face, size and the four style properties.
+	// Line height is left alone deliberately: the size row moves it to keep
+	// the ratio, but it belongs to the spacing panel, which has its own reset.
+	style_row.appendChild($.glue.popover.reset(
+		'back to the default face, size and style', function() {
+			obj.style.fontFamily = '';
+			obj.style.fontSize = '';
+			obj.style.fontWeight = '';
+			obj.style.fontStyle = '';
+			obj.style.textDecoration = '';
+			save();
+			// the panel is now describing something that is no longer there,
+			// so every control is read back off the object
+			var now = getComputedStyle(obj);
+			size_row.set(parseInt(now.fontSize, 10) || 16);
+			var d = now.textDecorationLine || now.textDecoration || '';
+			var w = parseInt(now.fontWeight, 10);
+			state.bold = now.fontWeight == 'bold' || (!isNaN(w) && 600 <= w);
+			state.italic = now.fontStyle == 'italic';
+			state.underline = /underline/.test(d);
+			state.strike = /line-through/.test(d);
+			Object.keys(toggles).forEach(function(k) {
+				toggles[k].classList.toggle('glue-font-toggle-on', state[k]);
+			});
+			var found = false;
+			[].forEach.call(select.options, function(o) {
+				if (o.value === now.fontFamily) {
+					o.selected = true;
+					found = true;
+				}
+			});
+			if (!found) {
+				// the object is back to a face the list does not offer, which
+				// is the usual outcome: it inherits one now
+				var o = document.createElement('option');
+				o.value = now.fontFamily;
+				o.style.fontFamily = now.fontFamily;
+				o.textContent = now.fontFamily.replace(/["']/g, '');
+				o.selected = true;
+				select.insertBefore(o, select.firstChild);
+			}
+		}));
 	pop.appendChild(style_row);
 
 	text_popover_show(pop);
@@ -1019,6 +1064,10 @@ function text_spacing_popover(obj)
 	].forEach(function(a) {
 		var b = $.glue.icon(a[1], a[2]);
 		b.classList.add('glue-align-btn');
+		// the toolbar's icons are 32px; in here they sit next to the font
+		// panel's 26px style toggles and should match those instead
+		b.style.width = '26px';
+		b.style.height = '26px';
 		b.dataset.align = a[0];
 		b.addEventListener('click', function() {
 			obj.style.textAlign = a[0];
@@ -1029,31 +1078,26 @@ function text_spacing_popover(obj)
 		align_row.appendChild(b);
 	});
 	sync_align();
-	pop.appendChild(align_row);
 
-	// --- reset ------------------------------------------------------------
-	var reset_row = $.glue.popover.row(false);
-	reset_row.classList.add('glue-popover-footer');
-	var reset = document.createElement('div');
-	reset.className = 'glue-popover-reset';
-	reset.textContent = 'reset';
-	reset.title = 'back to the default line height, spacing and alignment';
-	reset.addEventListener('click', function() {
-		obj.style.lineHeight = '';
-		obj.style.letterSpacing = '';
-		obj.style.wordSpacing = '';
-		obj.style.textAlign = '';
-		save();
-		// the panel now says something that is no longer true, so it is read
-		// back off the object rather than assumed
-		var now = getComputedStyle(obj);
-		line.set(to_em(now.lineHeight, 1.2));
-		letter.set(to_em(now.letterSpacing, 0));
-		word.set(to_em(now.wordSpacing, 0));
-		sync_align();
-	});
-	reset_row.appendChild(reset);
-	pop.appendChild(reset_row);
+	// The reset rides on the end of the alignment row rather than taking a
+	// line of its own - the panel is already five rows tall and this is a
+	// small thing.
+	align_row.appendChild($.glue.popover.reset(
+		'back to the default line height, spacing and alignment', function() {
+			obj.style.lineHeight = '';
+			obj.style.letterSpacing = '';
+			obj.style.wordSpacing = '';
+			obj.style.textAlign = '';
+			save();
+			// the panel now says something that is no longer true, so it is
+			// read back off the object rather than assumed
+			var now = getComputedStyle(obj);
+			line.set(to_em(now.lineHeight, 1.2));
+			letter.set(to_em(now.letterSpacing, 0));
+			word.set(to_em(now.wordSpacing, 0));
+			sync_align();
+		}));
+	pop.appendChild(align_row);
 
 	text_popover_show(pop);
 }
@@ -1265,12 +1309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-font-color.png';
-	elem.alt = 'btn';
-	elem.title = 'change font color';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('font-color', 'change font color');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var col = getComputedStyle(obj).color;

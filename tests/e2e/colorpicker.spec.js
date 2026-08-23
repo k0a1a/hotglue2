@@ -152,29 +152,39 @@ test('a colour that gets used is remembered on the page, most recent first',
 			.toBe('#123456,#ff0000,#00aa55');
 	});
 
-test('the list keeps five, without repeats', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', OBJ(300, 300), 'A');
-	hg.addObject('page', { 'page-recent-colors': '#111111,#222222,#333333,#444444,#555555' });
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
+test('the list keeps seven, without repeats, and they fit on one row',
+	async ({ page, hg }) => {
+		const seven = '#111111,#222222,#333333,#444444,#555555,#666666,#777777';
+		const a = hg.addObject('100000000001', OBJ(300, 300), 'A');
+		hg.addObject('page', { 'page-recent-colors': seven });
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
 
-	// re-using one that is already in the list moves it to the front rather
-	// than adding a sixth
-	await openPicker(page, a);
-	await page.locator('.glue-picker-swatch').nth(2).click();
-	await page.locator('.picker_done button').click();
-	await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
-		.toBe('#333333,#111111,#222222,#444444,#555555');
+		// seven is what the panel's width allows: an eighth would wrap the
+		// row and make the panel taller
+		await expect(page.locator('.glue-picker-swatch')).toHaveCount(7);
+		const tops = await page.evaluate(() =>
+			[...document.querySelectorAll('.glue-picker-swatch')]
+				.map((e) => Math.round(e.getBoundingClientRect().y)));
+		expect(new Set(tops).size, 'the swatch row wrapped onto two lines').toBe(1);
 
-	// and a new one pushes the oldest off the end
-	await openPicker(page, a);
-	const field = page.locator('.picker_editor input');
-	await field.fill('#abcdef');
-	await field.press('Enter');
-	await expect(page.locator('.picker_wrapper')).toBeHidden();
-	await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
-		.toBe('#abcdef,#333333,#111111,#222222,#444444');
-});
+		// re-using one that is already in the list moves it to the front
+		// rather than adding an eighth
+		await page.locator('.glue-picker-swatch').nth(2).click();
+		await page.locator('.picker_done button').click();
+		await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
+			.toBe('#333333,#111111,#222222,#444444,#555555,#666666,#777777');
+
+		// and a new one pushes the oldest off the end
+		await openPicker(page, a);
+		const field = page.locator('.picker_editor input');
+		await field.fill('#abcdef');
+		await field.press('Enter');
+		await expect(page.locator('.picker_wrapper')).toBeHidden();
+		await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
+			.toBe('#abcdef,#333333,#111111,#222222,#444444,#555555,#666666');
+	});
 
 // --- placement -----------------------------------------------------------
 //

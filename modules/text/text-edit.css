@@ -137,9 +137,17 @@
 
 .glue-align-btn {
 	/* the toolbar's own icon buttons, reused inside the panel so alignment
-	   looks like what it looks like everywhere else */
+	   looks like what it looks like everywhere else - but at the size of the
+	   font panel's style toggles, which they sit beside in spirit. The box is
+	   26px (set where they are built, since $.glue.icon sizes them inline),
+	   so the artwork comes down from 30 to match. */
 	flex: 0 0 auto;
 	cursor: pointer;
+}
+
+.glue-align-btn::before {
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
 }
 
 .glue-align-on::before {
@@ -150,25 +158,4 @@
 
 .glue-align-on {
 	background-color: #333 !important;
-}
-
-.glue-popover-footer {
-	justify-content: flex-end;
-	margin-bottom: 0;
-}
-
-.glue-popover-reset {
-	/* small and out of the way: it undoes the whole panel, so it should not
-	   look like one of the controls */
-	padding: 2px 6px;
-	border: 1px solid #999;
-	background: #fff;
-	color: #444;
-	font-size: 10px;
-	cursor: pointer;
-}
-
-.glue-popover-reset:hover {
-	border-color: #000;
-	color: #000;
 }

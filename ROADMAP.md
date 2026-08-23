@@ -121,7 +121,7 @@ Shipped 2026-08-22/23:
 - **A smaller colour picker, with the page's recent colours** — roughly half its old
   250x315, plus the last five colours used on that page as swatches above the hex field,
   stored on the page object (`page-recent-colors`) so they are there for whoever opens
-  the page next. It opens in the nearest free space beside the object rather than at the
+  the page next — seven of them, which is what the row's width allows. It opens in the nearest free space beside the object rather than at the
   pointer, which used to put it on top of the thing being recoloured, and it has a
   transparency slider: the alpha of that one colour, which the object-transparency button
   cannot express since it fades the whole object at once. Both controls exist for now.
@@ -187,7 +187,9 @@ from reading the code:
   button and inherits down, so swapping artwork at runtime is unaffected.
 
   Wired so far: `clone` (the first one, replacing a PNG), `undo`, `redo`, `hyperlink`,
-  and the layout toggle via `composition-mode-absolute`/`-centered`. The icon shows the
+  `font-color`, `font-face` (the text menu's Font panel), `vertical-stack-space` (its
+  Spacing panel), the four `align-*` inside that panel, and the layout toggle via
+  `composition-mode-absolute`/`-centered`. The icon shows the
   mode you are switching TO, preserving the old split where the tooltip describes the
   present and the button names the destination.
 

@@ -303,6 +303,18 @@ $.glue.popover = function()
 		pointer: function() {
 			return $.glue.colorpicker.last_click();
 		},
+		// The small "reset" a panel offers for its own properties: it clears
+		// them rather than writing defaults into them, so the object file
+		// drops the attributes and the object goes back to looking like one
+		// nobody ever touched. Sits at the end of a row, pushed right.
+		reset: function(title, fn) {
+			var b = document.createElement('div');
+			b.className = 'glue-popover-reset';
+			b.textContent = 'reset';
+			b.title = title;
+			b.addEventListener('click', fn);
+			return b;
+		},
 		// one row of a popover: a label and whatever control it names
 		row: function(label) {
 			var row = document.createElement('div');
@@ -436,13 +448,16 @@ $.glue.colorpicker = function()
 	// coloured. Below the modal backdrop at 500.
 	anchor.style.zIndex = '450';
 
-	// The last few colours used ON THIS PAGE, offered as swatches above the
-	// hex field. Stored on the page object as page-recent-colors and handed
+	// The last several colours used ON THIS PAGE, offered as swatches above
+	// the hex field. Stored on the page object as page-recent-colors and handed
 	// back by module_page.inc.php as $.glue.conf.page.recent_colors, so they
 	// belong to the page and are there for whoever opens it next - unlike the
 	// last-typeface memory in module_text.inc.php, which is deliberately
 	// site-wide. A page's palette is part of that page's design.
-	var RECENT_MAX = 5;
+	// Seven, which is what fits: the swatch row has 158px of usable width in
+	// a 170px panel, and seven 18px swatches with 4px between them come to
+	// 150. An eighth would wrap the row and make the panel taller.
+	var RECENT_MAX = 7;
 	var recent = false;		// read lazily: conf is emitted after this file
 	var swatches = document.createElement('div');
 	swatches.className = 'glue-picker-recent glue-ui';

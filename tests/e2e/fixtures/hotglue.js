@@ -54,8 +54,19 @@ class Fixture {
 		return `${this.pageName}.${id}`;
 	}
 
+	// An object that has not been written yet reads as empty rather than
+	// throwing. Tests poll this while the editor saves - and a page object in
+	// particular does not exist at all until something stores a page-level
+	// setting on it - so "no file yet" is a legitimate state to observe, not
+	// an error. Throwing made expect.poll() fail outright instead of
+	// retrying, which showed up as an intermittent failure in whichever test
+	// happened to poll before the first save landed.
 	readObject(id) {
-		return parseObject(fs.readFileSync(path.join(this.dir, id), 'utf8'));
+		const file = path.join(this.dir, id);
+		if (!fs.existsSync(file)) {
+			return { attrs: {}, content: '' };
+		}
+		return parseObject(fs.readFileSync(file, 'utf8'));
 	}
 
 	readObjectRaw(id) {
