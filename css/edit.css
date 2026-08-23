@@ -170,10 +170,18 @@
 }
 
 .glue-selected {
-	/* class for selected objects */
-	border-color: black;
-	border-style: dashed;
-	border-width: 1px;
+	/* Class for selected objects.
+	   An OUTLINE, not a border. A border was what this used since 2010, and
+	   it cost more than it looked: a border is part of the box, so adding one
+	   on select moved the object's content by a pixel, and select(),
+	   deselect() and the pre-save alter each had to shift the object by half
+	   of it to compensate - three places holding one number between them. It
+	   also owned the object's border-* properties outright, so an object with
+	   a border of its own could not be selected visibly (its inline colour
+	   and style won) and jumped by half ITS border, not by half of the
+	   selection's. An outline draws outside the box, changes no layout at
+	   all, and follows border-radius. */
+	outline: 1px dashed black;
 }
 
 .glue-ui {

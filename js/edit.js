@@ -1691,16 +1691,12 @@ $.glue.object = function()
 	});
 
 	document.addEventListener('DOMContentLoaded', function() {
+		// A selected object is stored without the class that says so. There
+		// used to be a coordinate fixup here too, undoing the half-border
+		// shift select() applied; the selection is an outline now, which is
+		// not part of the box, so there is nothing to undo.
 		$.glue.object.register_alter_pre_save('glue-selected', function(obj, orig) {
-			var border = orig.offsetHeight-orig.clientHeight;
-			var p = { left: orig.offsetLeft, top: orig.offsetTop };
-			// remove class
 			obj.classList.remove('glue-selected');
-			// and remove border offset
-			obj.style.left = (p.left+border/2)+'px';
-			obj.style.top = (p.top+border/2)+'px';
-			//obj.style.width = (orig.offsetWidth+border)+'px';
-			//obj.style.height = (orig.offsetHeight+border)+'px';
 		});
 	});
 
@@ -2510,16 +2506,8 @@ $.glue.sel = function()
 		// obj .. element
 		deselect: function(obj) {
 			if (obj.classList.contains('glue-selected')) {
-				var border = obj.offsetHeight-obj.clientHeight;
 				obj.classList.remove('glue-selected');
 				$.glue.trigger(obj, 'glue-deselect');
-				var p = { left: obj.offsetLeft, top: obj.offsetTop };
-				obj.style.left = (p.left+border/2)+'px';
-				obj.style.top = (p.top+border/2)+'px';
-				//obj.style.width = (obj.offsetWidth+border)+'px';
-				//obj.style.height = (obj.offsetHeight+border)+'px';
-				// DEBUG
-				//console.log('deselected '+obj.id);
 			}
 		},
 		// select none
@@ -2530,24 +2518,19 @@ $.glue.sel = function()
 		},
 		// select an object
 		// obj .. element
+		// Selecting an object no longer moves it. The selection used to be a
+		// border, which is part of the box, so the object had to be shifted
+		// by half of it to keep its content where it was - and put back on
+		// deselect, and put back again before saving. It is an outline now
+		// (see .glue-selected in css/edit.css), which changes no layout, so
+		// all three of those fixups are gone. An object with a border of its
+		// own also used to jump by half of ITS border, since the code
+		// measured whatever border was there rather than the selection's.
 		select: function(obj) {
 			// TODO (later): handle more than one obj (and change callers)
 			if (!obj.classList.contains('glue-selected')) {
 				obj.classList.add('glue-selected');
 				$.glue.trigger(obj, 'glue-select');
-				// TODO (later): the following code works for dashed borders but
-				// not for solid ones - read out the border-style on the fly and
-				// act accordingly (there seem to be a problem with getting the
-				// information through jQuery 1.4.3 however)
-				// also needs changes above and in register_alter_pre_save
-				var p = { left: obj.offsetLeft, top: obj.offsetTop };
-				var border = obj.offsetHeight-obj.clientHeight;
-				obj.style.left = (p.left-border/2)+'px';
-				obj.style.top = (p.top-border/2)+'px';
-				//obj.style.width = (obj.offsetWidth-border)+'px';
-				//obj.style.height = (obj.offsetHeight-border)+'px';
-				// DEBUG
-				//console.log('selected '+obj.id);
 			}
 		},
 		// return if an object is selected
