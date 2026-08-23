@@ -59,6 +59,13 @@ Checked against the tree on 2026-08-23.
   reusable popover component yet (the colour picker's placement would have to be lifted
   out first).
 
+- **SOW-object-shape.md** — rounded corners (ported from Superglue) and a new edge
+  fadeout, scoped 2026-08-23 and not built. Both are one number per object stored as an
+  `object-*` attribute, so they follow `object-opacity` exactly; both are edited with
+  `$.glue.rangeslider`, which finally gives that widget the caller it was built for. Two
+  decisions to make first (px or percent for the radius; two gradients or a radial
+  vignette for the fade) and two icons to draw.
+
 ### In git history only
 
 - **MOBILE-VIEW-DESIGN.md** — the author-curated "mark elements mobile-friendly →
