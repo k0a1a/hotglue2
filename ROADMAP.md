@@ -3,8 +3,9 @@
 A single index of the work-in-flight and the "someday" list, so the scattered task
 docs have one home. Not a rigid roadmap — a living list. Roughly grouped by status.
 
-Server/infra state and gotchas live in **CLAUDE.md**; this file is the feature/dev
-backlog for the `ng` branch.
+This is the feature/dev backlog for the hotglue **application**. Service operations for
+any particular install — accounts, UserCake, mail, hosting, moderation — belong in that
+service's own repo, not here, and are deliberately absent.
 
 Maintained as work lands: when something ships it moves to *Done*, and its task doc is
 updated to describe what was BUILT rather than what was planned — several of these
@@ -15,9 +16,9 @@ none. Last reconciled against the tree on 2026-08-23.
 
 ## Task docs (detailed specs — read these when building)
 
-**Not all of these are in this directory.** Three describe server/account work and have
-never existed in this repo; one was reverted off `ng` and lives only in git history.
-Checked 2026-08-23.
+All of these have shipped, so each one now records what was BUILT — read them for the
+reasoning, not as a plan. One further design lives only in git history; see below.
+Checked against the tree on 2026-08-23.
 
 ### In this directory, and SHIPPED
 
@@ -43,17 +44,6 @@ Checked 2026-08-23.
   records what was measured before anything was built, including two things the original
   plan got wrong.
 
-### Elsewhere — NOT in this repo
-
-- **task-registration-hardening.md** — stop spam signups: CAPTCHA filename leak, dormant
-  honeypot (`usernamed`), per-IP rate limit, email-domain reuse. *(Urgent — active
-  abuse.)*
-- **task-account-dejquery.md** — replace jQuery 1.4.4 + jquery.validate on the account
-  forms. Same files as the hardening work; do them together.
-- **handover-password-reset.md** — modern reset: one link email, user sets their own
-  password. Writes `generateHash` to `userCake_Users.Password`, so it fixes account and
-  editor login together.
-
 ### In git history only
 
 - **MOBILE-VIEW-DESIGN.md** — the author-curated "mark elements mobile-friendly →
@@ -63,12 +53,11 @@ Checked 2026-08-23.
 
 ---
 
-## Done / shipped this cycle (see CLAUDE.md for detail)
+## Done / shipped
 
 - DB-backed editor auth (`AUTH_METHOD='db'`).
 - Editor dejQuery'd → vanilla + Moveable (drag/resize, touch-capable) + Alpine (chrome).
   HiDPI sharp images. PHP8 pass. Color picker later moved to vendored vanilla-picker.
-- Mail loop fixed (Hetzner :25 saga → WG tunnel forward, later :25 reopened).
 
 Shipped 2026-08-22/23:
 
@@ -105,10 +94,11 @@ from reading the code:
   code won't port; use it as a **design reference**, reimplement in `ng`'s
   vanilla+Alpine+Moveable stack. If pursued, **fold in** SOW-object-properties and
   SOW-text-link-ui as popovers within this model rather than building them standalone.
-  NOTE: re-evaluate each feature's trust/safety posture for Hotglue's multi-tenant
-  reality — Superglue was single-tenant-per-user (could be permissive, e.g. raw
-  per-object HTML editing); Hotglue is 65k shared tenants, so dial back permissiveness
-  (keep per-object code scoped: classes/attributes, JS stays in `/code`).
+  NOTE: re-evaluate each feature's trust/safety posture. Superglue was
+  single-tenant-per-user and could afford to be permissive (raw per-object HTML editing,
+  for instance); a hotglue install can host many authors who do not trust each other, so
+  dial that back — keep per-object code scoped to classes and attributes, with JS staying
+  in `/code`.
 - **Mobile view** — pan/zoom has SHIPPED as the default. The open half of the decision
   is whether the author-curated stack (MOBILE-VIEW-DESIGN, in git history only) is still
   wanted as an opt-in alongside it. Worth deciding before anyone restores that doc.
@@ -119,9 +109,6 @@ from reading the code:
   of what needs drawing. Get SVG source if available (scalable, CSS-colorable); match the
   style rigorously when extending it for new Hotglue features; interaction states
   (hover/active/disabled) and keep the tooltips.
-- **UserCake strangle (continued)** — registration + reset now custom/modern; continue
-  replacing remaining UserCake flows (account dashboard/session) incrementally, keeping
-  the `userCake_Users` table + `generateHash`. No big-bang rewrite.
 - **Local JS build** — partly addressed and deliberately stopped short. `tools/make-min.js`
   now generates a `.min.js` copy by stripping whole-line comments, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source, so the
@@ -152,9 +139,8 @@ Features and niceties not yet spec'd — the running to-do:
   break editor logic). Deferred from the object-properties SOW.
 - **Copy pages / copy objects between pages** — from the old todo list.
 - **Object rotate / flip / mirror** — Moveable supports these natively now; low-hanging.
-- **New uploader / better upload handling** — ties to storage/inode pressure; client-
-  side resize/transcode would cut the media-bloat problem at source.
-- **Server-side video transcoding** — for the media-heavy accounts.
+- **New uploader / better upload handling** — client-side resize/transcode before
+  upload, which cuts media bloat at source rather than after it lands.
 - **favicon upload, relative internal links, link target auto-select** (`_blank`
   external / `_self` internal) — small QoL from the old todo list.
 - **Upload & manage fonts** (woff) — modern web fonts make this much easier than the
@@ -174,21 +160,3 @@ Features and niceties not yet spec'd — the running to-do:
 deep. It replaced the old server-side auto-snapshot system rather than building on it.)*
 
 ---
-
-## Operational / non-feature follow-ups (see CLAUDE.md verify + pending lists)
-
-- Post-implementation verification of the shipped auth/registration/reset work.
-- Delete the ~11 existing spam accounts (export first).
-- Account cleanup: old + empty + dormant accounts (username squatting + inode
-  pressure). Check `df -i` distribution first (empties vs a few heavy accounts).
-  Spam subset is the unambiguous first target. Grace-email + delete non-responders.
-- Dashboard/admin-scripts: restrict to WireGuard subnet / fixed IPs at the web-server
-  layer (network boundary > email-OTP). Confirm no admin script is individually
-  web-reachable.
-- Donations: reply to "how do I donate?" askers with the link; add a permanent
-  one-click donate link to the email template + in-product; lapsing-donor reminders.
-- Expired domain bindings (549): DNS guide with per-registrar screenshots; check if
-  it's server-migration fallout (old IP in user DNS) — reframes it as "we moved, update
-  one setting" rather than user apathy. Help askers; release the rest without guilt.
-- GDPR: post-WORM-separation Danja is sole data controller — address regardless of
-  grant outcomes.
