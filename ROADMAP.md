@@ -10,7 +10,9 @@ service's own repo, not here, and are deliberately absent.
 Maintained as work lands: when something ships it moves to *Done*, and its task doc is
 updated to describe what was BUILT rather than what was planned — several of these
 designs changed materially once they met real pages, and a stale spec is worse than
-none. Last reconciled against the tree on 2026-08-23.
+none. Last reconciled against the tree on 2026-08-23, that time by opening the code path
+behind every remaining item rather than by re-reading the list — which is how two of them
+turned out to be already built and a third to be half-built.
 
 ---
 
@@ -80,7 +82,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **240 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **250 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
@@ -208,24 +210,51 @@ Features and niceties not yet spec'd — the running to-do:
 - **Per-object inline CSS** — extend the object-properties class feature with scoped
   inline CSS (auto-scoped to the object). Safe to run live in the editor (CSS can't
   break editor logic). Deferred from the object-properties SOW.
-- **Copy pages / copy objects between pages** — from the old todo list.
-- **Object rotate / flip / mirror** — Moveable supports these natively now; low-hanging.
+- **Copy objects between pages** — copying a *page* is already done and always was:
+  `glue.copy_page` (`module_glue.inc.php:857`), reachable from the page browser
+  (`modules/page_browser/page_browser.js:68`). Objects are the missing half —
+  `glue.clone_object` derives its target page from the source object's own name, so it
+  can only ever clone within one page.
+- **Object rotate at an arbitrary angle** — 90° rotation and flipping already ship, and
+  have since long before `ng`: `modules/transform/transform.js` puts both in the object
+  context menu, and `module_transform.inc.php` persists whatever `transform` value they
+  produce. (Under the attribute name `transform-flip`, which is a misnomer — it holds the
+  rotation too.) So the *feature* is not missing; what is missing is a free angle rather
+  than a four-step cycle, which is where Moveable's rotatable would actually earn its
+  place. Re-scoped from "rotate / flip / mirror — low-hanging", which was simply wrong
+  about what the tree contains.
 - **New uploader / better upload handling** — client-side resize/transcode before
   upload, which cuts media bloat at source rather than after it lands.
 - **Link target auto-select** — `_blank` for external links, `_self` for internal ones,
   chosen automatically in the link dialog. Explicitly out of scope when that dialog was
-  built; the natural extension of it. (Favicon upload and relative internal links, which
-  shared this bullet on the old todo list, are both done.)
+  built; the natural extension of it. Note a target can already be set BY HAND, but only
+  on the old object-link prompt (`modules/object/object-edit.js:462`, typed after the URL
+  and a space); the text link dialog has no target field at all, so this wants deciding
+  once for both. (Favicon upload and relative internal links, which shared this bullet on
+  the old todo list, are both done.)
+The three below were each re-checked in the code on 2026-08-23 and are **open**, with
+where to look, because all three have a shipped near-neighbour that makes them look done:
+
 - **Centered mode: a content-derived default width.** Switching an existing page to
   centered puts most of its content outside the default container until the handles are
   dragged out — on `content/start`, 4 of 7 objects. A default from the content bounding
-  box would be kinder than a fixed number.
+  box would be kinder than a fixed number. Open: `page_set_layout()`
+  (`module_page.inc.php:463`) writes `page-layout-mode` and nothing else, the toggle
+  (`modules/page/page-edit.js:92`) posts no width, and the render path starts from a flat
+  `PAGE_DEFAULT_CONTAINER_WIDTH` of 960 (`module_page.inc.php:269`). Nothing anywhere
+  reads object coordinates. What *did* ship is the neighbouring decision — content too
+  wide overflows rather than clips, and `centered-layout.spec.js` holds it there.
 - **Mobile guided view × centered mode.** It activates and nests correctly, but in
   centered mode the container width is the natural "page width" for the fit and the
-  mobile code does not know about it.
+  mobile code does not know about it. Open: `js/mobile-guided.js` names neither the
+  container, the layout mode nor `page-container-width`, and still fits to the min/max
+  bounding box of `.object` (around line 149). What *did* ship is the similar-sounding
+  "lands on content rather than on empty canvas", which was about negative origins.
 - **Firefox on Android** — the desktop suite covers Gecko, but the pinch floor and touch
   gestures can only be checked on a device, and `tests/e2e/android-check.js` drives
-  Chrome only. Playwright cannot drive Firefox on Android, so this stays manual.
+  Chrome only (it requires `chromium` and speaks CDP to a browser already running on the
+  phone). Playwright cannot drive Firefox on Android, so this stays manual. What *did*
+  ship is Gecko coverage on the desktop suite, which is not the same claim.
 
 
 
