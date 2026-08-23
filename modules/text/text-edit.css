@@ -188,3 +188,13 @@
 	/* the commit, at the end of the row */
 	margin-left: auto;
 }
+
+.glue-font-note {
+	/* where the faces in the dropdown come from */
+	margin-top: 2px;
+}
+
+.glue-font-note a {
+	color: #06c;
+	text-decoration: underline;
+}

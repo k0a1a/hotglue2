@@ -277,6 +277,24 @@ function object_alter_render_early($args)
 			elem_css($elem, 'border-color', $obj['object-border-color']);
 		}
 	}
+	// A background image of the object's own. The URL points at the OBJECT,
+	// not at the file in the shared directory - object_serve_resource() below
+	// hands the file over - which is the same arrangement image objects use
+	// and for the same reason: the shared directory is deduplicated, and the
+	// object is what knows which file is its.
+	if (!empty($obj['object-background-file'])) {
+		if (SHORT_URLS) {
+			$url = urlencode($obj['name']);
+		} else {
+			$url = '?'.urlencode($obj['name']);
+		}
+		elem_css($elem, 'background-image', 'url('.$url.')');
+		elem_css($elem, 'background-repeat', !empty($obj['object-background-repeat']) ?
+			$obj['object-background-repeat'] : 'no-repeat');
+		if (!empty($obj['object-background-position'])) {
+			elem_css($elem, 'background-position', $obj['object-background-position']);
+		}
+	}
 	// A soft blob of colour behind the content - see .glue-glow in
 	// css/main.css. Like the fade above, what is stored is the ingredients
 	// (a colour, a radius and a strength) rather than the gradient itself.
@@ -412,6 +430,28 @@ function object_alter_save($args)
 	} else {
 		unset($obj['object-border-radius']);
 	}
+	// Only the two settings, never the image URL: that is derived from
+	// object-background-file, which the upload sets and nothing else touches.
+	// Storing the url as well would give the object two copies of the same
+	// fact, one of which goes stale the moment a page is renamed.
+	//
+	// And only for an object whose background is its OWN. The image module
+	// paints its picture with background-image too, complete with a
+	// no-repeat, so reading these off any element that has them would write
+	// two new attributes into every image object on every save - files that
+	// have round-tripped untouched for years.
+	if (!empty($obj['object-background-file'])) {
+		if (elem_css($elem, 'background-repeat') !== NULL) {
+			$obj['object-background-repeat'] = elem_css($elem, 'background-repeat');
+		} else {
+			unset($obj['object-background-repeat']);
+		}
+		if (elem_css($elem, 'background-position') !== NULL) {
+			$obj['object-background-position'] = elem_css($elem, 'background-position');
+		} else {
+			unset($obj['object-background-position']);
+		}
+	}
 	// solid is the default and stays unstored: see object_render_object()
 	if (elem_css($elem, 'border-style') !== NULL &&
 	    elem_css($elem, 'border-style') != 'solid') {
@@ -475,4 +515,87 @@ function object_render_page_early($args)
 		// add default colors
 		html_add_js_var('$.glue.conf.object.default_colors', expl(' ', OBJECT_DEFAULT_COLORS));
 	}
+}
+
+
+/**
+ *	implements upload for preferred_module 'object'
+ *
+ *	Sets an uploaded image as one object's background. Unlike the image
+ *	module's upload, which makes a new object out of the file, this one is
+ *	given the object to put it on - the frontend passes 'object' - and touches
+ *	nothing else about it.
+ *
+ *	The preferred_module has to be the MODULE's name and nothing else:
+ *	upload_files() dispatches by building "{preferred_module}_upload" and
+ *	calling it, so anything with a hyphen in it is not a function name, is
+ *	silently not callable, and the file falls through to the generic hooks -
+ *	where the image module makes an object out of it instead.
+ *
+ *	@param array $args arguments
+ *		key 'object' the object to set the background on
+ *	@return bool true when the file was taken
+ */
+function object_upload($args)
+{
+	if (empty($args['preferred_module']) || $args['preferred_module'] != 'object') {
+		return false;
+	}
+	if (empty($args['object'])) {
+		return false;
+	}
+	// the same set the page background accepts
+	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) &&
+	    !($args['mime'] == '' && in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
+		return false;
+	}
+
+	load_modules('glue');
+	$obj = load_object(['name'=>$args['object']]);
+	if ($obj['#error']) {
+		log_msg('object_upload: no such object '.quot($args['object']));
+		return false;
+	}
+	$obj = $obj['#data'];
+	// a background this replaces is one upload fewer to keep
+	if (!empty($obj['object-background-file'])) {
+		delete_upload(['pagename'=>get_first_item(expl('.', $args['object'])),
+			'file'=>$obj['object-background-file'], 'max_cnt'=>1]);
+	}
+
+	$ret = update_object([
+		'name' => $args['object'],
+		'object-background-file' => $args['file'],
+		'object-background-mime' => $args['mime']
+	]);
+	if ($ret['#error']) {
+		log_msg('object_upload: error updating object: '.quot($ret['#data']));
+		return false;
+	}
+	return true;
+}
+
+
+/**
+ *	implements serve_resource
+ *
+ *	Hands over an object's background image. Objects that are images serve
+ *	their own picture through image_serve_resource() instead, so this
+ *	deliberately stands aside for them: one object, one resource.
+ */
+function object_serve_resource($args)
+{
+	$obj = $args['obj'];
+	if (empty($obj['object-background-file']) || !empty($obj['image-file'])) {
+		return false;
+	}
+	$pn = get_first_item(expl('.', $obj['name']));
+	$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['object-background-file'];
+	$mime = !empty($obj['object-background-mime']) ? $obj['object-background-mime'] : '';
+	if (!is_file($fn)) {
+		log_msg('warn', 'object_serve_resource: missing background file '.quot($fn));
+		return false;
+	}
+	serve_file($fn, $args['dl'], $mime);
+	return true;
 }

@@ -599,6 +599,114 @@ function object_edge_popover(obj)
 	$.glue.popover.show(pop);
 }
 
+//
+// --- background image ------------------------------------------------------
+//
+// One button that does two things, because there are two states and only one
+// of them needs a panel. With no image on the object, the button IS the file
+// input - the browser's own picker, no dialog of ours in front of it. With an
+// image already there, the input is switched off and the button opens a panel
+// for the two things you can then do to it: tile it or not, and move it
+// around.
+//
+// The image belongs to the object rather than to the page: it uploads with
+// preferred_module 'object' and the object's name, which object_upload() in
+// module_object.inc.php takes. The url points at the
+// object, not at the file - see object_serve_resource() there.
+//
+
+function object_has_background(obj)
+{
+	return !!(obj && obj.style.backgroundImage && obj.style.backgroundImage != 'none');
+}
+
+function object_background_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-background-popover');
+	if (!pop) {
+		return;
+	}
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	// --- tile or not ------------------------------------------------------
+	var repeat_row = $.glue.popover.row('tile');
+	var repeat = document.createElement('div');
+	repeat.className = 'glue-font-toggle glue-background-repeat';
+	repeat.textContent = '\u25a6';
+	repeat.title = 'repeat the image across the object';
+	var sync_repeat = function() {
+		repeat.classList.toggle('glue-font-toggle-on',
+			getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1);
+	};
+	repeat.addEventListener('click', function() {
+		var on = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
+		obj.style.backgroundRepeat = on ? 'no-repeat' : 'repeat';
+		sync_repeat();
+		save();
+	});
+	sync_repeat();
+	repeat_row.appendChild(repeat);
+	pop.appendChild(repeat_row);
+
+	// --- move it around ---------------------------------------------------
+	//
+	// Dragged rather than typed, like the page background it is modelled on:
+	// where a picture sits behind text is a thing you judge by eye. A click
+	// with no drag puts it back to the corner, which is what the page
+	// background's own control does.
+	var move_row = $.glue.popover.row('move');
+	var pad = document.createElement('div');
+	pad.className = 'glue-background-pad';
+	pad.title = 'drag to move the image, click to put it back';
+	pad.textContent = '\u2725';
+	pad.addEventListener('mousedown', function(e) {
+		var start = getComputedStyle(obj).backgroundPosition.split(' ');
+		var from_x = parseInt(start[0]);
+		var from_y = parseInt(start[1]);
+		if (isNaN(from_x)) {
+			from_x = 0;
+		}
+		if (isNaN(from_y)) {
+			from_y = 0;
+		}
+		var moved = false;
+		$.glue.slider(e, function(x, y) {
+			obj.style.backgroundPosition = (from_x+x)+'px '+(from_y+y)+'px';
+			if (x != 0 || y != 0) {
+				moved = true;
+			}
+		}, function(x, y) {
+			if (!moved) {
+				// emptied rather than set to 0 0, so the object file drops
+				// the attribute
+				obj.style.backgroundPosition = '';
+			}
+			save();
+		});
+		e.preventDefault();
+	});
+	move_row.appendChild(pad);
+	pop.appendChild(move_row);
+
+	// --- take it off ------------------------------------------------------
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset('remove the background image', function() {
+		obj.style.backgroundImage = '';
+		obj.style.backgroundRepeat = '';
+		obj.style.backgroundPosition = '';
+		$.glue.popover.close();
+		save();
+		// the file itself is dropped by the object no longer naming it
+		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id,
+			attr: 'object-background-file' });
+	}));
+	pop.appendChild(footer);
+
+	$.glue.popover.show(pop);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -675,6 +783,62 @@ document.addEventListener('DOMContentLoaded', function() {
 		e.stopPropagation();
 	});
 	$.glue.contextmenu.register('object', 'object-edge', elem, 3);
+
+	// background image: the file picker when there is none, a panel when
+	// there is. The upload's data object is filled in when the menu opens,
+	// since which object it belongs to is not known before then.
+	elem = $.glue.icon('page-background-image', 'background image');
+	// 'object', not 'object-background': upload_files() dispatches by calling
+	// "{preferred_module}_upload", so the name has to be the module's own or
+	// the file falls through to the image module and becomes a new object
+	var bg_data = { method: 'glue.upload_files', page: $.glue.page,
+		preferred_module: 'object' };
+	$.glue.upload.button(elem, bg_data, {
+		tooltip: 'choose a background image for this object',
+		error: function(e) {
+			$.glue.error('There was a problem uploading the file.');
+		},
+		finish: function(data) {
+			if (!data || data['#error']) {
+				$.glue.error('There was a problem uploading the file'+
+					(data && data['#data'] ? ' ('+data['#data']+')' : ''));
+				return;
+			}
+			var obj = document.getElementById(bg_data.object);
+			if (!obj) {
+				return;
+			}
+			// the timestamp defeats the cache: the url does not change when
+			// the file behind it does
+			obj.style.backgroundImage = 'url('+$.glue.base_url+'?'+bg_data.object+
+				'&'+(new Date().getTime())+')';
+			obj.style.backgroundRepeat = 'no-repeat';
+			$.glue.object.save(obj);
+			bg_sync(elem);
+		}
+	});
+	var bg_input = elem.querySelector('input[type=file]');
+	// with an image already on the object the picker gets out of the way, so
+	// the button's own click can open the panel instead
+	var bg_sync = function(button) {
+		var obj = $.glue.owner(button);
+		bg_data.object = obj ? obj.id : '';
+		var has = object_has_background(obj);
+		bg_input.style.display = has ? 'none' : '';
+		button.title = has ? 'background image: tile it, move it, remove it' :
+			'background image';
+	};
+	elem.addEventListener('glue-menu-activate', function(e) {
+		bg_sync(this);
+	});
+	elem.addEventListener('click', function(e) {
+		var obj = $.glue.owner(this);
+		if (object_has_background(obj)) {
+			object_background_popover(obj);
+			e.stopPropagation();
+		}
+	});
+	$.glue.contextmenu.register('object', 'object-background', elem, 4);
 
 	// Toggle whether content bigger than the object's box is cut off or spills
 	// out of it. Absent means visible, the browser default and what hotglue has

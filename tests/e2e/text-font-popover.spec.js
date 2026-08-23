@@ -337,3 +337,18 @@ test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-radius'])
 		.toBe(undefined);
 });
+
+test('the fold says where new fonts come from', async ({ page, hg }) => {
+	// the dropdown lists what is installed; uploading is site-wide and lives
+	// in site settings, which is not somewhere anyone would think to look
+	// from here
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await pop(page).locator('.glue-popover-disclosure').click();
+
+	const link = pop(page).locator('.glue-font-note a');
+	await expect(link).toHaveText('site settings');
+	expect(await link.getAttribute('href')).toContain('?pages');
+});

@@ -736,3 +736,24 @@
 	padding-top: 5px;
 	margin-bottom: 5px;
 }
+
+.glue-background-popover {
+	width: 200px;
+}
+
+.glue-background-pad {
+	/* drag here to move the image behind the object - the page background is
+	   moved the same way, by dragging its own button */
+	width: 44px;
+	height: 26px;
+	box-sizing: border-box;
+	border: 1px solid #000;
+	background: #fff;
+	color: #333;
+	font-size: 14px;
+	line-height: 24px;
+	text-align: center;
+	cursor: move;
+	-webkit-user-select: none;
+	user-select: none;
+}

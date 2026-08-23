@@ -1098,6 +1098,15 @@ function text_font_popover(obj)
 		}));
 	adv.appendChild(shadow_row);
 
+	// Where the faces in that dropdown come from, for anyone wondering why
+	// theirs is not among them. A note rather than a control: uploading is a
+	// site-wide thing and lives in site settings.
+	var note = document.createElement('div');
+	note.className = 'glue-popover-note glue-font-note';
+	note.innerHTML = 'upload new fonts in <a href="' + $.glue.base_url +
+		'?pages">site settings</a>';
+	adv.appendChild(note);
+
 	// One reset for the whole panel, in the fold: everything about the type,
 	// including what the rows above set. Clearing the properties rather than
 	// writing defaults into them is what makes the object file drop the
