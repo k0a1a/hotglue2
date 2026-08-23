@@ -113,13 +113,34 @@ from reading the code:
   for instance); a hotglue install can host many authors who do not trust each other, so
   dial that back — keep per-object code scoped to classes and attributes, with JS staying
   in `/code`.
-- **Icon set refresh** — adopt (and extend) the Superglue icon set on the translucent
-  gray editor chrome. Addresses the old "redesign menu icons" item. **Now more pressing:
-  six buttons currently ship a text label as a placeholder** — undo, redo, link, `</>`,
-  clip/show and centre/wide — all carrying `.glue-btn-label`, which is a ready-made list
-  of what needs drawing. Get SVG source if available (scalable, CSS-colorable); match the
-  style rigorously when extending it for new Hotglue features; interaction states
-  (hover/active/disabled) and keep the tooltips.
+- **Icon set refresh** — *(danja is introducing a new set before hotglue.me is updated,
+  so this lands ahead of shipping.)* Six buttons currently carry a text label as a
+  placeholder and all are marked `.glue-btn-label`, which is the list of what needs
+  drawing:
+
+  | label | what it does | file |
+  |---|---|---|
+  | `undo` / `redo` | undo stack | `js/edit.js` |
+  | `link` | make/edit a link in a text object | `modules/text/text-edit.js` |
+  | `</>` | switch that object between WYSIWYG and HTML source | `modules/text/text-edit.js` |
+  | `clip` / `show` | object clips or spills its overflow | `modules/object/object-edit.js` |
+  | `centre` / `wide` | page layout mode | `modules/page/page-edit.js` |
+
+  Two mechanical notes for whoever wires them up. **It is not a `src` swap**: the
+  existing icons are `<img src=… alt="btn" width=32 height=32>`, whereas a placeholder is
+  a `<div>` carrying inline box styles plus `.glue-btn-label`, so each one converts back
+  to an `<img>` and sheds both. And **an SVG referenced through `<img>` cannot be
+  recoloured by CSS** — if the set is SVG and colour-following-the-theme is wanted
+  (the old note asked for "CSS-colorable"), they need to be inlined or used as
+  `mask-image`, which is a different wiring again. Today's 65 icons are all PNG.
+
+  Four of these are STATEFUL — `clip`/`show`, `centre`/`wide`, and to a degree
+  `</>` — so each needs two icons or one icon with a clear on-state, not just a picture.
+  They currently swap their label text through Alpine, and the tooltip says what is
+  true now while the label says what clicking will do; worth preserving that split.
+
+  Beyond the placeholders: match the style rigorously when extending the set, cover
+  interaction states (hover/active/disabled), and keep the tooltips.
 - **Local JS build** — partly addressed and deliberately stopped short. `tools/make-min.js`
   now generates a `.min.js` copy by stripping whole-line comments, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source, so the
