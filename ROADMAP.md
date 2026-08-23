@@ -47,22 +47,36 @@ Checked against the tree on 2026-08-23.
 ### In git history only
 
 - **MOBILE-VIEW-DESIGN.md** — the author-curated "mark elements mobile-friendly →
-  stacked view" approach, a DIFFERENT design from the pan/zoom one that shipped.
-  Deliberately reverted off `ng`; recover with `git show 6e6bd6b:MOBILE-VIEW-DESIGN.md`.
-  Do not restore it without deciding the question under "Mobile view" below.
+  stacked view" approach, a DIFFERENT design from the pan/zoom one that shipped. That
+  choice has been made: pan/zoom is the mobile view, and this is **not** being pursued.
+  Kept findable rather than resurrected — `git show 6e6bd6b:MOBILE-VIEW-DESIGN.md` — and
+  it still holds a useful survey of seven approaches if the question is ever reopened.
 
 ---
 
 ## Done / shipped
 
 - DB-backed editor auth (`AUTH_METHOD='db'`).
+- **Undo/redo** — `$.glue.undo` in `js/edit.js`, an in-memory stack 20 deep. It replaced
+  the old server-side auto-snapshot system rather than building on it.
+- **Favicon upload** — in site settings, with a clear action (`page-favicon-file`).
+- **Upload & manage fonts** (woff/woff2/ttf) — site settings, with per-font removal
+  (`page-custom-fonts`, `page.remove_font`).
+- **Server-side video transcoding** — uploads are re-encoded via ffmpeg to one
+  web-optimised variant with a generated poster, in the background, with a placeholder
+  shown while it runs. See README's 2026-08 entry.
+- **Relative internal links** — a link may be written as a bare page name and is resolved
+  at render (`resolve_relative_urls()`); the link dialog deliberately leaves them alone
+  rather than absolutising them.
 - Editor dejQuery'd → vanilla + Moveable (drag/resize, touch-capable) + Alpine (chrome).
   HiDPI sharp images. PHP8 pass. Color picker later moved to vendored vanilla-picker.
 
 Shipped 2026-08-22/23:
 
-- **Mobile guided view** — pan/zoom on small screens, with an exponentially-paced
-  reveal and a double-tap overview toggle.
+- **Mobile view** — DECIDED and shipped as pan/zoom of the intact canvas
+  (`js/mobile-guided.js`): an exponentially-paced reveal and a double-tap overview
+  toggle. The author-curated stacked alternative is **not** being pursued; see the note
+  under *In git history only*.
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
@@ -99,9 +113,6 @@ from reading the code:
   for instance); a hotglue install can host many authors who do not trust each other, so
   dial that back — keep per-object code scoped to classes and attributes, with JS staying
   in `/code`.
-- **Mobile view** — pan/zoom has SHIPPED as the default. The open half of the decision
-  is whether the author-curated stack (MOBILE-VIEW-DESIGN, in git history only) is still
-  wanted as an opt-in alongside it. Worth deciding before anyone restores that doc.
 - **Icon set refresh** — adopt (and extend) the Superglue icon set on the translucent
   gray editor chrome. Addresses the old "redesign menu icons" item. **Now more pressing:
   six buttons currently ship a text label as a placeholder** — undo, redo, link, `</>`,
@@ -141,10 +152,10 @@ Features and niceties not yet spec'd — the running to-do:
 - **Object rotate / flip / mirror** — Moveable supports these natively now; low-hanging.
 - **New uploader / better upload handling** — client-side resize/transcode before
   upload, which cuts media bloat at source rather than after it lands.
-- **favicon upload, relative internal links, link target auto-select** (`_blank`
-  external / `_self` internal) — small QoL from the old todo list.
-- **Upload & manage fonts** (woff) — modern web fonts make this much easier than the
-  2011 WebType-era plan.
+- **Link target auto-select** — `_blank` for external links, `_self` for internal ones,
+  chosen automatically in the link dialog. Explicitly out of scope when that dialog was
+  built; the natural extension of it. (Favicon upload and relative internal links, which
+  shared this bullet on the old todo list, are both done.)
 - **Centered mode: a content-derived default width.** Switching an existing page to
   centered puts most of its content outside the default container until the handles are
   dragged out — on `content/start`, 4 of 7 objects. A default from the content bounding
@@ -156,7 +167,6 @@ Features and niceties not yet spec'd — the running to-do:
   gestures can only be checked on a device, and `tests/e2e/android-check.js` drives
   Chrome only. Playwright cannot drive Firefox on Android, so this stays manual.
 
-*(Undo is already implemented — `$.glue.undo` in `js/edit.js`, an in-memory stack 20
-deep. It replaced the old server-side auto-snapshot system rather than building on it.)*
+
 
 ---
