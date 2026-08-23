@@ -59,8 +59,8 @@ Checked against the tree on 2026-08-23.
   reusable popover component yet (the colour picker's placement would have to be lifted
   out first).
 
-- **SOW-object-shape.md** — rounded corners (ported from Superglue) and a new edge
-  fadeout, scoped 2026-08-23 and not built. Both are one number per object stored as an
+- **SOW-object-shape.md** — *(BUILT; the doc records what it grew into.)* Rounded
+  corners (ported from Superglue) and a new edge fadeout, scoped 2026-08-23. Both are one number per object stored as an
   `object-*` attribute, so they follow `object-opacity` exactly; both are edited with
   `$.glue.rangeslider`, which finally gives that widget the caller it was built for. Two
   decisions to make first (px or percent for the radius; two gradients or a radial
@@ -102,7 +102,7 @@ Shipped 2026-08-22:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **382 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **436 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
@@ -166,6 +166,26 @@ Shipped 2026-08-23 — a day on the editor's own chrome:
   text object now takes the most recent of them instead of a random colour, so a run of
   them comes out in the palette being worked in.
 
+Shipped later the same night — the editor's panels, and what objects can be:
+
+- **The link dialog became a rollout**, on the same placement rule as everything else:
+  two fields and a button no longer come with a backdrop across the page.
+- **Selection is an outline, not a border.** It was a border on the object itself since
+  2010, so selecting one moved its content by a pixel and three separate places had to
+  shift it back. That is also what made an object's own border impossible.
+- **An edge panel for every object**: rounded corners, the soft fade, and a border —
+  width, style, colour — with an advanced fold holding a *glow*, a radial-gradient
+  background that leaves the content sharp where the fade (a mask) would not.
+- **One typography panel.** Spacing and alignment folded into the font panel's advanced
+  section, which also gained a text shadow and the text colour; the text menu went from
+  thirteen buttons to five. One reset, in the fold, for the whole panel.
+- **A background image on any object** — the browser's own file picker when there is
+  none, a panel to tile, drag or remove when there is. It uploads with the object's name
+  and the object serves it, the way image objects already serve their picture.
+- **The panels are one set of parts**: `$.glue.popover` places them (beside the object,
+  never over it), folds them, builds their rows, their colour buttons and their resets.
+  Four panels and the colour picker's alpha are built from the same pieces.
+
 Bugs found while building the above, each invisible from reading the code:
 
 - The editor's canvas shortcuts fired while a field had focus: Delete (handled on
@@ -186,6 +206,16 @@ Bugs found while building the above, each invisible from reading the code:
 - Two icon names are swapped in the upstream set: `align-left.svg` draws lines centred
   and `align-center.svg` draws them flush left. The buttons are mapped by what the
   artwork shows.
+- `upload_files()` dispatches by building `"{preferred_module}_upload"` and calling it,
+  so a preferred_module with a hyphen in it is not a function name, is silently not
+  callable, and the file falls through to the generic hooks — where the image module
+  turns it into a new object. Nothing logs a complaint.
+- The image module paints its picture with `background-image`, so a save rule that read
+  `background-repeat` off any element that had one wrote two new attributes into every
+  image object on every save. `save-serialization.spec.js` caught it.
+- A panel avoided ITSELF: `.glue-popover` was added to what a popover must not cover (so
+  the colour picker would not cover the panel that opened it), and a panel is in the DOM
+  before it is placed. That is what put a panel on top of its own object.
 - In the test harness, not the app, and the cause of nearly every unreproducible
   failure this suite has had: `Fixture.destroy()` removes the page directory in
   teardown while the editor is still landing a save it started as the test ended, and a

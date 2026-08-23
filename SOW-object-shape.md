@@ -1,6 +1,27 @@
 # SOW — Object shape: rounded corners, and a soft edge
 
-Status: scoped, not built. Branch: `ng`.
+Status: **BUILT 2026-08-23/24**, and grown in the building. Branch: `ng`.
+
+What shipped, beyond what was scoped here:
+
+- The two properties became an **edge panel** rather than two drag bars — one button
+  opening rounded corners, the edge fade, and a border (width, style, colour), with an
+  **advanced fold** holding a *glow*: a radial-gradient background that leaves the
+  content sharp, which is the effect the fade cannot give because a mask takes the text
+  with it.
+- **The fade is two linear gradients intersected**, not the radial this SOW recommended
+  and not the radial that replaced it: each gradient alone fades two opposite edges, and
+  the compositing is what fades all four.
+- **Objects can have a border at all** only because the editor's selection stopped being
+  one. It was a border on the same element, so an author border made the selection
+  invisible and moved the object by half its width on every select. It is an outline
+  now, and three coordinate fixups went with it.
+- **A background image per object**, which was not in this SOW: the file picker when
+  there is none, a panel to tile/move/remove when there is.
+- `$.glue.rangeslider` was NOT adopted after all — the panels use
+  `$.glue.popover.number_row()` instead, and the rangeslider still has no caller. That
+  decision stands in the roadmap: adopt it for the buttons that still drag invisibly, or
+  delete it.
 
 Two per-object properties that change what an object's edges look like:
 
