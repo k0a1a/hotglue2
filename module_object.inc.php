@@ -263,6 +263,18 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-border-radius'])) {
 		elem_css($elem, 'border-radius', $obj['object-border-radius']);
 	}
+	// A border of the author's own. The style is implied rather than stored:
+	// there is one kind of border on offer and it is solid, so a width is all
+	// there is to remember. (The editor's selection used to be a border on
+	// this same element, which is why objects could not have one until it
+	// became an outline - see .glue-selected in css/edit.css.)
+	if (!empty($obj['object-border-width'])) {
+		elem_css($elem, 'border-width', $obj['object-border-width']);
+		elem_css($elem, 'border-style', 'solid');
+		if (!empty($obj['object-border-color'])) {
+			elem_css($elem, 'border-color', $obj['object-border-color']);
+		}
+	}
 	// A soft edge: the NUMBER is stored, and one rule in css/main.css builds
 	// the mask from it - see .glue-edge-fade there. Storing the gradient
 	// itself would put commas and quotes in the object file and write the
@@ -384,6 +396,18 @@ function object_alter_save($args)
 		$obj['object-border-radius'] = elem_css($elem, 'border-radius');
 	} else {
 		unset($obj['object-border-radius']);
+	}
+	// border-style is not stored: see object_render_object(), it is implied by
+	// there being a width at all
+	if (elem_css($elem, 'border-width') !== NULL) {
+		$obj['object-border-width'] = elem_css($elem, 'border-width');
+	} else {
+		unset($obj['object-border-width']);
+	}
+	if (elem_css($elem, 'border-color') !== NULL) {
+		$obj['object-border-color'] = elem_css($elem, 'border-color');
+	} else {
+		unset($obj['object-border-color']);
 	}
 	// see object_render_object(): the number is what is stored, and the
 	// class comes back with it

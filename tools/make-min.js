@@ -22,35 +22,50 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = process.argv[2];
-if (!src || !src.endsWith('.js') || src.endsWith('.min.js')) {
-	console.error('usage: node tools/make-min.js <path/to/file.js>');
-	process.exit(1);
-}
-const out = src.replace(/\.js$/, '.min.js');
-
-const lines = fs.readFileSync(src, 'utf8').split('\n');
-const kept = [];
-let inBlock = false;
-for (const line of lines) {
-	const t = line.trim();
-	if (inBlock) {
-		if (t.includes('*/')) inBlock = false;
-		continue;
+// The transform itself, exported so tests/e2e/min-files.spec.js can ask what
+// this file WOULD write without running it. A comment-only change to a source
+// leaves its copy byte-identical, which no amount of looking at dates can tell
+// apart from a copy nobody remembered to update.
+function strip_comments(source) {
+	const lines = source.split('\n');
+	const kept = [];
+	let inBlock = false;
+	for (const line of lines) {
+		const t = line.trim();
+		if (inBlock) {
+			if (t.includes('*/')) inBlock = false;
+			continue;
+		}
+		if (t.startsWith('/*')) {
+			if (!t.includes('*/')) inBlock = true;
+			continue;
+		}
+		if (t.startsWith('//')) continue;
+		// collapse the blank runs left where a comment block used to be
+		if (!t && kept.length && !kept[kept.length - 1].trim()) continue;
+		kept.push(line);
 	}
-	if (t.startsWith('/*')) {
-		if (!t.includes('*/')) inBlock = true;
-		continue;
-	}
-	if (t.startsWith('//')) continue;
-	// collapse the blank runs left where a comment block used to be
-	if (!t && kept.length && !kept[kept.length - 1].trim()) continue;
-	kept.push(line);
+	return kept.join('\n').replace(/\n{3,}/g, '\n\n');
 }
-const result = kept.join('\n').replace(/\n{3,}/g, '\n\n');
-fs.writeFileSync(out, result);
 
-const before = fs.statSync(src).size;
-const after = Buffer.byteLength(result);
-console.log(`${path.basename(out)}: ${before} -> ${after} bytes ` +
-	`(${Math.round((1 - after / before) * 100)}% smaller)`);
+module.exports = { strip_comments };
+
+// Only when run as a command, so that requiring this for its transform - which
+// tests/e2e/min-files.spec.js does, to ask what it WOULD write - does not go
+// looking at argv and exit.
+if (require.main === module) {
+	const src = process.argv[2];
+	if (!src || !src.endsWith('.js') || src.endsWith('.min.js')) {
+		console.error('usage: node tools/make-min.js <path/to/file.js>');
+		process.exit(1);
+	}
+	const out = src.replace(/\.js$/, '.min.js');
+
+	const result = strip_comments(fs.readFileSync(src, 'utf8'));
+	fs.writeFileSync(out, result);
+
+	const before = fs.statSync(src).size;
+	const after = Buffer.byteLength(result);
+	console.log(`${path.basename(out)}: ${before} -> ${after} bytes ` +
+		`(${Math.round((1 - after / before) * 100)}% smaller)`);
+}

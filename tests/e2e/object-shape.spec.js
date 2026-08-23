@@ -27,7 +27,7 @@ const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
-const ROUND = 0, FADE = 1;
+const ROUND = 0, FADE = 1, WIDTH = 2;
 
 async function open(page, id) {
 	const obj = byId(page, id);
@@ -53,7 +53,7 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(2);
+	await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(3);
 	await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 	// the sliders reach "fully round" and no further: half the shorter side
 	// of the object as it is actually drawn, padding and selection border
@@ -153,6 +153,51 @@ test('the fade actually paints', async ({ page, hg }) => {
 		'the object looks the same with and without its fade').toBe(false);
 });
 
+test('a border applies, stores and reaches the published page', async ({ page, hg }) => {
+	// Objects could not have a border at all until the editor's selection
+	// stopped being one on the same element: an author border made the
+	// selection invisible and moved the object by half of ITS width.
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+
+	await setRow(page, WIDTH, 6);
+	await expect.poll(() => cssOf(page, a, 'borderTopWidth')).toBe('6px');
+	// the style is implied by there being a width, not stored as a third thing
+	expect(await cssOf(page, a, 'borderTopStyle')).toBe('solid');
+	await expect.poll(() => attrs(hg)['object-border-width']).toBe('6px');
+	expect(attrs(hg)['object-border-style'],
+		'border-style got stored as well').toBe(undefined);
+
+	await page.goto(`/?${hg.pageName}`);
+	const published = await page.evaluate(() => {
+		const cs = getComputedStyle(document.querySelector('.object'));
+		return [cs.borderTopWidth, cs.borderTopStyle];
+	});
+	expect(published).toEqual(['6px', 'solid']);
+});
+
+test('a border does not move the object when it is selected', async ({ page, hg }) => {
+	// what the old border-as-selection did: 6px there and 6px back
+	const a = hg.addObject('100000000001',
+		{ ...ATTRS, 'object-border-width': '6px' }, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	const at = () => page.evaluate((i) => {
+		const o = document.getElementById(i);
+		return [o.style.left, o.style.top];
+	}, a);
+	const before = await at();
+	await byId(page, a).click();
+	await expect(byId(page, a)).toHaveClass(/glue-selected/);
+	expect(await at(), 'selecting moved the object').toEqual(before);
+
+	// and the selection is visible on it, which an inline border used to hide
+	expect(await cssOf(page, a, 'outlineStyle')).toBe('dashed');
+});
+
 test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 	// Each gradient on its own fades one axis and leaves a band straight
 	// through the middle untouched; they are INTERSECTED to fade all four.
@@ -186,7 +231,8 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	// an object dragged back to square should look exactly like one nobody
 	// ever touched
 	const a = hg.addObject('100000000001',
-		{ ...ATTRS, 'object-border-radius': '24px', 'object-edge-fade': '30px' }, 'A');
+		{ ...ATTRS, 'object-border-radius': '24px', 'object-edge-fade': '30px',
+			'object-border-width': '5px' }, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
@@ -194,6 +240,7 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await pop(page).locator('.glue-popover-reset').click();
 	await expect.poll(() => attrs(hg)['object-border-radius']).toBe(undefined);
 	await expect.poll(() => attrs(hg)['object-edge-fade']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-border-width']).toBe(undefined);
 	await expect(byId(page, a)).not.toHaveClass(/glue-edge-fade/);
 	// and the panel says what is true now
 	await expect(field(page, ROUND)).toHaveValue('0');

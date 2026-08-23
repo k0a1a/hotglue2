@@ -300,9 +300,9 @@ function object_properties_modal_show(obj, data) {
 //
 // --- edge panel ------------------------------------------------------------
 //
-// What an object's edges look like: rounded corners, and a soft fade inwards
-// from each edge. Two numbers, one panel, same rows and same behaviour as the
-// text module's font and spacing panels ($.glue.popover).
+// What an object's edges look like: rounded corners, a soft fade inwards from
+// each edge, and a border. Three numbers, one panel, same rows and same
+// behaviour as the text module's font and spacing panels ($.glue.popover).
 //
 // Both are stored in PX. A percentage would keep the shape through a resize -
 // 50% is a pill, or an ellipse on a box that is not square - but hotglue
@@ -328,6 +328,28 @@ function object_edge_radius(obj)
 {
 	var v = parseFloat(getComputedStyle(obj).borderTopLeftRadius);
 	return isNaN(v) ? 0 : v;
+}
+
+function object_edge_border(obj)
+{
+	var v = parseFloat(getComputedStyle(obj).borderTopWidth);
+	return isNaN(v) ? 0 : v;
+}
+
+function object_set_border(obj, px)
+{
+	if (0 < px) {
+		obj.style.borderWidth = px+'px';
+		// one kind of border, and it is solid - so the style is implied
+		// rather than being a third thing to remember
+		obj.style.borderStyle = 'solid';
+	} else {
+		// emptied rather than set to zero, so the object file drops the
+		// attributes and the object goes back to looking untouched
+		obj.style.borderWidth = '';
+		obj.style.borderStyle = '';
+		obj.style.borderColor = '';
+	}
 }
 
 function object_edge_fade(obj)
@@ -384,14 +406,30 @@ function object_edge_popover(obj)
 	});
 	pop.appendChild(fade.row);
 
+	// A border of the object's own, which only became possible when the
+	// editor's selection stopped being a border on this same element.
+	var border = $.glue.popover.number_row('width', {
+		min: 0, max: 40, step: 1, unit: 'px',
+		value: object_edge_border(obj),
+		apply: function(px, commit) {
+			object_set_border(obj, px);
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(border.row);
+
 	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset('back to square corners and a hard edge',
-		function() {
+	footer.appendChild($.glue.popover.reset(
+		'back to square corners, a hard edge and no border', function() {
 			obj.style.borderRadius = '';
 			object_set_fade(obj, 0);
+			object_set_border(obj, 0);
 			save();
 			radius.set(0);
 			fade.set(0);
+			border.set(0);
 		}));
 	pop.appendChild(footer);
 
