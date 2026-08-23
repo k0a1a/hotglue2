@@ -111,7 +111,7 @@ test('the fade stores its distance, not its gradient', async ({ page, hg }) => {
 
 	// and the class is what turns the rule on
 	await expect(byId(page, a)).toHaveClass(/glue-edge-fade/);
-	expect(await cssOf(page, a, 'maskImage')).toContain('radial-gradient');
+	expect(await cssOf(page, a, 'maskImage')).toContain('linear-gradient');
 });
 
 test('the fade survives a reload and reaches the published page',
@@ -121,7 +121,7 @@ test('the fade survives a reload and reaches the published page',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await expect(byId(page, a)).toHaveClass(/glue-edge-fade/);
-		expect(await cssOf(page, a, 'maskImage')).toContain('radial-gradient');
+		expect(await cssOf(page, a, 'maskImage')).toContain('linear-gradient');
 
 		await page.goto(`/?${hg.pageName}`);
 		const published = await page.evaluate(() => {
@@ -130,7 +130,7 @@ test('the fade survives a reload and reaches the published page',
 				el.style.getPropertyValue('--glue-fade')];
 		});
 		expect(published[0]).toContain('glue-edge-fade');
-		expect(published[1]).toContain('radial-gradient');
+		expect(published[1]).toContain('linear-gradient');
 		expect(published[2].trim()).toBe('30px');
 	});
 
@@ -151,6 +151,35 @@ test('the fade actually paints', async ({ page, hg }) => {
 	const hard = await page.screenshot({ clip });
 	expect(faded.equals(hard),
 		'the object looks the same with and without its fade').toBe(false);
+});
+
+test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
+	// Each gradient on its own fades one axis and leaves a band straight
+	// through the middle untouched; they are INTERSECTED to fade all four.
+	// With the default compositing they would union instead and the left and
+	// right edges would stay hard - which looks close enough to right in a
+	// screenshot of the whole object, and is exactly what this catches. It is
+	// also the check that would notice a browser without mask-composite.
+	const faded = hg.addObject('100000000001',
+		{ ...ATTRS, 'object-edge-fade': '30px' }, 'A');
+	hg.addObject('100000000002',
+		{ ...ATTRS, 'object-top': '500px' }, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+
+	// a strip down the middle of each object's LEFT edge, which is the part
+	// only the horizontal gradient can fade
+	const strip = async (id) => {
+		const b = await byId(page, id).boundingBox();
+		return page.screenshot({ clip: {
+			x: b.x, y: b.y + b.height/2 - 4, width: 12, height: 8,
+		} });
+	};
+	const withFade = await strip(faded);
+	const without = await strip(`${hg.pageName}.100000000002`);
+	expect(withFade.equals(without),
+		'the left edge is as hard as an unfaded object - the two gradients are not being intersected')
+		.toBe(false);
 });
 
 test('zero removes the attributes rather than storing them', async ({ page, hg }) => {

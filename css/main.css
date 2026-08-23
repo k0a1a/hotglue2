@@ -46,22 +46,31 @@ a, a:link, a:visited, a:active, a:hover {
 	   --glue-fade, and adds this class; the gradient lives here so there is
 	   one of it rather than one in the editor and one in the renderer.
 
-	   One radial gradient, measured to the farthest CORNER. A radial fades
-	   the corners before the edges by construction - it is an ellipse, and
-	   the corners are the part of the box furthest from the middle - which is
-	   the look this was chosen for. Measuring to the corner rather than to
-	   the nearest side is what keeps it continuous: at a fade of zero the
-	   transparent stop sits exactly on the corner, so nothing is masked at
-	   all, and the corners soften first as the number grows. To the nearest
-	   side, any fade above zero would cut the corners off outright.
+	   Two gradients, one per axis, INTERSECTED. Each one on its own fades
+	   only two opposite edges and leaves a band straight through the middle
+	   untouched; intersecting them - a pixel is opaque only where both say
+	   opaque - is what fades all four evenly and keeps the feel of a
+	   rectangle. Compositing is the whole mechanism, not a detail: with the
+	   default (add) the two bands union instead, and the left and right edges
+	   never fade at all. mask-composite: intersect is Firefox 53+ and Chrome
+	   120+; -webkit-mask-composite: source-in is the older Blink spelling of
+	   the same thing.
 
 	   The class is on the object rather than the rule being on every .object
 	   because a mask costs a compositing layer, and because a mask that goes
 	   wrong hides its element entirely - not something to hand to objects
 	   nobody has touched. */
 	--glue-fade: 0px;
-	-webkit-mask-image: radial-gradient(farthest-corner at center,
-		#000 calc(100% - var(--glue-fade)), transparent 100%);
-	mask-image: radial-gradient(farthest-corner at center,
-		#000 calc(100% - var(--glue-fade)), transparent 100%);
+	-webkit-mask-image:
+		linear-gradient(to right, transparent, #000 var(--glue-fade),
+			#000 calc(100% - var(--glue-fade)), transparent),
+		linear-gradient(to bottom, transparent, #000 var(--glue-fade),
+			#000 calc(100% - var(--glue-fade)), transparent);
+	mask-image:
+		linear-gradient(to right, transparent, #000 var(--glue-fade),
+			#000 calc(100% - var(--glue-fade)), transparent),
+		linear-gradient(to bottom, transparent, #000 var(--glue-fade),
+			#000 calc(100% - var(--glue-fade)), transparent);
+	-webkit-mask-composite: source-in;
+	mask-composite: intersect;
 }

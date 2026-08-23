@@ -312,9 +312,9 @@ function object_properties_modal_show(obj, data) {
 //
 // The fade is applied here as a custom property plus a class, and drawn by
 // .glue-edge-fade in css/main.css - the object file stores the number only.
-// See object_render_object() in module_object.inc.php for why. It is a radial
-// gradient, so it softens the corners before the edges; the slider's maximum
-// is half the shorter side, which is where it meets itself in the middle.
+// See object_render_object() in module_object.inc.php for why. It fades all
+// four edges evenly; the slider's maximum is half the shorter side, which is
+// where the fade meets itself in the middle.
 //
 
 function object_edge_max(obj)

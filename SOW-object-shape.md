@@ -85,11 +85,13 @@ mask-that-hides-everything failure on objects nobody has touched.
   the corners more than the edges, which reads as a soft oval rather than a soft
   rectangle.
 
-**DECIDED: the radial vignette**, and px for both numbers. Measured to the farthest
-CORNER rather than the nearest side, which is what keeps it continuous — at a fade of
-zero the transparent stop sits exactly on the corner and nothing is masked, and the
-corners soften first as the number grows. To the nearest side, any fade above zero would
-cut the corners off outright.
+**DECIDED: two linear gradients intersected**, and px for both numbers. (A radial was
+tried first and swapped out: it softens the corners long before the edges, because it is
+an ellipse and the corners are the part of a box furthest from the middle.) The
+compositing is the mechanism, not a detail — each gradient alone fades two opposite
+edges and leaves a band through the middle untouched, so with the default `add` the left
+and right edges never fade at all. That is what the "fades on all four sides" test
+checks, and it is the one that would notice a browser without `mask-composite`.
 
 **Interaction with rounded corners:** none — different properties, they compose.
 
