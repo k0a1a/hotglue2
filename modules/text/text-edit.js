@@ -690,18 +690,50 @@ function text_link_dialog_dom(obj, render) {
 // made by eye, closed by a click outside or Escape.
 //
 
-var text_font_popover_elem = false;
+// One panel at a time, whichever it is: two open at once would fight for the
+// same free space beside the object.
+var text_popover_elem = false;
 
-function text_font_popover_close()
+function text_popover_close()
 {
-	if (text_font_popover_elem) {
-		text_font_popover_elem.remove();
-		text_font_popover_elem = false;
+	if (text_popover_elem) {
+		text_popover_elem.remove();
+		text_popover_elem = false;
 	}
 }
 
+// Opens an empty panel for obj, or closes the one that is open if it is
+// already this panel on this object (so the button toggles). Returns the
+// element to fill with rows, or false when it just closed.
+// cls .. a class naming the panel, e.g. 'glue-font-popover'
+function text_popover_open(obj, cls)
+{
+	var same = text_popover_elem && $.glue.owner(text_popover_elem) === obj &&
+		text_popover_elem.classList.contains(cls);
+	text_popover_close();
+	if (same) {
+		return false;
+	}
+	var pop = document.createElement('div');
+	pop.className = 'glue-popover glue-ui '+cls;
+	$.glue.owner(pop, obj);
+	return pop;
+}
+
+// Puts the filled panel on screen. Measured first, so $.glue.popover can fit
+// it into the free space beside the object - which is why it goes into the
+// DOM invisible rather than being positioned before it has a size.
+function text_popover_show(pop)
+{
+	pop.style.visibility = 'hidden';
+	document.body.appendChild(pop);
+	text_popover_elem = pop;
+	$.glue.popover.place(pop, $.glue.popover.pointer());
+	pop.style.visibility = '';
+}
+
 // one row: a label and whatever control it names
-function _text_font_row(label)
+function text_popover_row(label)
 {
 	var row = document.createElement('div');
 	row.className = 'glue-font-row';
@@ -714,12 +746,91 @@ function _text_font_row(label)
 	return row;
 }
 
+// A slider paired with a number field for the same value, kept in step.
+//
+// The FIELD is deliberately not capped by the slider: display type runs past
+// the end of any sensible drag range, and so does the odd extreme letter
+// spacing. The slider parks at its own end and the field keeps the real
+// number.
+//
+// opts .. min, max, step, decimals, value, unit (label after the field),
+//         apply(value, commit) - called live while dragging with commit
+//         false, and once with true when the value is settled
+// returns { row: element, set: function(value) } - set() is for whoever
+// changes the value behind the row's back, e.g. the reset button
+function text_popover_number_row(label, opts)
+{
+	var row = text_popover_row(label);
+	var decimals = opts.decimals || 0;
+	var fmt = function(v) {
+		return decimals ? v.toFixed(decimals) : String(Math.round(v));
+	};
+	var clamp = function(v) {
+		return Math.max(opts.min, Math.min(opts.max, v));
+	};
+
+	var range = document.createElement('input');
+	range.type = 'range';
+	range.className = 'glue-font-size-slider';
+	range.min = opts.min;
+	range.max = opts.max;
+	range.step = opts.step;
+	range.value = clamp(opts.value);
+
+	var field = document.createElement('input');
+	field.type = 'number';
+	field.className = 'glue-font-size-field';
+	field.step = opts.step;
+	field.value = fmt(opts.value);
+
+	range.addEventListener('input', function() {
+		field.value = fmt(parseFloat(this.value));
+		opts.apply(parseFloat(this.value), false);
+	});
+	range.addEventListener('change', function() {
+		opts.apply(parseFloat(this.value), true);
+	});
+	field.addEventListener('input', function() {
+		var v = parseFloat(this.value);
+		if (isNaN(v)) {
+			return;
+		}
+		range.value = clamp(v);
+		opts.apply(v, false);
+	});
+	field.addEventListener('change', function() {
+		var v = parseFloat(this.value);
+		if (isNaN(v)) {
+			this.value = fmt(parseFloat(range.value));
+			return;
+		}
+		// tidied to the row's own precision once it is settled, so a typed
+		// "8" and a dragged 8 look the same afterwards
+		this.value = fmt(v);
+		opts.apply(v, true);
+	});
+
+	row.appendChild(range);
+	row.appendChild(field);
+	if (opts.unit) {
+		var u = document.createElement('div');
+		u.className = 'glue-font-unit';
+		u.textContent = opts.unit;
+		row.appendChild(u);
+	}
+	return {
+		row: row,
+		set: function(v) {
+			range.value = clamp(v);
+			field.value = fmt(v);
+		}
+	};
+}
+
 function text_font_popover(obj)
 {
-	// a second click on the button closes it again
-	var was_for = text_font_popover_elem ? $.glue.owner(text_font_popover_elem) : false;
-	text_font_popover_close();
-	if (was_for === obj) {
+	var pop = text_popover_open(obj, 'glue-font-popover');
+	if (!pop) {
 		return;
 	}
 
@@ -734,10 +845,6 @@ function text_font_popover(obj)
 	// through this panel would quietly flatten it.
 	var line_height = parseFloat(cs.lineHeight);
 	var ratio = (!isNaN(line_height) && size) ? line_height/size : 1.2;
-
-	var pop = document.createElement('div');
-	pop.className = 'glue-popover glue-font-popover glue-ui';
-	$.glue.owner(pop, obj);
 
 	var save = function() {
 		$.glue.object.save(obj);
@@ -795,65 +902,29 @@ function text_font_popover(obj)
 		$.glue.conf.text.last_font = this.value;
 		$.glue.backend({ method: 'page.set_last_font', font: this.value });
 	});
-	var face_row = _text_font_row(false);
+	var face_row = text_popover_row(false);
 	face_row.appendChild(select);
 	pop.appendChild(face_row);
 
 	// --- row 2: size ------------------------------------------------------
-	var range = document.createElement('input');
-	range.type = 'range';
-	range.className = 'glue-font-size-slider';
-	range.min = 8;
-	range.max = 100;
-	range.step = 1;
-	range.value = Math.max(8, Math.min(100, size));
-	var field = document.createElement('input');
-	field.type = 'number';
-	field.className = 'glue-font-size-field';
-	field.min = 1;
-	field.value = size;
-
-	var apply_size = function(px, commit) {
-		obj.style.fontSize = px+'px';
-		obj.style.lineHeight = (px*ratio)+'px';
-		if (commit) {
-			save();
-			$.glue.conf.text.last_font_size = obj.style.fontSize;
-			$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
-			$.glue.conf.text.last_line_height = obj.style.lineHeight;
-			$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
+	var size_row = text_popover_number_row('size', {
+		min: 8, max: 100, step: 1, value: size, unit: 'px',
+		apply: function(px, commit) {
+			if (px < 1) {
+				return;
+			}
+			obj.style.fontSize = px+'px';
+			obj.style.lineHeight = (px*ratio)+'px';
+			if (commit) {
+				save();
+				$.glue.conf.text.last_font_size = obj.style.fontSize;
+				$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
+				$.glue.conf.text.last_line_height = obj.style.lineHeight;
+				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
+			}
 		}
-	};
-	range.addEventListener('input', function() {
-		field.value = this.value;
-		apply_size(parseInt(this.value, 10), false);
 	});
-	range.addEventListener('change', function() {
-		apply_size(parseInt(this.value, 10), true);
-	});
-	field.addEventListener('input', function() {
-		var px = parseInt(this.value, 10);
-		if (isNaN(px) || px < 1) {
-			return;
-		}
-		// The field is NOT capped by the slider: display type runs well past
-		// the end of a sensible drag range. The slider just parks at its own
-		// maximum and the field keeps the real number.
-		range.value = Math.max(8, Math.min(100, px));
-		apply_size(px, false);
-	});
-	field.addEventListener('change', function() {
-		var px = parseInt(this.value, 10);
-		if (isNaN(px) || px < 1) {
-			this.value = parseInt(getComputedStyle(obj).fontSize);
-			return;
-		}
-		apply_size(px, true);
-	});
-	var size_row = _text_font_row('size');
-	size_row.appendChild(range);
-	size_row.appendChild(field);
-	pop.appendChild(size_row);
+	pop.appendChild(size_row.row);
 
 	// --- row 3: style -----------------------------------------------------
 	//
@@ -891,7 +962,7 @@ function text_font_popover(obj)
 		obj.style.textDecoration = parts.join(' ');
 	};
 
-	var style_row = _text_font_row('style');
+	var style_row = text_popover_row('style');
 	[
 		['bold', 'bold', function() {
 			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
@@ -921,38 +992,191 @@ function text_font_popover(obj)
 	});
 	pop.appendChild(style_row);
 
-	// --- place it ---------------------------------------------------------
-	pop.style.visibility = 'hidden';
-	document.body.appendChild(pop);
-	text_font_popover_elem = pop;
-	$.glue.popover.place(pop, $.glue.popover.pointer());
-	pop.style.visibility = '';
+	text_popover_show(pop);
+}
+
+//
+// --- spacing popover -------------------------------------------------------
+//
+// Line height, letter spacing, word spacing and alignment, replacing four
+// buttons: three that had to be dragged (with a click on the same button
+// meaning "reset", which nothing told you) and one that cycled left ->
+// centre -> right -> justify.
+//
+// Units: the three spacings are written in em, which is what the controls
+// they replace wrote and what keeps them proportional if the type is resized
+// later. Line height is shown as a MULTIPLE of the font size rather than a
+// length, since that is how anyone reasons about it - 1.2, not 21.6px.
+//
+// The reset button clears all four properties. Emptying the style makes the
+// object file drop the attributes entirely (text_alter_save() stores only
+// what is set), so a reset object is byte-identical to one nobody ever
+// touched, rather than one carrying "normal" forever.
+//
+
+function text_spacing_popover(obj)
+{
+	var pop = text_popover_open(obj, 'glue-spacing-popover');
+	if (!pop) {
+		return;
+	}
+
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+	// em is relative to the object's own font size, so every read and write
+	// below goes through it
+	var em = function() {
+		var v = parseFloat(getComputedStyle(obj).fontSize);
+		return (isNaN(v) || !v) ? 16 : v;
+	};
+	// a computed length in px, as a multiple of the font size. 'normal' is
+	// what letter- and word-spacing report when nothing is set, and 0 is the
+	// honest way to show it
+	var to_em = function(value, fallback) {
+		var px = parseFloat(value);
+		if (isNaN(px)) {
+			return fallback;
+		}
+		return px/em();
+	};
+
+	var cs = getComputedStyle(obj);
+
+	var line = text_popover_number_row('line', {
+		min: 0.5, max: 3, step: 0.05, decimals: 2, unit: '\u00d7',
+		value: to_em(cs.lineHeight, 1.2),
+		apply: function(v, commit) {
+			obj.style.lineHeight = v+'em';
+			if (commit) {
+				save();
+				// the old line-height control remembered this site-wide for
+				// newly created text objects; so does this one
+				$.glue.conf.text.last_line_height = obj.style.lineHeight;
+				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
+			}
+		}
+	});
+	pop.appendChild(line.row);
+
+	var letter = text_popover_number_row('letter', {
+		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em',
+		value: to_em(cs.letterSpacing, 0),
+		apply: function(v, commit) {
+			obj.style.letterSpacing = v+'em';
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(letter.row);
+
+	var word = text_popover_number_row('word', {
+		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em',
+		value: to_em(cs.wordSpacing, 0),
+		apply: function(v, commit) {
+			obj.style.wordSpacing = v+'em';
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(word.row);
+
+	// --- alignment --------------------------------------------------------
+	//
+	// Four buttons rather than a cycle, so the one in force is visible
+	// without clicking through the others. Note computed text-align reads
+	// 'start' when nothing is set, which is left in a left-to-right page -
+	// treat it as left rather than as "none of them".
+	var align_row = text_popover_row('align');
+	var align_buttons = [];
+	var sync_align = function() {
+		var cur = getComputedStyle(obj).textAlign;
+		if (cur == 'start') {
+			cur = 'left';
+		}
+		align_buttons.forEach(function(b) {
+			b.classList.toggle('glue-align-on', b.dataset.align == cur);
+		});
+	};
+	// The icon names are the SuperGlue set's, and two of them are swapped at
+	// source: align-left.svg draws lines CENTRED on a common axis, while
+	// align-center.svg draws them flush against a left margin rule. Mapped by
+	// what the artwork shows rather than by what the file is called - a
+	// button that says "centre" and looks like "left" is worse than an odd
+	// pairing in here. Fix the names upstream and this table follows.
+	[
+		['left', 'align-center', 'align left'],
+		['center', 'align-left', 'align centre'],
+		['right', 'align-right', 'align right'],
+		['justify', 'align-justify', 'justify']
+	].forEach(function(a) {
+		var b = $.glue.icon(a[1], a[2]);
+		b.classList.add('glue-align-btn');
+		b.dataset.align = a[0];
+		b.addEventListener('click', function() {
+			obj.style.textAlign = a[0];
+			sync_align();
+			save();
+		});
+		align_buttons.push(b);
+		align_row.appendChild(b);
+	});
+	sync_align();
+	pop.appendChild(align_row);
+
+	// --- reset ------------------------------------------------------------
+	var reset_row = text_popover_row(false);
+	reset_row.classList.add('glue-popover-footer');
+	var reset = document.createElement('div');
+	reset.className = 'glue-popover-reset';
+	reset.textContent = 'reset';
+	reset.title = 'back to the default line height, spacing and alignment';
+	reset.addEventListener('click', function() {
+		obj.style.lineHeight = '';
+		obj.style.letterSpacing = '';
+		obj.style.wordSpacing = '';
+		obj.style.textAlign = '';
+		save();
+		// the panel now says something that is no longer true, so it is read
+		// back off the object rather than assumed
+		var now = getComputedStyle(obj);
+		line.set(to_em(now.lineHeight, 1.2));
+		letter.set(to_em(now.letterSpacing, 0));
+		word.set(to_em(now.wordSpacing, 0));
+		sync_align();
+	});
+	reset_row.appendChild(reset);
+	pop.appendChild(reset_row);
+
+	text_popover_show(pop);
 }
 
 // closed by a click anywhere outside it, like the colour picker. Capture
 // phase, so it closes even when something else stops the click.
 document.documentElement.addEventListener('click', function(e) {
-	if (text_font_popover_elem && !text_font_popover_elem.contains(e.target)) {
-		text_font_popover_close();
+	if (text_popover_elem && !text_popover_elem.contains(e.target)) {
+		text_popover_close();
 	}
 }, true);
 
 document.documentElement.addEventListener('keydown', function(e) {
 	if (e.key == 'Escape') {
-		text_font_popover_close();
+		text_popover_close();
 	}
 });
 
 // and it does not stay behind when the object it belongs to is dropped or
 // dragged away from under it
 $.glue.live('.object', 'glue-deselect', function(e) {
-	if (text_font_popover_elem && $.glue.owner(text_font_popover_elem) === this) {
-		text_font_popover_close();
+	if (text_popover_elem && $.glue.owner(text_popover_elem) === this) {
+		text_popover_close();
 	}
 });
 
 $.glue.live('.object', 'glue-movestart', function(e) {
-	text_font_popover_close();
+	text_popover_close();
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1177,228 +1401,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('text', 'text-font', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-line-height.png';
-	elem.alt = 'btn';
-	elem.title = 'change line height, click to reset to default one';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('glue-menu-activate', function(e) {
-		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
-		/*
-		var obj = $.glue.owner(this);
-		if ($(obj).css('line-height').substr(-2) == 'em') {
-			$(this).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
-		} else if ($(obj).css('line-height').substr(-2) == 'px') {
-			$(this).attr('title', 'change line height ('+parseFloat($(obj).css('line-height'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-		}
-		*/
-	});
-	elem.addEventListener('mousedown', function(e) {
-		var obj = $.glue.owner(this);
-		// jquery seems to always return line-height in px
-		// but just in case, try to handle em as well
-		// assume px for font-size
-		var font_size = parseFloat(getComputedStyle(obj).fontSize);
-		var line_height = getComputedStyle(obj).lineHeight;
-		if (line_height.substr(-2) == 'em') {
-			var orig_val = parseFloat(line_height)*font_size;
-		} else if (line_height.substr(-2) == 'px') {
-			var orig_val = parseFloat(line_height);
-		} else {
-			// some sane fallback
-			var orig_val = font_size*1.2;
-		}
-		var no_change = true;
-		var that = this;
-		$.glue.slider(e, function(x, y) {
-			var val = orig_val+y/6;
-			if (val < 0) {
-				val = 0;
-			}
-			// set line-height in em
-			obj.style.lineHeight = (val/font_size)+'em';
-			//$(that).attr('title', 'change line height ('+(val/font_size)+'em), click to reset to default one');
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset line-height if there was no change at all
-			if (no_change) {
-				obj.style.lineHeight = '';
-				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-line-height' });
-				/*
-				if ($(obj).css('line-height').substr(-2) == 'em') {
-					$(that).attr('title', 'change line height ('+$(obj).css('line-height')+'), click to reset to default one');
-				} else if ($(obj).css('line-height').substr(-2) == 'px') {
-					$(that).attr('title', 'change line height ('+parseFloat($(obj).css('line-height'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-				}
-				*/
-			} else {
-				$.glue.object.save(obj);
-				// remember as the site-wide default for newly created text
-				// objects (see the "new text" handler above)
-				$.glue.conf.text.last_line_height = obj.style.lineHeight;
-				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
-			}
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.contextmenu.register('text', 'text-line-height', elem);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-letter-spacing.png';
-	elem.alt = 'btn';
-	elem.title = 'change letter spacing';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('glue-menu-activate', function(e) {
-		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
-		/*
-		var obj = $.glue.owner(this);
-		if ($(obj).css('letter-spacing').substr(-2) == 'em') {
-			$(this).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
-		} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
-			$(this).attr('title', 'change letter spacing ('+parseFloat($(obj).css('letter-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-		}
-		*/
-	});
-	elem.addEventListener('mousedown', function(e) {
-		var obj = $.glue.owner(this);
-		// jquery seems to always return letter-spacing in px
-		// but just in case, try to handle em as well
-		// assume px for font-size
-		var font_size = parseFloat(getComputedStyle(obj).fontSize);
-		var letter_spacing = getComputedStyle(obj).letterSpacing;
-		if (letter_spacing.substr(-2) == 'em') {
-			var orig_val = parseFloat(letter_spacing)*font_size;
-		} else if (letter_spacing.substr(-2) == 'px') {
-			var orig_val = parseFloat(letter_spacing);
-		} else {
-			// some sane fallback
-			var orig_val = 0.0;
-		}
-		var no_change = true;
-		var that = this;
-		$.glue.slider(e, function(x, y) {
-			var val = orig_val+y/6;
-			obj.style.letterSpacing = (val/font_size)+'em';
-			//$(that).attr('title', 'change letter spacing ('+(val/font_size)+'em), click to reset to default one');
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset letter-spacing if there was no change at all
-			if (no_change) {
-				obj.style.letterSpacing = '';
-				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-letter-spacing' });
-				/*
-				if ($(obj).css('letter-spacing').substr(-2) == 'em') {
-					$(that).attr('title', 'change letter spacing ('+$(obj).css('letter-spacing')+'), click to reset to default one');
-				} else if ($(obj).css('letter-spacing').substr(-2) == 'px') {
-					$(that).attr('title', 'change letter spacing ('+parseFloat($(obj).css('letter-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-				}
-				*/
-			} else {
-				$.glue.object.save(obj);
-			}
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.contextmenu.register('text', 'text-letter-spacing', elem);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-word-spacing.png';
-	elem.alt = 'btn';
-	elem.title = 'change word spacing';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('glue-menu-activate', function(e) {
-		// TODO (later): my px to em calculation is not working perfectly, so leave this out for now
-		/*
-		var obj = $.glue.owner(this);
-		if ($(obj).css('word-spacing').substr(-2) == 'em') {
-			$(this).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
-		} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
-			$(this).attr('title', 'change word spacing ('+parseFloat($(obj).css('word-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-		}
-		*/
-	});
-	elem.addEventListener('mousedown', function(e) {
-		var obj = $.glue.owner(this);
-		// jquery seems to always return word-spacing in px
-		// but just in case, try to handle em as well
-		// assume px for font-size
-		var font_size = parseFloat(getComputedStyle(obj).fontSize);
-		var word_spacing = getComputedStyle(obj).wordSpacing;
-		if (word_spacing.substr(-2) == 'em') {
-			var orig_val = parseFloat(word_spacing)*font_size;
-		} else if (word_spacing.substr(-2) == 'px') {
-			var orig_val = parseFloat(word_spacing);
-		} else {
-			// some sane fallback
-			var orig_val = 0.0;
-		}
-		var no_change = true;
-		var that = this;
-		$.glue.slider(e, function(x, y) {
-			var val = orig_val+y/6;
-			obj.style.wordSpacing = (val/font_size)+'em';
-			//$(that).attr('title', 'change word spacing ('+(val/font_size)+'em), click to reset to default one');
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset word-spacing if there was no change at all
-			if (no_change) {
-				obj.style.wordSpacing = '';
-				$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'text-word-spacing' });
-				/*
-				if ($(obj).css('word-spacing').substr(-2) == 'em') {
-					$(that).attr('title', 'change word spacing ('+$(obj).css('word-spacing')+'), click to reset to default one');
-				} else if ($(obj).css('word-spacing').substr(-2) == 'px') {
-					$(that).attr('title', 'change word spacing ('+parseFloat($(obj).css('word-spacing'))/parseFloat($(obj).css('font-size'))+'em), click to reset to default one');
-				}
-				*/
-			} else {
-				$.glue.object.save(obj);
-			}
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.contextmenu.register('text', 'text-word-spacing', elem);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-align.png';
-	elem.alt = 'btn';
-	elem.width = 32;
-	elem.height = 32;
-	elem.setAttribute('x-data', "{ tip: 'change text alignment' }");
-	elem.setAttribute('x-bind:title', 'tip');
-	elem.setAttribute('x-on:glue-menu-activate', 'text_align_sync($el)');
+	// --- spacing popover -------------------------------------------------
+	//
+	// One button in place of the four that used to be here: line height,
+	// letter spacing and word spacing, each of which had to be dragged, and
+	// the alignment cycle. Same panel behaviour as the font popover above.
+	elem = $.glue.icon('vertical-stack-space',
+		'spacing: line, letter and word - and alignment');
 	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var val = getComputedStyle(obj).textAlign;
-		var data = Alpine.$data(this);
-		if (val == 'center') {
-			obj.style.textAlign = 'right';
-			data.tip = 'change text alignment (right)';
-		} else if (val == 'right') {
-			obj.style.textAlign = 'justify';
-			data.tip = 'change text alignment (justify)';
-		} else if (val == 'justify') {
-			obj.style.textAlign = 'left';
-			data.tip = 'change text alignment (left)';
-		} else {
-			obj.style.textAlign = 'center';
-			data.tip = 'change text alignment (center)';
-		}
-		$.glue.object.save(obj);
+		text_spacing_popover($.glue.owner(this));
+		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-align', elem);
+	$.glue.contextmenu.register('text', 'text-spacing', elem);
+
 
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/text/text-padding.png';

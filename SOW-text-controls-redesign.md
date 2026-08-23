@@ -1,8 +1,9 @@
 # SOW — Text controls redesign (Font / Spacing / Color)
 
-Status: **Font popover BUILT 2026-08-23** (`text_font_popover()` in
-`modules/text/text-edit.js`, tests in `tests/e2e/text-font-popover.spec.js`). Still to
-do: the Spacing popover, and moving padding out to object properties. Branch: `ng`.
+Status: **Font and Spacing popovers BUILT 2026-08-23** (`text_font_popover()` and
+`text_spacing_popover()` in `modules/text/text-edit.js`, tests in
+`tests/e2e/text-font-popover.spec.js` and `text-spacing-popover.spec.js`). Still to do:
+moving padding out to object properties. Branch: `ng`.
 
 Decisions taken while building, so the record is not just the plan:
 - **Toggles are two-state** — option (a) under Row 3. Per-selection styling was not
@@ -12,9 +13,19 @@ Decisions taken while building, so the record is not just the plan:
   same reasons. The Spacing popover should use it and skip re-deciding.
 - **`text-decoration` is now stored**, as `text-text-decoration`, saved and rendered by
   `module_text.inc.php` alongside `text-font-style` / `text-font-weight`.
-- The three buttons the panel replaces (`text-font-size`, `text-font-face`,
-  `text-font-style`) are gone from the menu. Line height, letter spacing, word spacing,
-  align, padding, colour, background, link and source are all still their own buttons.
+- The three buttons the Font panel replaces (`text-font-size`, `text-font-face`,
+  `text-font-style`) and the four the Spacing panel replaces (`text-line-height`,
+  `text-letter-spacing`, `text-word-spacing`, `text-align`) are gone from the menu. Left
+  as their own buttons: padding, font colour, background colour, "make background
+  transparent", link and source — thirteen buttons down to six.
+- **Alignment moved INTO the Spacing panel**, as four buttons rather than the old cycle,
+  which was not in this SOW's sketch. Grouping it with spacing rather than leaving it
+  outside is what makes the row short, and four buttons show which alignment is in force
+  without clicking through the other three.
+- **A reset button**, also not in the sketch: the three drag controls used to treat a
+  click with no drag as "reset", which nothing told anyone. It clears line height, the
+  two spacings and alignment by emptying the style properties, so the object file drops
+  the attributes and a reset object is byte-identical to one nobody ever touched.
 
 Reconciled against the tree on 2026-08-23 — the paragraphs marked **CHECKED** are what
 the code actually does, and three of them change the plan. Read those before starting.
@@ -191,9 +202,16 @@ Opens on a "Spacing" button. Groups the three spacing controls:
 - **Word spacing**
 
 Each as a slider + manual entry (like Font's size row), synced, live preview, reading
-current values on open. Same popover behaviour as above. (Full spec when built — this
-SOW's deliverable is the collapse + the Font popover; Spacing follows the same
-template.)
+current values on open. Same popover behaviour as above.
+
+**BUILT**, on the shared row helper `text_popover_number_row()` that the Font panel's
+size row also uses, plus alignment and reset as described at the top. Units, which are
+not arbitrary: the three spacings are written in **em**, which is what the drag controls
+they replace wrote and what keeps them proportional when the type is resized later. Line
+height is SHOWN as a multiple of the font size (1.20, not 21.6px) because that is how it
+is reasoned about, and stored as em like the rest. Letter and word spacing read as 0
+when nothing is set, rather than showing the computed keyword 'normal', and negative
+values are allowed — tightening is as legitimate as loosening.
 
 ## Storage
 

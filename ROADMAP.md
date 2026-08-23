@@ -48,8 +48,8 @@ Checked against the tree on 2026-08-23.
 
 ### In this directory, NOT yet built
 
-- **SOW-text-controls-redesign.md** — *(the Font popover is now BUILT; the Spacing
-  popover and the padding relocation are not.)* Collapse the text menu's eight formatting buttons
+- **SOW-text-controls-redesign.md** — *(the Font and Spacing popovers are now BUILT;
+  the padding relocation is not.)* Collapse the text menu's eight formatting buttons
   into Font and Spacing popovers plus a standalone Color button, and move padding out to
   object properties. Reconciled against the tree on 2026-08-23: the paragraphs marked
   **CHECKED** are what the code actually does, and three of them change the plan — the
@@ -95,7 +95,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **330 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **354 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
@@ -107,6 +107,11 @@ Shipped 2026-08-22/23:
   shall interfere with page elements". They now sit 5px clear of it, and the offset
   turns with the object: as a margin it was screen-space, so it pushed handles INTO
   anything rotated past 90°.
+- **Spacing popover** — line height, letter spacing, word spacing, alignment and a
+  reset, replacing four buttons: three that had to be dragged (where a click meant
+  "reset", which nothing told you) and the alignment cycle. Spacings in em, line height
+  shown as a multiple; reset clears the properties rather than storing defaults. The
+  text menu is down from thirteen buttons to six.
 - **Font popover** — face, size and style in one panel, replacing three buttons that
   each had to be cycled or dragged. Two-state B/I/U/S toggles (the controls style the
   whole object, so there is no partial state), a size field that is not capped by its
@@ -203,6 +208,11 @@ from reading the code:
   the SuperGlue project as publisher). `tools/prep-icons.js` strips the per-file
   attribution blocks, so if attribution turns out to be required it needs to live in one
   NOTICE file rather than 54 copies.
+
+  **Two names are swapped at source:** `align-left.svg` draws lines centred on a common
+  axis and `align-center.svg` draws them flush against a left margin rule. The spacing
+  popover maps them by what they depict, with a comment saying so — worth fixing in the
+  upstream set, after which that table can be straightened out.
 
   **Open decision:** the set is 54 icons against today's 65 PNGs and does not map
   one-to-one. Mixing PNG and SVG shows seams at high zoom and on HiDPI, so at some point
