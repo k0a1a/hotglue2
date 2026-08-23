@@ -75,7 +75,13 @@ const bgOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).backgroundColor, id);
 
 async function openPicker(page, id) {
-	await page.locator(`[id="${id}"]`).click();
+	// only select if it is not selected already - a SECOND click on a text
+	// object is what puts it into edit mode, which is not what a test
+	// reopening the picker means
+	const obj = page.locator(`[id="${id}"]`);
+	if (!(await obj.evaluate((e) => e.classList.contains('glue-selected')))) {
+		await obj.click();
+	}
 	await page.getByTitle(/background color/i).first().click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 }
@@ -104,8 +110,10 @@ test('the page\'s recent colours show as swatches, above the hex field',
 
 		const swatches = page.locator('.glue-picker-swatch');
 		await expect(swatches).toHaveCount(3);
+		// the colour sits on an inner layer; the swatch itself carries the
+		// checkerboard that a semi-transparent colour has to show against
 		expect(await swatches.first().evaluate((e) =>
-			getComputedStyle(e).backgroundColor)).toBe('rgb(255, 0, 0)');
+			getComputedStyle(e.firstElementChild).backgroundColor)).toBe('rgb(255, 0, 0)');
 
 		// above the editor row, not beside it
 		const row = await page.locator('.glue-picker-recent').boundingBox();
@@ -238,4 +246,99 @@ test('the speech-bubble tail is gone', async ({ page, hg }) => {
 
 	expect(await page.locator('.picker_arrow').evaluate((e) =>
 		getComputedStyle(e).display)).toBe('none');
+});
+
+// --- transparency --------------------------------------------------------
+//
+// The picker has an alpha slider now, sitting under the gradient square and
+// above the recent colours. It is the alpha of THIS colour, not the opacity
+// of the object: a half-transparent background under fully solid text, which
+// the object-transparency button cannot express since it fades everything at
+// once. Both exist; they do different things.
+//
+// What comes back has to be something $.glue.color.parse() reads and CSS
+// accepts, and - this is the part that matters for existing pages - an
+// untouched opaque colour has to keep being stored as plain #rrggbb.
+
+test('an opaque colour is still stored as plain hex', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const field = page.locator('.picker_editor input');
+	await field.fill('#123456');
+	await field.press('Enter');
+	// rgb(), not rgba(): the browser normalises whatever is assigned to a
+	// style property, and what is stored is that serialisation - so the
+	// meaningful assertion is that an opaque colour stays three-channel
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-background-color'])
+		.toBe('rgb(18, 52, 86)');
+});
+
+test('a half-transparent colour is stored as rgba', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	// eight hex digits is how the picker's own field takes an alpha
+	const field = page.locator('.picker_editor input');
+	await field.fill('#ff00ff80');
+	await field.press('Enter');
+
+	await expect.poll(() => bgOf(page, a)).toMatch(/^rgba\(255, 0, 255, 0\.5/);
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-background-color'])
+		.toMatch(/^rgba\(255, 0, 255, 0\.5/);
+});
+
+test('fully transparent is stored as the keyword, not rgba zero',
+	async ({ page, hg }) => {
+		// hotglue has always written 'transparent', and a page should not
+		// start saying rgba(0, 0, 0, 0) just because the picker was opened
+		const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		const field = page.locator('.picker_editor input');
+		await field.fill('#ff00ff00');
+		await field.press('Enter');
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-background-color'])
+			.toBe('transparent');
+	});
+
+test('an object stored with alpha opens with the slider where it left it',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...OBJ(300, 250), 'text-background-color': 'rgba(255, 0, 255, 0.5)' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		// the hex field is the readable version of where the slider is
+		await expect(page.locator('.picker_editor input')).toHaveValue(/^#ff00ff8/i);
+		// and closing it again without touching anything changes nothing
+		await page.locator('.picker_done button').click();
+		expect(await bgOf(page, a)).toMatch(/^rgba\(255, 0, 255, 0\.5/);
+	});
+
+test('a transparent colour is remembered with its alpha', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const field = page.locator('.picker_editor input');
+	await field.fill('#ff00ff80');
+	await field.press('Enter');
+	// eight digits in the stored list: it is comma-separated, and rgba() is
+	// full of commas
+	await expect.poll(() => hg.readObject('page').attrs['page-recent-colors'])
+		.toBe('#ff00ff80');
+
+	// and the swatch puts that alpha back
+	await openPicker(page, a);
+	await page.locator('.glue-picker-swatch').first().click();
+	await expect.poll(() => bgOf(page, a)).toMatch(/^rgba\(255, 0, 255, 0\.5/);
 });

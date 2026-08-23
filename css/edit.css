@@ -404,6 +404,25 @@
 	padding: 0.7em !important;
 }
 
+.layout_default .picker_alpha {
+	/* the transparency slider. vanilla-picker gives its layout no width of
+	   its own, so in a narrowed picker it would be sized by whatever was left
+	   over on the line; full width puts it under the gradient square, above
+	   the recent colours, matching the hue bar above it */
+	width: 100% !important;
+	height: 1.4em !important;
+}
+
+.glue-picker-swatch {
+	/* a swatch can be semi-transparent now, so it is drawn over the same
+	   checkerboard vanilla-picker uses for its alpha slider and sample */
+	background-image:
+		linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%),
+		linear-gradient(45deg, #ccc 25%, #fff 25%, #fff 75%, #ccc 75%);
+	background-position: 0 0, 5px 5px;
+	background-size: 10px 10px;
+}
+
 .layout_default.picker_wrapper input,
 .layout_default.picker_wrapper button {
 	font-size: 11px !important;

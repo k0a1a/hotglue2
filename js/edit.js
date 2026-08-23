@@ -260,17 +260,21 @@ $.glue.colorpicker = function()
 		if (recent === false) {
 			var stored = ($.glue.conf.page && $.glue.conf.page.recent_colors) || '';
 			recent = String(stored).split(',').filter(function(c) {
-				return /^#[0-9a-f]{6}$/i.test(c);
+				return /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c);
 			});
 		}
 		return recent;
 	};
 
-	var remember_color = function(hex) {
-		// vanilla-picker hands back 8 hex digits (it keeps an alpha channel
-		// internally even with alpha:false); the swatches are opaque
-		hex = String(hex).slice(0, 7).toLowerCase();
-		if (!/^#[0-9a-f]{6}$/.test(hex)) {
+	var remember_color = function(color) {
+		// #rrggbb while opaque, #rrggbbaa once the transparency slider has
+		// been moved - never rgba(), since the list is comma-separated and
+		// rgba() is full of commas
+		var hex = String(color.hex).toLowerCase();
+		if (/^#[0-9a-f]{6}ff$/.test(hex)) {
+			hex = hex.slice(0, 7);
+		}
+		if (!/^#[0-9a-f]{6}([0-9a-f]{2})?$/.test(hex)) {
 			return;
 		}
 		var list = recent_colors();
@@ -378,7 +382,13 @@ $.glue.colorpicker = function()
 		recent_colors().forEach(function(hex) {
 			var sw = document.createElement('div');
 			sw.className = 'glue-picker-swatch';
-			sw.style.backgroundColor = hex;
+			// the colour goes on an inner layer: the swatch itself carries
+			// the checkerboard a transparent colour has to show against
+			var ink = document.createElement('div');
+			ink.style.width = '100%';
+			ink.style.height = '100%';
+			ink.style.backgroundColor = hex;
+			sw.appendChild(ink);
 			sw.title = hex;
 			sw.addEventListener('click', function(e) {
 				// not silent: this should update the object live, exactly as
@@ -394,16 +404,39 @@ $.glue.colorpicker = function()
 		}
 	};
 
-	// note: the "transparent" toggle farbtastic used to offer here was never
-	// actually used by any module (transparency is handled by a separate
-	// opacity slider on objects), so alpha support is not carried over
+	// What the modules get back. They put it straight into a style property
+	// and store it as an object attribute, so it has to be something
+	// $.glue.color.parse() reads and CSS accepts: plain #rrggbb while the
+	// colour is opaque, which is what every existing page already stores and
+	// keeps them unchanged, rgba() once the transparency slider has been
+	// moved, and the keyword for fully transparent - hotglue has always
+	// stored that as 'transparent' and a page should not start saying
+	// rgba(0, 0, 0, 0) because the picker was opened on it.
+	var to_css = function(color) {
+		var c = color.rgba;
+		var a = Math.round(c[3]*100)/100;
+		if (a <= 0) {
+			return 'transparent';
+		} else if (1 <= a) {
+			return String(color.hex).slice(0, 7);
+		}
+		return 'rgba('+Math.round(c[0])+', '+Math.round(c[1])+', '+
+			Math.round(c[2])+', '+a+')';
+	};
+
+	// The transparency slider is vanilla-picker's own alpha channel, which
+	// its layout puts directly under the gradient square - above the recent
+	// colours. Note it is the alpha of THIS colour, not the opacity of the
+	// object: a half-transparent background with fully solid text on it,
+	// which the object-transparency button in modules/object/object-edit.js
+	// cannot express (it fades everything at once).
 	var picker = new Picker({
 		parent: anchor,
 		popup: 'top',
-		alpha: false,
+		alpha: true,
 		onChange: function(color) {
 			if (typeof change_func == 'function') {
-				change_func(color.hex);
+				change_func(to_css(color));
 			}
 		},
 		onClose: function(color) {
@@ -412,9 +445,9 @@ $.glue.colorpicker = function()
 			}
 			shown = false;
 			if (!cancelled) {
-				remember_color(color.hex);
+				remember_color(color);
 				if (typeof finish_func == 'function') {
-					finish_func(color.hex);
+					finish_func(to_css(color));
 				}
 			}
 			anchor.remove();
@@ -433,13 +466,20 @@ $.glue.colorpicker = function()
 		},
 		set_color: function(col) {
 			var rgb = $.glue.color.parse(col);
-			var hex = rgb ? $.glue.color.to_hex(rgb) : '#ff0000';
-			// a special case for color 'transparent': show white rather than
-			// black, since alpha support isn't carried over (see above)
-			if (rgb && rgb.a == 0) {
-				hex = '#ffffff';
+			if (!rgb) {
+				picker.setColor('#ff0000', true);
+				return;
 			}
-			picker.setColor(hex, true);
+			// 'transparent' is stored as fully transparent BLACK, and
+			// opening the picker on it used to show white because there was
+			// no alpha slider to explain the black. There is one now, so the
+			// slider shows what is true - but the colour underneath still
+			// starts white, since dragging transparency up out of an
+			// untouched object should not turn it black.
+			var hex = $.glue.color.to_hex(rgb.a == 0 ? { r: 255, g: 255, b: 255 } : rgb);
+			picker.setColor('rgba('+parseInt(hex.slice(1, 3), 16)+', '+
+				parseInt(hex.slice(3, 5), 16)+', '+parseInt(hex.slice(5, 7), 16)+', '+
+				rgb.a+')', true);
 		},
 		show: function(def, transp, change, finish) {
 			if (shown) {
