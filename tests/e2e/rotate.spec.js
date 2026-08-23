@@ -120,6 +120,94 @@ test('the handle appears with the selection and goes with it', async ({ page, hg
 	await expect(page.locator('.moveable-rotation-control')).toHaveCount(0);
 });
 
+test('the handles stay outside the object when it is turned', async ({ page, hg }) => {
+	// The offsets that put the handles outside the object are applied as
+	// margins, which shift a control in SCREEN space - while the object's
+	// edges turn with it. So "push the east handle right", which clears the
+	// right edge at 0°, pushed it straight into the object at 180°, where
+	// that edge is on the left. It survived a deselect/reselect too, because
+	// nothing about re-rendering the controls knew the angle.
+	const a = hg.addObject('100000000001',
+		{ ...ATTRS, 'transform-flip': 'rotate(180deg)' }, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await select(page, a);
+
+	const check = async (when) => {
+		const obj = await byId(page, a).boundingBox();
+		const handles = await page.evaluate(() =>
+			[...document.querySelectorAll('.moveable-control.moveable-direction')].map((e) => {
+				const b = e.getBoundingClientRect();
+				return { dir: (e.className.match(/moveable-(nw|ne|sw|se|n|e|s|w)(?:\s|$)/) || [])[1],
+					cx: b.x + b.width/2, cy: b.y + b.height/2 };
+			}));
+		expect(handles.length, when).toBe(3);
+		for (const h of handles) {
+			// turned 180°, east is screen-west and south is screen-north
+			if (h.dir.includes('e')) {
+				expect(h.cx, `${when}: the ${h.dir} handle is inside the object`)
+					.toBeLessThan(obj.x);
+			}
+			if (h.dir.includes('s')) {
+				expect(h.cy, `${when}: the ${h.dir} handle is inside the object`)
+					.toBeLessThan(obj.y);
+			}
+		}
+	};
+	await check('on select');
+
+	// and again after letting go of it and picking it up
+	await page.mouse.click(50, 50);
+	await expect(page.locator('.moveable-control.moveable-direction')).toHaveCount(0);
+	await select(page, a);
+	await check('after reselect');
+});
+
+test('the handles stay outside at an angle that is not a right one',
+	async ({ page, hg }) => {
+		// 180° is the case that shows the bug most plainly, but the rule is
+		// general: measure in the OBJECT's own frame, where "outside" means
+		// past its own half-width or half-height whatever it is turned to.
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'transform-flip': 'rotate(45deg)' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+
+		const out = await page.evaluate((i) => {
+			const obj = document.getElementById(i);
+			const b = obj.getBoundingClientRect();
+			// rotation is about the centre, so the axis-aligned box the
+			// browser reports still has the object's centre in the middle
+			const cx = b.x + b.width/2, cy = b.y + b.height/2;
+			const hw = obj.offsetWidth/2, hh = obj.offsetHeight/2;
+			const rad = -45*Math.PI/180;		// back into the object's frame
+			return [...document.querySelectorAll('.moveable-control.moveable-direction')]
+				.map((e) => {
+					const r = e.getBoundingClientRect();
+					const dx = r.x + r.width/2 - cx, dy = r.y + r.height/2 - cy;
+					return {
+						dir: (e.className.match(/moveable-(nw|ne|sw|se|n|e|s|w)(?:\s|$)/) || [])[1],
+						lx: dx*Math.cos(rad) - dy*Math.sin(rad),
+						ly: dx*Math.sin(rad) + dy*Math.cos(rad),
+						hw, hh,
+					};
+				});
+		}, a);
+
+		expect(out.length).toBe(3);
+		for (const h of out) {
+			if (h.dir.includes('e')) {
+				expect(h.lx, `the ${h.dir} handle is not past the right edge`)
+					.toBeGreaterThan(h.hw + 3);
+			}
+			if (h.dir.includes('s')) {
+				expect(h.ly, `the ${h.dir} handle is not past the bottom edge`)
+					.toBeGreaterThan(h.hh + 3);
+			}
+		}
+	});
+
 test('a locked object offers no rotation handle', async ({ page, hg }) => {
 	// object-lock is what module_lock.inc.php turns into the .locked class
 	const a = hg.addObject('100000000001', { ...ATTRS, 'object-lock': 'locked' }, 'A');

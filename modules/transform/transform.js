@@ -129,16 +129,28 @@ $.glue.live('.object', 'glue-select', function(e) {
 		m.on('rotateStart', function(ev) {
 			start_deg = transform_rotation(obj);
 		}).on('rotate', function(ev) {
-			var deg = start_deg+ev.dist;
-			if (!ev.inputEvent || !ev.inputEvent.shiftKey) {
-				deg = Math.round(deg/15)*15;
-			}
-			transform_set_rotation(obj, deg);
+			// The 15° snap is Moveable's throttleRotate rather than a
+			// Math.round here, so that there is ONE angle: Moveable draws its
+			// control box from its own state, so snapping only the value
+			// written to the object would leave the handles sitting a few
+			// degrees off the object they belong to. It throttles the
+			// absolute angle, not the delta, so this lands on multiples of 15
+			// whatever the object started at. Reading shift per event rather
+			// than at rotateStart lets it be pressed mid-drag.
+			m.throttleRotate = (ev.inputEvent && ev.inputEvent.shiftKey) ? 0 : 15;
+			transform_set_rotation(obj, start_deg+ev.dist);
+			// the offsets that keep the handles outside the object turn with
+			// it, so they are recomputed as it turns
+			$.glue.object.place_handles(obj);
 		}).on('rotateEnd', function(ev) {
 			$.glue.object.save(obj);
+			m.updateRect();
+			$.glue.object.place_handles(obj);
 		});
 	}
 	m.rotatable = true;
+	// 15° steps unless shift is held - see the rotate handler below
+	m.throttleRotate = 15;
 	// Out of the middle of the RIGHT edge, where it emerges from the 'e'
 	// resize handle, rather than Moveable's default position above the box:
 	// that is exactly where contextmenu.show() puts the top row of menu

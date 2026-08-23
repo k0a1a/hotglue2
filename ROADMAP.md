@@ -82,7 +82,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **286 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **290 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
@@ -91,7 +91,9 @@ Shipped 2026-08-22/23:
   left at 7° is the startling outcome, not a constrained one.
 - **Handles outside the object** — resize handles used to straddle the edge, half of
   each lying over the author's content, against the design codex's "no menu or interface
-  shall interfere with page elements". They now sit 5px clear of it.
+  shall interfere with page elements". They now sit 5px clear of it, and the offset
+  turns with the object: as a margin it was screen-space, so it pushed handles INTO
+  anything rotated past 90°.
 - **A smaller colour picker, with the page's recent colours** — roughly half its old
   250x315, plus the last five colours used on that page as swatches above the hex field,
   stored on the page object (`page-recent-colors`) so they are there for whoever opens

@@ -1158,11 +1158,90 @@ $.glue.object = function()
 	// fixup walk
 	var moveables = new WeakMap();
 
+	// Moveable's controls are 14px and centred on the edge they belong to
+	// (margin: -7px), so half of each one lies over the object. HANDLE_OUT is
+	// how far the centre has to move for the handle to clear the edge and
+	// leave a 5px gap: "no menu or interface shall interfere with page
+	// elements", the design codex.
+	var HANDLE_HALF = 7;
+	var HANDLE_OUT = 12;
+	var HANDLE_DIRS = {
+		n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0],
+		ne: [1, -1], se: [1, 1], sw: [-1, 1], nw: [-1, -1]
+	};
+
+	// Pushes the resize handles outside the object, and keeps them there when
+	// it is rotated.
+	//
+	// This cannot be a stylesheet. A control's margin shifts its box in the
+	// control box's coordinates, which are screen-aligned; the rotate() that
+	// Moveable puts in each control's own transform only spins the element in
+	// place. So "push the east handle right" clears the right edge at 0° and
+	// buries the handle INSIDE the object at 180°, where that edge is now on
+	// the left - which is exactly what it did.
+	//
+	// The angle comes from Moveable's getRect() rather than from the object's
+	// style, so this agrees with wherever Moveable itself decided to draw the
+	// handles, including for a flipped object, whose matrix it reads as a
+	// rotation too.
+	// returns false when there is nothing to place yet, which is how the
+	// retry below knows to come back
+	var place_handles = function(obj) {
+		var m = moveables.get(obj);
+		if (!m || typeof m.getControlBoxElement != 'function') {
+			return false;
+		}
+		var box = m.getControlBoxElement();
+		if (!box) {
+			return false;
+		}
+		var rad = (m.getRect().rotation || 0)*Math.PI/180;
+		var cos = Math.cos(rad);
+		var sin = Math.sin(rad);
+		var placed = 0;
+		box.querySelectorAll('.moveable-control.moveable-direction').forEach(function(el) {
+			var dir = (el.className.match(/moveable-(nw|ne|sw|se|n|e|s|w)(?:\s|$)/) || [])[1];
+			var v = HANDLE_DIRS[dir];
+			if (!v) {
+				return;
+			}
+			// the outward direction, turned with the object. Set as
+			// important: css/edit.css has to mark the straight-on case
+			// important to outrank Moveable's own stylesheet, and an
+			// ordinary inline style would lose to it
+			el.style.setProperty('margin-left',
+				(-HANDLE_HALF+(v[0]*cos-v[1]*sin)*HANDLE_OUT)+'px', 'important');
+			el.style.setProperty('margin-top',
+				(-HANDLE_HALF+(v[0]*sin+v[1]*cos)*HANDLE_OUT)+'px', 'important');
+			placed++;
+		});
+		return 0 < placed;
+	};
+
+	// Switching resizable on schedules a render; the controls do not exist
+	// until it lands, and Moveable has no event for "the control box now
+	// exists". So try, and keep trying for a few frames until they turn up.
+	var place_handles_soon = function(obj) {
+		var tries = 0;
+		var tick = function() {
+			if (place_handles(obj) || 10 < ++tries) {
+				return;
+			}
+			requestAnimationFrame(tick);
+		};
+		tick();
+	};
+
 	// only show resize handles while an object is selected, not permanently
 	$.glue.live('.object', 'glue-select', function(e) {
 		var m = moveables.get(this);
 		if (m && this.classList.contains('resizable') && !this.classList.contains('locked')) {
+			var obj = this;
 			m.resizable = true;
+			// the controls are (re)created by that assignment, so the offsets
+			// go on once the render it schedules has landed
+			m.updateRect();
+			place_handles_soon(obj);
 		}
 	});
 	$.glue.live('.object', 'glue-deselect', function(e) {
@@ -1418,6 +1497,10 @@ $.glue.object = function()
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
 		},
 		// obj .. element
+		// see place_handles above: called by whatever changes an object's
+		// rotation, since the offsets that keep the handles outside it are
+		// direction-dependent
+		place_handles: place_handles,
 		// returns the Moveable instance managing obj's drag/resize, or
 		// undefined - used by modules (e.g. lock.js) that need to toggle
 		// draggable/resizable directly

@@ -45,17 +45,22 @@
    interface shall interfere with page elements" (the hotglue design codex -
    the early menu mock-up in hotglue-misc, visuals/hotglue-menu-early-sq.jpg,
    has every control outside the box). Moveable centres each 14px control on
-   the edge with margin: -7px, which leaves half of it lying over the content;
-   these push each handle back out along the axis it belongs to - -19px to
-   clear the edge on the near side, 5px on the far side - the extra 5px being
-   a gap, so the handle reads as sitting beside the object rather than glued
-   to its border. Written
-   for all eight directions even though hotglue renders e/s/se, so none of
-   them lands half-in if that list ever grows.
-   !important for the same reason the rules above it need it: Moveable's own
+   the edge with margin: -7px, leaving half of it over the content; these push
+   each handle back out along its own axis, -19px to clear the edge on the
+   near side and 5px on the far side, the extra 5px being the gap.
+
+   This is the UNROTATED case only. A margin shifts a control in the control
+   box's coordinates, which are screen-aligned, so "push the east handle
+   right" buries it inside an object turned 180°; place_handles() in
+   js/edit.js turns these offsets with the object and overrides what is here.
+   Keeping the straight case in CSS means it is right in the frame the handles
+   first paint in, rather than jumping once script catches up.
+
+   !important for the same reason the rules above need it: Moveable's own
    stylesheet is injected by css-styled, which prefixes every selector with a
-   generated class, so .moveable-control there outranks .moveable-control.
-   moveable-e here no matter how specific this side gets. */
+   generated class, so its .moveable-control outranks .moveable-control.
+   moveable-e here no matter how specific this side gets. That is also why
+   place_handles() sets its margins as important - it has to beat this. */
 .moveable-control.moveable-n,
 .moveable-control.moveable-ne,
 .moveable-control.moveable-nw {
