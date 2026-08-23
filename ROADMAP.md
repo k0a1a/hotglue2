@@ -242,9 +242,9 @@ from reading the code:
   `::before` carries the glyph and its hover colour. `--glue-icon` still lives on the
   button and inherits down, so swapping artwork at runtime is unaffected.
 
-  Wired so far: `sheep-icon3` for clone (the joke lands: everyone knows what a cloned
+  Wired so far: `sheep-icon4` for clone (the joke lands: everyone knows what a cloned
   sheep is, and the alternative is the two overlapping rectangles every toolbar has —
-  the silhouette of the four drawings, since line work turns to mush at 30px),
+  a silhouette rather than line work, which turns to mush at 30px),
   `undo`, `redo`, `hyperlink`,
   `font-color`, `background-color`, `background-color-remove`, `super-user` (the `</>`
   source toggle, which the artwork spells out exactly), `font-size` (the text menu's

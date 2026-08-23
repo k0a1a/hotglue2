@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// rather than a diagram, and it earns its place: everyone knows what a
 	// cloned sheep is, and the alternative - two overlapping rectangles - is
 	// what half the icons in any toolbar already look like.
-	elem = $.glue.icon('sheep-icon3', 'clone object');
+	elem = $.glue.icon('sheep-icon4', 'clone object');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {
