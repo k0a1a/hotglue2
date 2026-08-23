@@ -302,8 +302,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	// register menu items
 	//
 	var elem;
-	// first button on the new SVG icon set (img/icons) - see $.glue.icon
-	elem = $.glue.icon('clone', 'clone object');
+	// A sheep, for cloning. It is the one icon in the set that is a joke
+	// rather than a diagram, and it earns its place: everyone knows what a
+	// cloned sheep is, and the alternative - two overlapping rectangles - is
+	// what half the icons in any toolbar already look like.
+	elem = $.glue.icon('sheep-icon', 'clone object');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {

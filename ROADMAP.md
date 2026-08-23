@@ -221,8 +221,9 @@ from reading the code:
   **Wiring is done and proven.** `tools/prep-icons.js` regenerates `img/icons/` from the
   upstream artwork (54 icons, 206K → 38K: the source files are ~85% Inkscape metadata,
   RDF and attribution blocks that a mask never reads). An `extra/` subdirectory of the
-  source holds REDRAWN replacements under the same names, and the tool converts those
-  last so they win — copying one in by hand would be undone by the next regeneration.
+  source holds what is not part of the set proper — redraws under a name already in it,
+  and the odd one-off under a name of its own — and the tool converts those last so a
+  redraw wins; copying one in by hand would be undone by the next regeneration.
   `$.glue.icon(name, title)` in `js/glue.js` builds a button from a file in there by
   plain name. Adding an icon is a drop-in: put the file upstream, re-run the tool, call
   `$.glue.icon('thing')`.
@@ -241,7 +242,9 @@ from reading the code:
   `::before` carries the glyph and its hover colour. `--glue-icon` still lives on the
   button and inherits down, so swapping artwork at runtime is unaffected.
 
-  Wired so far: `clone` (the first one, replacing a PNG), `undo`, `redo`, `hyperlink`,
+  Wired so far: `sheep-icon` for clone (the joke lands: everyone knows what a cloned
+  sheep is, and the alternative is the two overlapping rectangles every toolbar has),
+  `undo`, `redo`, `hyperlink`,
   `font-color`, `background-color`, `background-color-remove`, `super-user` (the `</>`
   source toggle, which the artwork spells out exactly), `font-size` (the text menu's
   Font panel), `vertical-stack-space` (its Spacing panel), the four `align-*` inside

@@ -101,7 +101,7 @@ var existing = fs.existsSync(dst) ? fs.readdirSync(dst).filter(function(f) {
 }) : [];
 var written = {};
 
-var before = 0, after = 0, n = 0, extras = 0;
+var before = 0, after = 0, n = 0, extras = 0, added = 0;
 
 function convert(dir) {
 	var count = 0;
@@ -124,17 +124,22 @@ function convert(dir) {
 
 n = convert(src);
 
-// An "extra" subdirectory holds REPLACEMENTS: same names as icons in the set
-// above, redrawn. Converted after the main pass so they win - which is the
+// An "extra" subdirectory holds icons that are not part of the set proper:
+// redraws under the same name as one in it, and the odd one-off under a name
+// of its own. Converted after the main pass so a redraw wins - which is the
 // whole point of them, and the reason this runs the directory rather than
 // leaving anyone to copy one file in by hand and have the next regeneration
 // quietly undo it.
 var extra_dir = path.join(src, 'extra');
 if (fs.existsSync(extra_dir) && fs.statSync(extra_dir).isDirectory()) {
+	var before_extra = Object.keys(written).length;
 	extras = convert(extra_dir);
+	added = Object.keys(written).length - before_extra;
 }
 
-console.log(n + ' icons' + (extras ? ' (+' + extras + ' from extra/, replacing)' : '') +
+console.log(n + ' icons' +
+            (extras ? ' (+' + extras + ' from extra/: ' + (extras - added) +
+                      ' redrawn, ' + added + ' new)' : '') +
             ': ' + (before / 1024).toFixed(1) + 'K -> ' +
             (after / 1024).toFixed(1) + 'K (' +
             Math.round(100 - after / before * 100) + '% smaller)');
