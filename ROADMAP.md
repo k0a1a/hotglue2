@@ -232,6 +232,7 @@ Features and niceties not yet spec'd — the running to-do:
   and a space); the text link dialog has no target field at all, so this wants deciding
   once for both. (Favicon upload and relative internal links, which shared this bullet on
   the old todo list, are both done.)
+
 The three below were each re-checked in the code on 2026-08-23 and are **open**, with
 where to look, because all three have a shipped near-neighbour that makes them look done:
 
