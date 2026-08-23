@@ -95,7 +95,7 @@ Shipped 2026-08-22/23:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **354 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **362 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
@@ -124,7 +124,10 @@ Shipped 2026-08-22/23:
   the page next. It opens in the nearest free space beside the object rather than at the
   pointer, which used to put it on top of the thing being recoloured, and it has a
   transparency slider: the alpha of that one colour, which the object-transparency button
-  cannot express since it fades the whole object at once. Both controls exist for now. It writes a `rotate(Ndeg)` term into the
+  cannot express since it fades the whole object at once. Both controls exist for now.
+  The alpha is a slider and a number field in percent — the same row the font and spacing
+  panels use (`$.glue.popover.number_row`) — rather than vanilla-picker's gradient bar,
+  which showed the effect of the value without ever showing the value. It writes a `rotate(Ndeg)` term into the
   object's own transform, alongside whatever flip the flip button set — the two used to
   overwrite each other, which was invisible from either control on its own. A
   90°-per-click button was built first and dropped: once the handle existed it was a

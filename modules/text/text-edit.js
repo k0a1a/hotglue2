@@ -732,101 +732,6 @@ function text_popover_show(pop)
 	pop.style.visibility = '';
 }
 
-// one row: a label and whatever control it names
-function text_popover_row(label)
-{
-	var row = document.createElement('div');
-	row.className = 'glue-font-row';
-	if (label) {
-		var l = document.createElement('div');
-		l.className = 'glue-font-label';
-		l.textContent = label;
-		row.appendChild(l);
-	}
-	return row;
-}
-
-// A slider paired with a number field for the same value, kept in step.
-//
-// The FIELD is deliberately not capped by the slider: display type runs past
-// the end of any sensible drag range, and so does the odd extreme letter
-// spacing. The slider parks at its own end and the field keeps the real
-// number.
-//
-// opts .. min, max, step, decimals, value, unit (label after the field),
-//         apply(value, commit) - called live while dragging with commit
-//         false, and once with true when the value is settled
-// returns { row: element, set: function(value) } - set() is for whoever
-// changes the value behind the row's back, e.g. the reset button
-function text_popover_number_row(label, opts)
-{
-	var row = text_popover_row(label);
-	var decimals = opts.decimals || 0;
-	var fmt = function(v) {
-		return decimals ? v.toFixed(decimals) : String(Math.round(v));
-	};
-	var clamp = function(v) {
-		return Math.max(opts.min, Math.min(opts.max, v));
-	};
-
-	var range = document.createElement('input');
-	range.type = 'range';
-	range.className = 'glue-font-size-slider';
-	range.min = opts.min;
-	range.max = opts.max;
-	range.step = opts.step;
-	range.value = clamp(opts.value);
-
-	var field = document.createElement('input');
-	field.type = 'number';
-	field.className = 'glue-font-size-field';
-	field.step = opts.step;
-	field.value = fmt(opts.value);
-
-	range.addEventListener('input', function() {
-		field.value = fmt(parseFloat(this.value));
-		opts.apply(parseFloat(this.value), false);
-	});
-	range.addEventListener('change', function() {
-		opts.apply(parseFloat(this.value), true);
-	});
-	field.addEventListener('input', function() {
-		var v = parseFloat(this.value);
-		if (isNaN(v)) {
-			return;
-		}
-		range.value = clamp(v);
-		opts.apply(v, false);
-	});
-	field.addEventListener('change', function() {
-		var v = parseFloat(this.value);
-		if (isNaN(v)) {
-			this.value = fmt(parseFloat(range.value));
-			return;
-		}
-		// tidied to the row's own precision once it is settled, so a typed
-		// "8" and a dragged 8 look the same afterwards
-		this.value = fmt(v);
-		opts.apply(v, true);
-	});
-
-	row.appendChild(range);
-	row.appendChild(field);
-	if (opts.unit) {
-		var u = document.createElement('div');
-		u.className = 'glue-font-unit';
-		u.textContent = opts.unit;
-		row.appendChild(u);
-	}
-	return {
-		row: row,
-		set: function(v) {
-			range.value = clamp(v);
-			field.value = fmt(v);
-		}
-	};
-}
-
 function text_font_popover(obj)
 {
 	var pop = text_popover_open(obj, 'glue-font-popover');
@@ -902,12 +807,12 @@ function text_font_popover(obj)
 		$.glue.conf.text.last_font = this.value;
 		$.glue.backend({ method: 'page.set_last_font', font: this.value });
 	});
-	var face_row = text_popover_row(false);
+	var face_row = $.glue.popover.row(false);
 	face_row.appendChild(select);
 	pop.appendChild(face_row);
 
 	// --- row 2: size ------------------------------------------------------
-	var size_row = text_popover_number_row('size', {
+	var size_row = $.glue.popover.number_row('size', {
 		min: 8, max: 100, step: 1, value: size, unit: 'px',
 		apply: function(px, commit) {
 			if (px < 1) {
@@ -962,7 +867,7 @@ function text_font_popover(obj)
 		obj.style.textDecoration = parts.join(' ');
 	};
 
-	var style_row = text_popover_row('style');
+	var style_row = $.glue.popover.row('style');
 	[
 		['bold', 'bold', function() {
 			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
@@ -1043,7 +948,7 @@ function text_spacing_popover(obj)
 
 	var cs = getComputedStyle(obj);
 
-	var line = text_popover_number_row('line', {
+	var line = $.glue.popover.number_row('line', {
 		min: 0.5, max: 3, step: 0.05, decimals: 2, unit: '\u00d7',
 		value: to_em(cs.lineHeight, 1.2),
 		apply: function(v, commit) {
@@ -1059,7 +964,7 @@ function text_spacing_popover(obj)
 	});
 	pop.appendChild(line.row);
 
-	var letter = text_popover_number_row('letter', {
+	var letter = $.glue.popover.number_row('letter', {
 		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em',
 		value: to_em(cs.letterSpacing, 0),
 		apply: function(v, commit) {
@@ -1071,7 +976,7 @@ function text_spacing_popover(obj)
 	});
 	pop.appendChild(letter.row);
 
-	var word = text_popover_number_row('word', {
+	var word = $.glue.popover.number_row('word', {
 		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em',
 		value: to_em(cs.wordSpacing, 0),
 		apply: function(v, commit) {
@@ -1089,7 +994,7 @@ function text_spacing_popover(obj)
 	// without clicking through the others. Note computed text-align reads
 	// 'start' when nothing is set, which is left in a left-to-right page -
 	// treat it as left rather than as "none of them".
-	var align_row = text_popover_row('align');
+	var align_row = $.glue.popover.row('align');
 	var align_buttons = [];
 	var sync_align = function() {
 		var cur = getComputedStyle(obj).textAlign;
@@ -1127,7 +1032,7 @@ function text_spacing_popover(obj)
 	pop.appendChild(align_row);
 
 	// --- reset ------------------------------------------------------------
-	var reset_row = text_popover_row(false);
+	var reset_row = $.glue.popover.row(false);
 	reset_row.classList.add('glue-popover-footer');
 	var reset = document.createElement('div');
 	reset.className = 'glue-popover-reset';

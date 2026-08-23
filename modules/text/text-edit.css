@@ -88,43 +88,8 @@
 	width: 200px;
 }
 
-.glue-font-row {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	margin-bottom: 5px;
-}
-
-.glue-font-row:last-child {
-	margin-bottom: 0;
-}
-
-.glue-font-label {
-	/* the row labels line up, so the controls do too */
-	width: 26px;
-	flex: 0 0 auto;
-	color: #666;
-}
-
 .glue-font-face {
 	width: 100%;
-	font-size: 11px;
-	box-sizing: border-box;
-}
-
-.glue-font-size-slider {
-	flex: 1 1 auto;
-	min-width: 0;
-	/* the browser's own blue thumb against this grey chrome is the one thing
-	   that looks borrowed; the rest of the editor's controls are black */
-	accent-color: #333;
-}
-
-.glue-font-size-field {
-	/* wide enough for three digits: the field deliberately accepts sizes past
-	   the slider's end */
-	width: 44px;
-	flex: 0 0 auto;
 	font-size: 11px;
 	box-sizing: border-box;
 }
@@ -164,14 +129,6 @@
 
 .glue-font-toggle-strike {
 	text-decoration: line-through;
-}
-
-.glue-font-unit {
-	/* the unit after a number field: em, px, or the × of a line-height
-	   multiple */
-	color: #666;
-	flex: 0 0 auto;
-	width: 16px;
 }
 
 .glue-spacing-popover {

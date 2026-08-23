@@ -302,6 +302,102 @@ $.glue.popover = function()
 		// where the pointer last was, which is what a popover opens near
 		pointer: function() {
 			return $.glue.colorpicker.last_click();
+		},
+		// one row of a popover: a label and whatever control it names
+		row: function(label) {
+			var row = document.createElement('div');
+			row.className = 'glue-popover-row';
+			if (label) {
+				var l = document.createElement('div');
+				l.className = 'glue-popover-label';
+				l.textContent = label;
+				row.appendChild(l);
+			}
+			return row;
+		},
+		// A slider paired with a number field for the same value, kept in
+		// step. Lives here rather than in the module that first needed it,
+		// because the panels are meant to be each other's twins: the font
+		// size, the three text spacings and the colour picker's alpha are all
+		// the same control and should not drift apart.
+		//
+		// The FIELD is deliberately not capped by the slider: display type
+		// runs past the end of any sensible drag range, and so does the odd
+		// extreme letter spacing. The slider parks at its own end and the
+		// field keeps the real number.
+		//
+		// opts .. min, max, step, decimals, value, unit (label after the
+		//         field), apply(value, commit) - called live while dragging
+		//         with commit false, and once with true when it is settled
+		// returns { row: element, set: function(value) } - set() is for
+		// whoever changes the value behind the row's back (a reset button, a
+		// colour arriving from somewhere else)
+		number_row: function(label, opts) {
+			var row = $.glue.popover.row(label);
+			var decimals = opts.decimals || 0;
+			var fmt = function(v) {
+				return decimals ? v.toFixed(decimals) : String(Math.round(v));
+			};
+			var clamp = function(v) {
+				return Math.max(opts.min, Math.min(opts.max, v));
+			};
+
+			var range = document.createElement('input');
+			range.type = 'range';
+			range.className = 'glue-popover-slider';
+			range.min = opts.min;
+			range.max = opts.max;
+			range.step = opts.step;
+			range.value = clamp(opts.value);
+
+			var field = document.createElement('input');
+			field.type = 'number';
+			field.className = 'glue-popover-field';
+			field.step = opts.step;
+			field.value = fmt(opts.value);
+
+			range.addEventListener('input', function() {
+				field.value = fmt(parseFloat(this.value));
+				opts.apply(parseFloat(this.value), false);
+			});
+			range.addEventListener('change', function() {
+				opts.apply(parseFloat(this.value), true);
+			});
+			field.addEventListener('input', function() {
+				var v = parseFloat(this.value);
+				if (isNaN(v)) {
+					return;
+				}
+				range.value = clamp(v);
+				opts.apply(v, false);
+			});
+			field.addEventListener('change', function() {
+				var v = parseFloat(this.value);
+				if (isNaN(v)) {
+					this.value = fmt(parseFloat(range.value));
+					return;
+				}
+				// tidied to the row's own precision once it is settled, so a
+				// typed "8" and a dragged 8 look the same afterwards
+				this.value = fmt(v);
+				opts.apply(v, true);
+			});
+
+			row.appendChild(range);
+			row.appendChild(field);
+			if (opts.unit) {
+				var u = document.createElement('div');
+				u.className = 'glue-popover-unit';
+				u.textContent = opts.unit;
+				row.appendChild(u);
+			}
+			return {
+				row: row,
+				set: function(v) {
+					range.value = clamp(v);
+					field.value = fmt(v);
+				}
+			};
 		}
 	};
 }();
@@ -408,6 +504,47 @@ $.glue.colorpicker = function()
 		anchor.style.top = at.y+'px';
 	};
 
+	// The transparency row: a plain slider and a number field, in place of
+	// vanilla-picker's alpha bar. The bar was a gradient from the colour to a
+	// checkerboard with a handle somewhere along it - it showed the effect
+	// but not the value, and there was no way to type one. This is the same
+	// control as the font panel's size and the spacing panel's rows, which is
+	// the point: one kind of slider in the editor, not one per panel.
+	//
+	// Percent rather than 0-1: a hundredth is the finest anyone means, and
+	// "50%" needs no explaining.
+	var alpha_row = false;
+
+	var build_alpha = function() {
+		var editor = anchor.querySelector('.picker_editor');
+		if (!editor || !editor.parentNode) {
+			return;
+		}
+		// vanilla-picker builds its wrapper once and REUSES it: hiding the
+		// picker only detaches the anchor, so anything added to the wrapper is
+		// still there the next time it opens. Without this the panel grows an
+		// extra alpha row per open. (The swatch row does not need it - it is
+		// one element that gets re-filled and moved.)
+		var stale = anchor.querySelector('.glue-picker-alpha');
+		if (stale) {
+			stale.remove();
+		}
+		alpha_row = $.glue.popover.number_row('alpha', {
+			min: 0, max: 100, step: 1, unit: '%',
+			value: Math.round(picker.color.rgba[3]*100),
+			apply: function(pct) {
+				var c = picker.color.rgba;
+				// straight through the picker rather than onto the object, so
+				// everything else - the sample, the hex field, onChange and
+				// what gets stored - follows from one place
+				picker.setColor('rgba('+Math.round(c[0])+', '+Math.round(c[1])+', '+
+					Math.round(c[2])+', '+(pct/100)+')');
+			}
+		});
+		alpha_row.row.classList.add('glue-picker-alpha');
+		editor.parentNode.insertBefore(alpha_row.row, editor);
+	};
+
 	// vanilla-picker builds its DOM on the first show(), so the row is
 	// (re)placed then rather than at construction
 	var build_swatches = function() {
@@ -468,6 +605,11 @@ $.glue.colorpicker = function()
 		popup: 'top',
 		alpha: true,
 		onChange: function(color) {
+			// a colour can arrive from the gradient, the hex field or a
+			// swatch; the alpha row has to say what is true whichever it was
+			if (alpha_row) {
+				alpha_row.set(Math.round(color.rgba[3]*100));
+			}
 			if (typeof change_func == 'function') {
 				change_func(to_css(color));
 			}
@@ -477,6 +619,7 @@ $.glue.colorpicker = function()
 				return;
 			}
 			shown = false;
+			alpha_row = false;
 			if (!cancelled) {
 				remember_color(color);
 				if (typeof finish_func == 'function') {
@@ -547,6 +690,7 @@ $.glue.colorpicker = function()
 
 			shown = true;
 			picker.show();
+			build_alpha();
 			build_swatches();
 			// after the swatches, since they are part of what makes it tall
 			place_popup();

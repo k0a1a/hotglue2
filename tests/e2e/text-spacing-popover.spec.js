@@ -24,8 +24,8 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const spacingBtn = (page) => page.getByTitle(/spacing: line, letter and word/);
 const pop = (page) => page.locator('.glue-spacing-popover');
-const rowField = (page, n) => pop(page).locator('.glue-font-size-field').nth(n);
-const rowSlider = (page, n) => pop(page).locator('.glue-font-size-slider').nth(n);
+const rowField = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
+const rowSlider = (page, n) => pop(page).locator('.glue-popover-slider').nth(n);
 const alignBtn = (page, which) => pop(page).locator(`[data-align="${which}"]`);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
@@ -59,7 +59,7 @@ test('one button opens the panel, and the four it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		await expect(pop(page).locator('.glue-font-size-slider')).toHaveCount(3);
+		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(3);
 		await expect(pop(page).locator('.glue-align-btn')).toHaveCount(4);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 

@@ -10,7 +10,9 @@ Decisions taken while building, so the record is not just the plan:
   built and stays a separate question.
 - **`$.glue.popover` now exists** (`js/edit.js`), the colour picker's placement lifted
   out: it decides where a panel goes so every popover lands in the same places for the
-  same reasons. The Spacing popover should use it and skip re-deciding.
+  same reasons. It also carries `row()` and `number_row()`, the slider-and-field control
+  both panels are built from — and the colour picker's alpha now uses it too, so the
+  editor has one kind of slider rather than one per panel.
 - **`text-decoration` is now stored**, as `text-text-decoration`, saved and rendered by
   `module_text.inc.php` alongside `text-font-style` / `text-font-weight`.
 - The three buttons the Font panel replaces (`text-font-size`, `text-font-face`,

@@ -318,6 +318,8 @@ test('an object stored with alpha opens with the slider where it left it',
 
 		// the hex field is the readable version of where the slider is
 		await expect(page.locator('.picker_editor input')).toHaveValue(/^#ff00ff8/i);
+		await expect(page.locator('.glue-picker-alpha .glue-popover-field'))
+			.toHaveValue('50');
 		// and closing it again without touching anything changes nothing
 		await page.locator('.picker_done button').click();
 		expect(await bgOf(page, a)).toMatch(/^rgba\(255, 0, 255, 0\.5/);
@@ -342,3 +344,94 @@ test('a transparent colour is remembered with its alpha', async ({ page, hg }) =
 	await page.locator('.glue-picker-swatch').first().click();
 	await expect.poll(() => bgOf(page, a)).toMatch(/^rgba\(255, 0, 255, 0\.5/);
 });
+
+// --- the alpha row -------------------------------------------------------
+//
+// vanilla-picker's own alpha control is a gradient bar from the colour to a
+// checkerboard, with a handle somewhere along it: it shows the effect of the
+// value without ever showing the value, and there is no way to type one. It
+// is replaced by the same slider-and-field row the font and spacing panels
+// use, in percent.
+
+const alphaField = (page) => page.locator('.glue-picker-alpha .glue-popover-field');
+const alphaSlider = (page) => page.locator('.glue-picker-alpha .glue-popover-slider');
+
+test('transparency is a slider and a field, not the gradient bar',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		await expect(alphaSlider(page)).toBeVisible();
+		await expect(alphaField(page)).toBeVisible();
+		expect(await page.locator('.picker_alpha').evaluate((e) =>
+			getComputedStyle(e).display), 'the old alpha bar is still there').toBe('none');
+		// an untouched opaque colour is 100%
+		await expect(alphaField(page)).toHaveValue('100');
+	});
+
+test('typing an alpha applies it and stores it', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const field = page.locator('.picker_editor input');
+	await field.fill('#00ff00');
+	await field.press('Enter');
+	await openPicker(page, a);
+
+	await alphaField(page).fill('25');
+	await alphaField(page).dispatchEvent('input');
+	await expect.poll(() => bgOf(page, a)).toMatch(/^rgba\(0, 255, 0, 0\.25/);
+	await expect(alphaSlider(page)).toHaveValue('25');
+
+	await page.locator('.picker_done button').click();
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-background-color'])
+		.toMatch(/^rgba\(0, 255, 0, 0\.25/);
+});
+
+test('the row follows a colour that arrives from somewhere else',
+	async ({ page, hg }) => {
+		// the hex field and the swatches can both change the alpha, and the
+		// row has to say what is true whichever it was
+		const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+		hg.addObject('page', { 'page-recent-colors': '#0000ff33' });
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		const hex = page.locator('.picker_editor input');
+		await hex.fill('#ff000080');
+		await hex.dispatchEvent('input');
+		await expect(alphaField(page)).toHaveValue('50');
+
+		await page.locator('.glue-picker-swatch').first().click();
+		await expect(alphaField(page)).toHaveValue('20');
+	});
+
+test('the sample is square and the hex field fits eight digits',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...OBJ(300, 250), 'text-background-color': 'rgba(255, 0, 255, 0.5)' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+
+		const sample = await page.locator('.picker_sample').boundingBox();
+		expect(Math.abs(sample.width - sample.height),
+			'the colour sample is a bar, not a swatch').toBeLessThanOrEqual(1);
+
+		// the hex field, the sample and Ok stay on one line: the field was
+		// widened for the alpha digits and the panel with it
+		const hex = await page.locator('.picker_editor').boundingBox();
+		const ok = await page.locator('.picker_done').boundingBox();
+		expect(Math.abs(hex.y - sample.y), 'the editor row wrapped').toBeLessThan(4);
+		expect(Math.abs(hex.y - ok.y), 'the editor row wrapped').toBeLessThan(4);
+		// and it shows all eight digits without clipping them
+		await expect(page.locator('.picker_editor input')).toHaveValue(/^#ff00ff80$/i);
+		const input = page.locator('.picker_editor input');
+		expect(await input.evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
+			'the hex value does not fit its field').toBe(true);
+	});

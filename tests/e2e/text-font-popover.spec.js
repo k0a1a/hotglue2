@@ -51,7 +51,7 @@ test('one button opens the panel, and the three it replaced are gone',
 		await open(page, a);
 
 		await expect(page.locator('.glue-font-face')).toBeVisible();
-		await expect(page.locator('.glue-font-size-slider')).toBeVisible();
+		await expect(page.locator('.glue-popover-slider')).toBeVisible();
 		await expect(page.locator('.glue-font-toggle')).toHaveCount(4);
 
 		for (const gone of ['text-font-size', 'text-font-face', 'text-font-style']) {
@@ -84,7 +84,7 @@ test('it reads the object it was opened on', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	await expect(page.locator('.glue-font-size-field')).toHaveValue('37');
+	await expect(page.locator('.glue-popover-field')).toHaveValue('37');
 	await expect(toggle(page, 'bold')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'underline')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'italic')).not.toHaveClass(/glue-font-toggle-on/);
@@ -98,8 +98,8 @@ test('the size field and slider stay in step, and the field is not capped',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = page.locator('.glue-font-size-field');
-		const slider = page.locator('.glue-font-size-slider');
+		const field = page.locator('.glue-popover-field');
+		const slider = page.locator('.glue-popover-slider');
 
 		await field.fill('42');
 		await field.dispatchEvent('input');
@@ -126,7 +126,7 @@ test('a size change is stored, and keeps line-height in proportion',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = page.locator('.glue-font-size-field');
+		const field = page.locator('.glue-popover-field');
 		await field.fill('30');
 		await field.dispatchEvent('input');
 		await field.dispatchEvent('change');

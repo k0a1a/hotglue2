@@ -371,7 +371,10 @@
    !important throughout: vanilla-picker injects its stylesheet at runtime,
    after this file, at equal specificity, so nothing here lands without it. */
 .layout_default.picker_wrapper {
-	width: 15em !important;			/* font-size is 10px here, so 150px */
+	/* font-size is 10px here, so 170px - a hair wider than the 150 it was,
+	   because the hex field now has to hold #rrggbbaa and still leave the
+	   sample and Ok on the same line */
+	width: 17em !important;
 	padding: 0.3em !important;
 }
 
@@ -405,12 +408,29 @@
 }
 
 .layout_default .picker_alpha {
-	/* the transparency slider. vanilla-picker gives its layout no width of
-	   its own, so in a narrowed picker it would be sized by whatever was left
-	   over on the line; full width puts it under the gradient square, above
-	   the recent colours, matching the hue bar above it */
-	width: 100% !important;
-	height: 1.4em !important;
+	/* vanilla-picker's own alpha bar, replaced by the slider-and-field row
+	   $.glue.colorpicker inserts (.glue-picker-alpha below). The bar showed
+	   the effect of the value but never the value itself, and there was no
+	   way to type one. */
+	display: none !important;
+}
+
+.glue-picker-alpha {
+	/* the transparency row, on its own line above the recent colours. No
+	   horizontal margin: the row is a full-width flex line, and margins on
+	   top of a 100% basis push the field and its unit off the panel. */
+	order: 1;
+	flex: 1 1 100%;
+	min-width: 0;
+	margin: 0.3em 0 !important;
+}
+
+.layout_default .picker_sample {
+	/* square, next to the hex field: a colour swatch is a swatch, not a bar
+	   stretched across whatever space is left */
+	flex: 0 0 auto !important;
+	width: 26px !important;
+	height: 26px !important;
 }
 
 .glue-picker-swatch {
@@ -429,7 +449,9 @@
 }
 
 .layout_default .picker_editor {
-	width: 5.6em !important;
+	/* wide enough for #rrggbbaa - eight digits plus the hash - since the hex
+	   field carries the alpha as well now */
+	width: 7.6em !important;
 }
 
 .glue-picker-recent {
@@ -473,6 +495,53 @@
 	cursor: default;
 	-webkit-user-select: none;
 	user-select: none;
+}
+
+.glue-popover-row {
+	/* one row of a popover: a label, then whatever it names. Built by
+	   $.glue.popover.row() / .number_row(), and shared by the font panel, the
+	   spacing panel and the colour picker's alpha - they are the same control
+	   and should not drift apart. */
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	margin-bottom: 5px;
+}
+
+.glue-popover-row:last-child {
+	margin-bottom: 0;
+}
+
+.glue-popover-label {
+	/* the row labels line up, so the controls do too */
+	width: 26px;
+	flex: 0 0 auto;
+	color: #666;
+}
+
+.glue-popover-slider {
+	flex: 1 1 auto;
+	min-width: 0;
+	/* the browser's own blue thumb against this grey chrome is the one thing
+	   that looks borrowed; the rest of the editor's controls are black */
+	accent-color: #333;
+}
+
+.glue-popover-field {
+	/* three digits' worth: the field deliberately accepts values past the
+	   slider's end */
+	width: 44px;
+	flex: 0 0 auto;
+	font-size: 11px;
+	box-sizing: border-box;
+}
+
+.glue-popover-unit {
+	/* what follows a number field: em, px, %, or the × of a line-height
+	   multiple */
+	color: #666;
+	flex: 0 0 auto;
+	width: 16px;
 }
 
 .glue-slider {
