@@ -53,10 +53,14 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	// three on the panel itself; the advanced fold has two more of its own
+	// three on the panel itself; the fold has two more of its own
 	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-slider'))
 		.toHaveCount(3);
-	await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
+	// and the reset is in the fold with them, not under the rows above it
+	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-reset'))
+		.toHaveCount(0);
+	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-reset'))
+		.toHaveCount(1);
 	// the sliders reach "fully round" and no further: half the shorter side
 	// of the object as it is actually drawn, padding and selection border
 	// included, which is not the same as the width and height it stores
@@ -393,6 +397,8 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await waitForEditor(page, 1);
 	await open(page, a);
 
+	// the reset lives in the fold now, with the knobs it also clears
+	await pop(page).locator('.glue-popover-disclosure').click();
 	await pop(page).locator('.glue-popover-reset').click();
 	await expect.poll(() => attrs(hg)['object-border-radius']).toBe(undefined);
 	await expect.poll(() => attrs(hg)['object-edge-fade']).toBe(undefined);

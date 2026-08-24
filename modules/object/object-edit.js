@@ -575,6 +575,9 @@ function object_edge_popover(obj)
 	glow_row.appendChild(glow_colour);
 	adv.appendChild(glow_row);
 
+	// The reset goes inside the fold, as the font panel's does: it clears
+	// more than the rows above it set, so it belongs with the knobs rather
+	// than sitting under them looking like it applies to the last one.
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset(
 		'back to square corners, a hard edge and no border', function() {
@@ -594,7 +597,7 @@ function object_edge_popover(obj)
 			spread.set(0);
 			strength.set(glow.alpha);
 		}));
-	pop.appendChild(footer);
+	adv.appendChild(footer);
 
 	$.glue.popover.show(pop);
 }
