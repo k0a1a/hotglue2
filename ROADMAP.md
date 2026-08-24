@@ -66,6 +66,8 @@ Checked against the tree on 2026-08-23.
   decisions to make first (px or percent for the radius; two gradients or a radial
   vignette for the fade) and two icons to draw.
 
+- add tap to be able edit object on mobile
+
 ### In git history only
 
 - **MOBILE-VIEW-DESIGN.md** — the author-curated "mark elements mobile-friendly →
