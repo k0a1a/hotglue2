@@ -911,12 +911,12 @@ function text_font_popover(obj)
 
 	pop.appendChild(style_row);
 
-	// --- advanced: spacing and alignment ---------------------------------
+	// --- more knobs: spacing, alignment and a shadow ----------------------
 	//
 	// A panel of its own until now, opened from a button of its own. It is
 	// the same subject - how the type sits - and most objects never touch it,
 	// so it folds away here instead of taking a second button in the menu.
-	var fold = $.glue.popover.fold(pop, 'advanced');
+	var fold = $.glue.popover.fold(pop, 'more knobs');
 	pop.appendChild(fold.toggle);
 	var adv = fold.body;
 	pop.appendChild(adv);

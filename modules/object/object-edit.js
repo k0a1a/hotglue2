@@ -500,14 +500,14 @@ function object_edge_popover(obj)
 	style_row.appendChild(colour);
 	pop.appendChild(style_row);
 
-	// --- advanced: the glow ----------------------------------------------
+	// --- more knobs: the glow ---------------------------------------------
 	//
 	// A blob of colour behind the content, which is a different mechanism
 	// from the fade above and worth keeping apart from it: the fade is a
 	// mask, so it takes the text with it, while this is a background and
 	// leaves the text sharp. Folded away because most objects will never want
 	// it, and the panel is already four rows.
-	var fold = $.glue.popover.fold(pop, 'advanced');
+	var fold = $.glue.popover.fold(pop, 'more knobs');
 	pop.appendChild(fold.toggle);
 	var adv = fold.body;
 	pop.appendChild(adv);

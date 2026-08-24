@@ -176,10 +176,10 @@ Shipped later the same night — the editor's panels, and what objects can be:
   2010, so selecting one moved its content by a pixel and three separate places had to
   shift it back. That is also what made an object's own border impossible.
 - **An edge panel for every object**: rounded corners, the soft fade, and a border —
-  width, style, colour — with an advanced fold holding a *glow*, a radial-gradient
+  width, style, colour — with a "more knobs" fold holding a *glow*, a radial-gradient
   background that leaves the content sharp where the fade (a mask) would not.
-- **One typography panel.** Spacing and alignment folded into the font panel's advanced
-  section, which also gained a text shadow and the text colour; the text menu went from
+- **One typography panel.** Spacing and alignment folded into the font panel's "more
+  knobs" section, which also gained a text shadow and the text colour; the text menu went from
   thirteen buttons to five. One reset, in the fold, for the whole panel.
 - **A background image on any object** — the browser's own file picker when there is
   none, a panel to tile, drag or remove when there is. It uploads with the object's name
