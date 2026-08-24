@@ -69,18 +69,22 @@ test('toggling back removes the property rather than storing visible',
 			.toBeUndefined();
 	});
 
-test('the label says what clicking will do', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, LONG);
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await select(page, a);
+test('the pressed-in frame and the tooltip say what is true now',
+	async ({ page, hg }) => {
+		// The text label ('clip'/'show') became the SuperGlue clip icon; the
+		// state it used to spell out is the pressed-in frame the flip toggles
+		// use, and the tooltip still says what clicking will do.
+		const a = hg.addObject('100000000001', ATTRS, LONG);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
 
-	await expect(toggle(page)).toHaveText('clip');
-	await expect(toggle(page)).toHaveAttribute('title', /spills out/);
-	await toggle(page).click();
-	await expect(toggle(page)).toHaveText('show');
-	await expect(toggle(page)).toHaveAttribute('title', /cut off/);
-});
+		await expect(toggle(page)).toHaveAttribute('title', /spills out/);
+		await expect(toggle(page)).not.toHaveClass(/glue-btn-active/);
+		await toggle(page).click();
+		await expect(toggle(page)).toHaveClass(/glue-btn-active/);
+		await expect(toggle(page)).toHaveAttribute('title', /cut off/);
+	});
 
 test('clipping is not lost when the object is next moved', async ({ page, hg }) => {
 	// save_state rebuilds an object's properties from the element it is sent,

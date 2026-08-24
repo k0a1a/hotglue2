@@ -1247,35 +1247,23 @@ document.addEventListener('DOMContentLoaded', function() {
 	// out of it. Absent means visible, the browser default and what hotglue has
 	// always done, so only 'hidden' is ever stored.
 	//
-	// Text placeholder rather than an icon, like the link/undo/redo buttons -
-	// this menu needs a proper icon set and the placeholders should look like
-	// placeholders. The label is the ACTION, not the state: it says what
-	// clicking will do, and the tooltip says what is true now.
-	elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontSize = '11px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.lineHeight = '32px';
-	elem.style.textAlign = 'center';
-	elem.style.width = '32px';
+	// An icon button now, from the SuperGlue set's extra folder. The text it
+	// replaced spelled out the state, and the state is now the pressed-in
+	// frame (glue-btn-active), the same as the flip toggles - the tooltip
+	// still says what is true now.
+	elem = $.glue.icon('clip');
 	elem.setAttribute('x-data', '{ clipped: false }');
 	elem.setAttribute('x-bind:title', "clipped ? " +
 		"'content bigger than this object is cut off - click to let it show' : " +
 		"'content bigger than this object spills out - click to cut it off'");
+	elem.setAttribute('x-bind:class', "clipped ? 'glue-btn-active' : ''");
 	elem.setAttribute('x-on:glue-menu-activate',
 		"clipped = object_overflow_hidden($.glue.owner($el))");
-	elem.className = 'glue-btn-label';
-	elem.innerHTML = '<small x-text="clipped ? \'show\' : \'clip\'">clip</small>';
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		obj.style.overflow = object_overflow_hidden(obj) ? '' : 'hidden';
 		$.glue.object.save(obj);
-		// refresh the label and tooltip through Alpine's reactive state, the
+		// refresh the frame and tooltip through Alpine's reactive state, the
 		// same way the transparency button refreshes its percentage
 		this.dispatchEvent(new CustomEvent('glue-menu-activate'));
 	});
