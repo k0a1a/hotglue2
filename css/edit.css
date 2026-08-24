@@ -726,6 +726,31 @@
 	background-color: #c00;
 }
 
+.glue-btn-icon.glue-sheep::after {
+	/* The sheep's blink. Its eyes are two holes in the mask, so they paint
+	   in the button's own pale fill; a lid in that same fill, shown over
+	   the eye area for a moment, is a closed eyelid. The geometry is the
+	   eyes' measured bounds in the 30x30 art: x 8.7-18.7, y 10.7-15.3.
+	   Purely decorative - the one icon in the set that is a joke tells
+	   one every half minute. */
+	content: '';
+	position: absolute;
+	left: 8.5px;
+	top: 10.5px;
+	width: 10.5px;
+	height: 5px;
+	background-color: rgba(255, 255, 255, 0.85);
+	border-radius: 2px;
+	opacity: 0;
+	animation: glue-sheep-blink 30s infinite;
+}
+
+@keyframes glue-sheep-blink {
+	0%, 96% { opacity: 0; }
+	98% { opacity: 1; }
+	99.5%, 100% { opacity: 0; }
+}
+
 
 .glue-edge-popover {
 	/* three number rows, a style dropdown with a colour button, a fold and a

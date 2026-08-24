@@ -141,6 +141,44 @@ test('an icon button paints something', async ({ page, hg }) => {
 		.toBe(false);
 });
 
+test('the sheep blinks: a lid over its eyes every half minute',
+	async ({ page, hg }) => {
+		// the clone button's sheep is the one joke in the icon set, and it
+		// gets the one animation: a lid in the button's own fill covers the
+		// eyes for a moment, every 30s. Assert the animation is armed - the
+		// lid is invisible for 96% of the cycle, so this is the reliable
+		// part to check.
+		hg.addObject('100000000001', OBJ, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await page.locator('.object').first().click();
+
+		const sheep = page.locator('.glue-btn-icon.glue-sheep').first();
+		await expect(sheep).toBeVisible();
+		const blink = await sheep.evaluate((el) => {
+			const s = getComputedStyle(el, '::after');
+			return {
+				name: s.animationName,
+				duration: s.animationDuration,
+				iterations: s.animationIterationCount,
+				colour: s.backgroundColor,
+				box: [s.left, s.top, s.width, s.height],
+			};
+		});
+		expect(blink.name).toBe('glue-sheep-blink');
+		expect(blink.duration).toBe('30s');
+		expect(blink.iterations).toBe('infinite');
+		// the lid is the button's own fill, so it hides the eyes instead of
+		// painting its own colour over them
+		expect(blink.colour).toBe('rgba(255, 255, 255, 0.85)');
+		// and it sits over the eyes' measured bounds in the 30x30 art
+		const [l, t, w, h] = blink.box.map(parseFloat);
+		expect(l).toBeGreaterThanOrEqual(8);
+		expect(t).toBeGreaterThanOrEqual(10);
+		expect(l + w).toBeLessThanOrEqual(20);
+		expect(t + h).toBeLessThanOrEqual(16.5);
+	});
+
 test('the generated icon files are well-formed and stripped', async () => {
 	const files = fs.readdirSync(ICON_DIR).filter((f) => f.endsWith('.svg'));
 	expect(files.length, 'img/icons is empty - run tools/prep-icons.js').toBeGreaterThan(0);

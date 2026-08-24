@@ -675,9 +675,12 @@ function object_edge_popover(obj)
 		});
 	glow_colour.classList.add('glue-glow-color');
 
+	// the toggle itself is a plain square - the base .glue-font-toggle
+	// style is a white square with a black frame, and .glue-font-toggle-on
+	// fills it dark - so the glow-inside control reads as a dark square
+	// when it is on and a white one when it is off
 	var inner_toggle = document.createElement('div');
 	inner_toggle.className = 'glue-font-toggle glue-glow-inner-toggle';
-	inner_toggle.textContent = '\u25c9';
 	inner_toggle.title = 'glow inside the object too';
 	var sync_inner = function() {
 		inner_toggle.classList.toggle('glue-font-toggle-on', 0 < glow.inner);
@@ -756,7 +759,7 @@ function object_edge_popover(obj)
 	));
 	adv.appendChild(pair_row(
 		pair_cell('2nd glow', duotone),
-		pair_cell('drop shadow', drop_colour)
+		pair_cell('shadow', drop_colour)
 	));
 
 	var distance = $.glue.popover.number_row('distance', {
@@ -995,6 +998,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	// cloned sheep is, and the alternative - two overlapping rectangles - is
 	// what half the icons in any toolbar already look like.
 	elem = $.glue.icon('sheep-icon4', 'clone object');
+	// the sheep is the one icon in the set that is a joke, so it gets the
+	// one animation in the set too: every half minute its eyes blink
+	// (a lid painted in the button's own fill drops over them - see
+	// .glue-btn-icon.glue-sheep::after in css/edit.css)
+	elem.classList.add('glue-sheep');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {

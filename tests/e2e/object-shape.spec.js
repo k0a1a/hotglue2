@@ -349,7 +349,7 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 		// colour - two labels and a 26px button each, so they share rows
 		await expect(advanced(page)
 			.locator('.glue-popover-pair .glue-popover-label'))
-			.toHaveText(['glow', 'glow inside', '2nd glow', 'drop shadow']);
+			.toHaveText(['glow', 'glow inside', '2nd glow', 'shadow']);
 
 		// no pair label wraps onto a second line
 		const wrapped = await advanced(page).evaluate(() =>
