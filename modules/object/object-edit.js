@@ -999,10 +999,39 @@ document.addEventListener('DOMContentLoaded', function() {
 	// what half the icons in any toolbar already look like.
 	elem = $.glue.icon('sheep-icon5', 'clone object');
 	// the sheep is the one icon in the set that is a joke, so it gets the
-	// one animation in the set too: every half minute its eyes blink
-	// (a lid painted in the button's own fill drops over them - see
-	// .glue-btn-icon.glue-sheep::after in css/edit.css)
+	// one animation in the set too: its eyes blink (a lid painted in the
+	// button's own fill drops over them - see
+	// .glue-btn-icon.glue-sheep::after in css/edit.css). The blink cycle
+	// length is rolled fresh every time one wraps - 3-30s, random - so
+	// the pauses wander instead of ticking like a metronome.
 	elem.classList.add('glue-sheep');
+	// note: elem is reused for every menu item in this scope, so the
+	// closure must capture the sheep itself, not the mutable elem
+	var sheep_elem = elem;
+	// the fades are a fixed half second each - 0.5s to close, 0.5s fully
+	// down, 0.5s to open - but keyframes are fractions of whatever the
+	// cycle is, so every roll has to rewrite the percentages as well as
+	// the duration. This style tag is created now, after css/edit.css has
+	// loaded, so its same-named @keyframes wins over the stylesheet's
+	// 30s fallback (a later rule overrides an earlier one).
+	var blink_style = document.createElement('style');
+	document.head.appendChild(blink_style);
+	var roll_cycle = function() {
+		var cycle = 3 + Math.random() * 27; // seconds, 3-30
+		sheep_elem.style.setProperty('--glue-sheep-cycle', cycle.toFixed(1) + 's');
+		// blink window is the last 1.5s of the cycle, ending at 100%
+		var p1 = (cycle - 1.5) / cycle * 100; // lid starts closing
+		var p2 = (cycle - 1.0) / cycle * 100; // fully down
+		var p3 = (cycle - 0.5) / cycle * 100; // starts opening
+		blink_style.textContent = '@keyframes glue-sheep-blink { 0%, '
+			+ p1.toFixed(4) + '% { opacity: 0; } ' + p2.toFixed(4)
+			+ '% { opacity: 1; } ' + p3.toFixed(4)
+			+ '%, 100% { opacity: 0; } }';
+	};
+	roll_cycle();
+	// the animation runs on the ::after, but animationiteration is
+	// dispatched to this button with event.pseudoElement === '::after'
+	elem.addEventListener('animationiteration', roll_cycle);
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {

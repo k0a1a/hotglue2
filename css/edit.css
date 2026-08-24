@@ -725,10 +725,15 @@
 	   (the hidden "eyelids" layer of sheep-icon5, extracted into its own
 	   mask file - sheep-eyelid.svg - because nothing inside an SVG used
 	   as a mask can be shown from outside it) painted in the face's
-	   colour (#333, and #c00 on hover) covers the eye row for half a
-	   second every half minute, making the eyes vanish: that is what
-	   reads as a closed eyelid. Purely decorative - the one icon in the
-	   set that is a joke tells one every half minute. */
+	   colour (#333, and #c00 on hover) covers the eye row, making the
+	   eyes vanish: that is what reads as a closed eyelid. The cycle
+	   length is the --glue-sheep-cycle custom property, rolled fresh by
+	   the sheep button's JS at every cycle end, so the pause between
+	   blinks wanders (3-30s) instead of ticking like a metronome; the
+	   roll also rewrites the keyframes below, because the fades are a
+	   fixed half second each and keyframes are percentages of whatever
+	   the cycle is. Purely decorative - the one icon in the set that is
+	   a joke tells one at its own pace. */
 	content: '';
 	position: absolute;
 	top: 0;
@@ -741,7 +746,7 @@
 	-webkit-mask-size: 30px 30px;
 	mask-size: 30px 30px;
 	opacity: 0;
-	animation: glue-sheep-blink 30s infinite;
+	animation: glue-sheep-blink var(--glue-sheep-cycle, 30s) infinite;
 }
 
 .glue-btn-icon.glue-sheep:hover::after {
@@ -750,10 +755,15 @@
 	background-color: #c00;
 }
 
+/* The fallback curve for the default 30s cycle: 0.5s to close, 0.5s
+   fully down, 0.5s to open. The sheep's JS rewrites these percentages
+   on every roll so the fades stay 0.5s no matter what the cycle is -
+   keyframes are fractions of the cycle, so a fixed time must move as
+   the cycle does. */
 @keyframes glue-sheep-blink {
-	0%, 97% { opacity: 0; }
-	98% { opacity: 1; }
-	99.7%, 100% { opacity: 0; }
+	0%, 95% { opacity: 0; }
+	96.6667% { opacity: 1; }
+	98.3333%, 100% { opacity: 0; }
 }
 
 
