@@ -1388,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			text_link_dialog(obj, input, input.selectionStart, input.selectionEnd);
 		}
 	});
-	$.glue.contextmenu.register('text', 'text-link', elem);
+	$.glue.contextmenu.register('text', 'text-link', elem, 6);
 
 	// Source-mode toggle. WYSIWYG editing hides the markup, which is the
 	// point, but it also means the browser's HTML parser gets a say in what
@@ -1413,7 +1413,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		}
 	});
-	$.glue.contextmenu.register('text', 'text-source', elem);
+	$.glue.contextmenu.register('text', 'text-source', elem, 5);
 
 
 	elem = $.glue.icon('background-color', 'change background color');
@@ -1444,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			colorpicker_shown = false;
 		}
 	});
-	$.glue.contextmenu.register('text', 'text-background-color', elem);
+	$.glue.contextmenu.register('text', 'text-background-color', elem, 1);
 
 	elem = $.glue.icon('background-color-remove', 'make background transparent');
 	elem.addEventListener('click', function(e) {
@@ -1453,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		obj.querySelector(':scope > .glue-text-input').style.backgroundColor = 'transparent';
 		$.glue.object.save(obj);
 	});
-	$.glue.contextmenu.register('text', 'text-background-transparent', elem);
+	$.glue.contextmenu.register('text', 'text-background-transparent', elem, 2);
 
 
 	// --- font popover ----------------------------------------------------
@@ -1469,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		text_font_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-font', elem);
+	$.glue.contextmenu.register('text', 'text-font', elem, 3);
 
 
 
@@ -1481,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		text_padding_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-text-padding', elem);
+	$.glue.contextmenu.register('text', 'text-text-padding', elem, 4);
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {
