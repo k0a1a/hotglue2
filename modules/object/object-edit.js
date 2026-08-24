@@ -380,20 +380,24 @@ function object_glow(obj)
 		color: obj.style.getPropertyValue('--glue-glow-color').trim() || '#ff8844',
 		spread: parseFloat(obj.style.getPropertyValue('--glue-glow-spread')) || 40,
 		alpha: parseFloat(obj.style.getPropertyValue('--glue-glow-alpha')) || 80,
+		inner: parseFloat(obj.style.getPropertyValue('--glue-glow-inner')) || 0,
+		color2: obj.style.getPropertyValue('--glue-glow-color2').trim() || '',
 		on: obj.classList.contains('glue-glow')
 	};
 }
 
-// The class is shared by all three members of the box-shadow family: the
-// halo, the outer band and the inner band each turn it on, and it comes
-// off again only when none of them is active. The composed rule in
-// css/main.css keeps the members nobody set invisible, so one shadow never
+// The class is shared by the whole box-shadow family: the halo, its duotone
+// sides, the outer band, the inner band and the drop shadow each turn it on,
+// and it comes off again only when none of them is active. The composed rule
+// in css/main.css keeps the members nobody set invisible, so one shadow never
 // invents another.
 function object_shadow_class_sync(obj)
 {
 	var active = obj.style.getPropertyValue('--glue-glow-color') !== '' ||
+		obj.style.getPropertyValue('--glue-glow-color2') !== '' ||
 		0 < parseFloat(obj.style.getPropertyValue('--glue-shadow-in')) ||
-		0 < parseFloat(obj.style.getPropertyValue('--glue-shadow-out'));
+		0 < parseFloat(obj.style.getPropertyValue('--glue-shadow-out')) ||
+		obj.style.getPropertyValue('--glue-drop-color') !== '';
 	obj.classList.toggle('glue-glow', active);
 }
 
@@ -403,10 +407,30 @@ function object_set_glow(obj, g)
 		obj.style.removeProperty('--glue-glow-color');
 		obj.style.removeProperty('--glue-glow-spread');
 		obj.style.removeProperty('--glue-glow-alpha');
+		obj.style.removeProperty('--glue-glow-inner');
+		obj.style.removeProperty('--glue-glow-color2');
 	} else {
 		obj.style.setProperty('--glue-glow-color', g.color);
 		obj.style.setProperty('--glue-glow-spread', g.spread);
 		obj.style.setProperty('--glue-glow-alpha', g.alpha);
+		// the inner layers and the duotone sides are all sized off the
+		// spread, so without one they would be a solid box - they exist
+		// only while the glow has a reach
+		if (0 < g.spread) {
+			if (g.inner) {
+				obj.style.setProperty('--glue-glow-inner', 1);
+			} else {
+				obj.style.removeProperty('--glue-glow-inner');
+			}
+			if (g.color2) {
+				obj.style.setProperty('--glue-glow-color2', g.color2);
+			} else {
+				obj.style.removeProperty('--glue-glow-color2');
+			}
+		} else {
+			obj.style.removeProperty('--glue-glow-inner');
+			obj.style.removeProperty('--glue-glow-color2');
+		}
 	}
 	object_shadow_class_sync(obj);
 }
@@ -440,6 +464,51 @@ function object_set_shadow(obj, s)
 		} else {
 			obj.style.removeProperty('--glue-shadow-'+side);
 			obj.style.removeProperty('--glue-shadow-'+side+'-color');
+		}
+	});
+	object_shadow_class_sync(obj);
+}
+
+// The drop shadow's on-switch is its colour: without one there is nothing to
+// cast, so every property comes off entirely and the object file stores no
+// knobs. Clearing the colour - or the picker's transparent - is how a shadow
+// goes away. The angle keeps its unit ('135deg'): the composed rule resolves
+// it to x/y offsets with cos()/sin(), and the trig sees an angle, not a
+// number.
+function object_drop(obj)
+{
+	return {
+		color: obj.style.getPropertyValue('--glue-drop-color').trim() || '',
+		distance: parseFloat(obj.style.getPropertyValue('--glue-drop-distance')) || 12,
+		angle: parseFloat(obj.style.getPropertyValue('--glue-drop-angle')) || 135,
+		blur: parseFloat(obj.style.getPropertyValue('--glue-drop-blur')) || 16,
+		spread: parseFloat(obj.style.getPropertyValue('--glue-drop-spread')) || 0
+	};
+}
+
+function object_set_drop(obj, d)
+{
+	if (!d || !d.color || d.color == 'transparent') {
+		obj.style.removeProperty('--glue-drop-color');
+		obj.style.removeProperty('--glue-drop-distance');
+		obj.style.removeProperty('--glue-drop-angle');
+		obj.style.removeProperty('--glue-drop-blur');
+		obj.style.removeProperty('--glue-drop-spread');
+		object_shadow_class_sync(obj);
+		return;
+	}
+	obj.style.setProperty('--glue-drop-color', d.color);
+	// a zeroed knob is no knob: it comes off entirely, so the object file
+	// drops it rather than storing a default (the angle excepted - a shadow
+	// at 0 degrees is a real direction, so it always round-trips)
+	obj.style.setProperty('--glue-drop-angle', d.angle+'deg');
+	[['--glue-drop-distance', d.distance],
+	 ['--glue-drop-blur', d.blur],
+	 ['--glue-drop-spread', d.spread]].forEach(function(p) {
+		if (0 < p[1]) {
+			obj.style.setProperty(p[0], p[1]);
+		} else {
+			obj.style.removeProperty(p[0]);
 		}
 	});
 	object_shadow_class_sync(obj);
@@ -623,8 +692,9 @@ function object_edge_popover(obj)
 	// The glow's solid cousins: a band OUTSIDE the box and a band INSIDE
 	// it, each a thickness and a colour. The halo is a blur; these are
 	// straight spread, so they read as an outline - the nearest thing to a
-	// border that does not take part in the layout. All three compose into
-	// one box-shadow, and each stays independent of the others.
+	// border that does not take part in the layout. The drop shadow below
+	// joins them in the same one box-shadow, and each member stays
+	// independent of the others.
 	var shadow = object_shadow(obj);
 	var write_shadow = function(commit) {
 		object_set_shadow(obj, shadow);
@@ -677,6 +747,151 @@ function object_edge_popover(obj)
 	shadow_row('in', 'inset', 'inset colour');
 	shadow_row('out', 'outer', 'outer colour');
 
+	// --- even deeper: the marble --------------------------------------------
+	//
+	// The glow's two optional extras, folded in because most objects will
+	// never want them: the inner glow (the halo ALSO inside the box, the
+	// translucent-marble look) and a second colour, which the halo's side
+	// layers take so the glow goes duotone (the marble is white in the
+	// middle and coloured on the sides, like a billiard ball).
+	var inner = $.glue.popover.row('inner');
+	var inner_toggle = document.createElement('div');
+	inner_toggle.className = 'glue-font-toggle glue-glow-inner-toggle';
+	inner_toggle.textContent = '\u25c9';
+	inner_toggle.title = 'glow inside the object too';
+	var sync_inner = function() {
+		inner_toggle.classList.toggle('glue-font-toggle-on', 0 < glow.inner);
+	};
+	inner_toggle.addEventListener('click', function() {
+		glow.inner = glow.inner ? 0 : 1;
+		// a glow with no spread has no inside; turning it on gives it the
+		// default the colour button would
+		if (glow.inner && glow.spread <= 0) {
+			glow.spread = 40;
+			spread.set(40);
+		}
+		sync_inner();
+		write_glow(false);
+		save();
+	});
+	sync_inner();
+	inner.appendChild(inner_toggle);
+	adv.appendChild(inner);
+
+	var duotone_row = $.glue.popover.row('second colour');
+	var duotone = $.glue.popover.color_button('glow second colour',
+		function() {
+			return glow.color2;
+		},
+		function(col) {
+			glow.color2 = (col == 'transparent') ? '' : col;
+			// the sides are sized off the spread, so without one they
+			// would be a solid box
+			if (glow.color2 && glow.spread <= 0) {
+				glow.spread = 40;
+				spread.set(40);
+			}
+			write_glow(false);
+		},
+		function(col) {
+			save();
+		});
+	duotone.classList.add('glue-glow-color2');
+	duotone_row.appendChild(duotone);
+	adv.appendChild(duotone_row);
+
+	// --- the drop shadow ----------------------------------------------------
+	//
+	// A directional shadow, the depth version of the glow: one shadow in one
+	// direction, cast by the box itself. Its colour is the on-switch, and
+	// the direction is an angle and a distance resolved into x/y offsets by
+	// the composed rule in css/main.css.
+	var drop = object_drop(obj);
+	var write_drop = function(commit) {
+		object_set_drop(obj, drop);
+		if (commit) {
+			save();
+		}
+	};
+
+	var drop_row = $.glue.popover.row('shadow');
+	var drop_colour = $.glue.popover.color_button('drop shadow colour',
+		function() {
+			return drop.color;
+		},
+		function(col) {
+			drop.color = (col == 'transparent') ? '' : col;
+			// a colour with no distance shows nothing; give it one (the
+			// other knobs already sit at the defaults a shadow is born
+			// with, so a pick on a fresh object materializes the whole
+			// shadow without touching them)
+			if (drop.color && drop.distance <= 0) {
+				drop.distance = 12;
+				distance.set(12);
+			}
+			write_drop(false);
+		},
+		function(col) {
+			save();
+		});
+	drop_colour.classList.add('glue-drop-color');
+	drop_row.appendChild(drop_colour);
+	adv.appendChild(drop_row);
+
+	var distance = $.glue.popover.number_row('distance', {
+		min: 0, max: 100, step: 1, unit: 'px',
+		value: drop.distance,
+		apply: function(px, commit) {
+			drop.distance = px;
+			// knobs without a colour are dead: there is nothing to cast,
+			// so nothing gets written - or stored - either
+			if (!drop.color) {
+				return;
+			}
+			write_drop(commit);
+		}
+	});
+	adv.appendChild(distance.row);
+
+	var angle = $.glue.popover.number_row('angle', {
+		min: 0, max: 360, step: 1, unit: '°',
+		value: drop.angle,
+		apply: function(deg, commit) {
+			drop.angle = deg;
+			if (!drop.color) {
+				return;
+			}
+			write_drop(commit);
+		}
+	});
+	adv.appendChild(angle.row);
+
+	var blur = $.glue.popover.number_row('blur', {
+		min: 0, max: 100, step: 1, unit: 'px',
+		value: drop.blur,
+		apply: function(px, commit) {
+			drop.blur = px;
+			if (!drop.color) {
+				return;
+			}
+			write_drop(commit);
+		}
+	});
+	adv.appendChild(blur.row);
+
+	var drop_spread = $.glue.popover.number_row('spread', {
+		min: 0, max: 40, step: 1, unit: 'px',
+		value: drop.spread,
+		apply: function(px, commit) {
+			drop.spread = px;
+			if (!drop.color) {
+				return;
+			}
+			write_drop(commit);
+		}
+	});
+	adv.appendChild(drop_spread.row);
+
 	// The reset goes inside the fold, as the font panel's does: it clears
 	// more than the rows above it set, so it belongs with the knobs rather
 	// than sitting under them looking like it applies to the last one.
@@ -691,6 +906,7 @@ function object_edge_popover(obj)
 			object_set_border(obj, 0);
 			object_set_glow(obj, false);
 			object_set_shadow(obj, false);
+			object_set_drop(obj, false);
 			save();
 			radius.set(0);
 			fade.set(0);
@@ -699,9 +915,15 @@ function object_edge_popover(obj)
 			glow = object_glow(obj);
 			spread.set(0);
 			strength.set(glow.alpha);
+			sync_inner();
 			shadow = object_shadow(obj);
 			shadow_rows['in'].set(0);
 			shadow_rows['out'].set(0);
+			drop = object_drop(obj);
+			distance.set(drop.distance);
+			angle.set(drop.angle);
+			blur.set(drop.blur);
+			drop_spread.set(drop.spread);
 		}));
 	adv.appendChild(footer);
 

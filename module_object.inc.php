@@ -301,34 +301,71 @@ function object_alter_render_early($args)
 				$obj['object-background-scale'].'% auto');
 		}
 	}
-	// The box-shadow family - a soft halo behind the content, plus a solid
-	// band outside the box and one inside it - see .glue-glow in
-	// css/main.css. Like the fade above, what is stored is the ingredients
-	// (colours, radii, strengths) rather than any shadow itself. One class
-	// turns on the whole composed rule; the members nobody set stay
-	// invisible, so an object with just an inset band does not also invent
-	// a glow or an outer rim.
+	// The box-shadow family - a soft halo behind the content, a solid band
+	// outside the box and one inside it, and a directional drop shadow - see
+	// .glue-glow in css/main.css. Like the fade above, what is stored is the
+	// ingredients (colours, radii, strengths) rather than any shadow itself.
+	// One class turns on the whole composed rule; the members nobody set stay
+	// invisible, so an object with just an inset band does not also invent a
+	// glow or an outer rim.
+	//
+	// Every NUMBER emitted here is format-guarded: a single bad unit in one
+	// variable would invalidate the entire box-shadow at computed-value time
+	// and take the whole family down with it, so a hand-edited file with,
+	// say, '20px' in a spread is dropped rather than trusted.
 	if (!empty($obj['object-glow-color'])) {
 		elem_css($elem, '--glue-glow-color', $obj['object-glow-color']);
-		if (!empty($obj['object-glow-spread'])) {
+		if (!empty($obj['object-glow-spread']) &&
+		    preg_match('/^[0-9.]+$/', $obj['object-glow-spread'])) {
 			elem_css($elem, '--glue-glow-spread', $obj['object-glow-spread']);
 		}
-		if (!empty($obj['object-glow-alpha'])) {
+		if (!empty($obj['object-glow-alpha']) &&
+		    preg_match('/^[0-9.]+$/', $obj['object-glow-alpha'])) {
 			elem_css($elem, '--glue-glow-alpha', $obj['object-glow-alpha']);
+		}
+		// the inner layers and the duotone sides are sized off the spread,
+		// so they exist only while the glow has a reach - without one they
+		// would be a solid box
+		if (!empty($obj['object-glow-spread'])) {
+			if (!empty($obj['object-glow-inner'])) {
+				elem_css($elem, '--glue-glow-inner', $obj['object-glow-inner']);
+			}
+			if (!empty($obj['object-glow-color2'])) {
+				elem_css($elem, '--glue-glow-color2', $obj['object-glow-color2']);
+			}
 		}
 		elem_add_class($elem, 'glue-glow');
 	}
-	if (!empty($obj['object-shadow-in'])) {
+	if (!empty($obj['object-shadow-in']) &&
+	    preg_match('/^[0-9.]+$/', $obj['object-shadow-in'])) {
 		elem_css($elem, '--glue-shadow-in', $obj['object-shadow-in']);
 		if (!empty($obj['object-shadow-in-color'])) {
 			elem_css($elem, '--glue-shadow-in-color', $obj['object-shadow-in-color']);
 		}
 		elem_add_class($elem, 'glue-glow');
 	}
-	if (!empty($obj['object-shadow-out'])) {
+	if (!empty($obj['object-shadow-out']) &&
+	    preg_match('/^[0-9.]+$/', $obj['object-shadow-out'])) {
 		elem_css($elem, '--glue-shadow-out', $obj['object-shadow-out']);
 		if (!empty($obj['object-shadow-out-color'])) {
 			elem_css($elem, '--glue-shadow-out-color', $obj['object-shadow-out-color']);
+		}
+		elem_add_class($elem, 'glue-glow');
+	}
+	// the drop shadow's on-switch is its colour: without one, no shadow
+	if (!empty($obj['object-drop-color'])) {
+		elem_css($elem, '--glue-drop-color', $obj['object-drop-color']);
+		// the angle keeps its unit, so the trig in the composed rule sees
+		// an angle rather than a number
+		if (!empty($obj['object-drop-angle']) &&
+		    preg_match('/^[0-9.]+deg$/', $obj['object-drop-angle'])) {
+			elem_css($elem, '--glue-drop-angle', $obj['object-drop-angle']);
+		}
+		foreach (['distance', 'blur', 'spread'] as $part) {
+			if (!empty($obj['object-drop-'.$part]) &&
+			    preg_match('/^[0-9.]+$/', $obj['object-drop-'.$part])) {
+				elem_css($elem, '--glue-drop-'.$part, $obj['object-drop-'.$part]);
+			}
 		}
 		elem_add_class($elem, 'glue-glow');
 	}
@@ -510,9 +547,10 @@ function object_alter_save($args)
 		unset($obj['object-border-color']);
 	}
 	// see object_render_object(): the ingredients are what is stored, and the
-	// class comes back with them. The shadow bands are the same deal: the
-	// inline vars are the file's attrs, nothing composed is kept.
-	foreach (['color', 'spread', 'alpha'] as $part) {
+	// class comes back with them. The shadow bands and the drop shadow are
+	// the same deal: the inline vars are the file's attrs, nothing composed
+	// is kept (the drop angle round-trips with its unit, '135deg').
+	foreach (['color', 'spread', 'alpha', 'inner', 'color2'] as $part) {
 		if (elem_css($elem, '--glue-glow-'.$part) !== NULL) {
 			$obj['object-glow-'.$part] = elem_css($elem, '--glue-glow-'.$part);
 		} else {
@@ -530,6 +568,13 @@ function object_alter_save($args)
 				elem_css($elem, '--glue-shadow-'.$side.'-color');
 		} else {
 			unset($obj['object-shadow-'.$side.'-color']);
+		}
+	}
+	foreach (['color', 'distance', 'angle', 'blur', 'spread'] as $part) {
+		if (elem_css($elem, '--glue-drop-'.$part) !== NULL) {
+			$obj['object-drop-'.$part] = elem_css($elem, '--glue-drop-'.$part);
+		} else {
+			unset($obj['object-drop-'.$part]);
 		}
 	}
 	if (elem_css($elem, '--glue-fade') !== NULL) {

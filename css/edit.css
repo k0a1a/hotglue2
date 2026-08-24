@@ -737,6 +737,17 @@
 	margin-bottom: 5px;
 }
 
+.glue-edge-popover .glue-popover-advanced {
+	/* The edge fold is now tall enough (glow, bands, drop shadow) to run past
+	   the bottom of a phone screen, and the popover must not push its anchor
+	   off-viewport on mobile - the open() placement runs out of room first
+	   and the fold ends up unreachable. The fold scrolls in place instead;
+	   the font panel shares the class and stays unscoped, because its fold
+	   is short and a scrollbar there would be noise. */
+	max-height: 42vh;
+	overflow-y: auto;
+}
+
 .glue-background-popover {
 	width: 200px;
 }

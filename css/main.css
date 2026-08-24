@@ -77,33 +77,86 @@ a, a:link, a:visited, a:active, a:hover {
 
 .glue-glow {
 	/* The whole box-shadow family behind an object, composed here, once:
-	   a halo AROUND the object (the colour blurred by the stored spread and
-	   softened by the stored alpha), plus a solid band OUTSIDE the box and a
-	   solid band INSIDE it, each the stored thickness in the stored colour.
-	   That is the difference between this and the edge fade above - the fade
-	   is a mask, so it takes the text with it; shadows paint outside (or
-	   inside) the box and never touch the content.
+	   the soft halo (the glow), a solid band OUTSIDE the box, a solid band
+	   INSIDE it, and a directional drop shadow. That is the difference
+	   between this and the edge fade below - the fade is a mask, so it
+	   takes the text with it; shadows paint outside (or inside) the box
+	   and never touch the content.
 
-	   Only ingredients are stored, never a shadow: the colour, how far out
-	   the halo blurs, how strong it is, and the two thicknesses with their
-	   colours. The class is on the element whenever any of the three is,
-	   and the members nobody set stay invisible (a zero thickness, or a
-	   transparent colour), so adding one shadow never invents another.
-	   color-mix is what lets a stored colour take an alpha without
-	   splitting it into channels first (Chrome 111+, Firefox 113+). */
-	--glue-glow-color: #000;
+	   Only ingredients are stored, never a shadow: colours, the halo's
+	   reach and strength, the bands' thicknesses, and the drop's distance,
+	   angle, blur and spread. The class is on the element whenever any
+	   member is, and the members nobody set stay invisible (a zero size,
+	   a transparent colour, or an alpha that color-mix multiplies to
+	   nothing), so adding one shadow never invents another. Everything
+	   composes into this one box-shadow, so no member can ever become a
+	   second declaration that overwrites the others.
+
+	   The glow is three concentric layers (reach, twice reach, four times
+	   reach) at falling alphas - one layer reads as a hard edge, the stack
+	   as a soft halo. An optional second colour (--glue-glow-color2) puts
+	   the halo's side layers into a duotone, and --glue-glow-inner gates
+	   the inside layers (by alpha, not by size: a zero-sized layer is not
+	   invisible, it is a solid box). The drop shadow is a distance in a
+	   direction, resolved to x/y offsets HERE via cos()/sin() of the
+	   stored angle - the angle keeps its unit, so the trig sees an angle
+	   rather than a number.
+
+	   Every variable used below has a default here, and every one must: a
+	   single undefined variable makes the whole box-shadow invalid at
+	   computed-value time and every layer vanishes at once. color-mix is
+	   what lets a stored colour take an alpha without splitting it into
+	   channels first (Chrome 111+, Firefox 113+); cos()/sin() are Chrome
+	   111+/Firefox 108+. */
+	--glue-glow-color: transparent;
 	--glue-glow-spread: 0;
 	--glue-glow-alpha: 80;
+	--glue-glow-inner: 0;
+	--glue-glow-color2: transparent;
 	--glue-shadow-in: 0;
 	--glue-shadow-in-color: transparent;
 	--glue-shadow-out: 0;
 	--glue-shadow-out-color: transparent;
+	--glue-drop-color: transparent;
+	--glue-drop-distance: 0;
+	--glue-drop-angle: 0deg;
+	--glue-drop-blur: 0;
+	--glue-drop-spread: 0;
 	box-shadow:
 		inset 0 0 0 calc(var(--glue-shadow-in) * 1px) var(--glue-shadow-in-color),
 		0 0 0 calc(var(--glue-shadow-out) * 1px) var(--glue-shadow-out-color),
 		0 0 calc(var(--glue-glow-spread) * 1px)
 			color-mix(in srgb, var(--glue-glow-color) calc(var(--glue-glow-alpha) * 1%),
-				transparent);
+				transparent),
+		0 0 calc(var(--glue-glow-spread) * 2px)
+			color-mix(in srgb, var(--glue-glow-color) calc(var(--glue-glow-alpha) * 0.6%),
+				transparent),
+		0 0 calc(var(--glue-glow-spread) * 4px)
+			color-mix(in srgb, var(--glue-glow-color) calc(var(--glue-glow-alpha) * 0.35%),
+				transparent),
+		inset 0 0 calc(var(--glue-glow-spread) * 1px)
+			color-mix(in srgb, var(--glue-glow-color)
+				calc(var(--glue-glow-alpha) * var(--glue-glow-inner) * 1%), transparent),
+		inset 0 0 calc(var(--glue-glow-spread) * 2px)
+			color-mix(in srgb, var(--glue-glow-color)
+				calc(var(--glue-glow-alpha) * var(--glue-glow-inner) * 0.6%), transparent),
+		inset 0 0 calc(var(--glue-glow-spread) * 4px)
+			color-mix(in srgb, var(--glue-glow-color)
+				calc(var(--glue-glow-alpha) * var(--glue-glow-inner) * 0.35%), transparent),
+		inset calc(var(--glue-glow-spread) * 0.4px) 0 calc(var(--glue-glow-spread) * 1.6px)
+			color-mix(in srgb, var(--glue-glow-color2) calc(100% * var(--glue-glow-inner)),
+				transparent),
+		inset calc(var(--glue-glow-spread) * -0.4px) 0 calc(var(--glue-glow-spread) * 6px)
+			color-mix(in srgb, var(--glue-glow-color2) calc(100% * var(--glue-glow-inner)),
+				transparent),
+		calc(var(--glue-glow-spread) * -0.2px) 0 calc(var(--glue-glow-spread) * 1.6px)
+			var(--glue-glow-color2),
+		calc(var(--glue-glow-spread) * 0.2px) 0 calc(var(--glue-glow-spread) * 6px)
+			var(--glue-glow-color2),
+		calc(var(--glue-drop-distance) * cos(var(--glue-drop-angle)) * 1px)
+			calc(var(--glue-drop-distance) * sin(var(--glue-drop-angle)) * 1px)
+			calc(var(--glue-drop-blur) * 1px) calc(var(--glue-drop-spread) * 1px)
+			var(--glue-drop-color);
 }
 
 .glue-text-shadow {

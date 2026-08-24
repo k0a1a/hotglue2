@@ -124,7 +124,9 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
   for any angle — and the chrome (menus, handles) now stays aligned to the object through
   turning, resizing and undoing.
 - **The panels.** Font (face, size, style, colour, and a "more knobs" fold with spacing,
-  alignment and a text shadow), Edge (corners, fade, border, and a fold with a glow),
+  alignment and a text shadow), Edge (corners, fade, border, and a fold with a glow —
+  now with an inner-glow toggle, a duotone second colour and a directional drop shadow,
+  all composed from stored ingredients into one box-shadow by `.glue-glow`),
   Background image (tile, move, remove), and the link dialog turned from a modal into a
   rollout. The text menu went from thirteen buttons to five. All four are built from one
   set of parts in `$.glue.popover`.

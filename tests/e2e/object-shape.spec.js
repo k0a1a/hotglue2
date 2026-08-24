@@ -311,6 +311,16 @@ test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 // a background and leaves the text sharp - which is the whole point of it.
 
 const advanced = (page) => pop(page).locator('.glue-popover-advanced');
+// the fold's own fields, below the panel's three: 0 spread, 1 opacity,
+// 2 inset band, 3 outer band, 4 distance, 5 angle, 6 blur, 7 drop spread
+const advField = (page, n) => advanced(page).locator('.glue-popover-field').nth(n);
+
+async function setAdvRow(page, n, value) {
+	const f = advField(page, n);
+	await f.fill(String(value));
+	await f.dispatchEvent('input');
+	await f.dispatchEvent('change');
+}
 
 test('the advanced section is folded away until it is asked for',
 	async ({ page, hg }) => {
@@ -322,8 +332,9 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page)).toBeHidden();
 		await pop(page).locator('.glue-popover-disclosure').click();
 		await expect(advanced(page)).toBeVisible();
-		// the glow (spread + strength) and the two shadow bands' thicknesses
-		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(4);
+		// the glow (spread + strength), the two shadow bands' thicknesses and
+		// the drop shadow's distance, angle, blur and spread
+		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(8);
 	});
 
 test('the glow applies, stores its ingredients and reaches the published page',
@@ -401,7 +412,11 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'object-border-radius': '24px', 'object-edge-fade': '30px',
 			'object-border-width': '5px', 'object-glow-color': '#ff8c42',
-			'object-glow-spread': '40' }, 'A');
+			'object-glow-spread': '40', 'object-glow-inner': '1',
+			'object-glow-color2': '#ff00ff',
+			'object-drop-color': '#000000', 'object-drop-distance': '20',
+			'object-drop-angle': '135deg', 'object-drop-blur': '16',
+			'object-drop-spread': '4' }, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
@@ -418,7 +433,277 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await expect(field(page, FADE)).toHaveValue('0');
 	await expect(pop(page).locator('.glue-border-style')).toHaveValue('solid');
 	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
+	// the glow's toggle and second colour, and the whole drop shadow
+	await expect.poll(() => attrs(hg)['object-glow-inner']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-glow-color2']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-color']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-distance']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-angle']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-blur']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-spread']).toBe(undefined);
+	// and the new knobs are back at the defaults a shadow is born with
+	await expect(advField(page, 4)).toHaveValue('12');
+	await expect(advField(page, 5)).toHaveValue('135');
+	await expect(advField(page, 6)).toHaveValue('16');
+	await expect(advField(page, 7)).toHaveValue('0');
+	await expect(advanced(page).locator('.glue-glow-inner-toggle'))
+		.not.toHaveClass(/glue-font-toggle-on/);
 });
+
+test('the glow is a stack of layers, not a single blur', async ({ page, hg }) => {
+	// one layer at the reach, one at twice it, one at four times it - a 1-2-4
+	// stack, so a big glow fades to nothing instead of being one big circle
+	// with a hard edge
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'object-glow-color': '#ff8c42', 'object-glow-spread': '45.5',
+		'object-glow-alpha': '90',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	const shadow = await cssOf(page, a, 'boxShadow');
+	expect(shadow).toContain('45.5px');
+	expect(shadow).toContain('91px');
+	expect(shadow).toContain('182px');
+});
+
+test('the inner glow is a toggle, and turning it on materialises the glow',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+
+		// how many inset layers are actually carrying paint: colour-mix of
+		// transparent serialises as colour(srgb 0 0 0 / 0) and plain
+		// transparent as rgba(0, 0, 0, 0) - either of them possibly wrapped
+		// across lines, so whitespace is normalised first - and a layer with
+		// no alpha is not a layer at all
+		// how many inset layers are actually carrying paint. The list cannot
+		// be split on ', ' - the colours themselves contain ', ' - so it is
+		// matched whole: an inset layer in a colour-mix colour with an alpha
+		// between 0 and 1. Alpha 1 never occurs here, and a transparent layer
+		// serialises as / 0) or as rgba(0, 0, 0, 0), neither of which matches.
+		const lit = () => page.evaluate((i) => {
+			const bs = getComputedStyle(document.getElementById(i)).boxShadow
+				.replace(/\s+/g, ' ');
+			return (bs.match(/color\(srgb[^)]*\/ 0\.\d+\) [^,]*inset/g) || [])
+				.length;
+		}, a);
+
+		// a fresh object: no glow, and nothing inside it
+		expect(await lit()).toBe(0);
+		await advanced(page).locator('.glue-glow-inner-toggle').click();
+
+		// an inner glow is a toggle that gives the glow its defaults, not a
+		// button that appears to do nothing
+		await expect.poll(() => attrs(hg)['object-glow-color']).toBe('#ff8844');
+		await expect.poll(() => attrs(hg)['object-glow-spread']).toBe('40');
+		await expect.poll(() => attrs(hg)['object-glow-inner']).toBe('1');
+		// the three inset centre layers are lit now
+		expect(await lit()).toBe(3);
+
+		// and off again: the gate attribute goes, the glow itself stays
+		await advanced(page).locator('.glue-glow-inner-toggle').click();
+		await expect.poll(() => attrs(hg)['object-glow-inner']).toBe(undefined);
+		expect(await lit()).toBe(0);
+		await expect.poll(() => attrs(hg)['object-glow-spread']).toBe('40');
+	});
+
+test('a second colour makes the glow duotone, and transparent turns it off',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-glow-color': '#ffffff', 'object-glow-spread': '50',
+			'object-glow-alpha': '90', 'object-glow-inner': '1',
+			'object-glow-color2': '#ff00ff',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// the side layers: inset ±(spread*0.4) at blurs spread*1.6 and
+		// spread*6, outside ∓(spread*0.2) with the same blurs - the marble
+		// geometry, so a 50px reach means 20px/80px inside and 10px/300px
+		// out. colour-mix serialises as color(srgb ...), which differs by
+		// engine, so only the LENGTHS are asserted.
+		const shadow = await cssOf(page, a, 'boxShadow');
+		expect(shadow).toContain('20px 0px 80px');
+		expect(shadow).toContain('-20px 0px 300px');
+		expect(shadow).toContain('-10px 0px 80px');
+		expect(shadow).toContain('10px 0px 300px');
+		await expect.poll(() => attrs(hg)['object-glow-color2']).toBe('#ff00ff');
+
+		// and back to one colour: the transparent pick removes it entirely
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+		await advanced(page).locator('.glue-glow-color2').click();
+		const hex = page.locator('.picker_editor input');
+		await hex.fill('#ff00ff00');
+		await hex.press('Enter');
+		await expect.poll(() => attrs(hg)['object-glow-color2']).toBe(undefined);
+		// the first colour is still there, and so is the class
+		await expect.poll(() => attrs(hg)['object-glow-color']).toBe('#ffffff');
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+	});
+
+test('the drop shadow casts at a distance and an angle, and stores both',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-drop-color': '#000000', 'object-drop-distance': '20',
+			'object-drop-angle': '90deg', 'object-drop-blur': '16',
+			'object-drop-spread': '4',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// 90 degrees casts straight down. The distance itself is exact in
+		// both engines; on the sideways axis chromium resolves cos(90deg) to
+		// a clean 0 while firefox carries a float sliver (-8.7e-7px), so the
+		// distance is what is asserted, not the axis
+		const shadow = await cssOf(page, a, 'boxShadow');
+		expect(shadow).toContain('20px');
+		expect(shadow).toContain('16px');
+		expect(shadow).toContain('4px');
+		// the ingredients, angle included, are what is stored
+		await expect.poll(() => attrs(hg)['object-drop-angle']).toBe('90deg');
+
+		// the angle round-trips through the save: 135deg is the display
+		// default, so a stored 0deg would render the same as nothing and lie
+		// on the reload
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+		await setAdvRow(page, 5, 135);
+		await expect.poll(() => attrs(hg)['object-drop-angle']).toBe('135deg');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await expect.poll(() => attrs(hg)['object-drop-angle']).toBe('135deg');
+
+		// and the whole shadow reaches the published page, at its 135 degrees
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.object')).boxShadow))
+			.toContain('14.1421px');
+	});
+
+test('picking a drop colour materialises a shadow where there was none',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+
+		await advanced(page).locator('.glue-drop-color').click();
+		const hex = page.locator('.picker_editor input');
+		await hex.fill('#000000');
+		await hex.press('Enter');
+
+		// a shadow is born at the defaults the knobs show, so what you see
+		// is what gets stored
+		await expect.poll(() => attrs(hg)['object-drop-distance']).toBe('12');
+		await expect.poll(() => attrs(hg)['object-drop-angle']).toBe('135deg');
+		await expect.poll(() => attrs(hg)['object-drop-blur']).toBe('16');
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+		// and the picker's raw value is what lands in the custom property -
+		// no browser normalisation happens on a --var, so what was typed is
+		// what is stored
+		await expect.poll(() => attrs(hg)['object-drop-color']).toBe('#000000');
+	});
+
+test('drop shadow knobs without a colour store nothing', async ({ page, hg }) => {
+	// a shadow is born of a colour: until there is one, there is nothing to
+	// cast, and dragging the knobs must not smuggle a shadow into the file
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await pop(page).locator('.glue-popover-disclosure').click();
+
+	await setAdvRow(page, 4, 30);
+	await setAdvRow(page, 5, 45);
+	expect(JSON.stringify(attrs(hg))).not.toContain('object-drop');
+	await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
+});
+
+test('glow and drop shadow compose into the one box-shadow',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-glow-color': '#ff8c42', 'object-glow-spread': '45.5',
+			'object-glow-alpha': '90',
+			'object-drop-color': '#000000', 'object-drop-distance': '20',
+			'object-drop-angle': '90deg', 'object-drop-blur': '16',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// both effects in ONE list - if they were two declarations, the
+		// second would have overwritten the first and only one signature
+		// would appear. The drop's distance is asserted rather than its
+		// 90-degree offset, which firefox resolves with a float sliver on
+		// the sideways axis
+		const shadow = await cssOf(page, a, 'boxShadow');
+		expect(shadow).toContain('45.5px');
+		expect(shadow).toContain('91px');
+		expect(shadow).toContain('20px');
+		expect(shadow).toContain('16px');
+	});
+
+test('clearing the drop colour takes the whole shadow off', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'object-glow-color': '#ff8c42', 'object-glow-spread': '40',
+		'object-drop-color': '#000000', 'object-drop-distance': '20',
+		'object-drop-angle': '90deg', 'object-drop-blur': '16',
+		'object-drop-spread': '4',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await pop(page).locator('.glue-popover-disclosure').click();
+
+	await advanced(page).locator('.glue-drop-color').click();
+	const hex = page.locator('.picker_editor input');
+	await hex.fill('#00000000');
+	await hex.press('Enter');
+
+	// every drop ingredient is gone at once, the glow survives, and so does
+	// the class - the colour is the shadow's on-switch
+	await expect.poll(() => attrs(hg)['object-drop-color']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-distance']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-angle']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-blur']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-drop-spread']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe('40');
+	await expect(byId(page, a)).toHaveClass(/glue-glow/);
+});
+
+test('the duotone glow and the drop shadow paint, unclipped, on the published page',
+	async ({ page, hg }) => {
+		// a marble with a cast shadow: inner glow, second colour and a drop,
+		// the whole family at once. Nothing around an object clips its
+		// box-shadow - SOW gotcha #1 - only the object's own clip toggle
+		// can, and that is the author's choice.
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'text-background-color': 'transparent',
+			'object-border-radius': '50%',
+			'object-glow-color': '#ffffff', 'object-glow-spread': '40',
+			'object-glow-alpha': '90', 'object-glow-inner': '1',
+			'object-glow-color2': '#ff00ff',
+			'object-drop-color': '#000000', 'object-drop-distance': '20',
+			'object-drop-angle': '90deg', 'object-drop-blur': '16',
+		}, 'A');
+		await page.goto(`/?${hg.pageName}`);
+
+		const box = await page.locator('.object').boundingBox();
+		const margin = 60;
+		const clip = {
+			x: Math.max(0, box.x - margin), y: Math.max(0, box.y - margin),
+			width: box.width + 2 * margin, height: box.height + 2 * margin,
+		};
+		const lit = await page.screenshot({ clip });
+		await page.locator('.object').evaluate((e) => e.classList.remove('glue-glow'));
+		const plain = await page.screenshot({ clip });
+		expect(lit.equals(plain), 'the effects are not painting anything').toBe(false);
+	});
 
 // --- the shadow bands -------------------------------------------------------
 //
