@@ -564,10 +564,10 @@
 
 
 .glue-popover-label {
-	/* The row labels line up, so the controls do too. As wide as the
-	   longest label needs - "glow inside" just fits - so nothing wraps
-	   and the label column stays as small as it can be. */
-	width: 63px;
+	/* The row labels line up, so the controls do too. The labels are
+	   short - "top", "left", "fade" - so a fixed narrow column keeps the
+	   sliders together. Anything longer overflows rather than wrapping. */
+	width: 20px;
 	flex: 0 0 auto;
 	padding-right: 4px;
 	color: #666;
