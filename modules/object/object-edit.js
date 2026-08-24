@@ -502,10 +502,10 @@ function object_edge_popover(obj)
 
 	// --- more knobs: the glow ---------------------------------------------
 	//
-	// A blob of colour behind the content, which is a different mechanism
-	// from the fade above and worth keeping apart from it: the fade is a
-	// mask, so it takes the text with it, while this is a background and
-	// leaves the text sharp. Folded away because most objects will never want
+	// A halo painted AROUND the box, which is a different mechanism from
+	// the fade above and worth keeping apart from it: the fade is a mask,
+	// so it takes the text with it, while this is a box-shadow and never
+	// touches the content. Folded away because most objects will never want
 	// it, and the panel is already four rows.
 	var fold = $.glue.popover.fold(pop, 'more knobs');
 	pop.appendChild(fold.toggle);
@@ -521,10 +521,9 @@ function object_edge_popover(obj)
 	};
 
 	var spread = $.glue.popover.number_row('glow', {
-		// a tenth of a percent: the difference between a blob that hugs the
-		// text and one that fills the box is a few percent, so whole numbers
-		// were too coarse a step to find it with
-		min: 0, max: 100, step: 0.1, decimals: 1, unit: '%',
+		// the halo's blur radius, in px; a tenth of a px is finer than the
+		// eye can judge, but it keeps the step that found the values it did
+		min: 0, max: 100, step: 0.1, decimals: 1, unit: 'px',
 		value: glow.on ? glow.spread : 0,
 		apply: function(pct, commit) {
 			glow.spread = pct;
@@ -664,7 +663,11 @@ function object_background_popover(obj)
 	pad.className = 'glue-background-pad';
 	pad.title = 'drag to move the image, click to put it back';
 	pad.textContent = '\u2725';
-	pad.addEventListener('mousedown', function(e) {
+	pad.style.touchAction = 'none';
+	pad.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var start = getComputedStyle(obj).backgroundPosition.split(' ');
 		var from_x = parseInt(start[0]);
 		var from_y = parseInt(start[1]);
@@ -753,7 +756,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.setAttribute('x-data', '{ opacity: 100 }');
 	elem.setAttribute('x-bind:title', "'change transparency ('+opacity+'%)'");
 	elem.setAttribute('x-on:glue-menu-activate', 'opacity = object_transparency_percent($.glue.owner($el))');
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var that = this;
 		var obj = $.glue.owner(this);
 		$.glue.slider(e, function(x, y) {
@@ -887,7 +894,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.title = 'bring object to foreground or background';
 	elem.width = 32;
 	elem.height = 32;
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var obj = $.glue.owner(this);
 		var old_z = parseInt(getComputedStyle(obj).zIndex);
 		$.glue.slider(e, function(x, y) {

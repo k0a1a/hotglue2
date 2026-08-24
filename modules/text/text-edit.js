@@ -1376,7 +1376,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.setAttribute('x-data', "{ tip: 'change padding, click to reset to default one' }");
 	elem.setAttribute('x-bind:title', 'tip');
 	elem.setAttribute('x-on:glue-menu-activate', 'text_padding_sync($el)');
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var obj = $.glue.owner(this);
 		// we assume px here, and for {left,right} {top,bottom} to be the same
 		var computed = getComputedStyle(obj);

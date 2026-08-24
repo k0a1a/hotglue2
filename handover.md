@@ -135,6 +135,13 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
   went with it, and it is what makes an object's own border possible at all.
 - **The editor works on a phone** — verified on a Galaxy S23 over ADB. Tap selects, a
   second tap edits, typing saves, a finger drags.
+- **The drag-only controls work on touch** — `$.glue.slider` and all nine of its
+  triggers speak pointer events now, so the controls that only worked with a mouse
+  (transparency, padding, page background position, grid size, the background pad, …)
+  drag with a finger. The migration also surfaced two real bugs: Moveable's gesture
+  layer was dragging the object under a finger that was working a menu button (which hid
+  the menus and silently dropped the drag's save), and a throwing change handler could
+  orphan a drag's listeners. Both are fixed; three new touch-drag tests hold it.
 
 ---
 
@@ -151,11 +158,9 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
 
 **Work, roughly by value:**
 
-4. **The nine mouse-only drag controls.** Every `$.glue.slider` caller — transparency,
-   padding, page background position, grid size, guides, image scale, the background pad —
-   binds `mousedown` and listens for `mousemove`, which touch never sends during a drag.
-   They are dead on a phone. Moving them to `$.glue.popover.number_row()` fixes that and
-   is the same work as the "parametric entry" roadmap item.
+4. ~~**The nine mouse-only drag controls.**~~ **Done** — `$.glue.slider` and its
+   triggers speak pointer events; the drags work with a finger. The "parametric entry"
+   roadmap item (typing a number on a phone) is still open as a design question.
 5. **Editing on a phone, past the first tap**: the menu row does not wrap (two buttons
    were off a 274px viewport), tooltips are the only label most buttons have, and the
    canvas is wider than the screen with no fit-and-reveal in the editor. `ROADMAP.md` has
@@ -182,6 +187,11 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
   default made the entire editor unreachable on touch, silently, while a mouse worked.
 - **Moveable's `getRect()` is cached** and `updateRect()` only schedules a recompute, so
   anything that changes an object and immediately measures it reads the old value.
+- **Moveable's gesture layer claims every touch on the container** (its mousedown only
+  hears the target itself). A finger that started on a menu button dragged the object
+  underneath in parallel — and the `glue-movestart` hid the menus under that same
+  finger. Filtered in `onDragStart`; any new touch-capable chrome must be added to that
+  filter's selector list.
 - **A mask that fails to load hides everything**, at the right size, still clickable,
   with nothing in the console.
 - **vanilla-picker builds its wrapper once and reuses it**; anything added to that

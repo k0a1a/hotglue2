@@ -57,9 +57,13 @@ function page_container_handle_make(edge) {
 	h.className = 'glue-container-handle glue-ui';
 	h.dataset.edge = edge;
 	h.title = 'drag to set how wide the centered container is';
-	h.addEventListener('mousedown', function(e) {
+	h.style.touchAction = 'none';
+	h.addEventListener('pointerdown', function(e) {
 		var wrap = $.glue.canvas.wrapper();
 		if (!wrap) {
+			return;
+		}
+		if (!e.isPrimary) {
 			return;
 		}
 		e.preventDefault();
@@ -78,12 +82,14 @@ function page_container_handle_make(edge) {
 			$.glue.grid.update();
 		}
 		function up() {
-			document.removeEventListener('mousemove', move);
-			document.removeEventListener('mouseup', up);
+			document.removeEventListener('pointermove', move);
+			document.removeEventListener('pointerup', up);
+			document.removeEventListener('pointercancel', up);
 			$.glue.backend({ method: 'page.set_layout', page: $.glue.page, width: width });
 		}
-		document.addEventListener('mousemove', move);
-		document.addEventListener('mouseup', up);
+		document.addEventListener('pointermove', move);
+		document.addEventListener('pointerup', up);
+		document.addEventListener('pointercancel', up);
 	});
 	document.body.appendChild(h);
 	return h;
@@ -336,7 +342,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			toggleElem.style.display = 'none';
 		}
 	});
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var a = getComputedStyle(document.documentElement).backgroundPosition.split(' ');
 		if (a.length != 2) {
 			var prev_x_pos = 0;
@@ -379,7 +389,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.height = 32;
 	// also change tilte below
 	elem.title = 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')';
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var that = this;
 		$.glue.slider(e, function(x, y, evt) {
 			// rectangular grid when pressing shift

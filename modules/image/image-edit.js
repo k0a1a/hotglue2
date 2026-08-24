@@ -262,7 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.title = 'adjust image selection';
 	elem.width = 32;
 	elem.height = 32;
-	elem.addEventListener('mousedown', function(e) {
+	elem.style.touchAction = 'none';
+	elem.addEventListener('pointerdown', function(e) {
+		if (!e.isPrimary) {
+			return;
+		}
 		var obj = $.glue.owner(this);
 		var a = getComputedStyle(obj).backgroundPosition.split(' ');
 		if (a.length != 2) {

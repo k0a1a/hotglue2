@@ -593,7 +593,10 @@ $.glue.colorpicker = function()
 	// Measured: the same 655,30 whatever button was clicked. The last click is
 	// both the right anchor and already in the right space.
 	var last_click = false;
-	document.addEventListener('mousedown', function(e) {
+	// pointerdown rather than mousedown: the drag controls cancel their
+	// pointerdown, which suppresses the compatibility mousedown that used to
+	// keep this anchor fresh on touch
+	document.addEventListener('pointerdown', function(e) {
 		last_click = { x: e.clientX, y: e.clientY };
 	}, true);
 
@@ -1813,6 +1816,23 @@ $.glue.object = function()
 				target: obj,
 				container: document.body,
 				draggable: true,
+				// Moveable's gesture layer claims every touch that starts on
+				// the container - unlike mousedown, which it only hears from
+				// the target itself. A finger on editor chrome - a context
+				// menu button, a panel, a popover - would therefore start
+				// dragging the object underneath it in parallel, and the
+				// glue-movestart that fires hides the context menus (the
+				// chrome under that same finger is detached, and the control
+				// loses its save on top of it). Handing the gesture back
+				// leaves the touch with the control that actually got it.
+				onDragStart: function(e) {
+					var t = e.inputEvent && e.inputEvent.target;
+					if (t && t.closest && t.closest(
+						'.glue-contextmenu-left, .glue-contextmenu-top, ' +
+						'.glue-menu, .glue-popover')) {
+						return false;
+					}
+				},
 				// resize handles are only shown once the object is selected
 				// (see the glue-select/glue-deselect handlers below)
 				resizable: false,
@@ -2664,27 +2684,70 @@ $.glue.sel = function()
 
 $.glue.slider = function()
 {
+	// The drag mechanics behind every drag-only control in the editor. It
+	// used to listen for mousemove/mouseup, which touch never sends during a
+	// drag, so the controls were dead on a phone. Pointer events cover both:
+	// the browser reports them for mouse, touch and pen alike. The triggers
+	// that start a drag set touch-action: none on themselves, or the browser
+	// claims the gesture for scrolling and this gets a pointercancel instead
+	// of a drag.
 	return function(e, change, stop) {
 		var old_e = e;
-		var mousemove = function(e) {
+		var pointer_id = e.pointerId;	// ignore other fingers mid-gesture
+		var last_dx = 0;
+		var last_dy = 0;
+
+		var pointermove = function(e) {
+			if (e.pointerId !== pointer_id) {
+				return;
+			}
+			last_dx = e.pageX-old_e.pageX;
+			last_dy = e.pageY-old_e.pageY;
 			if (typeof change == 'function') {
-				change(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
+				change(last_dx, last_dy, e);
 			}
 			e.preventDefault();
 		};
-		var mouseup = function(e) {
-			document.documentElement.removeEventListener('mousemove', mousemove);
-			document.documentElement.removeEventListener('mouseup', mouseup);
-			if (typeof change == 'function') {
-				change(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
-			}
+		var finish = function(e, dx, dy) {
+			document.documentElement.removeEventListener('pointermove', pointermove);
+			document.documentElement.removeEventListener('pointerup', pointerup);
+			document.documentElement.removeEventListener('pointercancel', pointercancel);
 			if (typeof stop == 'function') {
-				stop(e.pageX-old_e.pageX, e.pageY-old_e.pageY, e);
+				stop(dx, dy, e);
 			}
 			e.preventDefault();
 		};
-		document.documentElement.addEventListener('mousemove', mousemove);
-		document.documentElement.addEventListener('mouseup', mouseup);
+		var pointerup = function(e) {
+			if (e.pointerId !== pointer_id) {
+				return;
+			}
+			var dx = e.pageX-old_e.pageX;
+			var dy = e.pageY-old_e.pageY;
+			// A throwing change() must not be able to orphan the drag: if the
+			// exception escaped here, the listeners would stay attached and
+			// stop() - which is where the drags save their work - would never
+			// run, silently dropping the edit. The finally guarantees finish()
+			// (and with it the save) while the exception still surfaces.
+			try {
+				if (typeof change == 'function') {
+					change(dx, dy, e);
+				}
+			} finally {
+				finish(e, dx, dy);
+			}
+		};
+		// Some browsers report pageX/pageY as 0 on pointercancel, so the
+		// gesture finishes with the last deltas actually seen rather than
+		// a bogus jump back to the origin.
+		var pointercancel = function(e) {
+			if (e.pointerId !== pointer_id) {
+				return;
+			}
+			finish(e, last_dx, last_dy);
+		};
+		document.documentElement.addEventListener('pointermove', pointermove);
+		document.documentElement.addEventListener('pointerup', pointerup);
+		document.documentElement.addEventListener('pointercancel', pointercancel);
 	};
 }();
 
@@ -2703,7 +2766,7 @@ $.glue.slider = function()
 // across the object being edited.
 //
 // The handle tracks the pointer 1:1 - the full range spans TRACK px and the
-// value comes from how far the pointer has moved since mousedown - so it
+// value comes from how far the pointer has moved since pointerdown - so it
 // reads as a real slider even though the pointer starts on the button and
 // never actually touches the bar.
 $.glue.rangeslider = function()
@@ -2715,7 +2778,7 @@ $.glue.rangeslider = function()
 	return {
 		// button .. the menu element to drive the value from
 		// opts.min, opts.max .. ends of the range
-		// opts.value() .. the value to open at, read at mousedown
+		// opts.value() .. the value to open at, read at pointerdown
 		// opts.change(v, ev) .. called live while dragging
 		// opts.stop(v, moved, ev) .. called once on release. 'moved' is false
 		//   for a press that never became a drag, which is how a button can
@@ -2728,7 +2791,12 @@ $.glue.rangeslider = function()
 			var max = opts.max;
 			var span = max-min;
 
-			button.addEventListener('mousedown', function(e) {
+			button.style.touchAction = 'none';
+			button.addEventListener('pointerdown', function(e) {
+				if (!e.isPrimary) {
+					return;
+				}
+				// which way the menu this button is in runs
 				// which way the menu this button is in runs
 				var vertical = button.classList.contains('glue-contextmenu-top');
 				var start = opts.value();

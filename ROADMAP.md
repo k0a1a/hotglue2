@@ -192,6 +192,19 @@ Shipped later the same night — the editor's panels, and what objects can be:
 - **The panels are one set of parts**: `$.glue.popover` places them (beside the object,
   never over it), folds them, builds their rows, their colour buttons and their resets.
   Four panels and the colour picker's alpha are built from the same pieces.
+- **The drag-only controls work on touch.** `$.glue.slider` used to bind
+  `mousemove`/`mouseup`, which touch never sends during a drag, so every drag-only
+  control was dead on a phone. It listens for pointer events now, each trigger binds
+  `pointerdown` with `touch-action: none` on itself (or the browser claims the gesture
+  for scrolling and the drag becomes a pointercancel), and the colour picker's anchor
+  follows the same stream. One thing the migration surfaced: Moveable's gesture layer
+  claims every touch that starts on the container, so a finger on a menu button was
+  dragging the object underneath it in parallel — which hid the menus (and, through a
+  tooltip update that expects a live element, silently dropped the drag's save). The
+  Moveable `onDragStart` filter hands chrome touches back to the control that got them,
+  and a throwing change handler can no longer orphan a drag's listeners. The three drags
+  `tests/e2e/touch-editing.spec.js` performs with a finger — transparency, padding in
+  two dimensions without the page scrolling, and a tap that keeps its click — hold it.
 
 Bugs found while building the above, each invisible from reading the code:
 
@@ -402,12 +415,14 @@ Features and niceties not yet spec'd — the running to-do:
 - **Adopt the range slider for the remaining drag controls.** `$.glue.rangeslider`
   (`js/edit.js`) draws a visible bar next to a menu button while it is dragged, in the
   toolbar's own frame — the readout Superglue's editor has. It was built for rotation,
-  which then went to direct manipulation instead, so **nothing drives it yet**: the
-  candidates are the buttons that already change a number by being dragged invisibly —
-  transparency and border width (`modules/object/object-edit.js`), font size, line height
-  and letter spacing (`modules/text/text-edit.js`), page background position
-  (`modules/page/page-edit.js`). It is covered by `tests/e2e/rangeslider.spec.js` in both
-  orientations, so adopting it is a call, not a build. If nothing adopts it, delete it.
+  which then went to direct manipulation instead, so **nothing drives it yet** (its
+  `attach` was converted to pointer events with the rest, so a drag works on touch too,
+  but nothing calls it): the candidates are the buttons that already change a number by
+  being dragged invisibly — transparency and border width
+  (`modules/object/object-edit.js`), font size, line height and letter spacing
+  (`modules/text/text-edit.js`), page background position (`modules/page/page-edit.js`).
+  It is covered by `tests/e2e/rangeslider.spec.js` in both orientations, so adopting it
+  is a call, not a build. If nothing adopts it, delete it.
 - **Editing on a phone, beyond the first tap** — danja, 2026-08-24. *(The tap itself
   now works: see the Done entry. What is left is whether the rest is usable.)*
 
@@ -421,13 +436,11 @@ Features and niceties not yet spec'd — the running to-do:
 
   Known to be missing, from reading the code rather than guessing:
 
-  - **Nine controls can only be dragged with a mouse.** Every `$.glue.slider` caller —
-    transparency and padding, the page background's position, the grid size and guides,
-    image scale, and the edge panel's background pad — binds `mousedown` and then
-    listens for `mousemove` on the document, and touch does not synthesise `mousemove`
-    during a drag. They are dead on a phone. The panels built on
-    `$.glue.popover.number_row()` are fine, which is the pattern to move them to; that
-    is the same work as the parametric-entry item above.
+  - **Nine controls can only be dragged with a mouse.** — *Done, see the Done entry:
+    `$.glue.slider` and its triggers now speak pointer events, so the same gestures
+    work for mouse and finger.* The parametric-entry item above is still the design
+    question — a phone has no way to type a number in a drag — but the drags themselves
+    are no longer the block.
   - **Tooltips are the only label** most buttons have, and `title=` does not exist on
     touch. That got worse when the icons replaced text placeholders, not better.
   - **Double-tap is taken.** Text editing is a second click, which works, but the

@@ -334,26 +334,25 @@ test('the glow applies, stores its ingredients and reaches the published page',
 		await pop(page).locator('.glue-popover-disclosure').click();
 
 		const spread = advanced(page).locator('.glue-popover-field').first();
-		// a tenth of a percent is the step: the difference between a blob
-		// that hugs the text and one that fills the box is a few percent
+		// the blur radius of the halo, in px
 		await spread.fill('45.5');
 		await spread.dispatchEvent('input');
 		await spread.dispatchEvent('change');
 
 		await expect(byId(page, a)).toHaveClass(/glue-glow/);
-		expect(await cssOf(page, a, 'backgroundImage')).toContain('radial-gradient');
+		expect(await cssOf(page, a, 'boxShadow')).toContain('45.5px');
 		await expect.poll(() => attrs(hg)['object-glow-spread']).toBe('45.5');
-		// the gradient itself is not what gets stored
-		expect(JSON.stringify(attrs(hg))).not.toContain('gradient');
+		// the shadow itself is not what gets stored
+		expect(JSON.stringify(attrs(hg))).not.toContain('shadow');
 
 		await page.goto(`/?${hg.pageName}`);
 		const published = await page.evaluate(() => {
 			const el = document.querySelector('.object');
-			return [el.className, getComputedStyle(el).backgroundImage,
+			return [el.className, getComputedStyle(el).boxShadow,
 				getComputedStyle(el).maskImage];
 		});
 		expect(published[0]).toContain('glue-glow');
-		expect(published[1]).toContain('radial-gradient');
+		expect(published[1]).toContain('45.5px');
 		// a background, not a mask: the content stays sharp
 		expect(published[2]).toBe('none');
 	});
@@ -368,7 +367,16 @@ test('the glow paints, and a glow of zero takes itself off', async ({ page, hg }
 	await waitForEditor(page, 1);
 
 	const box = await byId(page, a).boundingBox();
-	const clip = { x: box.x, y: box.y, width: box.width, height: box.height };
+	// The halo is painted AROUND the box, never inside it: the zero-offset
+	// blur of a box-shadow stays outside the border, so clipping the
+	// element's own rectangle would show no difference at all (and removing
+	// the class would be indistinguishable from keeping it). Clip a margin
+	// around the box, where the halo actually lives.
+	const margin = 60;
+	const clip = {
+		x: Math.max(0, box.x - margin), y: Math.max(0, box.y - margin),
+		width: box.width + 2 * margin, height: box.height + 2 * margin,
+	};
 	const glowing = await page.screenshot({ clip });
 	await byId(page, a).evaluate((e) => e.classList.remove('glue-glow'));
 	const plain = await page.screenshot({ clip });

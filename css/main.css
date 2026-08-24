@@ -76,23 +76,23 @@ a, a:link, a:visited, a:active, a:hover {
 }
 
 .glue-glow {
-	/* A soft blob of colour BEHIND the object's content: the background fades
-	   outwards while the content stays sharp. That is the difference between
-	   this and the edge fade above - the fade is a mask, so it takes the text
-	   with it; this is a background, so it does not.
+	/* A halo painted AROUND the object, the way box-shadow paints one: the
+	   colour blurred by the stored spread and softened by the stored alpha.
+	   That is the difference between this and the edge fade above - the fade
+	   is a mask, so it takes the text with it; this paints outside the box
+	   and never touches the content.
 
-	   Three things are stored, and none of them is the gradient: the colour,
-	   how far out it stays solid, and how strong it is. The gradient is
-	   composed here, once. color-mix is what lets a stored colour take an
-	   alpha without splitting it into channels first (Chrome 111+, Firefox
+	   Three things are stored, and none of them is the shadow: the colour,
+	   how far out it blurs, and how strong it is. The shadow is composed
+	   here, once. color-mix is what lets a stored colour take an alpha
+	   without splitting it into channels first (Chrome 111+, Firefox
 	   113+). */
 	--glue-glow-color: #000;
 	--glue-glow-spread: 40;
 	--glue-glow-alpha: 80;
-	background-image: radial-gradient(circle,
+	box-shadow: 0 0 calc(var(--glue-glow-spread) * 1px)
 		color-mix(in srgb, var(--glue-glow-color) calc(var(--glue-glow-alpha) * 1%),
-			transparent) calc(var(--glue-glow-spread) * 1%),
-		transparent 100%);
+			transparent);
 }
 
 .glue-text-shadow {
