@@ -20,7 +20,10 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const flipBtn = (page) => page.getByTitle('flip object');
+// the flip now lives behind the 'object adjustments' popout: the adjustment
+// button is in the menu, and the two flip toggles are inside the panel
+const adjustBtn = (page) => page.getByTitle('object adjustments');
+const flipBtn = (page, axis) => page.getByTitle(axis == 'h' ? 'flip horizontally' : 'flip vertically');
 // the literal inline style, which is what the module parses - never the
 // computed one, where a rotation and a flip are the same matrix()
 const transformOf = (page, id) => page.evaluate((i) =>
@@ -30,9 +33,14 @@ const degOf = async (page, id) =>
 
 async function select(page, id) {
 	await byId(page, id).click();
-	await expect(flipBtn(page)).toBeVisible();
+	await expect(adjustBtn(page)).toBeVisible();
 	// the menu and the handles fade in
 	await page.waitForTimeout(400);
+}
+
+async function openAdjust(page) {
+	await adjustBtn(page).click();
+	await expect(page.locator('.glue-popover.glue-adjust-popover')).toBeVisible();
 }
 
 // swing the rotation handle 'sweep' degrees clockwise around the object's
@@ -323,17 +331,20 @@ test('a locked object offers no rotation handle', async ({ page, hg }) => {
 test('flipping keeps the rotation, and rotating keeps the flip',
 	async ({ page, hg }) => {
 		// both live in one transform property; whichever control ran last used
-		// to win the whole property
+		// to win the whole property. The flip is two toggles now, so "flip
+		// both axes" is both of them on.
 		const a = hg.addObject('100000000001',
 			{ ...ATTRS, 'transform-flip': 'rotate(90deg)' }, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		await flipBtn(page).click();
+		await openAdjust(page);
+		await flipBtn(page, 'v').click();
+		await flipBtn(page, 'h').click();
 		let t = await transformOf(page, a);
 		expect(t, 'the flip dropped the rotation').toContain('rotate(90deg)');
-		expect(t, 'the flip did not happen').toContain('matrix(-1, 0, 0, -1, 0, 0)');
+		expect(t, 'the flips did not happen').toContain('matrix(-1, 0, 0, -1, 0, 0)');
 
 		await dragHandle(page, a, 45);
 		t = await transformOf(page, a);

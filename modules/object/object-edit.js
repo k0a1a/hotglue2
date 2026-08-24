@@ -7,13 +7,13 @@
  *	See the file COPYING for more details.
  */
 
-// returns the tooltip-ready transparency percentage for an object, used by
-// the transparency icon's x-bind:title below
 // whether an object is currently clipping its overflowing content
 function object_overflow_hidden(obj) {
 	return getComputedStyle(obj).overflow == 'hidden';
 }
 
+// the object's opacity as a whole percentage, for the adjustment popout's
+// transparency row
 function object_transparency_percent(obj) {
 	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
 }
@@ -851,6 +851,117 @@ function object_edge_popover(obj)
 }
 
 //
+// --- object adjustment ------------------------------------------------------
+//
+// Flip, z-level and transparency in one panel. These used to be three menu
+// buttons with hidden gestures: the flip cycled through four states, and the
+// z-level and the transparency were both drag-distance sliders (drag right,
+// drag further right...). The popout trades the hidden gestures for visible
+// controls, and the flip becomes two independent toggles instead of a cycle,
+// so 'flip both axes' is a state rather than a stop on the way back to none.
+function object_adjust_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-adjust-popover');
+	if (!pop) {
+		return;
+	}
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	// flip: two toggles. The state lives in a matrix() term of the object's
+	// transform, which the transform module owns and stores; its helpers are
+	// plain functions in this same scope, and are guarded in case the module
+	// was disabled. The active class is the pressed-in frame from the icon
+	// buttons' toggle state.
+	var flip_row = $.glue.popover.row(false);
+	var flip_v = $.glue.icon('flip-v', 'flip vertically');
+	var flip_h = $.glue.icon('flip-h', 'flip horizontally');
+	var flip_sync = function() {
+		var axes = (typeof transform_flip_axes === 'function') ?
+			transform_flip_axes(obj) : { h: false, v: false };
+		flip_v.classList.toggle('glue-btn-active', axes.v);
+		flip_h.classList.toggle('glue-btn-active', axes.h);
+	};
+	var flip_toggle = function(axis) {
+		return function() {
+			if (typeof transform_set_flip !== 'function') {
+				return;
+			}
+			var axes = transform_flip_axes(obj);
+			axes[axis] = !axes[axis];
+			transform_set_flip(obj, axes.h, axes.v);
+			save();
+			flip_sync();
+		};
+	};
+	flip_v.addEventListener('click', flip_toggle('v'));
+	flip_h.addEventListener('click', flip_toggle('h'));
+	flip_row.appendChild(flip_v);
+	flip_row.appendChild(flip_h);
+	pop.appendChild(flip_row);
+	flip_sync();
+
+	// z-level: to the ends or one place at a time. level_up/level_down swap
+	// with the nearest intersecting object and save both ends of the swap
+	// themselves; to_top/to_bottom follow the menu's old pattern of save on
+	// the way out.
+	var z_row = $.glue.popover.row(false);
+	var z_btn = function(icon, title, fn) {
+		var b = $.glue.icon(icon, title);
+		b.addEventListener('click', fn);
+		z_row.appendChild(b);
+	};
+	z_btn('layer-top', 'to top', function() {
+		$.glue.stack.to_top(obj);
+		save();
+	});
+	z_btn('layer-up', 'level up', function() {
+		$.glue.stack.level_up(obj);
+	});
+	z_btn('layer-down', 'level down', function() {
+		$.glue.stack.level_down(obj);
+	});
+	z_btn('layer-bottom', 'to bottom', function() {
+		$.glue.stack.to_bottom(obj);
+		save();
+	});
+	pop.appendChild(z_row);
+
+	// transparency: the same slider-plus-field as the other panels
+	var opacity = $.glue.popover.number_row('opacity', {
+		min: 0, max: 100, step: 1, unit: '%',
+		value: object_transparency_percent(obj),
+		apply: function(pct, commit) {
+			obj.style.opacity = pct/100;
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(opacity.row);
+
+	// The reset clears everything this panel owns, and only then saves - one
+	// write, and nothing left behind that the save happened before. Same
+	// ordering as the edge panel's footer.
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset(
+		'no flip, no transparency, back in the default stack', function() {
+			if (typeof transform_set_flip === 'function') {
+				transform_set_flip(obj, false, false);
+			}
+			obj.style.zIndex = '';
+			obj.style.opacity = '';
+			save();
+			flip_sync();
+			opacity.set(100);
+		}));
+	pop.appendChild(footer);
+
+	$.glue.popover.show(pop);
+}
+
+//
 // --- background image ------------------------------------------------------
 //
 // One button that does two things, because there are two states and only one
@@ -1057,43 +1168,16 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/object/object-transparency.png';
-	elem.alt = 'btn';
-	elem.width = 32;
-	elem.height = 32;
-	elem.setAttribute('x-data', '{ opacity: 100 }');
-	elem.setAttribute('x-bind:title', "'change transparency ('+opacity+'%)'");
-	elem.setAttribute('x-on:glue-menu-activate', 'opacity = object_transparency_percent($.glue.owner($el))');
-	elem.style.touchAction = 'none';
-	elem.addEventListener('pointerdown', function(e) {
-		if (!e.isPrimary) {
-			return;
-		}
-		var that = this;
-		var obj = $.glue.owner(this);
-		$.glue.slider(e, function(x, y) {
-			if (x < -15) {
-				x = 1-(Math.abs(x)-15)/300;
-			} else if (x < 15) {
-				// dead zone
-				x = 1;
-			} else {
-				x = 1-(Math.abs(x)-15)/300;
-			}
-			if (x < 0) {
-				x = 0;
-			}
-			obj.style.opacity = x;
-		}, function(x, y) {
-			$.glue.object.save(obj);
-			// update tooltip (see above) via Alpine's reactive opacity state
-			that.dispatchEvent(new CustomEvent('glue-menu-activate'));
-		});
-		e.preventDefault();
-		return false;
+	// object adjustment: flip, z-level and transparency in one popout, in
+	// place of the three menu buttons that each hid a gesture - the flip's
+	// four-state cycle and the two drag-distance sliders. The PNG artwork of
+	// the removed buttons stays in this directory, like transform-rotate.png
+	// in the transform module's.
+	elem = $.glue.icon('change-layer', 'object adjustments');
+	elem.addEventListener('click', function(e) {
+		object_adjust_popover($.glue.owner(this));
 	});
-	$.glue.contextmenu.register('object', 'object-transparency', elem, 2);
+	$.glue.contextmenu.register('object', 'object-adjust', elem, 2);
 
 	// edges: rounded corners and a soft fade
 	elem = $.glue.icon('border-radius', 'edges: rounded corners and a soft fade');
@@ -1196,46 +1280,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		this.dispatchEvent(new CustomEvent('glue-menu-activate'));
 	});
 	$.glue.contextmenu.register('object', 'object-overflow', elem, 4);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/object/object-zindex.png';
-	elem.alt = 'btn';
-	elem.title = 'bring object to foreground or background';
-	elem.width = 32;
-	elem.height = 32;
-	elem.style.touchAction = 'none';
-	elem.addEventListener('pointerdown', function(e) {
-		if (!e.isPrimary) {
-			return;
-		}
-		var obj = $.glue.owner(this);
-		var old_z = parseInt(getComputedStyle(obj).zIndex);
-		$.glue.slider(e, function(x, y) {
-			if (x < -15) {
-				$.glue.stack.to_bottom(obj);
-			} else if (x < 15) {
-				// dead zone
-				var z = parseInt(getComputedStyle(obj).zIndex);
-				if (z !== old_z) {
-					if (!isNaN(old_z)) {
-						obj.style.zIndex = old_z;
-					} else {
-						obj.style.zIndex = '';
-					}
-					// DEBUG
-					//console.log('set z-index to '+old_z);
-				}
-			} else {
-				$.glue.stack.to_top(obj);
-			}
-		}, function(x, y) {
-			$.glue.object.save(obj);
-			$.glue.stack.compress();
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.contextmenu.register('object', 'object-zindex', elem, 3);
 
 	elem = document.createElement('img');
 	elem.src = $.glue.base_url+'modules/object/object-link.png';

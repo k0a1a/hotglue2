@@ -11,9 +11,9 @@
 // An object's flip and its rotation are two terms in ONE css transform
 // property, which module_transform.inc.php stores whole (under the attribute
 // name transform-flip, which predates there being a rotation in it). So the
-// flip button and the rotation handle below have to edit their own term and
-// leave the other one alone, and neither may go through
-// getComputedStyle(): computed style resolves the
+// flip toggles (in the adjustment popout, object-edit.js) and the rotation
+// handle below have to edit their own term and leave the other one alone, and
+// neither may go through getComputedStyle(): computed style resolves the
 // function list down to a single matrix(), in which a rotation and a flip are
 // no longer distinguishable - a rotated object would read back as some
 // matrix() that matches none of the flip states, and flipping it would
@@ -65,36 +65,29 @@ function transform_set_rotation(obj, deg)
 	transform_set_term(obj, TRANSFORM_ROTATE_RE, deg ? 'rotate('+deg+'deg)' : '');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-	//
-	// register menu items
-	//
-	var elem;
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/transform/transform-flip.png';
-	elem.alt = 'btn';
-	elem.title = 'flip object';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		// cycle: none -> both axes -> horizontal -> vertical -> none
-		var val = transform_term(obj, TRANSFORM_FLIP_RE).replace(/\s+/g, '');
-		var next;
-		if (val == 'matrix(-1,0,0,-1,0,0)') {
-			next = 'matrix(1, 0, 0, -1, 0, 0)';
-		} else if (val == 'matrix(1,0,0,-1,0,0)') {
-			next = 'matrix(-1, 0, 0, 1, 0, 0)';
-		} else if (val == 'matrix(-1,0,0,1,0,0)') {
-			next = '';
-		} else {
-			next = 'matrix(-1, 0, 0, -1, 0, 0)';
-		}
-		transform_set_term(obj, TRANSFORM_FLIP_RE, next);
-		$.glue.object.save(obj);
-	});
-	$.glue.contextmenu.register('object', 'object-transform-flip', elem, 5);
-});
+// Flip used to be a cycling menu button (none -> both axes -> horizontal ->
+// vertical -> none). It is now two independent toggles in the adjustment
+// popout (object-edit.js), so the state reads as h and v booleans. The axes
+// are the a and d entries of the matrix term: a=-1 mirrors horizontally,
+// d=-1 mirrors vertically.
+function transform_flip_axes(obj)
+{
+	var term = transform_term(obj, TRANSFORM_FLIP_RE);
+	var nums = term.match(/-?\d+(?:\.\d+)?/g);
+	if (!nums || nums.length < 4) {
+		return { h: false, v: false };
+	}
+	return { h: nums[0] == '-1', v: nums[3] == '-1' };
+}
+
+function transform_set_flip(obj, h, v)
+{
+	var term = '';
+	if (h || v) {
+		term = 'matrix('+(h ? -1 : 1)+', 0, 0, '+(v ? -1 : 1)+', 0, 0)';
+	}
+	transform_set_term(obj, TRANSFORM_FLIP_RE, term);
+}
 
 //
 // Rotation is direct manipulation only: Moveable's own handle, shown while an

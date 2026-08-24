@@ -1816,23 +1816,9 @@ $.glue.object = function()
 				target: obj,
 				container: document.body,
 				draggable: true,
-				// Moveable's gesture layer claims every touch that starts on
-				// the container - unlike mousedown, which it only hears from
-				// the target itself. A finger on editor chrome - a context
-				// menu button, a panel, a popover - would therefore start
-				// dragging the object underneath it in parallel, and the
-				// glue-movestart that fires hides the context menus (the
-				// chrome under that same finger is detached, and the control
-				// loses its save on top of it). Handing the gesture back
-				// leaves the touch with the control that actually got it.
-				onDragStart: function(e) {
-					var t = e.inputEvent && e.inputEvent.target;
-					if (t && t.closest && t.closest(
-						'.glue-contextmenu-left, .glue-contextmenu-top, ' +
-						'.glue-menu, .glue-popover')) {
-						return false;
-					}
-				},
+				// Chrome touches are handed back in the dragStart listener
+				// below, not through an onDragStart OPTION - see the
+				// comment there for why the option cannot work.
 				// resize handles are only shown once the object is selected
 				// (see the glue-select/glue-deselect handlers below)
 				resizable: false,
@@ -1899,6 +1885,32 @@ $.glue.object = function()
 			var drag_multi_prev_top = 0;
 
 			m.on('dragStart', function(e) {
+				// A finger on editor chrome - a context menu button, a
+				// panel, a popover - reaches the gesture layer through the
+				// container, unlike a mousedown which it only hears from
+				// the target itself. Without this the touch drags the
+				// object underneath the chrome in parallel, the
+				// glue-movestart that fires hides the context menus, and
+				// the control under the finger loses its save. Handing
+				// the gesture back leaves the touch with the control that
+				// actually got it.
+				//
+				// This used to be the onDragStart OPTION, and it was dead
+				// code: MoveableManager spreads its own events wiring over
+				// the options when it constructs (js/moveable.js), so
+				// props.onDragStart is the internal "re-emit dragStart"
+				// wrapper, never this function, and the drag went ahead
+				// regardless. This listener is on the live path - the
+				// wrapper re-emits dragStart into it - and stopping the
+				// event is what actually aborts the drag (emit returns
+				// !isStop, which is what dragStart checks).
+				var t = e.inputEvent && e.inputEvent.target;
+				if (t && t.closest && t.closest(
+					'.glue-contextmenu-left, .glue-contextmenu-top, ' +
+					'.glue-menu, .glue-popover')) {
+					e.stop();
+					return;
+				}
 				drag_started = false;
 				drag_axis = false;
 				drag_orig_left = obj.offsetLeft;
@@ -3072,7 +3084,81 @@ $.glue.stack = function()
 				}
 			}
 			return false;
+		},
+	// level_up/level_down swap the object with the nearest intersecting
+	// object above (below) it: to_top/to_bottom push to the ends, these nudge
+	// one place. An object without a z-index of its own sits at 0, and the
+	// swap hands that position to the neighbour - so the neighbour goes back
+	// to having no style at all, not to a made-up number. Both ends of the
+	// swap are saved here, since the caller cannot know the other object.
+	level_up: function(obj) {
+		var own_z = parseInt(getComputedStyle(obj).zIndex);
+		if (isNaN(own_z)) {
+			own_z = 0;
 		}
+		var other = null;
+		var other_z = Infinity;
+		document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+			if (el == obj) {
+				return;
+			}
+			if (!intersecting(obj, el)) {
+				return;
+			}
+			var z = parseInt(getComputedStyle(el).zIndex);
+			if (!isNaN(z) && own_z < z && z < other_z) {
+				other = el;
+				other_z = z;
+			}
+		});
+		if (!other) {
+			return false;
+		}
+		var had_z = obj.style.zIndex;
+		obj.style.zIndex = other_z;
+		if (had_z && had_z != 'auto') {
+			other.style.zIndex = had_z;
+		} else {
+			other.style.zIndex = '';
+		}
+		$.glue.object.save(obj);
+		$.glue.object.save(other);
+		return true;
+	},
+	level_down: function(obj) {
+		var own_z = parseInt(getComputedStyle(obj).zIndex);
+		if (isNaN(own_z)) {
+			own_z = 0;
+		}
+		var other = null;
+		var other_z = -Infinity;
+		document.querySelectorAll('.object:not(.locked)').forEach(function(el) {
+			if (el == obj) {
+				return;
+			}
+			if (!intersecting(obj, el)) {
+				return;
+			}
+			var z = parseInt(getComputedStyle(el).zIndex);
+			if (!isNaN(z) && z < own_z && other_z < z) {
+				other = el;
+				other_z = z;
+			}
+		});
+		if (!other) {
+			return false;
+		}
+		var had_z = obj.style.zIndex;
+		obj.style.zIndex = other_z;
+		if (had_z && had_z != 'auto') {
+			other.style.zIndex = had_z;
+		} else {
+			other.style.zIndex = '';
+		}
+		$.glue.object.save(obj);
+		$.glue.object.save(other);
+		return true;
+	}
 	};
 }();
 

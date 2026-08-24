@@ -13,7 +13,9 @@
 // The drag-only controls work too now: the shared drag primitive
 // ($.glue.slider) listens for pointer events, the buttons set
 // touch-action: none on themselves, and a finger drags them exactly like a
-// mouse. The last three tests are those drags.
+// mouse. The transparency control that used to be one of those drag buttons
+// is a plain range input in the adjustment popout now, which a finger drags
+// with no gesture layer of its own. The last tests are those drags.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -140,47 +142,51 @@ test('dragging an unselected object selects it', async ({ page, hg, browserName 
 	await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
 });
 
-// A small object, so a drag to the right of the transparency button ends over
-// empty canvas - a synthesized click there would land on body and deselect.
-const SMALL = {
-	type: 'text', module: 'text',
-	'object-left': '30px', 'object-top': '60px',
-	'object-width': '100px', 'object-height': '60px', 'object-zindex': '100',
-	'text-background-color': '#ffdd55', 'text-font-size': '18px',
-};
+test('a finger drags the opacity slider in the adjustment popout',
+	async ({ page, hg, browserName }) => {
+		test.skip(browserName !== 'chromium',
+			'no way to synthesise a touch drag outside Chromium');
+		// the transparency button used to be a drag button itself; it is a
+		// range input in the adjustment popout now, so the touch story is the
+		// browser's own slider: no gesture layer, no touch-action, a finger
+		// just drags it
+		const a = hg.addObject('100000000001', ATTRS, 'hello');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await byId(page, a).tap();
+		await expect(byId(page, a)).toHaveClass(/glue-selected/);
+		await page.waitForTimeout(400);		// the menu fades in
+		await page.getByTitle('object adjustments').tap();
+		await expect(page.locator('.glue-popover.glue-adjust-popover')).toBeVisible();
 
-test('a finger drags the transparency button', async ({ page, hg, browserName }) => {
-	test.skip(browserName !== 'chromium',
-		'no way to synthesise a touch drag outside Chromium');
-	const a = hg.addObject('100000000001', SMALL, 'hello');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await byId(page, a).tap();
-	await expect(byId(page, a)).toHaveClass(/glue-selected/);
-	await page.waitForTimeout(400);		// the menu fades in
+		const slider = page.locator('.glue-popover-slider');
+		const box = await slider.boundingBox();
+		const cdp = await page.context().newCDPSession(page);
+		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
+			type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+		});
+		// the thumb sits at 100 (the right end); drag it to a third of the
+		// way along the track
+		await touch('touchStart', box.x + box.width - 3, box.y + box.height/2);
+		for (let i = 1; i <= 8; i++) {
+			await touch('touchMove', box.x + box.width/3 + i, box.y + box.height/2);
+		}
+		await touch('touchEnd');
 
-	const button = page.locator('img[src*="object-transparency.png"]');
-	const box = await button.boundingBox();
-	const cdp = await page.context().newCDPSession(page);
-	const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
-		type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+		// the object is dimmed - not to an exact per-pixel value, a native
+		// slider's thumb geometry is the browser's, not the test's
+		const opacity = await page.evaluate((i) =>
+			parseFloat(getComputedStyle(document.getElementById(i)).opacity), a);
+		expect(opacity).toBeLessThan(1);
+		expect(opacity).toBeGreaterThan(0);
+		// readObject takes the object's basename, not the full DOM id
+		await expect.poll(() => hg.readObject(a.split('.').pop()).attrs['object-opacity'])
+			.toBe(String(opacity));
+		// the finger let go over the panel, so the click that follows the
+		// gesture must not have deselected the object
+		await expect(byId(page, a)).toHaveClass(/glue-selected/);
+		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
-	await touch('touchStart', box.x + box.width/2, box.y + box.height/2);
-	for (let i = 1; i <= 10; i++) {
-		await touch('touchMove', box.x + box.width/2 + i*15, box.y + box.height/2);
-	}
-	await touch('touchEnd');
-
-	// 150px of drag past the 15px dead zone: 1-(150-15)/300 = 0.55
-	await expect.poll(() => page.evaluate((i) =>
-		parseFloat(getComputedStyle(document.getElementById(i)).opacity), a)).toBe(0.55);
-	// readObject takes the object's basename, not the full DOM id
-	await expect.poll(() => hg.readObject(a.split('.').pop()).attrs['object-opacity']).toBe('0.55');
-	// the release was over empty canvas, so a click that followed the drag
-	// would have deselected the object; it must not have
-	await expect(byId(page, a)).toHaveClass(/glue-selected/);
-	expect(await page.evaluate(() => window.scrollY)).toBe(0);
-});
 
 test('a finger drags the padding button in two dimensions without scrolling the page',
 	async ({ page, hg, browserName }) => {
@@ -230,8 +236,10 @@ test('a finger drags the padding button in two dimensions without scrolling the 
 
 test('a tap without a drag on a drag button keeps its click behaviour',
 	async ({ page, hg, browserName }) => {
-		// the 15px dead zone means a click-without-drag leaves the opacity
-		// alone, which is what the transparency button's click has always done
+		// the 15px dead zone means a click-without-drag leaves the value
+		// alone, which is what the padding button's click has always done (the
+		// transparency button that shared the primitive is a slider in the
+		// adjustment popout now, with a native click of its own)
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
@@ -241,7 +249,7 @@ test('a tap without a drag on a drag button keeps its click behaviour',
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		const button = page.locator('img[src*="object-transparency.png"]');
+		const button = page.locator('img[src*="text-padding.png"]');
 		const box = await button.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		await cdp.send('Input.dispatchTouchEvent', {
@@ -249,7 +257,9 @@ test('a tap without a drag on a drag button keeps its click behaviour',
 		});
 		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
+		// 15px is the text module's default padding; the tap must not have
+		// nudged it
 		await expect.poll(() => page.evaluate((i) =>
-			parseFloat(getComputedStyle(document.getElementById(i)).opacity), a)).toBe(1);
+			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('15px');
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 	});
