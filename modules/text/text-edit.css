@@ -38,13 +38,9 @@
 	font-weight: inherit;
 	letter-spacing: inherit;
 	line-height: inherit;
-	/* outline instead of border: border participates in the box model
-	   (shifting the text inward by its width even with box-sizing:
-	   border-box), outline paints outside it without affecting layout at
-	   all - outline-offset pulls it back in so it still sits at the edge
-	   rather than overlapping outward */
-	outline: 1px dashed rgba(0, 0, 0, 0.5);
-	outline-offset: -1px;
+	/* no outline: the editing state is already announced by the focus
+	   ring of the input that editing swaps in */
+	outline: 0;
 	text-align: inherit;
 	word-spacing: inherit;
 }
