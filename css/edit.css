@@ -379,10 +379,11 @@
    !important throughout: vanilla-picker injects its stylesheet at runtime,
    after this file, at equal specificity, so nothing here lands without it. */
 .layout_default.picker_wrapper {
-	/* font-size is 10px here, so 170px - a hair wider than the 150 it was,
-	   because the hex field now has to hold #rrggbbaa and still leave the
-	   sample and Ok on the same line */
-	width: 17em !important;
+	/* font-size is 10px here, so 180px - a little wider than the 170 it
+	   was, for a picker that leaves a bit more room around the hex field
+	   while still leaving the object visible (the test that guards that
+	   is the picker's width ceiling). */
+	width: 18em !important;
 	padding: 0.3em !important;
 }
 
@@ -561,20 +562,12 @@
 	min-width: 0;
 }
 
-.glue-popover-pair-cell .glue-popover-label {
-	/* The pair labels get more room than the rows' 48px ("opacity" is the
-	   longest label a full row carries; "drop shadow" is longer than that):
-	   at 64px every pair label fits on one line and the two cells still
-	   line up, because both labels in a pair are the same width. */
-	width: 64px;
-}
 
 .glue-popover-label {
-	/* The row labels line up, so the controls do too. Wide enough for the
-	   longest of them ("opacity") with air after it: at 26px the sliders
-	   started where the words ended, which read as one crowded thing rather
-	   than a label and a control. */
-	width: 48px;
+	/* The row labels line up, so the controls do too. As wide as the
+	   longest label needs - "glow inside" just fits - so nothing wraps
+	   and the label column stays as small as it can be. */
+	width: 63px;
 	flex: 0 0 auto;
 	padding-right: 4px;
 	color: #666;
