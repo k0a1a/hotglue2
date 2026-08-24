@@ -102,7 +102,7 @@ Shipped 2026-08-22:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **436 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **445 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
@@ -179,6 +179,13 @@ Shipped later the same night — the editor's panels, and what objects can be:
 - **One typography panel.** Spacing and alignment folded into the font panel's "more
   knobs" section, which also gained a text shadow and the text colour; the text menu went from
   thirteen buttons to five. One reset, in the fold, for the whole panel.
+- **A tap works on a phone.** The editor was unreachable there for one reason:
+  Moveable's gesture layer calls `preventDefault()` on touchstart, which stops the
+  browser synthesising the click that follows a tap — and every path into the editor
+  starts with that click. Selecting an object, opening its menu, editing its text: all
+  silently dead on touch, all fine with a mouse. `preventDefault: false` plus
+  `preventClickEventOnDrag: true` lets the tap through while keeping a drag from ending
+  in one. `tests/e2e/touch-editing.spec.js` runs in a touch context and holds it.
 - **A background image on any object** — the browser's own file picker when there is
   none, a panel to tile, drag or remove when there is. It uploads with the object's name
   and the object serves it, the way image objects already serve their picture.
@@ -401,14 +408,27 @@ Features and niceties not yet spec'd — the running to-do:
   and letter spacing (`modules/text/text-edit.js`), page background position
   (`modules/page/page-edit.js`). It is covered by `tests/e2e/rangeslider.spec.js` in both
   orientations, so adopting it is a call, not a build. If nothing adopts it, delete it.
-- **Add tap to be able edit object on mobile** — danja, 2026-08-24. Moved here from the
-  task-docs section, where it was added: this is a backlog item rather than a spec.
-  Note what it is asking for. The mobile work so far is deliberately VIEW-only —
-  `js/mobile-guided.js` stays out of the editor entirely, and there is a test that says
-  so — so this is not a tweak to it but the question of what editing on a touch screen
-  is at all. Moveable is already touch-capable for drag and resize, which is the half
-  that would come free; selecting, the context menus and the panels are the half that
-  would not.
+- **Editing on a phone, beyond the first tap** — danja, 2026-08-24. *(The tap itself
+  now works: see the Done entry. What is left is whether the rest is usable.)*
+
+  Known to be missing, from reading the code rather than guessing:
+
+  - **Nine controls can only be dragged with a mouse.** Every `$.glue.slider` caller —
+    transparency and padding, the page background's position, the grid size and guides,
+    image scale, and the edge panel's background pad — binds `mousedown` and then
+    listens for `mousemove` on the document, and touch does not synthesise `mousemove`
+    during a drag. They are dead on a phone. The panels built on
+    `$.glue.popover.number_row()` are fine, which is the pattern to move them to; that
+    is the same work as the parametric-entry item above.
+  - **Tooltips are the only label** most buttons have, and `title=` does not exist on
+    touch. That got worse when the icons replaced text placeholders, not better.
+  - **Double-tap is taken.** Text editing is a second click, which works, but the
+    browser also wants that gesture for zoom.
+  - **The canvas is wider than the phone**, and the editor has no equivalent of the
+    guided view's fit-and-reveal — it is deliberately kept out of the editor
+    (`common.inc.php`). Whether editing should happen inside a scaled view, or at 1:1
+    with panning, is the open design question: the first needs Moveable to understand a
+    transform, the second needs a lot of scrolling.
 - **New uploader / better upload handling** — client-side resize/transcode before
   upload, which cuts media bloat at source rather than after it lands.
 - **Link target auto-select** — `_blank` for external links, `_self` for internal ones,

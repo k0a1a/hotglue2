@@ -1832,7 +1832,22 @@ $.glue.object = function()
 					return [window.scrollX, window.scrollY];
 				},
 				scrollThreshold: 40,
-				scrollThrottleTime: 30
+				scrollThrottleTime: 30,
+				// Moveable's gesture layer calls preventDefault() on
+				// touchstart by default, which stops the browser synthesising
+				// the click that follows a tap - and a tap that produces no
+				// click is a tap that cannot select an object, open its menu,
+				// or (a second tap later) start editing its text. The whole
+				// editor was unreachable on a phone for want of this.
+				//
+				// Nothing needs it on the mouse side: the editor already
+				// preventDefaults mousedown itself, further down this file,
+				// to stop a drag turning into a text selection.
+				preventDefault: false,
+				// with the click let through, a DRAG would end in one too -
+				// selecting or deselecting whatever it finished over. This
+				// suppresses the click only when a drag actually happened.
+				preventClickEventOnDrag: true
 			});
 			moveables.set(obj, m);
 			// Moveable's control box (drag/resize handles) stays
