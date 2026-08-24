@@ -336,22 +336,6 @@ function object_alter_render_early($args)
 		}
 		elem_add_class($elem, 'glue-glow');
 	}
-	if (!empty($obj['object-shadow-in']) &&
-	    preg_match('/^[0-9.]+$/', $obj['object-shadow-in'])) {
-		elem_css($elem, '--glue-shadow-in', $obj['object-shadow-in']);
-		if (!empty($obj['object-shadow-in-color'])) {
-			elem_css($elem, '--glue-shadow-in-color', $obj['object-shadow-in-color']);
-		}
-		elem_add_class($elem, 'glue-glow');
-	}
-	if (!empty($obj['object-shadow-out']) &&
-	    preg_match('/^[0-9.]+$/', $obj['object-shadow-out'])) {
-		elem_css($elem, '--glue-shadow-out', $obj['object-shadow-out']);
-		if (!empty($obj['object-shadow-out-color'])) {
-			elem_css($elem, '--glue-shadow-out-color', $obj['object-shadow-out-color']);
-		}
-		elem_add_class($elem, 'glue-glow');
-	}
 	// the drop shadow's on-switch is its colour: without one, no shadow
 	if (!empty($obj['object-drop-color'])) {
 		elem_css($elem, '--glue-drop-color', $obj['object-drop-color']);
@@ -547,27 +531,14 @@ function object_alter_save($args)
 		unset($obj['object-border-color']);
 	}
 	// see object_render_object(): the ingredients are what is stored, and the
-	// class comes back with them. The shadow bands and the drop shadow are
-	// the same deal: the inline vars are the file's attrs, nothing composed
-	// is kept (the drop angle round-trips with its unit, '135deg').
+	// class comes back with them. The glow and the drop shadow are the same
+	// deal: the inline vars are the file's attrs, nothing composed is kept
+	// (the drop angle round-trips with its unit, '135deg').
 	foreach (['color', 'spread', 'alpha', 'inner', 'color2'] as $part) {
 		if (elem_css($elem, '--glue-glow-'.$part) !== NULL) {
 			$obj['object-glow-'.$part] = elem_css($elem, '--glue-glow-'.$part);
 		} else {
 			unset($obj['object-glow-'.$part]);
-		}
-	}
-	foreach (['in', 'out'] as $side) {
-		if (elem_css($elem, '--glue-shadow-'.$side) !== NULL) {
-			$obj['object-shadow-'.$side] = elem_css($elem, '--glue-shadow-'.$side);
-		} else {
-			unset($obj['object-shadow-'.$side]);
-		}
-		if (elem_css($elem, '--glue-shadow-'.$side.'-color') !== NULL) {
-			$obj['object-shadow-'.$side.'-color'] =
-				elem_css($elem, '--glue-shadow-'.$side.'-color');
-		} else {
-			unset($obj['object-shadow-'.$side.'-color']);
 		}
 	}
 	foreach (['color', 'distance', 'angle', 'blur', 'spread'] as $part) {
