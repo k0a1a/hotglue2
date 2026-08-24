@@ -631,7 +631,32 @@ function object_edge_popover(obj)
 	});
 	adv.appendChild(strength.row);
 
-	var glow_row = $.glue.popover.row('glow color');
+	// --- the four small controls: a 2 x 2 grid -----------------------------
+	//
+	// The glow's colour, the toggle that ALSO puts the glow inside the box
+	// (the translucent-marble look), a second colour the halo's side layers
+	// take so the glow goes duotone (white in the middle, coloured on the
+	// sides, like a billiard ball), and the drop shadow's colour. Each is a
+	// label beside a 26px button, too short to own a row of the fold, so
+	// they sit two to a row and the rows below keep their knobs.
+	var pair_row = function(a, b) {
+		var row = document.createElement('div');
+		row.className = 'glue-popover-pair';
+		row.appendChild(a);
+		row.appendChild(b);
+		return row;
+	};
+	var pair_cell = function(label, control) {
+		var cell = document.createElement('div');
+		cell.className = 'glue-popover-pair-cell';
+		var l = document.createElement('div');
+		l.className = 'glue-popover-label';
+		l.textContent = label;
+		cell.appendChild(l);
+		cell.appendChild(control);
+		return cell;
+	};
+
 	var glow_colour = $.glue.popover.color_button('glow colour',
 		function() {
 			return glow.color;
@@ -649,17 +674,7 @@ function object_edge_popover(obj)
 			save();
 		});
 	glow_colour.classList.add('glue-glow-color');
-	glow_row.appendChild(glow_colour);
-	adv.appendChild(glow_row);
 
-	// --- even deeper: the marble --------------------------------------------
-	//
-	// The glow's two optional extras, folded in because most objects will
-	// never want them: the inner glow (the halo ALSO inside the box, the
-	// translucent-marble look) and a second colour, which the halo's side
-	// layers take so the glow goes duotone (the marble is white in the
-	// middle and coloured on the sides, like a billiard ball).
-	var inner = $.glue.popover.row('glow inside too');
 	var inner_toggle = document.createElement('div');
 	inner_toggle.className = 'glue-font-toggle glue-glow-inner-toggle';
 	inner_toggle.textContent = '\u25c9';
@@ -680,10 +695,7 @@ function object_edge_popover(obj)
 		save();
 	});
 	sync_inner();
-	inner.appendChild(inner_toggle);
-	adv.appendChild(inner);
 
-	var duotone_row = $.glue.popover.row('second glow color');
 	var duotone = $.glue.popover.color_button('glow second colour',
 		function() {
 			return glow.color2;
@@ -702,8 +714,6 @@ function object_edge_popover(obj)
 			save();
 		});
 	duotone.classList.add('glue-glow-color2');
-	duotone_row.appendChild(duotone);
-	adv.appendChild(duotone_row);
 
 	// --- the drop shadow ----------------------------------------------------
 	//
@@ -719,7 +729,6 @@ function object_edge_popover(obj)
 		}
 	};
 
-	var drop_row = $.glue.popover.row('drop shadow color');
 	var drop_colour = $.glue.popover.color_button('drop shadow colour',
 		function() {
 			return drop.color;
@@ -740,8 +749,15 @@ function object_edge_popover(obj)
 			save();
 		});
 	drop_colour.classList.add('glue-drop-color');
-	drop_row.appendChild(drop_colour);
-	adv.appendChild(drop_row);
+
+	adv.appendChild(pair_row(
+		pair_cell('glow', glow_colour),
+		pair_cell('glow inside', inner_toggle)
+	));
+	adv.appendChild(pair_row(
+		pair_cell('2nd glow', duotone),
+		pair_cell('drop shadow', drop_colour)
+	));
 
 	var distance = $.glue.popover.number_row('distance', {
 		min: 0, max: 100, step: 1, unit: 'px',

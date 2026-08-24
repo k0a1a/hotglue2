@@ -337,6 +337,49 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(6);
 	});
 
+test('the four face controls sit in a 2x2 grid, not four rows',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+
+		// the glow, its inside toggle, the duotone and the drop shadow's
+		// colour - two labels and a 26px button each, so they share rows
+		await expect(advanced(page)
+			.locator('.glue-popover-pair .glue-popover-label'))
+			.toHaveText(['glow', 'glow inside', '2nd glow', 'drop shadow']);
+
+		// no pair label wraps onto a second line
+		const wrapped = await advanced(page).evaluate(() =>
+			[...document.querySelectorAll('.glue-popover-pair .glue-popover-label')]
+				.filter((l) => l.scrollWidth > l.clientWidth).length);
+		expect(wrapped).toBe(0);
+
+		// the two rows line up as columns: each control's x matches the one
+		// directly below it
+		const xs = await advanced(page).evaluate(() => {
+			const x = (sel) => Math.round(document
+				.querySelector('.glue-popover-advanced ' + sel)
+				.getBoundingClientRect().x);
+			return [x('.glue-glow-color'), x('.glue-glow-color2'),
+				x('.glue-glow-inner-toggle'), x('.glue-drop-color')];
+		});
+		expect(xs[0]).toBe(xs[1]);	// glow and 2nd glow share column 1
+		expect(xs[2]).toBe(xs[3]);	// inside and drop shadow share column 2
+
+		// and the whole fold fits its 42vh cage, so nothing hides below it
+		const cage = await advanced(page).evaluate((el) => ({
+			client: el.clientHeight,
+			scroll: el.scrollHeight,
+			max: parseFloat(getComputedStyle(el).maxHeight),
+			inner: window.innerHeight,
+		}));
+		expect(cage.scroll).toBeLessThanOrEqual(cage.client);
+		expect(cage.max).toBeCloseTo(cage.inner * 0.42, 1);
+	});
+
 test('the glow applies, stores its ingredients and reaches the published page',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'A');

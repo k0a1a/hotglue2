@@ -534,6 +534,41 @@
 	margin-bottom: 0;
 }
 
+.glue-popover-pair {
+	/* two of the fold's small controls side by side, each under its own
+	   label: a popover row holding two cells instead of one control. The
+	   edge fold's face controls (the glow, its inside toggle, the duotone
+	   and the drop shadow's colours) are each a label and a 26px button,
+	   too short to own a row, so they sit two to a row here. */
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin-bottom: 6px;
+}
+
+.glue-popover-pair:last-child {
+	margin-bottom: 0;
+}
+
+.glue-popover-pair-cell {
+	/* one slot of a pair: its label, then its control. flex: 1 makes the
+	   two cells equal, so each pair's controls line up in their own column
+	   even where the labels differ in length. */
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.glue-popover-pair-cell .glue-popover-label {
+	/* The pair labels get more room than the rows' 48px ("opacity" is the
+	   longest label a full row carries; "drop shadow" is longer than that):
+	   at 64px every pair label fits on one line and the two cells still
+	   line up, because both labels in a pair are the same width. */
+	width: 64px;
+}
+
 .glue-popover-label {
 	/* The row labels line up, so the controls do too. Wide enough for the
 	   longest of them ("opacity") with air after it: at 26px the sliders
