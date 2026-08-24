@@ -1269,12 +1269,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-overflow', elem, 4);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/object/object-link.png';
-	elem.alt = 'btn';
-	elem.title = 'make the object a link';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('object-link', 'make the object a link');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		// get link
