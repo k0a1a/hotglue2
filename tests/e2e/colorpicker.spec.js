@@ -370,6 +370,14 @@ test('a transparent colour is remembered with its alpha', async ({ page, hg }) =
 const alphaField = (page) => page.locator('.glue-picker-alpha .glue-popover-field');
 const alphaSlider = (page) => page.locator('.glue-picker-alpha .glue-popover-slider');
 
+// the object's alpha as a 0..100 integer (100 when the colour is opaque -
+// rgba() serialises a trailing .30 as 0.3, so compare numbers, not strings)
+const alphaOf = (page, id) => page.evaluate((i) => {
+	const m = getComputedStyle(document.getElementById(i)).backgroundColor
+		.match(/\d+\.?\d*/g);
+	return m && m.length === 4 ? Math.round(parseFloat(m[3]) * 100) : 100;
+}, id);
+
 test('transparency is a slider and a field, not the gradient bar',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
@@ -384,6 +392,60 @@ test('transparency is a slider and a field, not the gradient bar',
 		// an untouched opaque colour is 100%
 		await expect(alphaField(page)).toHaveValue('100');
 	});
+
+test('dragging the alpha slider keeps the value and applies it', async ({ page, hg }) => {
+	// the library swallows every click inside the panel; a range input
+	// COMMITS its value on click - the track click, and the end of a drag -
+	// and Chromium cancels the commit (and reverts the value) when that
+	// click is prevented. The alpha row's clicks stop before the library's
+	// handler sees them, so the drag must end where the finger lets go -
+	// the object stays at the dragged alpha instead of snapping back
+	// opaque, and the slider stays where the drag left it.
+	const a = hg.addObject('100000000001', OBJ(300, 300), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const slider = alphaSlider(page);
+	const bb = await slider.boundingBox();
+	// grab the thumb (the right end, value 100) and pull it leftward
+	await page.mouse.move(bb.x + bb.width - 6, bb.y + bb.height / 2);
+	await page.mouse.down();
+	for (let i = 1; i <= 8; i++) {
+		await page.mouse.move(
+			bb.x + bb.width - 6 - (bb.width - 16) * i / 10, bb.y + bb.height / 2);
+	}
+	await page.mouse.up();
+
+	// off the default, and the field says the same thing the slider does
+	const v = parseInt(await slider.inputValue());
+	expect(v).toBeLessThan(100);
+	expect(v).toBeGreaterThan(0);
+	await expect(alphaField(page)).toHaveValue(String(v));
+	// the object carries the dragged alpha - not the opaque it would snap
+	// back to if the commit had been cancelled (alphaOf returns 100 for an
+	// opaque rgb(), so a cancelled commit fails this loudly)
+	await expect.poll(() => alphaOf(page, a)).toBe(v);
+});
+
+test('a click on the alpha track commits the clicked value', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ(300, 300), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPicker(page, a);
+
+	const slider = alphaSlider(page);
+	const bb = await slider.boundingBox();
+	// a plain click at ~40% of the track: the thumb jumps there and the
+	// click must keep it there rather than snap it back to 100
+	await page.mouse.click(bb.x + bb.width * 0.4, bb.y + bb.height / 2);
+
+	const v = parseInt(await slider.inputValue());
+	expect(v).toBeGreaterThan(20);
+	expect(v).toBeLessThan(80);
+	await expect(alphaField(page)).toHaveValue(String(v));
+	await expect.poll(() => alphaOf(page, a)).toBe(v);
+});
 
 test('typing an alpha applies it and stores it', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');

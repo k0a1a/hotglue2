@@ -721,6 +721,17 @@ $.glue.colorpicker = function()
 			}
 		});
 		alpha_row.row.classList.add('glue-picker-alpha');
+		// vanilla-picker swallows every click inside the panel (so a click on
+		// the gradient does not leak to what is underneath it). A range input
+		// COMMITS its value on click - the track click, and the end of a drag -
+		// and Chromium cancels the whole drag when that default is prevented.
+		// The row's own clicks stop before the library's handler sees them,
+		// the way the swatches' clicks do.
+		alpha_row.row.addEventListener('click', function(e) {
+			if (e.target instanceof HTMLInputElement) {
+				e.stopPropagation();
+			}
+		});
 		editor.parentNode.insertBefore(alpha_row.row, editor);
 	};
 
