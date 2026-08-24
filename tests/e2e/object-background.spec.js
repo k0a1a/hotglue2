@@ -150,6 +150,56 @@ test('tiling toggles and stores, and dragging moves the image',
 		await expect.poll(() => attrs(hg)['object-background-position']).toBe(undefined);
 	});
 
+test('scale sizes the image, stores the bare number, and zero removes it',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'object-background-file': 'sample.png',
+				'object-background-mime': 'image/png' }, 'A');
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+
+		// an image nobody has scaled shows 100 - and nothing is stored, so a
+		// fresh object and an untouched one stay byte-identical
+		const field = pop(page).locator('.glue-popover-field');
+		await expect(field).toHaveValue('100');
+		expect(attrs(hg)['object-background-scale']).toBe(undefined);
+
+		// typing a number sizes it, the height keeping the image's own ratio;
+		// only the bare number is stored, never the composed '150% auto'
+		await field.fill('150');
+		await field.blur();
+		// chromium reports the redundant 'auto' back as dropped ('150%');
+		// firefox keeps it - the percentage is the part that matters
+		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toContain('150%');
+		await expect.poll(() => attrs(hg)['object-background-scale']).toBe('150');
+		expect(JSON.stringify(attrs(hg))).not.toContain('% auto');
+
+		// it survives a reload and reaches the published page
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.object')).backgroundSize))
+			.toContain('150%');
+
+		// and back in the editor, a zero in the field removes the attribute
+		// again - the "absent means default" convention
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		await pop(page).locator('.glue-popover-field').fill('0');
+		await pop(page).locator('.glue-popover-field').blur();
+		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
+		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
+	});
+
 test('removing it takes the image off the object', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'object-background-file': 'sample.png',

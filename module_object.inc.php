@@ -294,6 +294,12 @@ function object_alter_render_early($args)
 		if (!empty($obj['object-background-position'])) {
 			elem_css($elem, 'background-position', $obj['object-background-position']);
 		}
+		// the scale is a percentage of the object's width, height keeping its
+		// own ratio - '% auto' is composed here, the bare number is stored
+		if (!empty($obj['object-background-scale'])) {
+			elem_css($elem, 'background-size',
+				$obj['object-background-scale'].'% auto');
+		}
 	}
 	// The box-shadow family - a soft halo behind the content, plus a solid
 	// band outside the box and one inside it - see .glue-glow in
@@ -468,6 +474,22 @@ function object_alter_save($args)
 			$obj['object-background-position'] = elem_css($elem, 'background-position');
 		} else {
 			unset($obj['object-background-position']);
+		}
+		if (elem_css($elem, 'background-size') !== NULL) {
+			// the bare number is stored: the '% auto' it renders as is
+			// composed at render. Chromium writes a width-only '150%' back
+			// into the style attribute (dropping the redundant 'auto'), so
+			// both spellings are accepted. A size that is not one of ours
+			// (someone hand-wrote 'cover', say) is dropped rather than
+			// stored, so a scaled-back object ends up byte-identical to one
+			// never touched.
+			if (preg_match('/^([0-9.]+)%( auto)?$/', elem_css($elem, 'background-size'), $m)) {
+				$obj['object-background-scale'] = $m[1];
+			} else {
+				unset($obj['object-background-scale']);
+			}
+		} else {
+			unset($obj['object-background-scale']);
 		}
 	}
 	// solid is the default and stays unstored: see object_render_object()

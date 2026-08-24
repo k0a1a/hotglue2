@@ -803,12 +803,38 @@ function object_background_popover(obj)
 	move_row.appendChild(pad);
 	pop.appendChild(move_row);
 
+	// --- size it -----------------------------------------------------------
+	//
+	// A percentage of the object's width; the height keeps the image's own
+	// ratio ('% auto' is composed from the bare number, like the move pad's
+	// composed position). 100 is what the row shows when nothing is stored -
+	// it is not written until the scale is actually touched, so an unscaled
+	// image stays at its natural size, and a zero typed into the field
+	// removes the attribute again, per the "absent means default" rule.
+	var scale_row = $.glue.popover.number_row('scale', {
+		min: 10, max: 300, step: 1, unit: '%',
+		value: parseFloat(obj.style.backgroundSize) || 100,
+		apply: function(pct, commit) {
+			if (!pct || pct < 0) {
+				obj.style.backgroundSize = '';
+				scale_row.set(0);
+			} else {
+				obj.style.backgroundSize = pct+'% auto';
+			}
+			if (commit) {
+				save();
+			}
+		}
+	});
+	pop.appendChild(scale_row.row);
+
 	// --- take it off ------------------------------------------------------
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset('remove the background image', function() {
 		obj.style.backgroundImage = '';
 		obj.style.backgroundRepeat = '';
 		obj.style.backgroundPosition = '';
+		obj.style.backgroundSize = '';
 		$.glue.popover.close();
 		save();
 		// the file itself is dropped by the object no longer naming it
