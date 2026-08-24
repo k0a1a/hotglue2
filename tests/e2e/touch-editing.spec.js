@@ -96,6 +96,8 @@ test('an object can be dragged with a finger, and the drag is not a tap',
 			parseInt(document.getElementById(i).style.left, 10), a)).toBe(110);
 		// still selected: the drag did not end in a click that toggled it
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
+		// and the panels are reachable from there without another tap
+		await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
 		// and the page stayed put rather than scrolling under the finger
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
@@ -107,4 +109,30 @@ test('the page menu still opens from a tap on the background', async ({ page, hg
 
 	await page.touchscreen.tap(360, 700);
 	await expect(page.locator('.glue-menu-new, .glue-menu').first()).toBeVisible();
+});
+
+test('dragging an unselected object selects it', async ({ page, hg, browserName }) => {
+	// it always did, by way of the click that followed the mouseup. That
+	// click is suppressed now so a drag does not toggle whatever it finished
+	// over, which means the selection has to be said out loud instead.
+	test.skip(browserName !== 'chromium',
+		'no way to synthesise a touch drag outside Chromium');
+	const a = hg.addObject('100000000001', ATTRS, 'drag me');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await expect(byId(page, a)).not.toHaveClass(/glue-selected/);
+
+	const box = await byId(page, a).boundingBox();
+	const cdp = await page.context().newCDPSession(page);
+	const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
+		type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+	});
+	await touch('touchStart', box.x + 100, box.y + 50);
+	for (let i = 1; i <= 8; i++) {
+		await touch('touchMove', box.x + 100 + i * 8, box.y + 50);
+	}
+	await touch('touchEnd');
+
+	await expect(byId(page, a)).toHaveClass(/glue-selected/);
+	await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
 });

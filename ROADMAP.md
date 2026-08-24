@@ -102,7 +102,7 @@ Shipped 2026-08-22:
 - **Centered layout mode** — per-page, opt-in, no coordinate migration.
 - **Object Properties dialog**, **text link dialog**, **WYSIWYG text editing** (the
   markup is hidden while editing; `</>` switches to source), **object overflow toggle**.
-- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **445 tests
+- **First JS test infrastructure**: a Playwright e2e suite, `tests/e2e/`, **446 tests
   passing on Chromium AND Firefox**. Hermetic — it runs its own PHP server against
   `content-e2e/` and never touches real content or credentials.
 - **`tools/make-min.js`** — the "small one-off script" the `*.min.js` pairs were always
@@ -411,6 +411,14 @@ Features and niceties not yet spec'd — the running to-do:
 - **Editing on a phone, beyond the first tap** — danja, 2026-08-24. *(The tap itself
   now works: see the Done entry. What is left is whether the rest is usable.)*
 
+  **Checked on a real phone** (Galaxy S23, Chrome, over ADB) on 2026-08-24: tap selects,
+  a second tap opens the keyboard and edits the text, typing saves to disk, a finger
+  drags an object without the page scrolling, and the panels open and are usable. Two
+  things only the device showed, both since fixed: panels were placed by the LAYOUT
+  viewport and landed under the on-screen keyboard (274x500 layout against 274x308
+  visual with the keyboard up), and a drag no longer selected what it dragged, because
+  the click that used to do that is now suppressed.
+
   Known to be missing, from reading the code rather than guessing:
 
   - **Nine controls can only be dragged with a mouse.** Every `$.glue.slider` caller —
@@ -424,6 +432,9 @@ Features and niceties not yet spec'd — the running to-do:
     touch. That got worse when the icons replaced text placeholders, not better.
   - **Double-tap is taken.** Text editing is a second click, which works, but the
     browser also wants that gesture for zoom.
+  - **The menu runs off the screen.** The top row is laid out left to right from the
+    object's corner and does not wrap, so on a 274px viewport two of its buttons were
+    past the right edge with only five modules loaded.
   - **The canvas is wider than the phone**, and the editor has no equivalent of the
     guided view's fit-and-reveal — it is deliberately kept out of the editor
     (`common.inc.php`). Whether editing should happen inside a scaled view, or at 1:1

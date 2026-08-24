@@ -228,10 +228,6 @@ $.glue.popover = function()
 	var GAP = 10;
 	var open_panel = false;
 
-	var clamp = function(v, max) {
-		return Math.max(0, Math.min(max, v));
-	};
-
 	return {
 		// w, h .. the popover's size in px
 		// p .. where the pointer was, in viewport coordinates (optional)
@@ -240,10 +236,21 @@ $.glue.popover = function()
 		//   before it is placed, and .glue-popover is on the list below
 		// returns { x, y } in viewport coordinates
 		place_for: function(w, h, p, ignore) {
-			var vw = document.documentElement.clientWidth;
-			var vh = document.documentElement.clientHeight;
+			// The VISUAL viewport, not the layout one. They are the same on a
+			// desktop at 100% zoom and very different on a phone: an on-screen
+			// keyboard shortens the visual viewport and leaves the layout
+			// viewport alone, so a panel placed by clientHeight lands
+			// underneath the keyboard while every measurement says it is on
+			// screen. Measured on a Galaxy S23: layout 274x500, visual
+			// 274x308 with the keyboard up, and the font panel's bottom edge
+			// at 350. Pinch-zooming does the same thing on both.
+			var vv = window.visualViewport;
+			var min_x = vv ? vv.offsetLeft : 0;
+			var min_y = vv ? vv.offsetTop : 0;
+			var vw = vv ? vv.width : document.documentElement.clientWidth;
+			var vh = vv ? vv.height : document.documentElement.clientHeight;
 			if (!p) {
-				p = { x: Math.round(vw/2), y: Math.round(vh/2) };
+				p = { x: Math.round(min_x+vw/2), y: Math.round(min_y+vh/2) };
 			}
 
 			// Two boxes, because they are not equally important. The OBJECT
@@ -303,8 +310,10 @@ $.glue.popover = function()
 			var best = false;
 			var best_score = false;
 			candidates.forEach(function(c) {
-				var x = clamp(c.x, vw-w);
-				var y = clamp(c.y, vh-h);
+				// clamped into what can actually be seen, which does not
+				// start at 0 once the page is pinch-zoomed
+				var x = Math.max(min_x, Math.min(min_x+vw-w, c.x));
+				var y = Math.max(min_y, Math.min(min_y+vh-h, c.y));
 				// covering the object is what disqualifies a position;
 				// covering our own chrome is a tie-breaker; being near where
 				// the pointer was decides the rest
@@ -1882,6 +1891,18 @@ $.glue.object = function()
 						return;
 					}
 					drag_started = true;
+					// Dragging an object selects it, which is what it always
+					// did - by way of the click that used to follow the
+					// mouseup. That click is suppressed now
+					// (preventClickEventOnDrag, so a drag does not also
+					// toggle whatever it finished over), so the selection has
+					// to be said out loud. A group drag is left alone: the
+					// object is already in the selection, and selecting it
+					// again would collapse the rest.
+					if (!obj.classList.contains('glue-selected')) {
+						$.glue.sel.none();
+						$.glue.sel.select(obj);
+					}
 					if (document.querySelectorAll('.glue-selected').length > 1 && obj.classList.contains('glue-selected')) {
 						drag_multi_prev_left = drag_orig_left;
 						drag_multi_prev_top = drag_orig_top;
