@@ -188,10 +188,14 @@ test('a finger drags the opacity slider in the adjustment popout',
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a finger drags the padding button in two dimensions without scrolling the page',
+test('a finger drags the padding slider in the padding panel without scrolling the page',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
+		// the padding button used to be a drag target itself; it opens a panel
+		// now (the way the transparency button became a slider in the
+		// adjustment popout), and the panel's slider is a native range input:
+		// no gesture layer, no touch-action, a finger just drags it
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		// a second object far down the page, so the page genuinely can scroll
 		// - the scrollY assertion below only proves something if it could
@@ -207,39 +211,70 @@ test('a finger drags the padding button in two dimensions without scrolling the 
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		const button = page.locator('img[src*="text-padding.png"]');
-		const box = await button.boundingBox();
+		await page.getByTitle(/change padding/).tap();
+		const panel = page.locator('.glue-popover.glue-padding-popover');
+		await expect(panel).toBeVisible();
+
+		const outerBefore = await page.evaluate((i) => {
+			const el = document.getElementById(i);
+			return el.offsetWidth+','+el.offsetHeight;
+		}, a);
+		const slider = panel.locator('input[type="range"]').first();
+		const box = await slider.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
 			type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
 		});
+		// the thumb starts where the current padding is; drag it rightward
+		// along the track - not to an exact per-pixel value, a native
+		// slider's thumb geometry is the browser's, not the test's
 		await touch('touchStart', box.x + box.width/2, box.y + box.height/2);
 		for (let i = 1; i <= 8; i++) {
-			await touch('touchMove', box.x + box.width/2 + i*8, box.y + box.height/2 + i*15);
+			await touch('touchMove', box.x + box.width/2 + i*5, box.y + box.height/2);
 		}
 		await touch('touchEnd');
 
-		// 60px of drag at a sixth of a pixel per px of padding, on top of the
-		// text default of 15px/12px (stored padding would be 25px/32px): the
-		// on-screen padding is 15+floor(64/6)=25, 12+floor(120/6)=32
-		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('25px');
-		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingTop, a)).toBe('32px');
-		await expect.poll(() => hg.readObject(a.split('.').pop()).attrs['text-padding-x']).toBe('25px');
-		await expect.poll(() => hg.readObject(a.split('.').pop()).attrs['text-padding-y']).toBe('32px');
+		// the uniform row applies to all four sides, and it moved off the
+		// default rather than resetting to it
+		const pad = await page.evaluate((i) => {
+			const s = getComputedStyle(document.getElementById(i));
+			return [s.paddingLeft, s.paddingRight, s.paddingTop, s.paddingBottom];
+		}, a);
+		expect(pad[0]).not.toBe('15px');
+		expect(pad[0]).toBe(pad[1]);
+		expect(pad[0]).toBe(pad[2]);
+		expect(pad[0]).toBe(pad[3]);
+
+		// padding is internal: the outer box did not move, and the stored
+		// size is the shrunken content area the panel computed it as
+		await expect.poll(() => page.evaluate((i) => {
+			const el = document.getElementById(i);
+			return el.offsetWidth+','+el.offsetHeight;
+		}, a)).toBe(outerBefore);
+		const v = parseInt(pad[0]);
+		await expect.poll(async () => {
+			const stored = hg.readObject(a.split('.').pop()).attrs;
+			const box = await page.evaluate((i) => {
+				const el = document.getElementById(i);
+				return [el.offsetWidth, el.offsetHeight];
+			}, a);
+			return stored['text-padding-x'] === v+'px'
+				&& stored['text-padding-y'] === v+'px'
+				&& stored['object-width'] === (box[0]-2*v)+'px'
+				&& stored['object-height'] === (box[1]-2*v)+'px';
+		}).toBe(true);
+		// the finger let go over the panel, so the click that follows the
+		// gesture must not have deselected the object
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
-		// the page can scroll, so a scroll here would prove touch-action was
-		// missing on the button
+		// the page can scroll, so a scroll here would prove the slider's
+		// touch handling was missing
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a tap without a drag on a drag button keeps its click behaviour',
+test('a tap on the padding button opens the padding panel without changing anything',
 	async ({ page, hg, browserName }) => {
-		// the 15px dead zone means a click-without-drag leaves the value
-		// alone, which is what the padding button's click has always done (the
-		// transparency button that shared the primitive is a slider in the
-		// adjustment popout now, with a native click of its own)
+		// the button used to be a drag target whose click reset the padding;
+		// the reset lives in the panel now, and opening it must be inert
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
@@ -249,7 +284,12 @@ test('a tap without a drag on a drag button keeps its click behaviour',
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		const button = page.locator('img[src*="text-padding.png"]');
+		// the box as it stands after selection, before the tap on the button
+		const outerBefore = await page.evaluate((i) => {
+			const el = document.getElementById(i);
+			return el.offsetWidth+','+el.offsetHeight;
+		}, a);
+		const button = page.getByTitle(/change padding/);
 		const box = await button.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		await cdp.send('Input.dispatchTouchEvent', {
@@ -257,9 +297,14 @@ test('a tap without a drag on a drag button keeps its click behaviour',
 		});
 		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
-		// 15px is the text module's default padding; the tap must not have
-		// nudged it
+		// the panel is open, the padding is still the 15px module default,
+		// and the box has not moved
+		await expect(page.locator('.glue-popover.glue-padding-popover')).toBeVisible();
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('15px');
+		await expect.poll(() => page.evaluate((i) => {
+			const el = document.getElementById(i);
+			return el.offsetWidth+','+el.offsetHeight;
+		}, a)).toBe(outerBefore);
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 	});

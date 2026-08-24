@@ -19,10 +19,115 @@ function text_align_sync(elem) {
 	Alpine.$data(elem).tip = 'change text alignment ('+label+')';
 }
 
-function text_padding_sync(elem) {
-	var obj = $.glue.owner(elem);
-	var computed = getComputedStyle(obj);
-	Alpine.$data(elem).tip = 'change padding ('+computed.paddingLeft+', '+computed.paddingTop+'), click to reset to default one';
+// The padding panel: one value for all four sides up top, the sides
+// individually in a folded-away "more knobs" section, and a reset that goes
+// back to the module's default padding. Twin of the object panels
+// (object_adjust_popover / object_edge_popover in object-edit.js).
+function text_padding_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-padding-popover');
+	if (!pop) {
+		return;
+	}
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	// Padding is internal: the outer box is captured once here and every
+	// change below compensates width/height by the padding it adds, so the
+	// object never moves while the panel is open (see the drag handler this
+	// panel replaced).
+	var outer_w = obj.offsetWidth;
+	var outer_h = obj.offsetHeight;
+	// padding can't eat more than half the shorter side without collapsing
+	// the content area; the field is allowed to say more, and the apply below
+	// clamps it
+	var max = Math.floor(Math.min(outer_w, outer_h)/2);
+	var pad = {};
+	var side = function(name) {
+		var v = parseInt(getComputedStyle(obj)['padding-'+name]);
+		return isNaN(v) ? 0 : v;
+	};
+	pad.top = side('top');
+	pad.right = side('right');
+	pad.bottom = side('bottom');
+	pad.left = side('left');
+
+	var apply = function(commit) {
+		obj.style.paddingLeft = pad.left+'px';
+		obj.style.paddingRight = pad.right+'px';
+		obj.style.paddingTop = pad.top+'px';
+		obj.style.paddingBottom = pad.bottom+'px';
+		obj.style.width = (outer_w-pad.left-pad.right)+'px';
+		obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
+		if (commit) {
+			save();
+		}
+	};
+
+	// one value for all four sides. Starts at the left padding, and shows
+	// what a drag would set all four to rather than chasing the knobs.
+	var all = $.glue.popover.number_row('padding', {
+		min: 0, max: max, step: 1, unit: 'px',
+		value: pad.left,
+		apply: function(v, commit) {
+			pad.left = pad.right = pad.top = pad.bottom =
+				Math.max(0, Math.min(max, Math.round(v)));
+			apply(commit);
+		}
+	});
+	pop.appendChild(all.row);
+
+	// --- more knobs: each side on its own --------------------------------
+	var fold = $.glue.popover.fold(pop, 'more knobs');
+	pop.appendChild(fold.toggle);
+	var adv = fold.body;
+	var knob = function(label, name) {
+		var row = $.glue.popover.number_row(label, {
+			min: 0, max: max, step: 1, unit: 'px',
+			value: pad[name],
+			apply: function(v, commit) {
+				pad[name] = Math.max(0, Math.min(max, Math.round(v)));
+				apply(commit);
+			}
+		});
+		adv.appendChild(row.row);
+		return row;
+	};
+	var top = knob('top', 'top');
+	var right = knob('right', 'right');
+	var bottom = knob('bottom', 'bottom');
+	var left = knob('left', 'left');
+	pop.appendChild(adv);
+
+	// Reset: back to the module's default padding (the CSS class in
+	// modules/text/text.css), with the box compensated so nothing moves here
+	// either. Clearing the inline padding is what makes the class default
+	// visible again, the way the old click-to-reset did.
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset(
+		'back to the default padding (12px top and bottom, 15px left and right)', function() {
+			obj.style.paddingLeft = '';
+			obj.style.paddingRight = '';
+			obj.style.paddingTop = '';
+			obj.style.paddingBottom = '';
+			var c = getComputedStyle(obj);
+			pad.top = parseInt(c.paddingTop);
+			pad.right = parseInt(c.paddingRight);
+			pad.bottom = parseInt(c.paddingBottom);
+			pad.left = parseInt(c.paddingLeft);
+			obj.style.width = (outer_w-pad.left-pad.right)+'px';
+			obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
+			save();
+			all.set(pad.left);
+			top.set(pad.top);
+			right.set(pad.right);
+			bottom.set(pad.bottom);
+			left.set(pad.left);
+		}));
+	pop.appendChild(footer);
+
+	$.glue.popover.show(pop);
 }
 
 $.glue.text = function()
@@ -1368,86 +1473,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text-padding.png';
-	elem.alt = 'btn';
-	elem.width = 32;
-	elem.height = 32;
-	elem.setAttribute('x-data', "{ tip: 'change padding, click to reset to default one' }");
-	elem.setAttribute('x-bind:title', 'tip');
-	elem.setAttribute('x-on:glue-menu-activate', 'text_padding_sync($el)');
-	elem.style.touchAction = 'none';
-	elem.addEventListener('pointerdown', function(e) {
-		if (!e.isPrimary) {
-			return;
-		}
-		var obj = $.glue.owner(this);
-		// we assume px here, and for {left,right} {top,bottom} to be the same
-		var computed = getComputedStyle(obj);
-		var orig_x = parseInt(computed.paddingLeft);
-		if (isNaN(orig_x)) {
-			orig_x = 0;
-		}
-		var orig_w = obj.offsetWidth;
-		var orig_y = parseInt(computed.paddingTop);
-		if (isNaN(orig_y)) {
-			orig_y = 0;
-		}
-		var orig_h = obj.offsetHeight;
-		var no_change = true;
-		var that = this;
-		$.glue.slider(e, function(x, y, e) {
-			var val_x = Math.floor(orig_x+x/6);
-			if (val_x < 0) {
-				val_x = 0;
-			}
-			var val_y = Math.floor(orig_y+y/6);
-			if (val_y < 0) {
-				val_y = 0;
-			}
-			// shift: same padding for x and y
-			if (e.shiftKey) {
-				if (val_x < val_y) {
-					val_x = val_y;
-				} else if (val_y < val_x) {
-					val_y = val_x;
-				}
-			}
-			obj.style.paddingLeft = val_x+'px';
-			obj.style.paddingRight = val_x+'px';
-			// resize object
-			obj.style.width = (orig_w+2*orig_x-2*val_x)+'px';
-			obj.style.paddingTop = val_y+'px';
-			obj.style.paddingBottom = val_y+'px';
-			obj.style.height = (orig_h+2*orig_y-2*val_y)+'px';
-			Alpine.$data(that).tip = 'change padding ('+val_x+'px, '+val_y+'px), click to reset to default one';
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset padding if there was no change at all
-			if (no_change) {
-				var var_x = parseInt(getComputedStyle(obj).paddingLeft);
-				if (!isNaN(var_x)) {
-					// resize object
-					obj.style.width = (obj.offsetWidth+2*var_x)+'px';
-				}
-				var var_y = parseInt(getComputedStyle(obj).paddingTop);
-				if (!isNaN(var_y)) {
-					obj.style.height = (obj.offsetHeight+2*var_y)+'px';
-				}
-				obj.style.paddingLeft = '';
-				obj.style.paddingRight = '';
-				obj.style.paddingTop = '';
-				obj.style.paddingBottom = '';
-				var resetComputed = getComputedStyle(obj);
-				Alpine.$data(that).tip = 'change padding ('+resetComputed.paddingLeft+', '+resetComputed.paddingTop+'), click to reset to default one';
-			}
-			// use object.save() in both cases (width and height got changed too)
-			$.glue.object.save(obj);
-		});
-		e.preventDefault();
-		return false;
+	// padding: the drag-with-shift gesture is a panel now (text_padding_popover
+	// above), the way the transparency and z-index buttons folded into the
+	// object adjustment panel
+	elem = $.glue.icon('padding', 'change padding');
+	elem.addEventListener('click', function(e) {
+		text_padding_popover($.glue.owner(this));
+		e.stopPropagation();
 	});
 	$.glue.contextmenu.register('text', 'text-text-padding', elem);
 
