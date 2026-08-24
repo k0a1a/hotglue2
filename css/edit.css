@@ -721,27 +721,39 @@
 
 .glue-btn-icon.glue-sheep::after {
 	/* The sheep's blink. Its eyes are two holes in the mask, so they paint
-	   in the button's own pale fill; a lid in that same fill, shown over
-	   the eye area for a moment, is a closed eyelid. The geometry is the
-	   eyes' measured bounds in the 30x30 art: x 8.7-18.7, y 10.7-15.3.
-	   Purely decorative - the one icon in the set that is a joke tells
-	   one every half minute. */
+	   in the button's own pale fill; the eyelid from the sheep's artwork
+	   (the hidden "eyelids" layer of sheep-icon5, extracted into its own
+	   mask file - sheep-eyelid.svg - because nothing inside an SVG used
+	   as a mask can be shown from outside it) painted in the face's
+	   colour (#333, and #c00 on hover) covers the eye row for half a
+	   second every half minute, making the eyes vanish: that is what
+	   reads as a closed eyelid. Purely decorative - the one icon in the
+	   set that is a joke tells one every half minute. */
 	content: '';
 	position: absolute;
-	left: 8.5px;
-	top: 10.5px;
-	width: 10.5px;
-	height: 5px;
-	background-color: rgba(255, 255, 255, 0.85);
-	border-radius: 2px;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: #333;
+	-webkit-mask-image: url('../img/icons/sheep-eyelid.svg');
+	mask-image: url('../img/icons/sheep-eyelid.svg');
+	-webkit-mask-size: 30px 30px;
+	mask-size: 30px 30px;
 	opacity: 0;
 	animation: glue-sheep-blink 30s infinite;
 }
 
+.glue-btn-icon.glue-sheep:hover::after {
+	/* the face turns #c00 on hover; the eyelid must follow it, or it
+	   would sit on the red face as a dark bar */
+	background-color: #c00;
+}
+
 @keyframes glue-sheep-blink {
-	0%, 96% { opacity: 0; }
+	0%, 97% { opacity: 0; }
 	98% { opacity: 1; }
-	99.5%, 100% { opacity: 0; }
+	99.7%, 100% { opacity: 0; }
 }
 
 

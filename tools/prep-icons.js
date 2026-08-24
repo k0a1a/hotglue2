@@ -34,6 +34,9 @@ function strip(s)
 	s = s.replace(/<(?:inkscape|sodipodi):[\w-]+\b[^>]*?\/?>/gi, '');
 	s = s.replace(/<g[^>]*\bdisplay="none"[^>]*\/>/gi, '');
 	s = s.replace(/<g[^>]*\bdisplay="none"[^>]*>[\s\S]*?<\/g>/gi, '');
+	// layers are often hidden via style="display:none" instead of the
+	// attribute - Inkscape's layer dialog writes the style form
+	s.replace(/<g[^>]*\bstyle="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
 	// editor-private attributes and the namespaces that declare them
 	s = s.replace(/\s+(?:inkscape|sodipodi):[\w-]+\s*=\s*"[^"]*"/g, '');
 	s = s.replace(/\s+xmlns:(?:inkscape|sodipodi|dc|cc|rdf|svg)\s*=\s*"[^"]*"/g, '');

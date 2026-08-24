@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// rather than a diagram, and it earns its place: everyone knows what a
 	// cloned sheep is, and the alternative - two overlapping rectangles - is
 	// what half the icons in any toolbar already look like.
-	elem = $.glue.icon('sheep-icon4', 'clone object');
+	elem = $.glue.icon('sheep-icon5', 'clone object');
 	// the sheep is the one icon in the set that is a joke, so it gets the
 	// one animation in the set too: every half minute its eyes blink
 	// (a lid painted in the button's own fill drops over them - see

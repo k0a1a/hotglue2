@@ -141,13 +141,15 @@ test('an icon button paints something', async ({ page, hg }) => {
 		.toBe(false);
 });
 
-test('the sheep blinks: a lid over its eyes every half minute',
+test('the sheep blinks: an eyelid covers its eyes every half minute',
 	async ({ page, hg }) => {
 		// the clone button's sheep is the one joke in the icon set, and it
-		// gets the one animation: a lid in the button's own fill covers the
-		// eyes for a moment, every 30s. Assert the animation is armed - the
-		// lid is invisible for 96% of the cycle, so this is the reliable
-		// part to check.
+		// gets the one animation: the eyelid from the icon's artwork
+		// (sheep-eyelid.svg, the hidden "eyelids" layer extracted into a
+		// mask of its own - nothing inside an SVG used as a mask can be
+		// shown from outside it) paints over the eyes for half a second
+		// every 30s. Assert the animation is armed - the lid is invisible
+		// for 97% of the cycle, so this is the reliable part to check.
 		hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -162,21 +164,73 @@ test('the sheep blinks: a lid over its eyes every half minute',
 				duration: s.animationDuration,
 				iterations: s.animationIterationCount,
 				colour: s.backgroundColor,
-				box: [s.left, s.top, s.width, s.height],
+				mask: s.maskImage || s.webkitMaskImage || '',
+				size: s.maskSize || s.webkitMaskSize,
 			};
 		});
 		expect(blink.name).toBe('glue-sheep-blink');
 		expect(blink.duration).toBe('30s');
 		expect(blink.iterations).toBe('infinite');
-		// the lid is the button's own fill, so it hides the eyes instead of
-		// painting its own colour over them
-		expect(blink.colour).toBe('rgba(255, 255, 255, 0.85)');
-		// and it sits over the eyes' measured bounds in the 30x30 art
-		const [l, t, w, h] = blink.box.map(parseFloat);
-		expect(l).toBeGreaterThanOrEqual(8);
-		expect(t).toBeGreaterThanOrEqual(10);
-		expect(l + w).toBeLessThanOrEqual(20);
-		expect(t + h).toBeLessThanOrEqual(16.5);
+		// the eyelid is the FACE's paint, not the button's fill: the eyes
+		// are holes in the mask, so covering them with the face colour
+		// makes them vanish - the pale fill would only merge the two pale
+		// dots into a bar, which reads as no blink at all
+		expect(blink.colour).toBe('rgb(51, 51, 51)');
+		// and it is the artwork's own eyelid shape, as a mask of its own
+		expect(blink.mask).toContain('sheep-eyelid.svg');
+		expect(blink.size).toBe('30px 30px');
+		// the eyelid's rect in that file sits over the eyes' row with a
+		// little margin, so it covers them when it shows
+		const eyelid = fs.readFileSync(
+			path.join(ICON_DIR, 'sheep-eyelid.svg'), 'utf8');
+		const rect = eyelid.match(/<rect[^>]*x="([\d.]+)"[^>]*y="([\d.]+)"[^>]*width="([\d.]+)"[^>]*height="([\d.]+)"/);
+		expect(rect, 'the eyelid mask has no rect').not.toBeNull();
+		const [, ex, ey, ew, eh] = rect.map(parseFloat);
+		expect(ex + ew).toBeGreaterThan(18.5);	// reaches past the eyes
+		expect(ey).toBeLessThan(11);			// starts above them
+		expect(ey + eh).toBeGreaterThan(15);	// and ends below them
+
+		// the face turns #c00 on hover; the eyelid follows it, or it would
+		// sit on the red face as a dark bar
+		await sheep.hover();
+		const hover = await sheep.evaluate((el) =>
+			getComputedStyle(el, '::after').backgroundColor);
+		expect(hover).toBe('rgb(204, 0, 0)');
+	});
+
+test('the sheep blink actually fires', async ({ page, hg }) => {
+		// The properties above only prove the blink is armed; the one thing
+		// they cannot show is that the animation RUNS. Speed the cycle up
+		// once the page is loaded - a duration change rescales the running
+		// cycle, so the next blink lands within a couple of seconds - and
+		// watch the lid's opacity spike for real, drop, and spike again.
+		hg.addObject('100000000001', OBJ, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await page.locator('.object').first().click();
+
+		const sheep = page.locator('.glue-btn-icon.glue-sheep').first();
+		await expect(sheep).toBeVisible();
+
+		await page.addStyleTag({
+			content: [
+				'.glue-btn-icon.glue-sheep::after { animation-duration: 6s; }',
+				// and a dwell long enough for a 100ms poll to land in -
+				// the real cycle's blink, sped up to 6s, would be over
+				// in an instant (the later @keyframes rule wins)
+				'@keyframes glue-sheep-blink { 0%, 50% { opacity: 0; } '
+					+ '60% { opacity: 1; } 90%, 100% { opacity: 0; } }',
+			].join('\n'),
+		});
+
+		const lid = () => sheep.evaluate((el) =>
+			parseFloat(getComputedStyle(el, '::after').opacity));
+		await expect.poll(lid, { timeout: 6000, intervals: [100] })
+			.toBeGreaterThan(0.5);
+		await expect.poll(lid, { timeout: 6000, intervals: [100] })
+			.toBeLessThan(0.5);
+		await expect.poll(lid, { timeout: 6000, intervals: [100] })
+			.toBeGreaterThan(0.5);
 	});
 
 test('the generated icon files are well-formed and stripped', async () => {
