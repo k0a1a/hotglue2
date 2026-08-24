@@ -97,6 +97,7 @@ test('an icon button is masked, sized and coloured',
 				colour: glyph.backgroundColor,
 				frameFill: frame.backgroundColor,
 				frameBorder: frame.borderTopWidth+' '+frame.borderTopStyle,
+				cursor: frame.cursor,
 			};
 		});
 		expect(css.mask, 'the SVG is not being used as a mask').toContain('url(');
@@ -110,6 +111,21 @@ test('an icon button is masked, sized and coloured',
 		expect(css.frameBorder, 'the icon button lost its border').toBe('1px solid');
 		expect(css.frameFill, 'the icon button lost its half-transparent fill')
 			.toBe('rgba(255, 255, 255, 0.85)');
+		// these buttons behave like links: the pointer cursor tells you they
+		// do something (the ~65 PNG buttons around them keep the default
+		// arrow), and the glyph never changes colour on hover - the frame's
+		// fill does
+		expect(css.cursor, 'the icon button is not a pointer').toBe('pointer');
+		await btn.hover();
+		const hovered = await btn.evaluate((el) => {
+			const frame = getComputedStyle(el);
+			const glyph = getComputedStyle(el, '::before');
+			return { bg: frame.backgroundColor, glyph: glyph.backgroundColor };
+		});
+		expect(hovered.bg, 'the frame did not turn grey on hover')
+			.toBe('rgb(204, 204, 204)');
+		expect(hovered.glyph, 'the glyph changed colour on hover')
+			.toBe('rgb(51, 51, 51)');
 	});
 
 test('an icon button paints something', async ({ page, hg }) => {
@@ -197,12 +213,17 @@ test('the sheep blinks: an eyelid covers its eyes every half minute',
 		expect(ey).toBeLessThan(11);			// starts above them
 		expect(ey + eh).toBeGreaterThan(15);	// and ends below them
 
-		// the face turns #c00 on hover; the eyelid follows it, or it would
-		// sit on the red face as a dark bar
+		// hover marks the FRAME, not the glyph: the icon keeps its colour
+		// and the frame's fill goes grey - the eyelid must do the same as
+		// the face, or it would sit on the grey frame as a dark bar
 		await sheep.hover();
-		const hover = await sheep.evaluate((el) =>
-			getComputedStyle(el, '::after').backgroundColor);
-		expect(hover).toBe('rgb(204, 0, 0)');
+		const hover = await sheep.evaluate((el) => ({
+			lid: getComputedStyle(el, '::after').backgroundColor,
+			frame: getComputedStyle(el).backgroundColor,
+		}));
+		expect(hover.lid, 'the eyelid changed colour on hover').toBe('rgb(51, 51, 51)');
+		expect(hover.frame, 'the frame did not turn grey on hover')
+			.toBe('rgb(204, 204, 204)');
 	});
 
 test('the blink cycle is re-rolled at every wrap', async ({ page, hg }) => {
