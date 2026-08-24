@@ -295,9 +295,13 @@ function object_alter_render_early($args)
 			elem_css($elem, 'background-position', $obj['object-background-position']);
 		}
 	}
-	// A soft blob of colour behind the content - see .glue-glow in
+	// The box-shadow family - a soft halo behind the content, plus a solid
+	// band outside the box and one inside it - see .glue-glow in
 	// css/main.css. Like the fade above, what is stored is the ingredients
-	// (a colour, a radius and a strength) rather than the gradient itself.
+	// (colours, radii, strengths) rather than any shadow itself. One class
+	// turns on the whole composed rule; the members nobody set stay
+	// invisible, so an object with just an inset band does not also invent
+	// a glow or an outer rim.
 	if (!empty($obj['object-glow-color'])) {
 		elem_css($elem, '--glue-glow-color', $obj['object-glow-color']);
 		if (!empty($obj['object-glow-spread'])) {
@@ -305,6 +309,20 @@ function object_alter_render_early($args)
 		}
 		if (!empty($obj['object-glow-alpha'])) {
 			elem_css($elem, '--glue-glow-alpha', $obj['object-glow-alpha']);
+		}
+		elem_add_class($elem, 'glue-glow');
+	}
+	if (!empty($obj['object-shadow-in'])) {
+		elem_css($elem, '--glue-shadow-in', $obj['object-shadow-in']);
+		if (!empty($obj['object-shadow-in-color'])) {
+			elem_css($elem, '--glue-shadow-in-color', $obj['object-shadow-in-color']);
+		}
+		elem_add_class($elem, 'glue-glow');
+	}
+	if (!empty($obj['object-shadow-out'])) {
+		elem_css($elem, '--glue-shadow-out', $obj['object-shadow-out']);
+		if (!empty($obj['object-shadow-out-color'])) {
+			elem_css($elem, '--glue-shadow-out-color', $obj['object-shadow-out-color']);
 		}
 		elem_add_class($elem, 'glue-glow');
 	}
@@ -470,12 +488,26 @@ function object_alter_save($args)
 		unset($obj['object-border-color']);
 	}
 	// see object_render_object(): the ingredients are what is stored, and the
-	// class comes back with them
+	// class comes back with them. The shadow bands are the same deal: the
+	// inline vars are the file's attrs, nothing composed is kept.
 	foreach (['color', 'spread', 'alpha'] as $part) {
 		if (elem_css($elem, '--glue-glow-'.$part) !== NULL) {
 			$obj['object-glow-'.$part] = elem_css($elem, '--glue-glow-'.$part);
 		} else {
 			unset($obj['object-glow-'.$part]);
+		}
+	}
+	foreach (['in', 'out'] as $side) {
+		if (elem_css($elem, '--glue-shadow-'.$side) !== NULL) {
+			$obj['object-shadow-'.$side] = elem_css($elem, '--glue-shadow-'.$side);
+		} else {
+			unset($obj['object-shadow-'.$side]);
+		}
+		if (elem_css($elem, '--glue-shadow-'.$side.'-color') !== NULL) {
+			$obj['object-shadow-'.$side.'-color'] =
+				elem_css($elem, '--glue-shadow-'.$side.'-color');
+		} else {
+			unset($obj['object-shadow-'.$side.'-color']);
 		}
 	}
 	if (elem_css($elem, '--glue-fade') !== NULL) {

@@ -322,7 +322,8 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page)).toBeHidden();
 		await pop(page).locator('.glue-popover-disclosure').click();
 		await expect(advanced(page)).toBeVisible();
-		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(2);
+		// the glow (spread + strength) and the two shadow bands' thicknesses
+		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(4);
 	});
 
 test('the glow applies, stores its ingredients and reaches the published page',
@@ -417,6 +418,95 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await expect(field(page, FADE)).toHaveValue('0');
 	await expect(pop(page).locator('.glue-border-style')).toHaveValue('solid');
 	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
+});
+
+// --- the shadow bands -------------------------------------------------------
+//
+// The glow's solid cousins: a band outside the box and one inside it, each a
+// thickness and a colour. Same deal as the glow - ingredients stored, one
+// composed rule in css/main.css - but now TWO members share the class, so a
+// test here also guards the "one band does not invent another" logic.
+
+test('a band inside and a band outside, and each goes when its zero lands',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-shadow-in': '10', 'object-shadow-in-color': '#0044ff',
+			'object-shadow-out': '8', 'object-shadow-out-color': '#00cc00',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// both bands load, composed into the one box-shadow list
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+		const shadow = await cssOf(page, a, 'boxShadow');
+		expect(shadow).toContain('inset');
+		expect(shadow).toContain('10px');
+		expect(shadow).toContain('8px');
+		// the ingredients, not the shadow, are what is stored
+		await expect.poll(() => attrs(hg)['object-shadow-in']).toBe('10');
+		await expect.poll(() => attrs(hg)['object-shadow-out']).toBe('8');
+
+		// a zero on one band takes that band off, leaving the other alone
+		await open(page, a);
+		await pop(page).locator('.glue-popover-disclosure').click();
+		const insetField = advanced(page).locator('.glue-popover-field').nth(2);
+		const outerField = advanced(page).locator('.glue-popover-field').nth(3);
+		await insetField.fill('0');
+		await insetField.dispatchEvent('input');
+		await insetField.dispatchEvent('change');
+		await expect.poll(() => attrs(hg)['object-shadow-in']).toBe(undefined);
+		await expect.poll(() => attrs(hg)['object-shadow-in-color']).toBe(undefined);
+		await expect.poll(() => attrs(hg)['object-shadow-out']).toBe('8');
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+
+		// and the last one off takes the class with it
+		await outerField.fill('0');
+		await outerField.dispatchEvent('input');
+		await outerField.dispatchEvent('change');
+		await expect.poll(() => attrs(hg)['object-shadow-out']).toBe(undefined);
+		await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
+	});
+
+test('one band does not invent another, on the page or in storage',
+	async ({ page, hg }) => {
+		// only an outer band: no glow attrs stored, and the composed rule
+		// has to come out with exactly that one band visible - no halo
+		// springing up at the rule's old default of a 40px black glow
+		const a = hg.addObject('100000000001', {
+			...ATTRS, 'object-shadow-out': '12', 'object-shadow-out-color': '#00ff00',
+		}, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		await expect(byId(page, a)).toHaveClass(/glue-glow/);
+		expect(JSON.stringify(attrs(hg))).not.toContain('glow');
+
+		await page.goto(`/?${hg.pageName}`);
+		const published = await page.evaluate(() => {
+			const el = document.querySelector('.object');
+			return [el.className, getComputedStyle(el).boxShadow];
+		});
+		expect(published[0]).toContain('glue-glow');
+		expect(published[1]).toContain('12px');
+		expect(published[1]).toContain('rgb(0, 255, 0)');
+	});
+
+test('the reset clears the bands with the rest of the panel', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001',
+		{ ...ATTRS, 'object-shadow-in': '10', 'object-shadow-in-color': '#0044ff',
+			'object-glow-color': '#ff8c42', 'object-glow-spread': '40' }, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+
+	await pop(page).locator('.glue-popover-disclosure').click();
+	await pop(page).locator('.glue-popover-reset').click();
+	await expect.poll(() => attrs(hg)['object-shadow-in']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-shadow-in-color']).toBe(undefined);
+	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
+	await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
+	// and the panel says what is true now
+	await expect(advanced(page).locator('.glue-popover-field').nth(2)).toHaveValue('0');
 });
 
 test('media inside an object rounds with it', async ({ page, hg }) => {
