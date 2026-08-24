@@ -416,6 +416,13 @@
 	padding: 0.7em !important;
 }
 
+.layout_default .picker_selector {
+	/* the gradient field's cursor, a round knob by default (vanilla-picker
+	   sets border-radius:100%); square, to match the slider thumbs above and
+	   the rest of the editor's handles. The white ring and blue glow stay. */
+	border-radius: 0 !important;
+}
+
 .layout_default .picker_alpha {
 	/* vanilla-picker's own alpha bar, replaced by the slider-and-field row
 	   $.glue.colorpicker inserts (.glue-picker-alpha below). The bar showed
@@ -579,6 +586,26 @@
 	/* the browser's own blue thumb against this grey chrome is the one thing
 	   that looks borrowed; the rest of the editor's controls are black */
 	accent-color: #333;
+}
+
+.glue-popover-slider::-webkit-slider-thumb {
+	/* the thumb is taken over from the browser: square, like the editor's
+	   other handles, in the same black. accent-color stops painting the thumb
+	   once it is, and keeps painting the track. */
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	background: #333;
+	border-radius: 0;
+}
+
+.glue-popover-slider::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	background: #333;
+	border: none;
+	border-radius: 0;
 }
 
 .glue-popover-field {
