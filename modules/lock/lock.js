@@ -93,11 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	$.glue.contextmenu.hide();
 
-	var elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/lock/lock.png';
-	elem.alt = 'btn';
-	elem.width = 32;
-	elem.height = 32;
+	// the SuperGlue padlock; the two-state tooltip is Alpine's, like the
+	// clip toggle's
+	var elem = $.glue.icon('lock');
 
 	// Alpine tracks whether the current owner is locked, purely to drive
 	// the tooltip text; re-synced whenever the context menu is (re)shown
