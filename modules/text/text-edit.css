@@ -38,11 +38,26 @@
 	font-weight: inherit;
 	letter-spacing: inherit;
 	line-height: inherit;
-	/* no outline: the editing state is already announced by the focus
-	   ring of the input that editing swaps in */
-	outline: 0;
 	text-align: inherit;
 	word-spacing: inherit;
+}
+
+/* Editing state: no focus ring, border or shadow on the editing surfaces.
+   The browser draws a ring around a focused contenteditable div (WYSIWYG
+   mode) and around the focused textarea (source mode); the editing state
+   is announced by the textarea swapping in instead of by a ring. The
+   object itself keeps box-shadow - that is the edges panel's glow and
+   drop shadow, a design property, not a ring. */
+.text.glue-text-editing {
+	outline: none;
+	border: none;
+}
+
+.text.glue-text-editing .glue-text-render[contenteditable]:focus,
+.text.glue-text-editing .glue-text-input {
+	outline: none;
+	border: none;
+	box-shadow: none;
 }
 
 
