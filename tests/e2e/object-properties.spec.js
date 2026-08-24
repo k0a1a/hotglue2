@@ -29,7 +29,7 @@ const byId = (page, id) => page.locator(`[id="${id}"]`);
 // Open the object's context menu and click the properties icon.
 async function openProperties(page, id) {
 	await byId(page, id).click();
-	await page.locator(`img[src*="object-target.png"]`).first().click();
+	await page.getByTitle(/object properties/).click();
 	await expect(page.locator('.glue-modal-tag')).toBeVisible();
 }
 
@@ -269,7 +269,8 @@ test('closing the dialog gives the canvas its keyboard back', async ({ page, hg 
 	// The other half of being modal. Swallowing keys while open is only correct
 	// if the editor is usable again the moment it closes - asserting on
 	// document.activeElement would not show that, and would pass trivially
-	// since the icon that opens the dialog is an <img> and cannot hold focus.
+	// since the icon that opens the dialog is a mask div with no tabindex,
+	// which cannot hold focus either.
 	const a = hg.addObject('100000000001', box(200, 200), 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);

@@ -1313,12 +1313,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/object/object-target.png';
-	elem.alt = 'btn';
-	elem.title = 'object properties: id, classes and custom attributes';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('object-props', 'object properties: id, classes and custom attributes');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
