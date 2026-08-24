@@ -19,3 +19,8 @@
 # hermetic content directory the e2e suite writes to, created and torn
 # down per run - never the real /content
 /content-e2e/
+
+# Local shell helpers that export credentials - never tracked.
+# (flash-v4-vars.sh was committed by accident on 2026-08-24; the token in it
+# must be treated as compromised, since this repo is public.)
+flash-*.sh
