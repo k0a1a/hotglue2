@@ -3,7 +3,9 @@
 Status: **implementation complete** (jQuery/jQuery UI/Farbtastic/xcolor removal,
 all phases in §9; PHP modernization pass, §10; `IE8_COMPAT` removed). This
 document is kept as the detailed rationale/plan and a record of what was
-explicitly deferred (§13) - see `handover.md` for a short operational summary.
+explicitly deferred (§13). `handover.md` is the project's current operational
+summary - what it is, how to work on it, what is built and what is left - and carries
+the short version of this document's history at the end.
 
 ## 1. Executive summary
 
