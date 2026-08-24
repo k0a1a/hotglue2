@@ -60,13 +60,11 @@ Checked against the tree on 2026-08-23.
   out first).
 
 - **SOW-object-shape.md** — *(BUILT; the doc records what it grew into.)* Rounded
-  corners (ported from Superglue) and a new edge fadeout, scoped 2026-08-23. Both are one number per object stored as an
-  `object-*` attribute, so they follow `object-opacity` exactly; both are edited with
-  `$.glue.rangeslider`, which finally gives that widget the caller it was built for. Two
-  decisions to make first (px or percent for the radius; two gradients or a radial
-  vignette for the fade) and two icons to draw.
-
-- add tap to be able edit object on mobile
+  corners (ported from Superglue) and a new edge fadeout, scoped 2026-08-23 and built
+  the same night. Read it for what the scope met on contact: the two properties became
+  one edge panel with a border and a glow, the fade ended up as two intersected
+  gradients rather than either radial, and objects could only have a border at all once
+  the editor's selection stopped being one.
 
 ### In git history only
 
@@ -403,6 +401,14 @@ Features and niceties not yet spec'd — the running to-do:
   and letter spacing (`modules/text/text-edit.js`), page background position
   (`modules/page/page-edit.js`). It is covered by `tests/e2e/rangeslider.spec.js` in both
   orientations, so adopting it is a call, not a build. If nothing adopts it, delete it.
+- **Add tap to be able edit object on mobile** — danja, 2026-08-24. Moved here from the
+  task-docs section, where it was added: this is a backlog item rather than a spec.
+  Note what it is asking for. The mobile work so far is deliberately VIEW-only —
+  `js/mobile-guided.js` stays out of the editor entirely, and there is a test that says
+  so — so this is not a tweak to it but the question of what editing on a touch screen
+  is at all. Moveable is already touch-capable for drag and resize, which is the half
+  that would come free; selecting, the context menus and the panels are the half that
+  would not.
 - **New uploader / better upload handling** — client-side resize/transcode before
   upload, which cuts media bloat at source rather than after it lands.
 - **Link target auto-select** — `_blank` for external links, `_self` for internal ones,
