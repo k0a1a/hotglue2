@@ -2038,12 +2038,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/text/text.png';
-	elem.alt = 'btn';
-	elem.title = 'add a new text object';
-	elem.width = 32;
-	elem.height = 32;
+	var elem = $.glue.icon('text-object', 'add a new text object');
 	elem.addEventListener('click', function(e) {
 		// create new object
 		$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
