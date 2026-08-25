@@ -96,6 +96,40 @@ test('the object serves its own background, and it survives a reload',
 			.not.toContain('shared');
 	});
 
+test('adjustments and background ride the top row, after the text items',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'object-background-file': 'sample.png',
+				'object-background-mime': 'image/png' }, 'A');
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+
+		// both moved buttons ride the top row instead of the left column
+		await expect(page.locator('#glue-contextmenu-object-adjust'))
+			.toHaveClass(/glue-contextmenu-top/);
+		await expect(page.locator('#glue-contextmenu-object-background'))
+			.toHaveClass(/glue-contextmenu-top/);
+		await expect(page.locator('.glue-contextmenu-left#glue-contextmenu-object-adjust'))
+			.toHaveCount(0);
+		await expect(page.locator('.glue-contextmenu-left#glue-contextmenu-object-background'))
+			.toHaveCount(0);
+		// and in the top row they follow the text items (prios 1-6): the
+		// object-wide pair sits at the end of the row
+		const order = await page.evaluate(() =>
+			[...document.querySelectorAll('.glue-contextmenu-top')]
+				.map((b) => b.id));
+		expect(order.indexOf('glue-contextmenu-text-font')).toBeGreaterThan(-1);
+		expect(order.indexOf('glue-contextmenu-text-font'))
+			.toBeLessThan(order.indexOf('glue-contextmenu-object-adjust'));
+		expect(order.indexOf('glue-contextmenu-object-adjust'))
+			.toBeLessThan(order.indexOf('glue-contextmenu-object-background'));
+	});
+
 test('with an image, the button opens the panel instead of the picker',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001',

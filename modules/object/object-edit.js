@@ -1189,7 +1189,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem.addEventListener('click', function(e) {
 		object_adjust_popover($.glue.owner(this));
 	});
-	$.glue.contextmenu.register('object', 'object-adjust', elem, 2);
+	// in the top row, after the text items (prios 1-6): 7 and 8
+	$.glue.contextmenu.register('object', 'object-adjust', elem, 7, true);
 
 	// edges: rounded corners and a soft fade
 	elem = $.glue.icon('border-radius1', 'edges: rounded corners and a soft fade');
@@ -1253,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			e.stopPropagation();
 		}
 	});
-	$.glue.contextmenu.register('object', 'object-background', elem, 4);
+	$.glue.contextmenu.register('object', 'object-background', elem, 8, true);
 
 	// Toggle whether content bigger than the object's box is cut off or spills
 	// out of it. Absent means visible, the browser default and what hotglue has

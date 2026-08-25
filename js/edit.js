@@ -1071,14 +1071,17 @@ $.glue.contextmenu = function()
 				return false;
 			}
 		},
-		register: function(cls, name, elem, prio) {
+		register: function(cls, name, elem, prio, top) {
 			if (!m[cls]) {
 				m[cls] = [];
 			}
 			if (prio === undefined) {
 				prio = default_prio;
 			}
-			m[cls].push({ 'name': name, 'elem': elem, 'prio': prio });
+			// 'top' opts an item out of its class's usual side: an 'object'
+			// item flagged true goes to the top row instead of the left
+			// column (object-adjust and object-background do)
+			m[cls].push({ 'name': name, 'elem': elem, 'prio': prio, 'top': top });
 		},
 		// unreachable in practice (nothing in the codebase calls this) - kept
 		// for API compatibility. Note cloneNode(true) (unlike jQuery's
@@ -1113,25 +1116,23 @@ $.glue.contextmenu = function()
 			if (!obj.classList.contains('locked')) {
 				for (var cls in m) {
 					if (obj.classList.contains(cls)) {
-						var target;
-						// add to left or top
-						if (cls == 'object') {
-							target = left;
-						} else {
-							target = top;
-						}
-						// sort by priority ascending
 						for (var i=0; i < m[cls].length; i++) {
+							var item = m[cls][i];
+							// add to left or top: an object item can opt out
+							// of the left column into the top row - the
+							// register flag
+							var target = (cls == 'object' && !item.top) ? left : top;
+							// sort by priority ascending
 							var added = false;
 							for (var j=0; j < target.length; j++) {
-								if (m[cls][i].prio < target[j].prio) {
-									target.splice(j, 0, m[cls][i]);
+								if (item.prio < target[j].prio) {
+									target.splice(j, 0, item);
 									added = true;
 									break;
 								}
 							}
 							if (!added) {
-								target.push(m[cls][i]);
+								target.push(item);
 							}
 						}
 					}
