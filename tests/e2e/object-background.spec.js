@@ -3,7 +3,9 @@
 // One button with two states, because only one of them needs a panel: with no
 // image on the object the button IS the file input - the browser's own picker
 // - and with an image already there the input is switched off and the button
-// opens a panel to tile it, move it or take it off.
+// opens a panel to tile it, move it or scale it, with a footer that either
+// resets those to their defaults (keeping the image) or deletes the image
+// (taking it and the file off the object).
 //
 // The image belongs to the OBJECT: it uploads with preferred_module 'object'
 // - the module's own name, since upload_files() dispatches by calling
@@ -200,7 +202,7 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
 	});
 
-test('removing it takes the image off the object', async ({ page, hg }) => {
+test('deleting it takes the image off the object', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'object-background-file': 'sample.png',
 			'object-background-mime': 'image/png' }, 'A');
@@ -214,8 +216,49 @@ test('removing it takes the image off the object', async ({ page, hg }) => {
 	await bgBtn(page).click();
 	await expect(pop(page)).toBeVisible();
 
-	await pop(page).locator('.glue-popover-reset').click();
+	await pop(page).locator('.glue-popover-delete').click();
 	await expect(pop(page)).toHaveCount(0);
 	await expect.poll(() => attrs(hg)['object-background-file']).toBe(undefined);
 	expect(await cssOf(page, a, 'backgroundImage')).toBe('none');
 });
+
+test('reset puts tiling, scale and move back to defaults, keeping the image',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'object-background-file': 'sample.png',
+				'object-background-mime': 'image/png',
+				'object-background-repeat': 'repeat',
+				'object-background-position': '30px 20px',
+				'object-background-scale': '150' }, 'A');
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		// the panel is in the non-default state it was given
+		await expect(pop(page).locator('.glue-background-repeat'))
+			.toHaveClass(/glue-font-toggle-on/);
+
+		await pop(page).locator('.glue-popover-reset').click();
+		// only the delete button takes the image off; the panel stays open
+		await expect(pop(page)).toBeVisible();
+		await expect.poll(() => attrs(hg)['object-background-file']).toBe('sample.png');
+		expect(await cssOf(page, a, 'backgroundImage')).toContain('url(');
+		// tiling, scale and move are back to their defaults: no-repeat (the
+		// renderer's own default when the attribute is absent), the natural
+		// size, and the corner
+		await expect.poll(() => attrs(hg)['object-background-repeat'])
+			.toBe('no-repeat');
+		await expect.poll(() => attrs(hg)['object-background-position']).toBe(undefined);
+		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
+		expect(await cssOf(page, a, 'backgroundRepeat')).toBe('no-repeat');
+		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
+		// and the panel shows the defaults again
+		await expect(pop(page).locator('.glue-background-repeat'))
+			.not.toHaveClass(/glue-font-toggle-on/);
+		await expect(pop(page).locator('.glue-popover-field')).toHaveValue('100');
+	});

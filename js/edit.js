@@ -444,6 +444,17 @@ $.glue.popover = function()
 			b.addEventListener('click', fn);
 			return b;
 		},
+		// The destructive sibling of reset: same small frame, in the colour
+		// of the panel's problem notes, for the control that removes what
+		// the panel acts on rather than resetting it.
+		delete: function(title, fn) {
+			var b = document.createElement('div');
+			b.className = 'glue-popover-delete';
+			b.textContent = 'delete';
+			b.title = title;
+			b.addEventListener('click', fn);
+			return b;
+		},
 		// one row of a popover: a label and whatever control it names
 		row: function(label) {
 			var row = document.createElement('div');

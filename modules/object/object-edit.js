@@ -968,8 +968,8 @@ function object_adjust_popover(obj)
 // of them needs a panel. With no image on the object, the button IS the file
 // input - the browser's own picker, no dialog of ours in front of it. With an
 // image already there, the input is switched off and the button opens a panel
-// for the two things you can then do to it: tile it or not, and move it
-// around.
+// for what you can then do to it: tile it, move it, scale it - and, in the
+// footer, reset it to a fresh state or delete it.
 //
 // The image belongs to the object rather than to the page: it uploads with
 // preferred_module 'object' and the object's name, which object_upload() in
@@ -1081,9 +1081,9 @@ function object_background_popover(obj)
 	});
 	pop.appendChild(scale_row.row);
 
-	// --- take it off ------------------------------------------------------
+	// --- take it off, or put it back --------------------------------------
 	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset('remove the background image', function() {
+	footer.appendChild($.glue.popover.delete('remove the background image', function() {
 		obj.style.backgroundImage = '';
 		obj.style.backgroundRepeat = '';
 		obj.style.backgroundPosition = '';
@@ -1093,6 +1093,18 @@ function object_background_popover(obj)
 		// the file itself is dropped by the object no longer naming it
 		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id,
 			attr: 'object-background-file' });
+	}));
+	footer.appendChild($.glue.popover.reset('reset tiling, scale and position to their defaults', function() {
+		// no-repeat is the default tiling - the state a fresh upload leaves,
+		// and the one the renderer fills in when the attribute is absent;
+		// clearing the style to '' would tile the image live until the next
+		// load
+		obj.style.backgroundRepeat = 'no-repeat';
+		obj.style.backgroundPosition = '';
+		obj.style.backgroundSize = '';
+		sync_repeat();
+		scale_row.set(100);
+		save();
 	}));
 	pop.appendChild(footer);
 
