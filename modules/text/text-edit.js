@@ -245,6 +245,32 @@ $.glue.text = function()
 					br.replaceWith(document.createTextNode('\n'));
 				}
 			});
+			// Scaffolding a run-formatting toggle leaves behind: an empty
+			// <b>/<i>/<u>/<s>, or a font-size <span> whose only content was the
+			// zero-width caret pad. Remove them so an abandoned toggle does not
+			// persist as markup. "Empty" means no element children and no text
+			// but zero-width spaces - a span holding just a newline is content
+			// and stays. b/i/u/s need the no-attribute rule so an authored
+			// <b class="x"> survives; an empty span renders nothing whatever
+			// its style says, so it is removed either way.
+			clone.querySelectorAll('b, i, u, s, span').forEach(function(el) {
+				var scaffold = true;
+				for (var i = 0; i < el.childNodes.length; i++) {
+					var n = el.childNodes[i];
+					if (n.nodeType == 3) {
+						if (n.data.replace(/\u200b/g, '') !== '') {
+							scaffold = false;
+							break;
+						}
+					} else {
+						scaffold = false;
+						break;
+					}
+				}
+				if (scaffold && (el.tagName == 'SPAN' || !el.hasAttributes())) {
+					el.remove();
+				}
+			});
 			var out = clone.innerHTML;
 			// &nbsp; round-trips as the character it was
 			out = out.replace(/&nbsp;/g, '\xa0');
@@ -299,6 +325,10 @@ $.glue.text = function()
 			return s;
 		},
 		stop_editing: function(elem) {
+			// the run-formatting strip only exists while editing; hide it before
+			// the surfaces swap, so the render.innerHTML below cannot trigger a
+			// reposition against stale state
+			text_strip_hide();
 			var input = elem.querySelector(':scope > .glue-text-input');
 			var render = elem.querySelector(':scope > .glue-text-render');
 			// in WYSIWYG mode the div is where the edits are, so read the
@@ -521,6 +551,7 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 
 	if (self.classList.contains('glue-text-source')) {
 		// source mode: the textarea, as before
+		text_strip_hide();
 		input.style.display = 'block';
 		render.style.display = 'none';
 		input.focus();
@@ -540,6 +571,8 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 	render.style.display = 'block';
 	input.style.display = 'none';
 	render.focus();
+	// the run-formatting strip docks to the object while it is edited
+	text_strip_show(self);
 });
 
 // --- "make link" for a selection inside a text object ---------------------
@@ -813,6 +846,723 @@ function text_link_dialog_dom(obj, render) {
 	});
 }
 
+// --- run formatting strip --------------------------------------------------
+//
+// B/I/U/S, a colour button, a font-face dropdown and an arbitrary-px size for
+// a SELECTED RUN of text, while the object is edited WYSIWYG. The strip docks
+// to the object's bottom edge, is a singleton (one object edits at a time),
+// and is hidden in source mode - the textarea is where raw markup is typed,
+// and this is the surface that puts it there for you.
+//
+// Storage is semantic: toggling wraps the selection in <b>/<i>/<u>/<s>, the
+// colour, size and face controls wrap it in a <span> carrying the matching
+// inline style, and all three share one span per run rather than nesting. The
+// render pipeline passes any well-formed tag through byte-for-byte
+// (html_encode_str_smart), so no server code knows or cares that these tags
+// exist - the browser renders them, on this page and on the published one.
+//
+// The range work is done by hand, the way text_link_dialog_dom does it: no
+// execCommand anywhere. Every op re-installs an explicit range afterwards,
+// because focus drifts to the strip on click and engines differ in what
+// caret they put back. Selection state is kept in text_strip_range (updated
+// on selectionchange) so the size field and face dropdown can still act
+// after focus moved.
+
+var text_strip = null;             // singleton element, created lazily, appended to body
+var text_strip_obj = null;         // the .text object the strip belongs to
+var text_strip_render = null;      // its .glue-text-render
+var text_strip_range = null;       // last known selection inside the render (cloneRange)
+var text_strip_snapshot = null;    // range the size field and face dropdown act on
+var text_strip_btns = {};          // { b, i, u, s } -> button element
+var text_strip_size_field = null;  // the number input
+var text_strip_size_slider = null; // the size slider it rides next to
+var text_strip_face = null;        // the face dropdown
+
+function text_strip_build() {
+	var strip = document.createElement('div');
+	strip.className = 'glue-text-strip glue-ui';
+	strip.style.display = 'none';
+	var row1 = document.createElement('div');
+	row1.className = 'glue-text-strip-row';
+	strip.appendChild(row1);
+	[
+		['b', 'font-style-bold', 'bold the selected text'],
+		['i', 'font-style-italic', 'italic the selected text'],
+		['u', 'font-style-underline', 'underline the selected text'],
+		['s', 'font-style-strikeout', 'strikethrough the selected text']
+	].forEach(function(t) {
+		var b = $.glue.icon(t[1], t[2]);
+		b.style.width = '26px';                       // precedent: the align buttons below
+		b.style.height = '26px';
+		b.dataset.fmt = t[0];
+		b.addEventListener('click', function() {
+			if (text_strip_render) {
+				text_strip_toggle(text_strip_render, t[0]);
+			}
+		});
+		text_strip_btns[t[0]] = b;
+		row1.appendChild(b);
+	});
+	// --- colour button -----------------------------------------------------
+	// The picker the font popover's colour row uses, but for the selection:
+	// it wraps the run in a color span (or joins the styled span it is in),
+	// and opens showing the run's own colour. The picker takes focus, which
+	// collapses the selection - so the range is snapshotted on mousedown,
+	// before the click opens anything, like the size field and face dropdown.
+	var color_btn = $.glue.popover.color_button('color of the selected text',
+		text_strip_run_color,
+		function(col) {
+			if (text_strip_render) {
+				text_strip_apply_color(text_strip_render, col);
+			}
+		},
+		function(col) {
+			// commit: put the caret back where the formatting is
+			if (text_strip_render && text_strip_snapshot) {
+				text_strip_restore(text_strip_render, text_strip_snapshot);
+			}
+		});
+	color_btn.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	row1.appendChild(color_btn);
+	// --- face dropdown ---------------------------------------------------
+	// The same face list the font popover offers, but for the selection: the
+	// pick wraps the run in a font-family span (or joins the size span it is
+	// already in, so the two live on one span instead of nesting one per
+	// pick), and "default" unwraps it back to whatever the object inherits.
+	var faces = [];
+	var woff_faces = [];
+	$.glue.text.get_fonts(faces, woff_faces);
+	var face = document.createElement('select');
+	face.className = 'glue-text-face';
+	face.title = 'font family of the selection';
+	var def = document.createElement('option');
+	def.value = '';
+	def.textContent = 'default';
+	face.appendChild(def);
+	var uploaded = [];
+	var installed = [];
+	faces.forEach(function(f) {
+		(woff_faces.indexOf(f) == -1 ? installed : uploaded).push(f);
+	});
+	[['your fonts', uploaded], ['fonts', installed]].forEach(function(g) {
+		if (!g[1].length) {
+			return;
+		}
+		var group = document.createElement('optgroup');
+		group.label = g[0];
+		g[1].forEach(function(f) {
+			var o = document.createElement('option');
+			o.value = f;
+			o.style.fontFamily = f;
+			o.textContent = f.replace(/["\']/g, '');
+			group.appendChild(o);
+		});
+		face.appendChild(group);
+	});
+	// same snapshot-on-mousedown discipline as the size field
+	face.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	face.addEventListener('focus', function() {
+		if (!text_strip_snapshot) {
+			text_strip_snapshot = text_strip_range_for();
+		}
+	});
+	face.addEventListener('change', function() {
+		if (!text_strip_render) {
+			return;
+		}
+		// a pick can reach change without the mousedown that snapshots the
+		// selection: the keyboard path in a real browser, or selectOption in
+		// a test - fall back to the last-known selection (the cache is kept
+		// current by the document selectionchange listener)
+		if (!text_strip_snapshot) {
+			text_strip_snapshot = text_strip_range_for();
+		}
+		text_strip_apply_face(text_strip_render, this.value);
+		// commit: put the caret back where the formatting is
+		if (text_strip_snapshot) {
+			text_strip_restore(text_strip_render, text_strip_snapshot);
+		}
+	});
+	row1.appendChild(face);
+	text_strip_face = face;
+
+	// --- row 2: size slider + manual entry ---------------------------------
+	// The slider is a quick tool (8-100px, like the font popover's); the
+	// field is the precise one, and can say values the slider cannot. Both
+	// act on the same snapshot, taken on mousedown before either steals
+	// focus, and both commit the way the popover's row does: live on input,
+	// caret restored where the formatting is on change.
+	var row2 = document.createElement('div');
+	row2.className = 'glue-text-strip-row';
+	var slider = document.createElement('input');
+	slider.type = 'range';
+	slider.className = 'glue-popover-slider glue-text-size-slider';
+	slider.min = 8;
+	slider.max = 100;
+	slider.step = 1;
+	slider.value = 18;
+	slider.title = 'font size of the selection, in px';
+	slider.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	slider.addEventListener('input', function() {
+		if (!text_strip_snapshot) {
+			text_strip_snapshot = text_strip_range_for();
+		}
+		field.value = this.value;                    // the manual entry follows
+		if (!text_strip_render) {
+			return;
+		}
+		text_strip_apply_size(text_strip_render, parseInt(this.value, 10));
+	});
+	slider.addEventListener('change', function() {
+		// commit: put the caret back where the formatting is
+		if (text_strip_render && text_strip_snapshot) {
+			text_strip_restore(text_strip_render, text_strip_snapshot);
+		}
+	});
+	row2.appendChild(slider);
+	text_strip_size_slider = slider;
+	strip.appendChild(row2);
+	var field = document.createElement('input');
+	field.type = 'number';
+	field.className = 'glue-popover-field glue-text-size';
+	field.step = 1;
+	field.min = 1;
+	field.title = 'font size of the selection, in px';
+	// snapshot BEFORE the focus change: mousedown sees the live selection
+	// intact, focus arrives after the browser collapsed it
+	field.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	field.addEventListener('focus', function() {
+		// fallback for programmatic focus (selection may already have collapsed)
+		if (!text_strip_snapshot) {
+			text_strip_snapshot = text_strip_range_for();
+		}
+	});
+	field.addEventListener('input', function() {
+		if (!text_strip_render) {
+			return;
+		}
+		if (this.value === '') {
+			text_strip_apply_size(text_strip_render, null);   // clear
+			return;
+		}
+		var v = parseInt(this.value, 10);
+		if (isNaN(v) || v < 1) {
+			return;
+		}
+		// the slider follows the typed value, clamped to its own range
+		text_strip_size_slider.value = Math.max(8, Math.min(100, v));
+		text_strip_apply_size(text_strip_render, v);          // live, no focus steal
+	});
+	field.addEventListener('change', function() {
+		// commit: put the caret back where the formatting is
+		if (text_strip_render && text_strip_snapshot) {
+			text_strip_restore(text_strip_render, text_strip_snapshot);
+		}
+	});
+	field.addEventListener('keydown', function(e) {
+		if (e.key == 'Escape') {
+			e.preventDefault();
+			if (text_strip_render) {
+				text_strip_render.focus(); // abort the field, stay in editing
+			}
+		}
+		// no stopPropagation: the editor's global keydown ignores fields
+		// (typing_in_a_field, edit.js) and Escape here must not stop editing
+	});
+	row2.appendChild(field);
+	var unit = document.createElement('div');
+	unit.className = 'glue-popover-unit';
+	unit.textContent = 'px';
+	row2.appendChild(unit);
+	// Moveable hears touch on the body container and would drag the object;
+	// its chrome exemption list does not know this element.
+	strip.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+	document.body.appendChild(strip);
+	text_strip = strip;
+}
+
+// live selection if it is inside the render, else the cached last-known
+// selection, validated against the live DOM
+function text_strip_range_for() {
+	var render = text_strip_render;
+	if (!render) {
+		return null;
+	}
+	var sel = window.getSelection();
+	if (sel && sel.rangeCount) {
+		var r = sel.getRangeAt(0);
+		if (render.contains(r.startContainer) && render.contains(r.endContainer)) {
+			text_strip_range = r.cloneRange();
+			return r.cloneRange();
+		}
+	}
+	if (text_strip_range && render.contains(text_strip_range.startContainer) &&
+		render.contains(text_strip_range.endContainer)) {
+		return text_strip_range.cloneRange();
+	}
+	return null;
+}
+
+// focus the render if needed, then install the range as THE selection and as
+// the cache (so the size field can act on the result of a toggle later)
+function text_strip_restore(render, r) {
+	if (document.activeElement !== render) {
+		render.focus();
+	}
+	var sel = window.getSelection();
+	sel.removeAllRanges();
+	sel.addRange(r);
+	text_strip_range = r.cloneRange();
+}
+
+// unwrap an element and keep a range that described its contents valid.
+// Endpoints on el itself are remapped to their parent-index positions; text
+// node endpoints survive because replaceWith(...el.childNodes) moves the
+// SAME node objects (no merging happens in DOM API operations).
+function text_strip_unwrap(render, el, range) {
+	var parent = el.parentNode;
+	var idx = Array.prototype.indexOf.call(parent.childNodes, el);
+	var before = range.cloneRange();
+	var remap = function(node, off) {
+		return (node === el) ? { node: parent, off: idx + off } : { node: node, off: off };
+	};
+	el.replaceWith(...el.childNodes);
+	var s = remap(before.startContainer, before.startOffset);
+	var e = remap(before.endContainer, before.endOffset);
+	var r2 = document.createRange();
+	r2.setStart(s.node, s.off);
+	r2.setEnd(e.node, e.off);
+	if (before.collapsed) {
+		r2.collapse(true);
+	}
+	text_strip_restore(render, r2);
+}
+
+function text_strip_toggle(render, tag) {
+	var range = text_strip_range_for();
+	if (!range) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inner = el && el.closest ? el.closest(tag) : null;
+	if (inner && !render.contains(inner)) {
+		inner = null;
+	}
+	var covers = function(e) {
+		if (range.startContainer === e && range.startOffset === 0 &&
+			range.endContainer === e && range.endOffset === e.childNodes.length) {
+			return true;
+		}
+		return range.toString() === e.textContent && e.textContent !== '';
+	};
+	// toggle OFF: only attribute-less elements are unwrapped, so an authored
+	// <b class="x"> is never destroyed behind the author's back
+	if (inner && !inner.hasAttributes()) {
+		if (!range.collapsed && covers(inner)) {
+			text_strip_unwrap(render, inner, range);
+			return;
+		}
+		if (range.collapsed) {
+			// caret inside a run (our scaffold or an authored bare tag);
+			// an abandoned scaffold drops its pad with it, caret remapped
+			text_strip_unwrap(render, inner, range);
+			return;
+		}
+	}
+	// toggle ON
+	if (!range.collapsed) {
+		var frag = range.extractContents();
+		// a nested same tag is redundant; drop attribute-less ones only
+		frag.querySelectorAll(tag).forEach(function(n) {
+			if (!n.hasAttributes()) {
+				n.replaceWith(...n.childNodes);
+			}
+		});
+		var w = document.createElement(tag);
+		w.appendChild(frag);
+		range.insertNode(w);
+		var r2 = document.createRange();
+		r2.selectNodeContents(w);
+		text_strip_restore(render, r2);
+	} else {
+		// collapsed: empty scaffold with a ZWSP pad so the caret is visible
+		// and typing lands inside the tag (the Enter handler's pad trick)
+		var w = document.createElement(tag);
+		w.appendChild(document.createTextNode('​'));
+		range.insertNode(w);
+		var r2 = document.createRange();
+		// aim PAST the pad text node: Chromium pulls a caret at offset 0 of
+		// an inline element's first text child out of the element on the next
+		// keystroke, and the typed text would land outside the tag - after
+		// the pad it stays inside, and the pad strips out at save time
+		r2.setStart(w.firstChild, 1);
+		r2.collapse(true);
+		text_strip_restore(render, r2);
+	}
+}
+
+// px: number -> apply; null -> clear (unwraps font-size spans fully inside
+// the selection). Works on text_strip_snapshot. After wrapping, the
+// snapshot is re-aimed at the wrapper, so consecutive keystrokes update the
+// SAME span live instead of nesting a span per digit.
+function text_strip_apply_size(render, px) {
+	var range = text_strip_snapshot;
+	if (!range || !render.contains(range.commonAncestorContainer)) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inner = el && el.closest ? el.closest('span') : null;
+	if (inner && !render.contains(inner)) {
+		inner = null;
+	}
+	var covering = text_strip_span_styled(inner) &&
+		range.toString() === inner.textContent && inner.textContent !== '';
+	if (px === null) {
+		if (!range.collapsed) {
+			if (covering) {
+				// the whole run is the one styled span: drop only the size
+				// from it - a face or colour on the same span stays
+				inner.style.fontSize = '';
+				if (!inner.getAttribute('style')) {
+					// nothing left but the tag itself: unwrap it
+					inner.replaceWith(...inner.childNodes);
+				}
+			} else {
+				var frag = range.extractContents();
+				var changed = false;
+				frag.querySelectorAll('span').forEach(function(sp) {
+					if (sp.style.fontSize) {
+						sp.replaceWith(...sp.childNodes);
+						changed = true;
+					}
+				});
+				if (changed) {
+					range.insertNode(frag);
+				}
+			}
+		}
+		return;   // collapsed: nothing (no span around the caret to remove)
+	}
+	if (!range.collapsed && covering) {
+		inner.style.fontSize = px + 'px';        // live update, no nesting
+		return;
+	}
+	if (range.collapsed && text_strip_span_styled(inner)) {
+		inner.style.fontSize = px + 'px';        // typing digits: update the scaffold
+		return;
+	}
+	var sp = document.createElement('span');
+	sp.style.fontSize = px + 'px';
+	if (!range.collapsed) {
+		sp.appendChild(range.extractContents());
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			r.selectNodeContents(sp);
+			return r;
+		})();
+	} else {
+		sp.appendChild(document.createTextNode('​'));
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			// aim past the pad text node, not at its start - see the
+			// toggle scaffold for why
+			r.setStart(sp.firstChild, 1);
+			r.collapse(true);
+			return r;
+		})();
+	}
+}
+
+// is a span carrying a run-level style (any of the three the strip applies)?
+// All three applies share this test, so a run styled by one control and then
+// touched by another stays on a SINGLE span instead of nesting one per pick.
+function text_strip_span_styled(inner) {
+	return inner && (inner.style.color || inner.style.fontSize || inner.style.fontFamily);
+}
+
+// face: string -> apply; '' -> clear (unwraps font-family spans fully inside
+// the selection). A run already in a styled span gets the face ADDED to that
+// span rather than wrapped in a second one, so size and face stay on a single
+// span no matter which was picked first.
+function text_strip_apply_face(render, face) {
+	var range = text_strip_snapshot;
+	if (!range || !render.contains(range.commonAncestorContainer)) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inner = el && el.closest ? el.closest('span') : null;
+	if (inner && !render.contains(inner)) {
+		inner = null;
+	}
+	var covering = text_strip_span_styled(inner) &&
+		range.toString() === inner.textContent && inner.textContent !== '';
+	if (face === '') {
+		if (!range.collapsed) {
+			if (covering) {
+				// the whole run is the one styled span: drop only the face
+				// from it - a size or colour on the same span stays
+				inner.style.fontFamily = '';
+				if (!inner.getAttribute('style')) {
+					// nothing left but the tag itself: unwrap it
+					inner.replaceWith(...inner.childNodes);
+				}
+			} else {
+				var frag = range.extractContents();
+				var changed = false;
+				frag.querySelectorAll('span').forEach(function(sp) {
+					if (sp.style.fontFamily) {
+						sp.replaceWith(...sp.childNodes);
+						changed = true;
+					}
+				});
+				if (changed) {
+					range.insertNode(frag);
+				}
+			}
+		}
+		return;   // collapsed: nothing (no span around the caret to clear)
+	}
+	if (covering) {
+		inner.style.fontFamily = face;              // join the styled span
+		return;
+	}
+	if (range.collapsed && text_strip_span_styled(inner)) {
+		inner.style.fontFamily = face;              // typing in a styled run
+		return;
+	}
+	var sp = document.createElement('span');
+	sp.style.fontFamily = face;
+	if (!range.collapsed) {
+		sp.appendChild(range.extractContents());
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			r.selectNodeContents(sp);
+			return r;
+		})();
+	} else {
+		sp.appendChild(document.createTextNode('​'));
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			// aim past the pad text node, not at its start - see the
+			// toggle scaffold for why
+			r.setStart(sp.firstChild, 1);
+			r.collapse(true);
+			return r;
+		})();
+	}
+}
+
+// the colour the picker should open showing: the run's explicit span colour
+// if it has one, else the text colour the run inherits
+function text_strip_run_color() {
+	var render = text_strip_render;
+	var sel = window.getSelection();
+	var node = sel && sel.rangeCount ? sel.anchorNode : null;
+	if (node && render.contains(node)) {
+		var el = (node.nodeType == 3) ? node.parentElement : node;
+		for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
+			if (cur.tagName == 'SPAN' && cur.style.color) {
+				return cur.style.color;
+			}
+		}
+	}
+	return getComputedStyle(render).color;
+}
+
+// col: string -> apply. Same join-a-styled-span behaviour as size and face.
+function text_strip_apply_color(render, col) {
+	var range = text_strip_snapshot;
+	if (!range || !render.contains(range.commonAncestorContainer)) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inner = el && el.closest ? el.closest('span') : null;
+	if (inner && !render.contains(inner)) {
+		inner = null;
+	}
+	var covering = text_strip_span_styled(inner) &&
+		range.toString() === inner.textContent && inner.textContent !== '';
+	if (covering) {
+		inner.style.color = col;                    // join the styled span
+		return;
+	}
+	if (range.collapsed && text_strip_span_styled(inner)) {
+		inner.style.color = col;                    // typing in a styled run
+		return;
+	}
+	var sp = document.createElement('span');
+	sp.style.color = col;
+	if (!range.collapsed) {
+		sp.appendChild(range.extractContents());
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			r.selectNodeContents(sp);
+			return r;
+		})();
+	} else {
+		sp.appendChild(document.createTextNode('​'));
+		range.insertNode(sp);
+		text_strip_snapshot = (function() {
+			var r = document.createRange();
+			// aim past the pad text node, not at its start - see the
+			// toggle scaffold for why
+			r.setStart(sp.firstChild, 1);
+			r.collapse(true);
+			return r;
+		})();
+	}
+}
+
+function text_strip_hide() {
+	if (text_strip) {
+		text_strip.style.display = 'none';
+	}
+	text_strip_obj = null;
+	text_strip_render = null;
+	text_strip_range = null;
+	text_strip_snapshot = null;
+}
+
+function text_strip_position() {
+	var obj = text_strip_obj;
+	var r = obj.getBoundingClientRect();
+	var vv = window.visualViewport;
+	var min_x = vv ? vv.offsetLeft : 0;
+	var min_y = vv ? vv.offsetTop : 0;
+	var vw = vv ? vv.width : document.documentElement.clientWidth;
+	var vh = vv ? vv.height : document.documentElement.clientHeight;
+	var GAP = 12;                                 // clears the 14px south resize handle
+	var x = Math.max(min_x + window.scrollX,
+		Math.min(min_x + window.scrollX + vw - text_strip.offsetWidth,
+			r.left + window.scrollX));
+	var y = r.bottom + window.scrollY + GAP;
+	if (y + text_strip.offsetHeight > min_y + window.scrollY + vh) {
+		// below does not fit: above, clearing the context menu's top row
+		y = r.top + window.scrollY - GAP - text_strip.offsetHeight;
+		var top_row = document.querySelector('.glue-contextmenu-top');
+		if (top_row) {
+			var tr = top_row.getBoundingClientRect();
+			if (tr.height) {
+				y = Math.min(y, tr.top + window.scrollY - GAP - text_strip.offsetHeight);
+			}
+		}
+		if (y < min_y + window.scrollY) {
+			y = min_y + window.scrollY;
+		}
+	}
+	text_strip.style.left = x + 'px';
+	text_strip.style.top = y + 'px';
+}
+
+// toggles reflect the run's EXPLICIT tags only. The walk stops at the render
+// div, so object-level inline styles (a bold OBJECT) live outside it and can
+// never light a toggle - computed styles are not consulted at all.
+function text_strip_sync_state() {
+	var render = text_strip_render;
+	var sel = window.getSelection();
+	var node = sel && sel.rangeCount ? sel.anchorNode : null;
+	var state = { b: false, i: false, u: false, s: false, size: '', face: '' };
+	if (node && render.contains(node)) {
+		var el = (node.nodeType == 3) ? node.parentElement : node;
+		for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
+			var tag = cur.tagName;
+			if (!state.b && (tag == 'B' || tag == 'STRONG')) {
+				state.b = true;
+			}
+			if (!state.i && (tag == 'I' || tag == 'EM')) {
+				state.i = true;
+			}
+			if (!state.u && tag == 'U') {
+				state.u = true;
+			}
+			if (!state.s && (tag == 'S' || tag == 'STRIKE' || tag == 'DEL')) {
+				state.s = true;
+			}
+			if (!state.size && tag == 'SPAN' && cur.style.fontSize) {
+				state.size = parseInt(cur.style.fontSize, 10) || '';
+			}
+			if (!state.face && tag == 'SPAN' && cur.style.fontFamily) {
+				state.face = cur.style.fontFamily;
+			}
+		}
+	}
+	['b', 'i', 'u', 's'].forEach(function(k) {
+		text_strip_btns[k].classList.toggle('glue-btn-active', state[k]);
+	});
+	// never overwrite the controls while they are being interacted with
+	if (document.activeElement !== text_strip_size_field) {
+		text_strip_size_field.value = state.size;
+	}
+	if (document.activeElement !== text_strip_size_slider) {
+		// no explicit run size: the slider still points at the size the text
+		// is actually rendering at, so it is never pointing at nothing
+		var shown = parseInt(state.size || getComputedStyle(render).fontSize, 10) || 18;
+		text_strip_size_slider.value = Math.max(8, Math.min(100, shown));
+	}
+	if (document.activeElement !== text_strip_face) {
+		// a composite face (Verdana, Geneva, sans-serif) that is not one of
+		// the offered options leaves the dropdown at its default
+		text_strip_face.value = state.face;
+	}
+}
+
+function text_strip_show(obj) {
+	if (!text_strip) {
+		text_strip_build();
+	}
+	text_strip_obj = obj;
+	text_strip_render = obj.querySelector(':scope > .glue-text-render');
+	text_strip.style.display = '';
+	text_strip_position();                        // visible first, so offsetWidth is real
+	text_strip_sync_state();
+}
+
+// reposition + state follow every caret move and selection change; typing
+// keeps the caret moving, so this also covers "the object grew" cases, and
+// no scroll handler is needed (page-space absolute scrolls with the page).
+document.addEventListener('selectionchange', function() {
+	if (!text_strip_obj || text_strip.style.display == 'none') {
+		return;
+	}
+	var render = text_strip_render;
+	var sel = window.getSelection();
+	if (sel && sel.rangeCount) {
+		var r = sel.getRangeAt(0);
+		if (render.contains(r.startContainer) && render.contains(r.endContainer)) {
+			text_strip_range = r.cloneRange();
+		}
+	}
+	text_strip_position();
+	text_strip_sync_state();
+});
+
+// the object can be resized by Moveable's handles while editing (the render's
+// mousedown stopPropagation only blocks the object's own drag listener);
+// resizeEnd fires glue-resizestop on the object
+$.glue.live('.text', 'glue-resizestop', function(e) {
+	if (this === text_strip_obj && text_strip_obj &&
+		text_strip.style.display != 'none') {
+		text_strip_position();
+	}
+});
+
 //
 // --- font popover ----------------------------------------------------------
 //
@@ -821,12 +1571,9 @@ function text_link_dialog_dom(obj, render) {
 // change the size, and one that cycled bold -> italic -> both -> normal.
 //
 // SCOPE IS THE WHOLE OBJECT, like every other control in this menu: they all
-// read getComputedStyle(obj) and write obj.style.*. Nothing here styles a
-// selection - text objects are edited as raw HTML in a textarea, so there is
-// no execCommand to lean on, and per-selection styling would mean wrapping
-// ranges by hand the way the link dialog does. That is a much bigger job and
-// its own decision; until then the toggles are two-state, because with one
-// object there is no third, partial state to be in.
+// read getComputedStyle(obj) and write obj.style.*. Per-selection styling is
+// the run-formatting strip above; the toggles here are two-state, because
+// with one object there is no third, partial state to be in.
 //
 // The panel behaves like the colour picker: placed in the nearest free space
 // beside the object rather than over it, applied live so the judgement can be

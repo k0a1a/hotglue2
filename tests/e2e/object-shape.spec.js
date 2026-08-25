@@ -352,12 +352,13 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 			.toHaveText(['glow', 'glow inside', '2nd glow', 'shadow']);
 
 		// the pair labels take the base label width, not a wider one of
-		// their own: 63px is exactly as wide as the longest ("glow
-		// inside") needs, so nothing wraps
+		// their own: the 20px column the row labels share (the longest,
+		// "glow inside", overflows it rather than wrapping - the cells
+		// stay equal and the controls line up anyway)
 		const widths = await advanced(page).evaluate(() =>
 			[...document.querySelectorAll('.glue-popover-pair .glue-popover-label')]
 				.map((l) => getComputedStyle(l).width));
-		expect(widths).toEqual(['63px', '63px', '63px', '63px']);
+		expect(widths).toEqual(['20px', '20px', '20px', '20px']);
 
 		// the two rows line up as columns: each control's x matches the one
 		// directly below it

@@ -200,6 +200,59 @@
 	margin-left: auto;
 }
 
+/* --- run formatting strip ------------------------------------------------ */
+
+.glue-text-strip {
+	/* page-space toolbar docked below the text object while it is edited
+	   WYSIWYG (placed by text_strip_position() in text-edit.js). Two rows:
+	   the toggles, colour and face on the first, the size slider with its
+	   manual entry on the second. The panels' chrome - picker grey, hairline,
+	   soft shadow - and a z-index between the resize handles (300) and the
+	   popovers (450), css/edit.css. */
+	position: absolute;
+	z-index: 350;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 3px;
+	background: #f2f2f2;
+	box-shadow: 0 0 0 1px silver, 0 0 10px 1px rgba(0, 0, 0, 0.4);
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.glue-text-strip-row {
+	/* one line of the strip; the rows stretch to the strip's width, so the
+	   slider's flex:1 has real room to fill */
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.glue-text-strip .glue-btn-icon::before {
+	/* the icons are shrunk to 26px inline (like the align buttons), so the
+	   glyph comes down from 30 to match - the .glue-align-btn precedent */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
+.glue-text-size-slider {
+	/* the size slider on the strip's second row: the popover slider's look
+	   (square thumb included), flexing to fill the row beside the field */
+	width: 110px;
+	flex: 1 1 auto;
+}
+
+.glue-text-face {
+	/* the strip's face dropdown: the size field's 11px look, but a select
+	   needs room for the longest face name */
+	width: 110px;
+	flex: 0 0 auto;
+	font-size: 11px;
+	box-sizing: border-box;
+}
+
 .glue-font-note {
 	/* where the faces in the dropdown come from */
 	margin-top: 2px;

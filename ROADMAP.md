@@ -57,7 +57,10 @@ Checked against the tree on 2026-08-23.
   toggles have no partial state to read), `text-decoration` is stored nowhere at all (so
   underline/strikethrough are a storage change, not just a UI one), and there is no
   reusable popover component yet (the colour picker's placement would have to be lifted
-  out first).
+  out first). A fourth paragraph changed on 2026-08-24: run-level formatting for a
+  SELECTED run now exists as the editing strip (see Done) — the per-selection half;
+  the object-level controls still style the whole object, so the three-state read is
+  unchanged.
 
 - **SOW-object-shape.md** — *(BUILT; the doc records what it grew into.)* Rounded
   corners (ported from Superglue) and a new edge fadeout, scoped 2026-08-23 and built
@@ -259,6 +262,35 @@ from reading the code:
 - `$.glue.object.unregister()` left an object permanently undraggable.
 - Five places where centered mode's two coordinate spaces were mixed.
 
+Shipped 2026-08-24 — text, one run at a time:
+
+- **Run-level text formatting.** B/I/U/S, a colour, a font face, and an arbitrary-px
+  size (a slider and a manual-entry field) for a SELECTED RUN of text, while the
+  object is edited WYSIWYG — the first formatting that styles part of a text object
+  rather than all of it. No PHP touched: the strip writes semantic tags (`<b>/<i>/<u>/<s>`
+  and a `<span style="…">`) into the stored content, which the render path passes
+  through byte-for-byte. The strip is a page-space toolbar docked below the object,
+  flipping above it when there is no room, and selection-aware in the way that has
+  to be: every control snapshots the selection on mousedown, because the editor's
+  document-level mousedown guard is what keeps a range alive across clicks on a
+  `<div>` button, and programmatic focus would collapse it first (the face dropdown
+  also falls back to the last-known selection, since a pick can reach `change` with
+  no mousedown at all). Toggles nest innermost-last (`<i><u><s>`); size, face and
+  colour all join ONE span per run, whichever order they are picked in; a collapsed
+  caret gets a zero-width-pad scaffold so typing lands inside the tag, and abandoned
+  scaffolds are swept out of the source on the way back to storage. Hidden in source
+  mode, closed by Escape or a canvas click. 19 tests in `tests/e2e/text-formatting.spec.js`
+  on both engines, asserting the STORED bytes.
+- **Square handles everywhere.** The popover sliders' thumbs — padding, font, glow,
+  edges, opacity, the colour picker's alpha row — and the picker's round gradient
+  cursor are squares now, matching the editor's other handles instead of the
+  browsers' circles.
+- **The text menu's top row, in the requested order.** Change background, make
+  background transparent, font, padding, source, link — explicit priorities rather
+  than the registration order the six buttons shared.
+- **The e2e suite passed 500** — 537 passing on Chromium and Firefox, the
+  formatting spec's 19 tests included.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
@@ -273,7 +305,8 @@ from reading the code:
   single-tenant-per-user and could afford to be permissive (raw per-object HTML editing,
   for instance); a hotglue install can host many authors who do not trust each other, so
   dial that back — keep per-object code scoped to classes and attributes, with JS staying
-  in `/code`.
+  in `/code`. (One piece of it exists already: the run-formatting strip that docks to a
+  text object while it is edited WYSIWYG — 2026-08-24, see Done.)
 - **Icon set refresh** — *(in progress. The first batch of the SuperGlue SVG set landed
   2026-08-23; more are being produced over the coming weeks, ahead of hotglue.me being
   updated.)*
