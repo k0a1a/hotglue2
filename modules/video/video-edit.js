@@ -135,35 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	//
-	// "new" menu: explicit video upload button (video files can also be
-	// added via the generic upload button/drag-drop, this just makes the
-	// capability discoverable)
-	//
-	var upload_elem = document.createElement('div');
-	upload_elem.style.height = '32px';
-	upload_elem.style.maxHeight = '32px';
-	upload_elem.style.maxWidth = '32px';
-	upload_elem.style.overflow = 'hidden';
-	upload_elem.style.width = '32px';
-	var upload_img = document.createElement('img');
-	upload_img.src = $.glue.base_url+'modules/video/video.png';
-	upload_img.alt = 'btn';
-	upload_img.width = 32;
-	upload_img.height = 32;
-	upload_elem.appendChild(upload_img);
-	var upload = $.glue.upload.default_upload_handling();
-	upload.multiple = true;
-	upload.accept = 'video/*,.mp4,.webm,.ogv,.ogg,.h264,.mov';
-	upload.tooltip = 'upload a video';
-	$.glue.upload.button(upload_elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'video' }, upload);
-	upload_elem.addEventListener('click', function(e) {
-		var p = $.glue.menu.spawn_coords();
-		upload.x = p.x;
-		upload.y = p.y;
-	});
-	$.glue.menu.register('new', upload_elem, 11.5);
-
-	//
 	// turn video upload into an object
 	//
 	$.glue.live('.video', 'glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
