@@ -18,14 +18,16 @@ const SAMPLE = path.join(__dirname, 'fixtures', 'sample.png');
 
 async function uploadViaNewMenu(page, file) {
 	await page.keyboard.press('Alt+o');
-	const input = page.locator('div:has(img[src*="upload.png"]) input[type=file]').first();
+	// the button's artwork is now a mask icon (.glue-btn-icon); the input
+	// keeps the button's tooltip, so it is the handle to the button
+	const input = page.locator('input[title="upload a file"]').first();
 	await expect(input).toBeAttached();
 	// The button's own click handler is what records WHERE the upload should
 	// land ($.glue.menu.spawn_coords()), and the file input is a transparent
 	// overlay on top of it - so fire the button's click first, then hand the
 	// input its file. Driving the file chooser instead skips the handler.
 	await page.evaluate(() => {
-		document.querySelector('img[src*="upload.png"]').parentElement
+		document.querySelector('input[title="upload a file"]').parentElement
 			.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 	});
 	await input.setInputFiles(file);

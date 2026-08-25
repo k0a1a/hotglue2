@@ -3286,12 +3286,10 @@ $.glue.upload = function()
 		elem.style.maxWidth = '32px';
 		elem.style.overflow = 'hidden';
 		elem.style.width = '32px';
-		var uploadImg = document.createElement('img');
-		uploadImg.src = $.glue.base_url+'img/upload.png';
-		uploadImg.alt = 'btn';
-		uploadImg.width = 32;
-		uploadImg.height = 32;
-		elem.appendChild(uploadImg);
+		// the SVG icon set is white artwork and this chrome is light, so the
+		// button is a mask (.glue-btn-icon) and the colour comes from CSS;
+		// the tooltip rides on the file input, which covers the button
+		elem.appendChild($.glue.icon('upload'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);

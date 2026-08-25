@@ -54,12 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// register menu items
 	//
 	var elem;
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'img/download.png';
-	elem.alt = 'btn';
-	elem.title = 'download file';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('download', 'download file');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		// initite download
