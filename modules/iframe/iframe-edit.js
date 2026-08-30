@@ -48,12 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/iframe/iframe.png';
-	elem.alt = 'btn';
-	elem.title = 'embed another webpage';
-	elem.width = 32;
-	elem.height = 32;
+	var elem = $.glue.icon('embed-webpage', 'embed another webpage');
 	elem.addEventListener('click', function(e) {
 		var url = prompt('Enter the URL to show');
 		if (!url) {

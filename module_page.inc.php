@@ -246,6 +246,14 @@ function page_render_object($args)
 			html_css('background-image', 'url(?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
 		}
 	}
+	// background-image-repeat
+	if (!empty($obj['page-background-repeat'])) {
+		html_css('background-repeat', $obj['page-background-repeat']);
+	}
+	// background-image-size
+	if (!empty($obj['page-background-size'])) {
+		html_css('background-size', $obj['page-background-size']);
+	}
 	// background-image-position
 	if (!empty($obj['page-background-image-position'])) {
 		html_css('background-position', $obj['page-background-image-position']);

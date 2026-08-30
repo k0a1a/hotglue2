@@ -130,39 +130,53 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
 	//
-	var elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-title.png';
-	elem.alt = 'btn';
-	elem.title = 'change page title';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var title = document.title;
-		title = prompt('Change the page title', title);
-		if (title === null) {
+	//
+	// page settings: the page menu's page-level controls live here - title,
+	// url, start page, delete - opened from the one menu button. The panel
+	// opens anchored to the click, like the font popover.
+	//
+	var page_settings_popover = function() {
+		var pop = $.glue.popover.open(document.documentElement, 'glue-page-settings-popover');
+		if (!pop) {
 			return;
 		}
-		document.title = title;
-		$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-title': title });
-	});
-	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-url.png';
-	elem.alt = 'btn';
-	elem.title = "change the page's url";
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var old_pn = $.glue.page.split('.').shift();
-		var new_pn = prompt('Change the page URL', old_pn);
-		if (new_pn != null && new_pn != old_pn) {
+		// --- page title ---------------------------------------------------
+		var row = $.glue.popover.row('page title');
+		var title_field = document.createElement('input');
+		title_field.type = 'text';
+		title_field.className = 'glue-popover-field glue-page-title';
+		title_field.value = document.title;
+		title_field.title = 'the title shown in the browser tab and to search engines';
+		// commit on change (blur or Enter), not per keystroke: the title is
+		// an attribute of the page, not text being edited
+		title_field.addEventListener('change', function() {
+			var title = this.value.trim();
+			if (title === document.title) {
+				return;
+			}
+			document.title = title;
+			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-title': title });
+		});
+		row.appendChild(title_field);
+		pop.appendChild(row);
+
+		// --- page url -----------------------------------------------------
+		row = $.glue.popover.row('page url');
+		var url_field = document.createElement('input');
+		url_field.type = 'text';
+		url_field.className = 'glue-popover-field glue-page-url';
+		url_field.value = $.glue.page.split('.').shift();
+		url_field.title = 'the URL of this page';
+		url_field.addEventListener('change', function() {
+			var old_pn = $.glue.page.split('.').shift();
+			var new_pn = this.value.trim();
+			if (new_pn === old_pn) {
+				return;
+			}
 			// check if the current page is also the starting page
 			$.glue.backend({ method: 'glue.get_startpage' }, function(data) {
-				var is_startpage = false;
-				if (data == $.glue.page) {
-					is_startpage = true;
-				}
+				var is_startpage = (data == $.glue.page);
 				$.glue.backend({ method: 'glue.rename_page', 'old': old_pn, 'new': new_pn }, function(data) {
 					if (is_startpage) {
 						// change startpage accordingly
@@ -176,30 +190,65 @@ document.addEventListener('DOMContentLoaded', function() {
 					}
 				});
 			});
-		}
-		$.glue.menu.hide();
-	});
-	$.glue.menu.register('page', elem);
+		});
+		row.appendChild(url_field);
+		pop.appendChild(row);
 
-	// TODO (later): only display if not already the starting page
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-set-startpage.png';
-	elem.alt = 'btn';
-	elem.title = 'make this the start page';
-	elem.width = 32;
-	elem.height = 32;
+		// --- start page ---------------------------------------------------
+		row = $.glue.popover.row('start page');
+		var start_check = document.createElement('input');
+		start_check.type = 'checkbox';
+		start_check.title = 'make this the page visitors land on';
+		// sync with reality when the panel opens
+		$.glue.backend({ method: 'glue.get_startpage' }, function(data) {
+			start_check.checked = (data == $.glue.page);
+		});
+		start_check.addEventListener('change', function() {
+			// an empty value clears the startpage - get_startpage then
+			// falls back to the default page
+			$.glue.backend({ method: 'glue.set_startpage',
+				page: this.checked ? $.glue.page : '' });
+		});
+		row.appendChild(start_check);
+		pop.appendChild(row);
+
+		// --- delete page --------------------------------------------------
+		var footer = $.glue.popover.row(false);
+		footer.appendChild($.glue.popover.delete('delete this page and all its revisions', function() {
+			if (!confirm('Really delete the current page and all its revisions?')) {
+				return;
+			}
+			var pn = $.glue.page.split('.').shift();
+			var pages = [];
+			// get all revisions
+			$.glue.backend({ method: 'glue.revisions', pagename: pn }, function(data) {
+				for (var rev in data) {
+					pages.push(pn+'.'+data[rev]);
+				}
+				// and delete them
+				for (var page in pages) {
+					// DEBUG
+					//console.log('deleting '+pages[page]);
+					$.glue.backend({ method: 'glue.delete_page', 'page': pages[page] });
+				}
+				// TODO (later): check if all revisions were indeed deleted
+				// redirect to "pages" controller
+				window.location = $.glue.base_url+'?pages';
+			});
+		}));
+		pop.appendChild(footer);
+
+		$.glue.popover.show(pop);
+	};
+
+	var elem = $.glue.icon('page-title', 'page settings');
 	elem.addEventListener('click', function(e) {
-		$.glue.backend({ method: 'glue.set_startpage', page: $.glue.page });
 		$.glue.menu.hide();
+		page_settings_popover();
 	});
 	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'img/background-color.png';
-	elem.alt = 'btn';
-	elem.title = 'change the background color';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('color-swatch', 'change the background color');
 	elem.addEventListener('click', function(e) {
 		var bg = getComputedStyle(document.documentElement).backgroundImage;
 		if (bg.length != 0 && bg != 'none') {
@@ -229,12 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-new.png';
-	elem.alt = 'btn';
-	elem.title = 'create a new page';
-	elem.width = 32;
-	elem.height = 32;
+	elem = $.glue.icon('page-new', 'create a new page');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		var pn = prompt('Name the page to be created');
@@ -248,49 +292,154 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-delete.png';
-	elem.alt = 'btn';
-	elem.title = 'delete page';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		if (confirm('Really delete the current page and all it\'s revisions?')) {
-			var pn = $.glue.page.split('.').shift();
-			var pages = [];
-			// get all revisions
-			$.glue.backend({ method: 'glue.revisions', pagename: pn }, function(data) {
-				for (var rev in data) {
-					pages.push(pn+'.'+data[rev]);
-				}
-				// and delete them
-				for (var page in pages) {
-					// DEBUG
-					//console.log('deleting '+pages[page]);
-					$.glue.backend({ method: 'glue.delete_page', 'page': pages[page] });
-				}
-				// TODO (later): check if all revisions were indeed deleted
-				// redirect to "pages" controller
-				window.location = $.glue.base_url+'?pages';
-			});
+	//
+	// page background: the menu button uploads when there is no image (the
+	// button IS the file input, like the object background's), and opens a
+	// panel - the object background panel's twin - when there is one. The
+	// page stores its background as attrs on the page object
+	// (page-background-file/-mime from the upload, plus the repeat, position
+	// and size attrs below), which page_render_object() applies for visitors.
+	//
+	var page_bg_has = function() {
+		var bg = getComputedStyle(document.documentElement).backgroundImage;
+		return bg.length != 0 && bg != 'none';
+	};
+	var page_background_popover = function() {
+		var doc = document.documentElement;
+		var pop = $.glue.popover.open(doc, 'glue-background-popover');
+		if (!pop) {
+			return;
 		}
-		$.glue.menu.hide();
-	});
-	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.maxHeight = '32px';
-	elem.style.maxWidth = '32px';
-	elem.style.overflow = 'hidden';
-	elem.style.width = '32px';
-	var bgImg = document.createElement('img');
-	bgImg.src = $.glue.base_url+'modules/page/page-background-image.png';
-	bgImg.alt = 'btn';
-	bgImg.width = 32;
-	bgImg.height = 32;
-	elem.appendChild(bgImg);
-	var upload = {
+		// --- tile or not ---------------------------------------------------
+		var repeat_row = $.glue.popover.row('tile');
+		var repeat = document.createElement('div');
+		repeat.className = 'glue-font-toggle glue-background-repeat';
+		repeat.textContent = '\u25a6';
+		repeat.title = 'repeat the image across the page';
+		var sync_repeat = function() {
+			repeat.classList.toggle('glue-font-toggle-on',
+				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
+		};
+		repeat.addEventListener('click', function() {
+			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
+			doc.style.backgroundRepeat = tiled ? 'no-repeat' : 'repeat';
+			sync_repeat();
+			if (tiled) {
+				// absent means the browser default, which is repeat
+				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-repeat' });
+			} else {
+				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-repeat': 'no-repeat' });
+			}
+		});
+		sync_repeat();
+		repeat_row.appendChild(repeat);
+		pop.appendChild(repeat_row);
+
+		// --- move it around -------------------------------------------------
+		//
+		// The object panel's pad, and the same control that used to sit in
+		// the page menu on its own. A click with no drag puts the image back
+		// to the corner, dropping the attribute.
+		var move_row = $.glue.popover.row('move');
+		var pad = document.createElement('div');
+		pad.className = 'glue-background-pad';
+		pad.title = 'drag to move the image, click to put it back';
+		pad.textContent = '\u2725';
+		pad.style.touchAction = 'none';
+		pad.addEventListener('pointerdown', function(e) {
+			if (!e.isPrimary) {
+				return;
+			}
+			var start = getComputedStyle(doc).backgroundPosition.split(' ');
+			var from_x = parseInt(start[0]);
+			var from_y = parseInt(start[1]);
+			if (isNaN(from_x)) {
+				from_x = 0;
+			}
+			if (isNaN(from_y)) {
+				from_y = 0;
+			}
+			var moved = false;
+			$.glue.slider(e, function(x, y) {
+				doc.style.backgroundPosition = (from_x+x)+'px '+(from_y+y)+'px';
+				if (x != 0 || y != 0) {
+					moved = true;
+				}
+			}, function(x, y) {
+				if (!moved) {
+					// emptied rather than set to 0 0, so the page object drops
+					// the attribute
+					doc.style.backgroundPosition = '';
+					$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-image-position' });
+				} else {
+					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': getComputedStyle(doc).backgroundPosition });
+				}
+			});
+			e.preventDefault();
+		});
+		move_row.appendChild(pad);
+		pop.appendChild(move_row);
+
+		// --- size it ---------------------------------------------------------
+		//
+		// A percentage of the page's width, the height keeping the image's
+		// own ratio - the object panel's row. 100 is what the row shows when
+		// nothing is stored; it is not written until the scale is actually
+		// touched, and a zero clears the attribute again.
+		var scale_row = $.glue.popover.number_row('scale', {
+			min: 10, max: 300, step: 1, unit: '%',
+			value: parseFloat(doc.style.backgroundSize) || 100,
+			apply: function(pct, commit) {
+				if (!pct || pct < 0) {
+					doc.style.backgroundSize = '';
+					scale_row.set(0);
+				} else {
+					doc.style.backgroundSize = pct+'% auto';
+				}
+				if (commit) {
+					if (!pct || pct < 0) {
+						$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-size' });
+					} else {
+						$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-size': pct+'% auto' });
+					}
+				}
+			}
+		});
+		pop.appendChild(scale_row.row);
+
+		// --- take it off, or put it back --------------------------------------
+		var footer = $.glue.popover.row(false);
+		footer.appendChild($.glue.popover.delete('remove the background image', function() {
+			doc.style.backgroundImage = '';
+			doc.style.backgroundRepeat = '';
+			doc.style.backgroundPosition = '';
+			doc.style.backgroundSize = '';
+			$.glue.popover.close();
+			$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page }, function(data) {
+				// the file and its settings are gone with it
+				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
+					attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
+			});
+			// the menu button goes back to being a file picker
+			page_bg_sync(page_bg_button);
+		}));
+		footer.appendChild($.glue.popover.reset('reset tiling, position and scale to their defaults', function() {
+			doc.style.backgroundRepeat = '';
+			doc.style.backgroundPosition = '';
+			doc.style.backgroundSize = '';
+			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
+				attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
+		}));
+		pop.appendChild(footer);
+
+		$.glue.popover.show(pop);
+	};
+	// the menu button: upload when there is no image, the panel when there is
+	var page_bg_button = $.glue.icon('page-background-image', 'background image');
+	var page_bg_data = { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' };
+	$.glue.upload.button(page_bg_button, page_bg_data, {
+		tooltip: 'background image',
 		error: function(e) {
 			if (e && e.target && e.target.status) {
 				$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
@@ -311,11 +460,25 @@ document.addEventListener('DOMContentLoaded', function() {
 				document.documentElement.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
 			}
 			$.glue.menu.hide();
-		},
-		tooltip: 'upload a background image'
+			page_bg_sync(page_bg_button);
+		}
+	});
+	var page_bg_input = page_bg_button.querySelector('input[type=file]');
+	var page_bg_sync = function(button) {
+		var has = page_bg_has();
+		page_bg_input.style.display = has ? 'none' : '';
+		button.title = has ? 'background image: tile it, move it, remove it' : 'background image';
 	};
-	$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, upload);
-	$.glue.menu.register('page', elem);
+	page_bg_button.addEventListener('glue-menu-activate', function(e) {
+		page_bg_sync(this);
+	});
+	page_bg_button.addEventListener('click', function(e) {
+		if (page_bg_has()) {
+			page_background_popover();
+			e.stopPropagation();
+		}
+	});
+	$.glue.menu.register('page', page_bg_button);
 
 	elem = document.createElement('div');
 	elem.id = 'glue-menu-page-background-scroll';
@@ -327,68 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		'background is fixed - click to make it scroll with the page');
 	$.glue.menu.register('page', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-background-image-pos.png';
-	elem.alt = 'btn';
-	elem.title = 'adjust background image selection';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('glue-menu-activate', function(e) {
-		var toggleElem = document.getElementById('glue-menu-page-background-scroll');
-		var bg = getComputedStyle(document.documentElement).backgroundImage;
-		if (bg.length != 0 && bg != 'none') {
-			toggleElem.style.display = 'block';
-		} else {
-			toggleElem.style.display = 'none';
-		}
-	});
-	elem.style.touchAction = 'none';
-	elem.addEventListener('pointerdown', function(e) {
-		if (!e.isPrimary) {
-			return;
-		}
-		var a = getComputedStyle(document.documentElement).backgroundPosition.split(' ');
-		if (a.length != 2) {
-			var prev_x_pos = 0;
-			var prev_y_pos = 0;
-		} else {
-			// we assume px (or 0%..)
-			var prev_x_pos = parseInt(a[0]);
-			if (isNaN(prev_x_pos)) {
-				prev_x_pos = 0;
-			}
-			var prev_y_pos = parseInt(a[1]);
-			if (isNaN(prev_y_pos)) {
-				prev_y_pos = 0;
-			}
-		}
-		var no_change = true;
-		$.glue.slider(e, function(x, y) {
-			// background-position-{x,y} does not work in Firefox (but seems to be faster)
-			document.documentElement.style.backgroundPosition = (prev_x_pos+x)+'px '+(prev_y_pos+y)+'px';
-			if (x != 0 || y != 0) {
-				no_change = false;
-			}
-		}, function(x, y) {
-			// reset background position if there was no change at all
-			if (no_change) {
-				document.documentElement.style.backgroundPosition = '';
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-image-position' });
-			} else {
-				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': getComputedStyle(document.documentElement).backgroundPosition });
-			}
-		});
-		e.preventDefault();
-		return false;
-	});
-	$.glue.menu.register('page', elem);
-
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/page/page-grid.png';
-	elem.width = 32;
-	elem.height = 32;
-	// also change tilte below
-	elem.title = 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')';
+	elem = $.glue.icon('adjust-grid-size', 'show/hide grid or change grid size by dragging ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 	elem.style.touchAction = 'none';
 	elem.addEventListener('pointerdown', function(e) {
 		if (!e.isPrimary) {

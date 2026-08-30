@@ -85,12 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/webvideo/webvideo.png';
-	elem.alt = 'btn';
-	elem.title = 'embed a youtube or vimeo video';
-	elem.width = 32;
-	elem.height = 32;
+	var elem = $.glue.icon('embed-webvideo', 'embed a youtube or vimeo video');
 	elem.addEventListener('click', function(e) {
 		var url = prompt('Enter the video URL (e.g. http://www.youtube.com/watch?v=_mdVHEus0T8)');
 		if (!url) {

@@ -8,20 +8,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	// plain text glyph rather than a new binary icon asset, same convention
-	// as the undo/redo buttons in js/edit.js
-	var elem = document.createElement('div');
-	elem.style.alignItems = 'center';
-	elem.style.backgroundColor = '#eee';
-	elem.style.border = '1px solid #000';
-	elem.style.boxSizing = 'border-box';
-	elem.style.display = 'flex';
-	elem.style.fontSize = '20px';
-	elem.style.height = '32px';
-	elem.style.justifyContent = 'center';
-	elem.style.width = '32px';
-	elem.title = 'pages / site settings';
-	elem.textContent = '⚙';
+	var elem = $.glue.icon('site-settings', 'pages / site settings');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?pages';

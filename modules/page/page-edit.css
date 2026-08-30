@@ -28,3 +28,9 @@
 .glue-container-handle:hover {
 	border-left-color: #c00;
 }
+
+.glue-page-settings-popover input[type="text"] {
+	/* the title and url fields need more room than the panels' 44px number
+	   fields */
+	width: 170px;
+}
