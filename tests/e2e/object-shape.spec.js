@@ -351,14 +351,30 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 			.locator('.glue-popover-pair .glue-popover-label'))
 			.toHaveText(['glow', 'glow inside', '2nd glow', 'shadow']);
 
-		// the pair labels take the base label width, not a wider one of
-		// their own: the 20px column the row labels share (the longest,
-		// "glow inside", overflows it rather than wrapping - the cells
-		// stay equal and the controls line up anyway)
+		// the labels are content-sized - no fixed column width to squeeze
+		// the controls on the same row (the colorpicker's opacity slider
+		// was the victim). Prove it: each label's box is exactly as wide
+		// as its text (same font, padding and spacing in a probe span)
 		const widths = await advanced(page).evaluate(() =>
 			[...document.querySelectorAll('.glue-popover-pair .glue-popover-label')]
-				.map((l) => getComputedStyle(l).width));
-		expect(widths).toEqual(['20px', '20px', '20px', '20px']);
+				.map((l) => {
+					const cs = getComputedStyle(l);
+					const probe = document.createElement('span');
+					probe.style.cssText = [
+						`font: ${cs.font}`,
+						`padding-right: ${cs.paddingRight}`,
+						`letter-spacing: ${cs.letterSpacing}`,
+						`word-spacing: ${cs.wordSpacing}`,
+						'white-space: nowrap',
+						'display: inline-block',
+					].join(';');
+					probe.textContent = l.textContent;
+					document.body.appendChild(probe);
+					const d = l.offsetWidth - probe.offsetWidth;
+					probe.remove();
+					return d;
+				}));
+		expect(widths).toEqual([0, 0, 0, 0]);
 
 		// the two rows line up as columns: each control's x matches the one
 		// directly below it

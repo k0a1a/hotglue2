@@ -571,10 +571,10 @@
 
 
 .glue-popover-label {
-	/* The row labels line up, so the controls do too. The labels are
-	   short - "top", "left", "fade" - so a fixed narrow column keeps the
-	   sliders together. Anything longer overflows rather than wrapping. */
-	width: 20px;
+	/* Content-sized, NO fixed width: a width squeezes the control on the
+	   same row (the colorpicker's opacity slider shrinks to a nub) and
+	   every label is different anyway, so a column gains nothing. Keeps
+	   coming back — see git history, 48px -> 63px -> 60px. */
 	flex: 0 0 auto;
 	padding-right: 4px;
 	color: #666;
