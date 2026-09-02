@@ -10,9 +10,11 @@ service's own repo, not here, and are deliberately absent.
 Maintained as work lands: when something ships it moves to *Done*, and its task doc is
 updated to describe what was BUILT rather than what was planned — several of these
 designs changed materially once they met real pages, and a stale spec is worse than
-none. Last reconciled against the tree on 2026-08-23, that time by opening the code path
-behind every remaining item rather than by re-reading the list — which is how two of them
-turned out to be already built and a third to be half-built.
+none. Last reconciled against the tree on 2026-09-02, that time by walking every commit
+since the previous reconciliation and grepping the tree behind each icon and PNG claim —
+which is how the icon section's "still needs drawing" table turned out to have been stale
+by two features and one sweep that had already been undone, and a shipped SOW turned out
+never to have been listed here at all.
 
 ---
 
@@ -20,7 +22,7 @@ turned out to be already built and a third to be half-built.
 
 All of these have shipped, so each one now records what was BUILT — read them for the
 reasoning, not as a plan. One further design lives only in git history; see below.
-Checked against the tree on 2026-08-23.
+Checked against the tree on 2026-09-02.
 
 ### In this directory, and SHIPPED
 
@@ -45,22 +47,33 @@ Checked against the tree on 2026-08-23.
 - **SPIKE-centered-layout.md** — the exploration that preceded it. Kept because it
   records what was measured before anything was built, including two things the original
   plan got wrong.
+- **SOW-glow-shadow-effects.md** — *(BUILT; see the edge-panel Done entries.)* The glow,
+  its marble extras and the directional drop shadow, built 2026-08-23/24 as the edge
+  panel's "more knobs" fold. It shipped with the commit that first wrote it and was never
+  listed here — the file's own status line still said "to implement" until 2026-09-02;
+  corrected. Read it for the two-effects-stay-distinct design question, which the fold
+  kept to.
 
 ### In this directory, NOT yet built
 
-- **SOW-text-controls-redesign.md** — *(the Font and Spacing popovers are now BUILT;
-  the padding relocation is not.)* Collapse the text menu's eight formatting buttons
-  into Font and Spacing popovers plus a standalone Color button, and move padding out to
-  object properties. Reconciled against the tree on 2026-08-23: the paragraphs marked
+- **SOW-text-controls-redesign.md** — *(all three popovers — Font, Spacing, and since
+  2026-08-25 Padding — are BUILT; the padding relocation itself is not the one this SOW
+  planned, see below.)* Collapse the text menu's eight formatting buttons into Font and
+  Spacing popovers plus a standalone Color button, and move padding out to object
+  properties. Reconciled against the tree on 2026-08-23: the paragraphs marked
   **CHECKED** are what the code actually does, and three of them change the plan — the
   controls style the whole object rather than a selection (so the spec'd three-state
   toggles have no partial state to read), `text-decoration` is stored nowhere at all (so
   underline/strikethrough are a storage change, not just a UI one), and there is no
   reusable popover component yet (the colour picker's placement would have to be lifted
-  out first). A fourth paragraph changed on 2026-08-24: run-level formatting for a
-  SELECTED run now exists as the editing strip (see Done) — the per-selection half;
-  the object-level controls still style the whole object, so the three-state read is
-  unchanged.
+  out first — it was, that same night, as `$.glue.popover`). A fourth paragraph changed
+  on 2026-08-24: run-level formatting for a SELECTED run now exists as the editing strip
+  (see Done) — the per-selection half; the object-level controls still style the whole
+  object, so the three-state read is unchanged. The padding relocation shipped on
+  2026-08-25 as a popover off the text menu — a uniform row, per-side knobs in a fold,
+  a reset to the module's default — which is NOT the move into object properties this
+  SOW planned: the padding button still opens its panel from the menu, and Object
+  Properties has never hosted padding.
 
 - **SOW-object-shape.md** — *(BUILT; the doc records what it grew into.)* Rounded
   corners (ported from Superglue) and a new edge fadeout, scoped 2026-08-23 and built
@@ -291,6 +304,122 @@ Shipped 2026-08-24 — text, one run at a time:
 - **The e2e suite passed 500** — 537 passing on Chromium and Firefox, the
   formatting spec's 19 tests included.
 
+Shipped the night of 2026-08-24 and into the 25th, after the last entry — the icon set
+takes over the object's chrome, and the panels grow:
+
+- **The object-adjustment popout.** Flip, z-level and transparency fold three menu
+  buttons with hidden gestures into one panel. The gestures were: a flip that cycled
+  through four states, and z-level and transparency that were both drag-distance
+  sliders — drag right, drag further right. The popout trades the hidden gestures for
+  visible controls: flip becomes two independent toggles, so "flipped both ways" is a
+  state rather than a stop on the way back to none, and the z-level gets explicit
+  buttons (to the ends, or one level at a time — the single-level swaps save both
+  objects). The work surfaced a Moveable bug along the way: the onDragStart hand-back
+  the chrome relies on was shadowed by Moveable's internal event wiring, so it now
+  lives in the live dragStart listener, which is where it actually stops the event.
+- **Padding gets a panel.** The text menu's padding button used to be a drag-only
+  control with a click-to-reset; it opens a panel now: one uniform row (showing what a
+  drag would set all four sides to), per-side knobs in a "more knobs" fold, and a reset
+  that clears the inline padding so the module's CSS default shows again — with the
+  box compensated so nothing moves while you look. Sides clamp at half the shorter
+  dimension; the field may say more, the apply clamps.
+- **The text placeholders and PNG buttons of the object chrome became icons** through
+  the night: `clip` (its state is now the pressed-in frame — which is the answer to the
+  runtime-glyph-swap question the icon section used to raise), `delete`,
+  `shared-w-other-pages`, the edge buttons, the padlock `lock`, `object-props` (code
+  brackets) and `object-link` (the broken link), and the link glyph's frame redrawn to
+  hug the artwork. Icon buttons hover by their frame now, not by the glyph: pointer
+  cursor, a grey fill, and no red. (Download/upload and the new-text-object button
+  followed later on the 25th — see below.) The clone sheep's placeholders (`sheep-icon4`
+  and the earlier sheep) settled on `sheep-icon5`,
+  and **the sheep blinks**: a lid painted in the button's own fill drops over its eyes
+  via a `::after`, on a wandering 3–30s clock — the cycle is re-rolled on every
+  `animationiteration`, and each roll rewrites the keyframes' percentages too, so the
+  three fades stay a fixed half second while the pause between blinks wanders. The
+  colour picker settled at 180px wide.
+- **Editing text stopped showing the editor.** The WYSIWYG surface lost its focus
+  ring, border and shadow, and the dashed outline that used to frame it is gone —
+  when you edit text, the page shows the text.
+- A bug the suite caught, worth noting: **the colour picker's alpha slider snapped
+  back to opaque the moment a finger let go.** vanilla-picker swallows every click
+  inside its panel, and a range input commits on the track click or the end of a drag —
+  Chromium cancels that whole commit when the click's default is prevented. The alpha
+  row's clicks now stop before the library's handler sees them, the way the swatches'
+  clicks already did. Regression tests on both engines hold it.
+
+Shipped 2026-08-25 — the context menu's top row, and what a panel's footer can say:
+
+- **Object adjustments and background ride the top row.** The object-wide pair used to
+  sit at the bottom of the left column, far from the text items they follow in the
+  workflow. `register()` takes a fifth flag now — "opt out of the left column" — and the
+  pair registers with priorities 7/8, riding the top row right after the text items
+  (1–6). A placement test (top-row class, no left-column membership, row order) plus
+  the menu-geometry suites hold it: 148 tests green on both engines.
+- **The background panel's footer split in two.** One reset button used to do both
+  jobs. Now the footer holds two: a red **delete** that removes the image *and* the
+  file the object names, and a **reset** that keeps the image but puts tiling, scale
+  and position back to their defaults — no-repeat, the natural size, the corner. A new
+  parts-bin piece, `$.glue.popover.delete()`, the destructive sibling of reset, styled
+  in the colour of the panel's problem notes. 16 tests green on both engines; one pins
+  the reset semantics — the image survives, the three attributes drop or default, the
+  panel shows the defaults again.
+- **No "upload a video" in the new-object menu.** The dedicated button was only a
+  discoverability affordance — video files still upload through the generic upload
+  button and drag-drop, as the deleted comment itself noted — and the video module's
+  upload/encode pipeline is untouched. 62 tests green on both engines, min freshness
+  included.
+- **The remaining new-menu and module buttons converted too**: `download` and `upload`
+  (their artwork redrawn upstream as solid arrows with no tray, in the set's `extra/`
+  folder), the new-text-object button dropping its `<img src=…/text.png>` for
+  `text-object`, and the background button's glyph redrawn to the tile-image artwork
+  brought into its frame — so the menu shows what the panel does.
+
+Shipped 2026-08-30 — the page's own background catches up, and a morning's sweep proves
+the icon take-over was one commit away:
+
+- **Page background: tiling and size (panel + render).** The page-background panel
+  grows the tile and size rows, and `module_page.inc.php` now renders
+  `page-background-repeat` and `page-background-size` to the published page — written
+  only when set, per the absent-means-default convention, so no existing page changes.
+- **The new-object menu and page chrome converted in the same commit**: `embed-webpage`
+  (iframe), `embed-webvideo`, `site-code`, and `site-settings` — the last replacing a
+  hand-styled `⚙` text div — took mask buttons, every colour button across the panels
+  moved onto the one `color-swatch` glyph (retiring `color-quadrant`), and the image
+  module's three 2010-vintage context-menu buttons — tile, restore natural size, and
+  position-drag, still writing `-moz-background-size` — came off: what they did is the
+  background panel's job now, which any object gets. The module keeps its natural-size
+  bookkeeping on resize and its download button.
+- **Popover labels fit their text.** The fixed label column is gone — a width always
+  squeezes the control sharing the row (the colour picker's opacity slider shrank to a
+  nub), and every label is a different length anyway. The width kept coming back and
+  the rule now lives in a comment; the e2e assertion that used to expect the fixed
+  column now probes that each label is exactly as wide as its text.
+- **A sweep, a revert, and a reconciliation.** One commit swept the fifteen PNGs and
+  two icons it assumed the take-over had finished with — it had not: the page module
+  and the new-object menu still loaded them, and the icons deleted were still being
+  called. The PNGs were restored the same morning, and the icon directory was then
+  re-committed to what the editor actually loads — the missing drawings added
+  (`color-swatch`, the embed pair, the page/settings glyphs), four unused sheep frames
+  dropped. That afternoon the conversion commit above removed the last PNG references,
+  so the restored fifteen are orphans again: nothing in the tree loads them, and a
+  later sweep can finish what the first one started a few hours too early.
+
+Shipped 2026-09-01 — the rotate knob's own cursor, and no long-press magnifier on the
+control box:
+
+- The rotation handle is a Moveable control, and Moveable's default for it is
+  `cursor: alias`. It draws its own now — the classic rotate glyph, a white-outlined
+  ring with an arrowhead at the top, as an inline SVG data-URI with its hotspot at the
+  centre — alias kept as the fallback.
+- The round green arrow that appeared on click-and-hold was not ours at all: it is the
+  browser's long-press UI (Android's text-selection magnifier), triggered by a
+  long-press landing on the handle. `user-select: none` stops the selection gesture at
+  the source, `touch-action: none` hands the whole gesture to the page so Moveable's
+  drag listeners get it, and `-webkit-touch-callout: none` covers the iOS callout.
+  Both rules need `!important` like their neighbours: Moveable's stylesheet is injected
+  by css-styled with a generated class prefix that outranks plain selectors here. CSS
+  only — nothing else moved.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
@@ -307,12 +436,13 @@ Shipped 2026-08-24 — text, one run at a time:
   dial that back — keep per-object code scoped to classes and attributes, with JS staying
   in `/code`. (One piece of it exists already: the run-formatting strip that docks to a
   text object while it is edited WYSIWYG — 2026-08-24, see Done.)
-- **Icon set refresh** — *(in progress. The first batch of the SuperGlue SVG set landed
-  2026-08-23; more are being produced over the coming weeks, ahead of hotglue.me being
-  updated.)*
+- **Icon set refresh** — *(the wiring is complete for the editor's own chrome: every
+  menu and panel button took a mask icon on 2026-08-25 and 08-30 — see Done. The
+  licensing question below is the only thing left blocking release.)*
 
   **Wiring is done and proven.** `tools/prep-icons.js` regenerates `img/icons/` from the
-  upstream artwork (54 icons, 206K → 38K: the source files are ~85% Inkscape metadata,
+  upstream artwork (54 files at first wiring, 206K → 38K — 78 now, as redraws and new
+  drawings keep landing upstream: the source files are ~85% Inkscape metadata,
   RDF and attribution blocks that a mask never reads). An `extra/` subdirectory of the
   source holds what is not part of the set proper — redraws under a name already in it,
   and the odd one-off under a name of its own — and the tool converts those last so a
@@ -335,17 +465,29 @@ Shipped 2026-08-24 — text, one run at a time:
   `::before` carries the glyph and its hover colour. `--glue-icon` still lives on the
   button and inherits down, so swapping artwork at runtime is unaffected.
 
-  Wired so far: `sheep-icon4` for clone (the joke lands: everyone knows what a cloned
-  sheep is, and the alternative is the two overlapping rectangles every toolbar has — a
-  silhouette rather than line work, which turns to mush at 30px), `undo`, `redo`,
-  `hyperlink`, `font-color`, `background-color`, `background-color-remove`, `super-user`
-  (the `</>` source toggle, which the artwork spells out exactly), `font-size` (the text
-  menu's Font panel), `border-radius` (the object's edge panel), `page-background-image`
-  (an object's own background), `color-quadrant` (every colour button, in every panel),
-  the four `align-*` inside the font panel's fold, and the layout toggle via
+  Wired now — the whole object and text chrome, all on `$.glue.icon(name, title)`: the
+  clone sheep (the set's one joke: everyone knows what a cloned sheep is, and the
+  alternative is the two overlapping rectangles every toolbar has — a silhouette rather
+  than line work, which turns to mush at 30px; `sheep-icon5` since its artwork grew a
+  real eyelid — it blinks, see Done), `undo`, `redo`, `delete`, the padlock `lock`, the
+  broken-link `object-link` and code-brackets `object-props`, `hyperlink`, `font-size`
+  (the Font panel), `padding`, `background-color-remove` (make background transparent),
+  `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
+  `clip` (state shown by the pressed-in frame), `page-background-image` (both background
+  buttons), `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
+  and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
+  run-format strip, the four `align-*` inside the font panel's fold (still mapped by
+  what the artwork shows — two names are swapped at source), `download`/`upload` (the
+  solid arrows, redrawn upstream in the `extra/` folder), `text-object`,
+  `embed-webpage`, `embed-webvideo` and `site-code` on the new-object menu,
+  `site-settings`, `page-title`, `page-new` and `shared-w-other-pages` in the
+  page-browser chrome, and the layout toggle via
   `composition-mode-absolute`/`-centered` — that last one shows the mode you are
   switching TO, preserving the old split where the tooltip describes the present and the
-  button names the destination.
+  button names the destination. Every colour button in every panel shares one glyph,
+  `color-swatch` (which succeeded `color-quadrant`); the change-background-colour
+  buttons are colour buttons and share it too, and only the make-transparent action
+  keeps a glyph of its own.
 
   Judge new artwork by rendering its ALPHA at 30px, which is what a mask paints: the
   colour in the file never reaches the screen, so a black drawing and a white one look
@@ -353,17 +495,14 @@ Shipped 2026-08-24 — text, one run at a time:
   an intermediate save containing an embedded PNG was caught masking as a solid black
   square.
 
-  **Still needs drawing** — one placeholder left on `.glue-btn-label`:
-
-  | label | what it does | file |
-  |---|---|---|
-  | `clip` / `show` | object clips or spills its overflow | `modules/object/object-edit.js` |
-
-  It is STATEFUL, so it wants two icons or one with a clear on-state, and it flips live
-  through Alpine (no reload) — so wiring it will also need a way to change an element's
-  `--glue-icon` after construction, which `$.glue.icon()` only sets at build time. (The
-  `</>` source toggle that used to be here is done: `super-user` in the set draws exactly
-  that glyph.)
+  The last placeholder is gone: the clip toggle took the set's `clip` glyph on
+  2026-08-25, and its state is the button's pressed-in frame — the same state language
+  every toggle in the chrome speaks by now. That is also the answer to the design
+  question the placeholder kept raising: a state shown by the frame needs no second
+  glyph, so nothing ever had to change an element's `--glue-icon` after construction.
+  No text-label buttons are left; the two `<img>` PNG buttons that survive are the
+  iframe module's change-URL and the video module's reset-size, named in the open
+  decision below.
 
   **Unresolved: licensing.** The upstream files declare CC BY-NC-SA 3.0
   (`cc:prohibits CommercialUse`), credited to VERBALVISU.AL / SuperGlue project. Hotglue
@@ -372,16 +511,23 @@ Shipped 2026-08-24 — text, one run at a time:
   which needs whoever holds the rights (the credit names both VERBALVISU.AL as author and
   the SuperGlue project as publisher). `tools/prep-icons.js` strips the per-file
   attribution blocks, so if attribution turns out to be required it needs to live in one
-  NOTICE file rather than 54 copies.
+  NOTICE file rather than 78 copies.
 
   **Two names are swapped at source:** `align-left.svg` draws lines centred on a common
   axis and `align-center.svg` draws them flush against a left margin rule. The spacing
   popover maps them by what they depict, with a comment saying so — worth fixing in the
   upstream set, after which that table can be straightened out.
 
-  **Open decision:** the set is 54 icons against today's 65 PNGs and does not map
-  one-to-one. Mixing PNG and SVG shows seams at high zoom and on HiDPI, so at some point
-  it is worth deciding whether the new set replaces all of them or only fills gaps.
+  **Open decision:** what is left in PNG is two-state artwork pairs (scroll on/off,
+  autoplay on/off, …), small runtime pictures, two `<img>` menu buttons no set member
+  fits yet (the iframe module's change-URL, the video module's reset-size), and fifteen
+  unreferenced PNGs: the ones restored on 2026-08-30, which that afternoon's conversion
+  orphaned again (nothing in the tree loads them), so the second sweep can happen
+  whenever it is wanted. Whether the two-state pairs and the last two buttons ever
+  convert to the set is the remaining call: mask buttons show one state with their
+  pressed-in frame, and the set carries no on/off pairs, so each would want a redraw
+  first. Mixing PNG and SVG shows seams at high zoom and on HiDPI — the chrome that
+  matters has stopped mixing.
 
   **Landmine, hit once already:** a relative `url()` inside a custom property resolves
   against the stylesheet that uses the `var()`, not the document — so `img/icons/x.svg`

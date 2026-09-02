@@ -1,6 +1,9 @@
 # SOW — Glow & Shadow effects (edge controls → "more knobs")
 
-Status: to implement. Branch: `ng`.
+Status: BUILT — 2026-08-23/24, as the edge panel's "more knobs" fold. What the knobs
+became is recorded in ROADMAP.md's Done entries and differs from this spec in the ways
+that entry records; this file is kept as the design rationale. (Status line corrected
+2026-09-02 — it had been left at "to implement" despite shipping.) Branch: `ng`.
 Goal: add parametric **glow** and **drop-shadow** effects to an object, generating the
 underlying `box-shadow` CSS from a few user-friendly knobs — so users get glowing /
 shadowed objects without hand-writing multi-layer `box-shadow` stacks. Lives in the
