@@ -403,23 +403,14 @@ function text_alter_render_early($args)
 		return false;
 	}
 
-	// font-size/padding deliberately have no class fallback: a text object
-	// without stored text-font-size/text-padding-* keys renders with the
-	// page's inherited font-size and no padding, exactly like the historical
-	// engine (parity A/B, F2). The "change padding"/"change font size"
-	// editor controls reset by clearing their own inline override, which
-	// then immediately falls back to that inherent default (no reload
-	// needed, and nothing to keep in sync here). The stylesheet below still
-	// carries .text a (link styling) - that's all
-	// guarded so a page with N text objects doesn't emit N identical
-	// <link> tags - html_add_css() itself doesn't dedupe (a URL can
-	// legitimately be added twice with different media= attributes), so
-	// this is a local guard for this one always-identical call specifically
-	static $text_css_added = false;
-	if (!$text_css_added) {
-		html_add_css(base_url().'modules/text/text.css');
-		$text_css_added = true;
-	}
+	// The text module deliberately ships no stylesheet, like the historical
+	// engine: a text object without stored text-font-size/text-padding-*
+	// keys renders with the page's inherited font-size and no padding, and
+	// links inside text inherit the main.css a-reset (no underline, no blue)
+	// exactly as they did in 2010 (parity A/B, F2/F3). The "change padding"/
+	// "change font size" editor controls reset by clearing their own inline
+	// override, which then immediately falls back to that inherent default
+	// (no reload needed, and nothing to keep in sync here)
 
 	// background-color
 	if (!empty($obj['text-background-color'])) {
