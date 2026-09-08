@@ -403,13 +403,14 @@ function text_alter_render_early($args)
 		return false;
 	}
 
-	// default padding/font-size (see modules/text/text.css) - a CSS class
-	// rule rather than an inline style here, so it's only ever a fallback:
-	// an explicit text-padding-*/text-font-size attribute renders as an
-	// inline style below and naturally overrides it, and the "change
-	// padding"/"change font size" editor controls reset by clearing their
-	// own inline override, which then immediately falls back to this rule
-	// (no reload needed, and nothing to keep in sync here)
+	// font-size/padding deliberately have no class fallback: a text object
+	// without stored text-font-size/text-padding-* keys renders with the
+	// page's inherited font-size and no padding, exactly like the historical
+	// engine (parity A/B, F2). The "change padding"/"change font size"
+	// editor controls reset by clearing their own inline override, which
+	// then immediately falls back to that inherent default (no reload
+	// needed, and nothing to keep in sync here). The stylesheet below still
+	// carries .text a (link styling) - that's all
 	// guarded so a page with N text objects doesn't emit N identical
 	// <link> tags - html_add_css() itself doesn't dedupe (a URL can
 	// legitimately be added twice with different media= attributes), so

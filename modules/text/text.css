@@ -1,10 +1,9 @@
-.text {
-	/* default padding/font-size for text objects - overridden inline by
-	   text-padding-x/text-padding-y/text-font-size when the user changes
-	   them via the editor (see module_text.inc.php's text_alter_render_early()) */
-	font-size: 18px;
-	padding: 12px 15px;
-}
+/* Intentionally no .text font-size/padding default: a text object with no
+   stored text-font-size/text-padding-* keys renders with the page's
+   inherited font-size and no padding - exactly like the historical engine
+   (parity A/B, F2). The "change padding"/"change font size" editor
+   controls reset by clearing their inline override, which lands here - on
+   nothing - without a reload. See module_text.inc.php. */
 
 .text a {
 	/* css/main.css sets text-decoration:inherit globally so an object-level

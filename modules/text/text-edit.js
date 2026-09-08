@@ -21,7 +21,7 @@ function text_align_sync(elem) {
 
 // The padding panel: one value for all four sides up top, the sides
 // individually in a folded-away "more knobs" section, and a reset that goes
-// back to the module's default padding. Twin of the object panels
+// back to no padding (the inherent default). Twin of the object panels
 // (object_adjust_popover / object_edge_popover in object-edit.js).
 function text_padding_popover(obj)
 {
@@ -100,13 +100,14 @@ function text_padding_popover(obj)
 	var left = knob('left', 'left');
 	pop.appendChild(adv);
 
-	// Reset: back to the module's default padding (the CSS class in
-	// modules/text/text.css), with the box compensated so nothing moves here
-	// either. Clearing the inline padding is what makes the class default
-	// visible again, the way the old click-to-reset did.
+	// Reset: back to no padding (there is no class default anymore - a bare
+	// text object renders flush, like the historical engine), with the box
+	// compensated so nothing moves here either. Clearing the inline padding
+	// is what removes the stored text-padding-* keys on save, the way the
+	// old click-to-reset did.
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset(
-		'back to the default padding (12px top and bottom, 15px left and right)', function() {
+		'back to the default (no padding)', function() {
 			obj.style.paddingLeft = '';
 			obj.style.paddingRight = '';
 			obj.style.paddingTop = '';
