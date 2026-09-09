@@ -615,6 +615,11 @@ function html_finalize(&$cache = false)
 	$ret .= '<head>'.nl();
 	$ret .= '<title>'.htmlspecialchars($html['header']['title'], ENT_NOQUOTES, 'UTF-8').'</title>'.nl();
 	$ret .= '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'.nl();
+	// which engine generated this page - the ng lineage (this one) stamps it
+	// so its renders can be told apart from the historical engine's in a
+	// source-level A/B inspection (parity stage). Render-inert: no paint, no
+	// layout, no script reads it
+	$ret .= '<meta name="generator" content="hotglue-ng">'.nl();
 	// without this, mobile browsers shrink the whole (typically much wider
 	// than the screen) absolutely-positioned canvas to fit, scaling every
 	// font down with it - this makes text render at its real size instead,
