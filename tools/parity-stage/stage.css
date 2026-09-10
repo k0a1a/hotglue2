@@ -98,22 +98,18 @@ button:disabled { opacity: .4; cursor: default; }
 	min-height: 0;
 }
 
-/* Stacked, portrait: one engine per screenful, the stage scrolling between
-   them. A half-height pane wastes the one axis the layout was chosen for —
-   the page is scaled to the pane's WIDTH, so pane height is exactly how much
-   of the page is on screen at once. Snapping makes the pair read as two
-   screens rather than one long scroll. */
+/* Stacked, portrait: the panes stand taller than the fold — 87.5% of the
+   stage each, the half they used to be and 75% again on top of it. The page
+   is scaled to the pane's WIDTH, so pane height is exactly how much of the
+   page is on screen at once, and half a screen was showing very little of it.
+   Each pane keeps its own top, so the stage scrolls; the sliver of the next
+   pane left showing is what says there is more below. */
 #stage[data-layout="stack"] {
 	flex-direction: column;
 	overflow-y: auto;
-	scroll-snap-type: y mandatory;
 }
 
-#stage[data-layout="stack"] .pane {
-	flex: none;
-	height: 100%;
-	scroll-snap-align: start;
-}
+#stage[data-layout="stack"] .pane { flex: 0 0 87.5%; }
 
 .pane {
 	position: relative;
