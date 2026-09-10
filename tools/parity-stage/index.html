@@ -26,7 +26,7 @@
 
 <main id="stage" data-layout="side">
 	<section class="pane" id="pane-current" data-side="current">
-		<div class="pane-label">current</div>
+		<div class="pane-label"><span class="side">current</span><span class="host"></span></div>
 		<div class="viewport">
 			<div class="scroller">
 				<iframe id="if-current" title="current engine render" scrolling="no"></iframe>
@@ -35,7 +35,7 @@
 		</div>
 	</section>
 	<section class="pane" id="pane-ng" data-side="ng">
-		<div class="pane-label">ng</div>
+		<div class="pane-label"><span class="side">ng</span><span class="host"></span></div>
 		<div class="viewport">
 			<div class="scroller">
 				<iframe id="if-ng" title="ng engine render" scrolling="no"></iframe>
@@ -45,6 +45,7 @@
 	</section>
 </main>
 
+<script src="sites.js"></script>
 <script src="stage.js"></script>
 </body>
 </html>

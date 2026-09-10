@@ -135,7 +135,7 @@ button:disabled { opacity: .4; cursor: default; }
 	font-weight: 600;
 	letter-spacing: .12em;
 	text-transform: uppercase;
-	color: var(--dim);
+	color: #fff;				/* plain on both panes: which engine this is comes from where it sits */
 	background: rgba(20, 17, 15, .78);
 	border: 1px solid var(--line);
 	border-radius: 4px;
@@ -143,7 +143,18 @@ button:disabled { opacity: .4; cursor: default; }
 	pointer-events: none;
 }
 
-.pane[data-side="ng"] .pane-label { color: var(--accent); }
+/* The badge names the engine — that is what the A/B is about — and the site
+   it is showing, which is what a viewer recognises. The host is set in its
+   own case and spacing: a URL shouted in caps and tracked out reads as a
+   label rather than an address. Empty host (page not in the manifest) just
+   collapses, leaving the engine word on its own. */
+.pane-label .host {
+	text-transform: none;
+	letter-spacing: 0;
+	margin-left: 7px;
+}
+
+.pane-label .host:empty { display: none; }
 
 .viewport {
 	position: relative;

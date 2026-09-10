@@ -545,6 +545,25 @@ async function allPagenames() {
 	return list;
 }
 
+/* Which live site a page was copied from — window.SITES, generated out of the
+   copy manifest by make-sites.sh, because the site cannot be read off the page
+   name (see that file's header). Unknown page or absent map: no host, and the
+   badge falls back to the engine word alone rather than inventing one. */
+function hostOf(page) {
+	const site = window.SITES && window.SITES[page];
+	return site ? site + '.hotglue.me' : '';
+}
+
+/* The panes hold different pages only in control mode (?vs=), and there each
+   badge has to name its own page's site — one shared host would be a lie about
+   exactly the thing being tested. */
+function labelHosts(page, vsPage) {
+	for (const side of SIDES) {
+		PANES[side].pane.querySelector('.pane-label .host').textContent =
+			hostOf(side === 'ng' ? vsPage : page);
+	}
+}
+
 async function showPage(index, play) {
 	clock.stop();
 	playBtn(false);
@@ -562,7 +581,8 @@ async function showPage(index, play) {
 	tally();
 
 	const vsPage = CFG.vs || page;
-	PANES.ng.pane.querySelector('.pane-label').textContent = CFG.vs ? 'ng — ' + CFG.vs : 'ng';
+	PANES.ng.pane.querySelector('.pane-label .side').textContent = CFG.vs ? 'ng — ' + CFG.vs : 'ng';
+	labelHosts(page, vsPage);
 	await Promise.all([loadPane(PANES.current, page), loadPane(PANES.ng, vsPage)]);
 
 	for (const side of SIDES) {
