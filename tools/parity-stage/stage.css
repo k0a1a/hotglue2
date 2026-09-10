@@ -9,7 +9,7 @@
 	--ink: #e8e2da;
 	--dim: #9a9088;
 	--accent: #f08a1d;
-	--match: #3fbf6a;
+	--match: #00c853;			/* the frame's green: prime, not mint */
 	--warn: #e0a63a;
 	--bad: #d0503f;
 }
@@ -169,51 +169,77 @@ body.interactive .scroller iframe { pointer-events: auto; }
 
 .box {
 	position: absolute;
-	border-radius: 3px;
 	opacity: 0;
 	transition: opacity .18s ease;
-	/* The frame is an OUTLINE, not a border: it is drawn outside the object's
-	   own bounds, so the object is never covered and the stroke lands on
-	   whatever sits around it. --stroke is set per box from the object's size
-	   (a 30px text line and a 900px hero cannot carry the same weight). */
-	outline: var(--stroke, 5px) solid var(--match);
-	outline-offset: 0;
 }
 
 .box.on { opacity: .5; }			/* an object seen earlier in the sequence */
-.box.now { opacity: 1; outline-width: calc(var(--stroke, 5px) + 3px); }
+.box.now { opacity: 1; }
 
-.box.flag {
-	outline-color: var(--warn);
-	outline-style: dashed;
-	background: rgba(224, 166, 58, .08);
-}
-
-.box.bad {
-	outline-color: var(--bad);
-	background: rgba(208, 80, 63, .10);
-}
-
-/* the verdict badge, riding the frame's top-left corner — 30px, because this
-   screencast gets watched on a phone */
-.box .tick {
+/* The frame is hand-marked and sits just OUTSIDE the object's bounds: the
+   stroke falls on whatever is around it and never covers the object. Its
+   geometry is generated per box (see frameFor in stage.js) — a rectangle with
+   its corners knocked about, so it reads as drawn rather than printed.
+   --stroke is set per box from the object's size. */
+.box .frame {
 	position: absolute;
-	bottom: calc(100% + 4px);
-	left: calc(-1 * var(--stroke, 5px) - 2px);
-	width: 30px;
-	height: 30px;
-	display: flex;			/* a badge exists only where a verdict was assigned */
-	align-items: center;
-	justify-content: center;
-	color: var(--match);
-	background: var(--bg);
-	border: 2px solid currentColor;
-	border-radius: 8px;
-	box-shadow: 0 1px 5px rgba(0, 0, 0, .55);
+	overflow: visible;
 }
 
-.box.flag .tick { color: var(--warn); }
-.box.bad .tick { color: var(--bad); }
+.box .frame path {
+	fill: none;
+	stroke: var(--match);
+	stroke-width: var(--stroke, 6px);
+	stroke-linejoin: miter;			/* 90° corners, not mitred off or rounded */
+}
+
+.box.flag { background: rgba(224, 166, 58, .08); }
+.box.bad { background: rgba(208, 80, 63, .10); }
+.box.flag .frame path { stroke: var(--warn); }
+.box.bad .frame path { stroke: var(--bad); }
+
+/* the verdict, in the middle of the frame, arriving on the last of the three
+   pulses and staying put */
+.box .verdict {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	font-size: var(--vsize, 22px);
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: .06em;
+	color: var(--match);
+	background: rgba(20, 17, 15, .92);
+	border: 3px solid currentColor;
+	padding: .2em .34em;
+	white-space: nowrap;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+	opacity: 0;
+	transition: opacity .18s ease;
+}
+
+.box.flag .verdict { color: var(--warn); }
+.box.bad .verdict { color: var(--bad); }
+/* The verdict belongs to the object being verified — it lands on the last
+   pulse and leaves when the next object takes the stage. Thirty-three of them
+   stacked at half opacity buried the page they were reporting on; the frames
+   that stay behind are the record. */
+.box.now .verdict { animation: verdict-in .26s ease-out var(--late, 1333ms) forwards; }
+
+/* three pulses while we sit on an object: the stroke thickens outward, closing
+   the hairline between the frame and the object, then lets go */
+.box.now .frame path { animation: frame-pulse var(--pulse, 667ms) ease-in-out 3; }
+
+@keyframes frame-pulse {
+	0%, 100% { stroke-width: var(--stroke, 6px); }
+	50%      { stroke-width: calc(var(--stroke, 6px) * 1.6); }
+}
+
+@keyframes verdict-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
 
 /* an object one engine has and the other doesn't: no box to draw, so a
    marker in the pane corner instead (stacked, newest at the bottom) */
@@ -224,13 +250,12 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	width: auto;
 	height: auto;
 	padding: 3px 9px;
-	border-radius: 5px;
 	background: var(--bg);
 	color: var(--bad);
+	border: 2px solid var(--bad);
 	font-size: 13px;
 	font-weight: 600;
 	white-space: nowrap;
-	outline-width: 2px;
 }
 
 /* the whole pane agrees: one quiet breath of green */
@@ -245,6 +270,8 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	.scroller { transition: none; }
 	.box { transition: none; }
 	.pane.done .viewport { animation: none; }
+	.box.now .frame path { animation: none; }
+	.box.now .verdict { animation: none; opacity: 1; }	/* the verdict still lands */
 }
 
 /* a page that isn't there (404 shell) */

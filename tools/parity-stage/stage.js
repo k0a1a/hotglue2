@@ -16,7 +16,7 @@
  *   ?page=<name>          one page
  *   ?pages=<a,b,c>        a montage, in order
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
- *   ?ms=420 | ?bpm=90     tick interval
+ *   ?ms=2000 | ?bpm=30    per-object beat (three frame pulses, then on)
  *   ?speedup=1.12         each page ticks this much faster than the last
  *   ?max=30               cap the objects ticked per page
  *   ?audio=1              click track on the beat; the audio clock drives the ticks
@@ -39,7 +39,7 @@ const CFG = {
 	pages: (P.get('pages') || P.get('page') || DEFAULT_PAGES.join(',')).split(',').map(s => s.trim()).filter(Boolean),
 	single: !!P.get('page') && !P.get('pages'),
 	layout: P.get('layout') === 'stack' ? 'stack' : 'side',
-	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 420),
+	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 2000),
 	speedup: P.has('speedup') ? +P.get('speedup') : 1,
 	max: P.has('max') ? +P.get('max') : 0,
 	audio: P.get('audio') === '1',
@@ -49,8 +49,8 @@ const CFG = {
 	// no control cannot be trusted to report a difference at all — this is how
 	// you prove it still can (?page=A&vs=B → the boxes should disagree).
 	vs: P.get('vs') || '',
-	hold: 1000,			// ms a fully-green page holds before the montage moves on
-	floor: 130,			// ms — never tick faster than this
+	hold: 1500,			// ms a fully-green page holds before the montage moves on
+	floor: 300,			// ms — never tick faster than this (three pulses want room)
 };
 
 const $ = s => document.querySelector(s);
@@ -301,15 +301,59 @@ function buildSequence() {
 
 /* ---- drawing ---------------------------------------------------------- */
 
-/* The verdict badge. SVG rather than a text glyph: at badge size a ✓ from the
- * system font is a thin, font-dependent squiggle, and this has to read on a
- * phone. currentColor so the frame's colour carries into the mark. */
-const badge = d => '<span class="tick"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + d + '</svg></span>';
-const GLYPH = {
-	match: badge('<path d="M4.6 12.7 9.7 17.9 19.5 6.6" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>'),
-	flag: badge('<path d="M12 5.6v8.4" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/><circle cx="12" cy="19" r="2.3" fill="currentColor"/>'),
-	bad: badge('<path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>'),
-};
+const NS = 'http://www.w3.org/2000/svg';
+const WORD = { match: 'OK', flag: 'DIFF', bad: 'MISSING' };
+
+/* A seeded generator, so the wobble of a frame is a property of the object and
+ * not of when it was drawn: both panes agree, and a second take of the same
+ * page looks like the first. */
+function rngFrom(seed) {
+	let h = 2166136261;
+	for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+	return () => {
+		h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
+		return ((h >>> 0) % 100000) / 100000;
+	};
+}
+
+/* Four corners, each knocked about a little, and every edge bowed — a box
+ * marked by hand rather than printed. Corners stay corners (miter joins). */
+function roughPath(x0, y0, x1, y1, rnd, amp) {
+	const j = () => (rnd() - 0.5) * 2 * amp;
+	const c = [[x0 + j(), y0 + j()], [x1 + j(), y0 + j()], [x1 + j(), y1 + j()], [x0 + j(), y1 + j()]];
+	const pts = [];
+	const edge = (a, b, nx, ny) => {
+		const N = 4;
+		for (let i = 0; i < N; i++) {
+			const t = i / N;
+			const bow = (rnd() - 0.5) * 1.4 * amp * Math.sin(Math.PI * t);	// 0 at the corners, most mid-edge
+			pts.push([a[0] + (b[0] - a[0]) * t + nx * bow, a[1] + (b[1] - a[1]) * t + ny * bow]);
+		}
+	};
+	edge(c[0], c[1], 0, 1);
+	edge(c[1], c[2], 1, 0);
+	edge(c[2], c[3], 0, -1);
+	edge(c[3], c[0], -1, 0);
+	return 'M' + pts.map(p => r1(p[0]) + ' ' + r1(p[1])).join('L') + 'Z';
+}
+
+/* The frame, sized and placed so its stroke falls entirely OUTSIDE the
+ * object's bounds: the path runs 0.8 of a stroke-width away, so at the pulse's
+ * peak the thickened stroke closes on the object and never crosses it. */
+function frameFor(w, h, sw, seed) {
+	const P = Math.ceil(sw * 2);
+	const svg = document.createElementNS(NS, 'svg');
+	svg.setAttribute('class', 'frame');
+	svg.style.left = -P + 'px';
+	svg.style.top = -P + 'px';
+	svg.style.width = (w + 2 * P) + 'px';
+	svg.style.height = (h + 2 * P) + 'px';
+	const off = sw * 0.8;
+	const path = document.createElementNS(NS, 'path');
+	path.setAttribute('d', roughPath(P - off, P - off, P + w + off, P + h + off, rngFrom(seed), Math.min(2.5, sw * 0.4)));
+	svg.appendChild(path);
+	return svg;
+}
 
 function fitScale() {
 	const w = PANES.ng.viewport.clientWidth || 1;
@@ -349,14 +393,18 @@ function boxFor(side, item) {
 		return box;
 	}
 	const w = rec.rect.width * pane.k, h = rec.rect.height * pane.k;
+	const sw = Math.max(5, Math.min(9, Math.round(Math.min(w, h) * 0.1)));
 	// the stroke is drawn outside the object, so it can only be as thick as the
 	// object can carry — 5px on a one-line text object, 9px on a hero image.
 	// Both are thick enough to survive a phone-sized screencast.
-	box.style.setProperty('--stroke', Math.max(5, Math.min(9, Math.round(Math.min(w, h) * 0.1))) + 'px');
+	box.style.setProperty('--stroke', sw + 'px');
+	// and the verdict has to fit inside the frame it is reporting on
+	box.style.setProperty('--vsize', Math.round(Math.max(12, Math.min(54, Math.min(w, h) * 0.42))) + 'px');
 	box.style.left = (rec.rect.left * pane.k) + 'px';
 	box.style.top = (rec.rect.top * pane.k) + 'px';
 	box.style.width = w + 'px';
 	box.style.height = h + 'px';
+	box.appendChild(frameFor(w, h, sw, item.id));
 	pane.ov.appendChild(box);
 	return box;
 }
@@ -397,9 +445,11 @@ function tick(i) {
 		el.classList.add('now');
 		// a box with no object behind it carries its own label — leave it alone
 		if (!el.classList.contains('missing')) {
-			if (verdict.verdict === 'bad') { el.classList.add('bad'); el.innerHTML = GLYPH.bad; }
-			else if (verdict.verdict === 'flag') { el.classList.add('flag'); el.innerHTML = GLYPH.flag; }
-			else el.innerHTML = GLYPH.match;
+			if (verdict.verdict !== 'match') el.classList.add(verdict.verdict);
+			const v = document.createElement('span');
+			v.className = 'verdict';
+			v.textContent = WORD[verdict.verdict] || 'OK';
+			el.appendChild(v);
 		}
 		drawn.push({ side, el });
 	}
@@ -459,7 +509,13 @@ async function showPage(index, play) {
 		if (!CFG.single) setTimeout(() => showPage(index + 1, play), CFG.hold);
 		return;
 	}
-	clock.period = Math.max(CFG.floor, CFG.interval / Math.pow(CFG.speedup, index)) / 1000;
+	// the frame's three pulses ARE the beat: their length, and the moment the
+	// verdict lands on the last of them, follow the tick interval — so ?ms= and
+	// ?speedup= keep the picture and the clock together
+	const beat = Math.max(CFG.floor, CFG.interval / Math.pow(CFG.speedup, index));
+	clock.period = beat / 1000;
+	document.documentElement.style.setProperty('--pulse', (beat / 3) + 'ms');
+	document.documentElement.style.setProperty('--late', (beat * 2 / 3) + 'ms');
 	setStatus(page + '  ·  ' + view.seq.length + ' objects' + (play ? '' : '  ·  press Play'));
 	if (play) clock.start(i => tick(i), 0);
 	playBtn(!!play);
