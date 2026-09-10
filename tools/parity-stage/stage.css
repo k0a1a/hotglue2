@@ -145,9 +145,14 @@ button:disabled { opacity: .4; cursor: default; }
 	background: rgba(20, 17, 15, .78);
 	border: 1px solid var(--line);
 	border-radius: 4px;
-	padding: 2px 7px;
+	padding: 4px 9px;
 	pointer-events: none;
 }
+
+/* The engine word is what the A/B is about, and it has to carry at phone scale,
+   which is where this is watched: twice the badge's own size, with the padding
+   grown to match. The host stays small — it says which site, not which engine. */
+.pane-label .side { font-size: 20px; }
 
 /* The badge names the engine — that is what the A/B is about — and the site
    it is showing, which is what a viewer recognises. The host is set in its
