@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>hotglue — parity stage</title>
+<link rel="stylesheet" href="stage.css">
+</head>
+<body>
+
+<header id="bar">
+	<div class="brand">hotglue <span>parity stage</span></div>
+	<div id="pagename">—</div>
+	<div id="tally"><span class="ok">0</span> ok / <span class="bad">0</span> differ / <span class="total">0</span></div>
+	<nav id="controls">
+		<button data-act="play" aria-pressed="false">Play</button>
+		<button data-act="step">Step</button>
+		<button data-act="prev">Prev page</button>
+		<button data-act="next">Next page</button>
+		<button data-act="layout" aria-pressed="false">Stacked</button>
+		<button data-act="interactive" aria-pressed="false" title="let clicks reach the pages">Interactive</button>
+		<button data-act="record" aria-pressed="false">Record</button>
+		<button data-act="export">Export</button>
+	</nav>
+	<div id="status">starting…</div>
+</header>
+
+<main id="stage" data-layout="side">
+	<section class="pane" id="pane-current" data-side="current">
+		<div class="pane-label">current</div>
+		<div class="viewport">
+			<div class="scroller">
+				<iframe id="if-current" title="current engine render" scrolling="no"></iframe>
+				<div class="overlay" id="ov-current"></div>
+			</div>
+		</div>
+	</section>
+	<section class="pane" id="pane-ng" data-side="ng">
+		<div class="pane-label">ng</div>
+		<div class="viewport">
+			<div class="scroller">
+				<iframe id="if-ng" title="ng engine render" scrolling="no"></iframe>
+				<div class="overlay" id="ov-ng"></div>
+			</div>
+		</div>
+	</section>
+</main>
+
+<script src="stage.js"></script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+/* parity stage — a restrained dark room where the pages are the star.
+   See SOW-parity-ab-stage.md, Part 3. Two same-origin panes (current | ng),
+   one overlay layer per pane drawing boxes at the real object coordinates. */
+
+:root {
+	--bg: #14110f;
+	--bar: #1c1815;
+	--line: #2e2823;
+	--ink: #e8e2da;
+	--dim: #9a9088;
+	--accent: #f08a1d;
+	--match: #3fbf6a;
+	--warn: #e0a63a;
+	--bad: #d0503f;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+	background: var(--bg);
+	color: var(--ink);
+	font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+/* ---- top bar ---------------------------------------------------------- */
+
+#bar {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 8px 14px;
+	background: var(--bar);
+	border-bottom: 1px solid var(--line);
+	white-space: nowrap;
+}
+
+.brand {
+	color: var(--accent);
+	font-weight: 600;
+	letter-spacing: .02em;
+}
+
+.brand span { color: var(--dim); font-weight: 400; }
+
+#pagename {
+	font-weight: 600;
+	min-width: 8ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+#tally {
+	color: var(--dim);
+	font-variant-numeric: tabular-nums;
+}
+
+#tally .ok { color: var(--match); font-weight: 600; }
+#tally .bad { color: var(--bad); font-weight: 600; }
+
+#controls { display: flex; gap: 6px; margin-left: auto; }
+
+button {
+	font: inherit;
+	color: var(--ink);
+	background: #262019;
+	border: 1px solid var(--line);
+	border-radius: 5px;
+	padding: 4px 10px;
+	cursor: pointer;
+}
+
+button:hover { border-color: #4a4038; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+
+#status {
+	color: var(--dim);
+	font-variant-numeric: tabular-nums;
+	max-width: 34ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ---- panes ------------------------------------------------------------ */
+
+#stage {
+	flex: 1 1 auto;
+	display: flex;
+	gap: 1px;
+	background: var(--line);
+	min-height: 0;
+}
+
+#stage[data-layout="stack"] { flex-direction: column; }
+
+.pane {
+	position: relative;
+	flex: 1 1 50%;
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg);
+	overflow: hidden;
+}
+
+.pane-label {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	z-index: 3;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--dim);
+	background: rgba(20, 17, 15, .78);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	padding: 2px 7px;
+	pointer-events: none;
+}
+
+.pane[data-side="ng"] .pane-label { color: var(--accent); }
+
+.viewport {
+	position: relative;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.scroller {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	transition: transform .5s cubic-bezier(.4, 0, .2, 1);
+}
+
+.scroller iframe {
+	position: absolute;
+	top: 0;
+	left: 0;
+	border: 0;
+	background: #fff;
+	transform-origin: 0 0;
+	pointer-events: none;			/* playback must not be disturbed by a stray click */
+}
+
+body.interactive .scroller iframe { pointer-events: auto; }
+
+/* ---- object boxes ----------------------------------------------------- */
+
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+}
+
+.box {
+	position: absolute;
+	border: 2px solid var(--match);
+	border-radius: 2px;
+	opacity: 0;
+	transition: opacity .18s ease;
+}
+
+.box.on { opacity: .35; }			/* an object seen earlier in the sequence */
+.box.now { opacity: 1; box-shadow: 0 0 0 3px rgba(63, 191, 106, .18); }
+
+.box.flag {
+	border-color: var(--warn);
+	border-style: dashed;
+	background: rgba(224, 166, 58, .08);
+}
+
+.box.bad {
+	border-color: var(--bad);
+	background: rgba(208, 80, 63, .10);
+}
+
+.box .tick {
+	position: absolute;
+	top: -11px;
+	left: -2px;
+	font-size: 11px;
+	line-height: 1;
+	font-weight: 700;
+	color: var(--match);
+	background: var(--bg);
+	padding: 0 3px;
+	border-radius: 3px;
+	display: none;
+}
+
+.box.on .tick { display: block; }
+.box.flag .tick { display: block; color: var(--warn); }
+.box.bad .tick { display: block; color: var(--bad); }
+
+/* an object one engine has and the other doesn't: no box to draw, so a
+   marker in the pane corner instead (stacked, newest at the bottom) */
+.box.missing {
+	left: 10px;
+	bottom: 10px;
+	top: auto;
+	width: auto;
+	height: auto;
+	padding: 2px 7px;
+	border-radius: 4px;
+	background: var(--bg);
+	color: var(--bad);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+/* the whole pane agrees: one quiet breath of green */
+.pane.done .viewport { animation: agree 700ms ease; }
+@keyframes agree {
+	0%   { box-shadow: inset 0 0 0 0 rgba(63, 191, 106, 0); }
+	35%  { box-shadow: inset 0 0 0 4px rgba(63, 191, 106, .55); }
+	100% { box-shadow: inset 0 0 0 0 rgba(63, 191, 106, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.scroller { transition: none; }
+	.box { transition: none; }
+	.pane.done .viewport { animation: none; }
+}
+
+/* a page that isn't there (404 shell) */
+.pane.missing .pane-label { color: var(--bad); }
