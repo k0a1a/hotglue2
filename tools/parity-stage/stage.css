@@ -9,7 +9,7 @@
 	--ink: #e8e2da;
 	--dim: #9a9088;
 	--accent: #f08a1d;
-	--match: #00c853;			/* the frame's green: prime, not mint */
+	--match: #00ff00;			/* where a frame's colour cycle comes to rest */
 	--warn: #e0a63a;
 	--bad: #d0503f;
 }
@@ -171,6 +171,7 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	position: absolute;
 	opacity: 0;
 	transition: opacity .18s ease;
+	--cycle-end: var(--match);		/* where the colour cycle lands — the verdict's */
 }
 
 .box.on { opacity: .5; }			/* an object seen earlier in the sequence */
@@ -193,8 +194,8 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	stroke-linejoin: miter;			/* 90° corners, not mitred off or rounded */
 }
 
-.box.flag { background: rgba(224, 166, 58, .08); }
-.box.bad { background: rgba(208, 80, 63, .10); }
+.box.flag { background: rgba(224, 166, 58, .08); --cycle-end: var(--warn); }
+.box.bad { background: rgba(208, 80, 63, .10); --cycle-end: var(--bad); }
 .box.flag .frame path { stroke: var(--warn); }
 .box.bad .frame path { stroke: var(--bad); }
 
@@ -205,14 +206,13 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	font-size: var(--vsize, 22px);
+	font-size: 22px;			/* sized per object in tick(), to fit its frame */
 	font-weight: 800;
 	line-height: 1;
 	letter-spacing: .06em;
 	color: var(--match);
-	background: rgba(20, 17, 15, .92);
-	border: 3px solid currentColor;
-	padding: .2em .34em;
+	background: #000;			/* the word alone on black — no plate, no frame */
+	padding: .24em .46em;
 	white-space: nowrap;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, .5);
 	opacity: 0;
@@ -227,13 +227,27 @@ body.interactive .scroller iframe { pointer-events: auto; }
    that stay behind are the record. */
 .box.now .verdict { animation: verdict-in .26s ease-out var(--late, 1333ms) forwards; }
 
-/* three pulses while we sit on an object: the stroke thickens outward, closing
-   the hairline between the frame and the object, then lets go */
-.box.now .frame path { animation: frame-pulse var(--pulse, 667ms) ease-in-out 3; }
+/* Three pulses while we sit on an object: the stroke thickens outward, closing
+   the hairline between the frame and the object, then lets go. The colour steps
+   once per pulse — magenta, cyan, then the verdict's own colour — and it steps
+   hard (step-end: the value holds and jumps, it never fades across). Its length
+   is the whole beat, so its thirds land on the pulse peaks by construction. */
+.box.now .frame path {
+	animation:
+		frame-pulse var(--pulse, 667ms) ease-in-out 3,
+		frame-colour calc(var(--pulse, 667ms) * 3) step-end 1;
+}
 
 @keyframes frame-pulse {
 	0%, 100% { stroke-width: var(--stroke, 6px); }
 	50%      { stroke-width: calc(var(--stroke, 6px) * 1.6); }
+}
+
+@keyframes frame-colour {
+	0%     { stroke: #ff00ff; }
+	33.33% { stroke: #00ffff; }
+	66.66% { stroke: var(--cycle-end, var(--match)); }
+	100%   { stroke: var(--cycle-end, var(--match)); }
 }
 
 @keyframes verdict-in {

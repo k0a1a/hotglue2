@@ -302,7 +302,7 @@ function buildSequence() {
 /* ---- drawing ---------------------------------------------------------- */
 
 const NS = 'http://www.w3.org/2000/svg';
-const WORD = { match: 'OK', flag: 'DIFF', bad: 'MISSING' };
+const WORD = { match: 'match', flag: 'differ', bad: 'missing' };
 
 /* A seeded generator, so the wobble of a frame is a property of the object and
  * not of when it was drawn: both panes agree, and a second take of the same
@@ -398,8 +398,6 @@ function boxFor(side, item) {
 	// object can carry — 5px on a one-line text object, 9px on a hero image.
 	// Both are thick enough to survive a phone-sized screencast.
 	box.style.setProperty('--stroke', sw + 'px');
-	// and the verdict has to fit inside the frame it is reporting on
-	box.style.setProperty('--vsize', Math.round(Math.max(12, Math.min(54, Math.min(w, h) * 0.42))) + 'px');
 	box.style.left = (rec.rect.left * pane.k) + 'px';
 	box.style.top = (rec.rect.top * pane.k) + 'px';
 	box.style.width = w + 'px';
@@ -446,10 +444,20 @@ function tick(i) {
 		// a box with no object behind it carries its own label — leave it alone
 		if (!el.classList.contains('missing')) {
 			if (verdict.verdict !== 'match') el.classList.add(verdict.verdict);
+			const word = WORD[verdict.verdict] || 'match';
 			const v = document.createElement('span');
 			v.className = 'verdict';
-			v.textContent = WORD[verdict.verdict] || 'OK';
+			v.textContent = word;
 			el.appendChild(v);
+			// The word has to read as belonging to this object, so it has to fit
+			// inside the frame it is reporting on: as tall as the object can carry,
+			// but only as wide as the object is ('match' is a lot wider than the
+			// tick that used to sit here). Measured: the plate is 4.46em wide for
+			// 'match' — ~0.70em per bold character plus the padding — so budget a
+			// little over that and let the height cap do the rest.
+			const bw = parseFloat(el.style.width), bh = parseFloat(el.style.height);
+			const fit = Math.min(bh * 0.42, bw / (word.length * 0.72 + 1.0));
+			v.style.fontSize = Math.round(Math.max(12, Math.min(54, fit))) + 'px';
 		}
 		drawn.push({ side, el });
 	}
