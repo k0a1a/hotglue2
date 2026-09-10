@@ -169,43 +169,51 @@ body.interactive .scroller iframe { pointer-events: auto; }
 
 .box {
 	position: absolute;
-	border: 2px solid var(--match);
-	border-radius: 2px;
+	border-radius: 3px;
 	opacity: 0;
 	transition: opacity .18s ease;
+	/* The frame is an OUTLINE, not a border: it is drawn outside the object's
+	   own bounds, so the object is never covered and the stroke lands on
+	   whatever sits around it. --stroke is set per box from the object's size
+	   (a 30px text line and a 900px hero cannot carry the same weight). */
+	outline: var(--stroke, 5px) solid var(--match);
+	outline-offset: 0;
 }
 
-.box.on { opacity: .35; }			/* an object seen earlier in the sequence */
-.box.now { opacity: 1; box-shadow: 0 0 0 3px rgba(63, 191, 106, .18); }
+.box.on { opacity: .5; }			/* an object seen earlier in the sequence */
+.box.now { opacity: 1; outline-width: calc(var(--stroke, 5px) + 3px); }
 
 .box.flag {
-	border-color: var(--warn);
-	border-style: dashed;
+	outline-color: var(--warn);
+	outline-style: dashed;
 	background: rgba(224, 166, 58, .08);
 }
 
 .box.bad {
-	border-color: var(--bad);
+	outline-color: var(--bad);
 	background: rgba(208, 80, 63, .10);
 }
 
+/* the verdict badge, riding the frame's top-left corner — 30px, because this
+   screencast gets watched on a phone */
 .box .tick {
 	position: absolute;
-	top: -11px;
-	left: -2px;
-	font-size: 11px;
-	line-height: 1;
-	font-weight: 700;
+	bottom: calc(100% + 4px);
+	left: calc(-1 * var(--stroke, 5px) - 2px);
+	width: 30px;
+	height: 30px;
+	display: flex;			/* a badge exists only where a verdict was assigned */
+	align-items: center;
+	justify-content: center;
 	color: var(--match);
 	background: var(--bg);
-	padding: 0 3px;
-	border-radius: 3px;
-	display: none;
+	border: 2px solid currentColor;
+	border-radius: 8px;
+	box-shadow: 0 1px 5px rgba(0, 0, 0, .55);
 }
 
-.box.on .tick { display: block; }
-.box.flag .tick { display: block; color: var(--warn); }
-.box.bad .tick { display: block; color: var(--bad); }
+.box.flag .tick { color: var(--warn); }
+.box.bad .tick { color: var(--bad); }
 
 /* an object one engine has and the other doesn't: no box to draw, so a
    marker in the pane corner instead (stacked, newest at the bottom) */
@@ -215,12 +223,14 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	top: auto;
 	width: auto;
 	height: auto;
-	padding: 2px 7px;
-	border-radius: 4px;
+	padding: 3px 9px;
+	border-radius: 5px;
 	background: var(--bg);
 	color: var(--bad);
-	font-size: 11px;
+	font-size: 13px;
+	font-weight: 600;
 	white-space: nowrap;
+	outline-width: 2px;
 }
 
 /* the whole pane agrees: one quiet breath of green */

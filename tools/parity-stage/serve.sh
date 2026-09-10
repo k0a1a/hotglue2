@@ -20,6 +20,9 @@ PORT="${1:-8003}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DOCROOT="$(dirname "$ROOT")/parity-local"
 [ -d "$DOCROOT/ng" ] || { echo "no engine copies in $DOCROOT" >&2; exit 1; }
+# The stage is served from its home in this repo, not a copy under the docroot —
+# a hand-synced copy goes stale silently and you end up measuring the old tool.
+ln -sfn "$ROOT/tools/parity-stage" "$DOCROOT/stage"
 echo "parity origin on http://127.0.0.1:$PORT  (docroot $DOCROOT)"
 echo "  stage: http://127.0.0.1:$PORT/stage/?page=<name>"
 exec php -S "127.0.0.1:$PORT" -t "$DOCROOT"

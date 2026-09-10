@@ -301,6 +301,16 @@ function buildSequence() {
 
 /* ---- drawing ---------------------------------------------------------- */
 
+/* The verdict badge. SVG rather than a text glyph: at badge size a ✓ from the
+ * system font is a thin, font-dependent squiggle, and this has to read on a
+ * phone. currentColor so the frame's colour carries into the mark. */
+const badge = d => '<span class="tick"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + d + '</svg></span>';
+const GLYPH = {
+	match: badge('<path d="M4.6 12.7 9.7 17.9 19.5 6.6" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>'),
+	flag: badge('<path d="M12 5.6v8.4" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/><circle cx="12" cy="19" r="2.3" fill="currentColor"/>'),
+	bad: badge('<path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>'),
+};
+
 function fitScale() {
 	const w = PANES.ng.viewport.clientWidth || 1;
 	const widest = Math.max(...SIDES.map(s => PANES[s].docW || 320));
@@ -333,18 +343,25 @@ function boxFor(side, item) {
 		// nothing to place a box on — a marker in the pane's corner instead
 		const n = pane.viewport.querySelectorAll('.box.missing').length;
 		box.classList.add('bad', 'missing');
-		box.style.bottom = (10 + n * 24) + 'px';
+		box.style.bottom = (10 + n * 28) + 'px';
 		box.textContent = 'object missing here';
 		pane.viewport.appendChild(box);
 		return box;
 	}
+	const w = rec.rect.width * pane.k, h = rec.rect.height * pane.k;
+	// the stroke is drawn outside the object, so it can only be as thick as the
+	// object can carry — 5px on a one-line text object, 9px on a hero image.
+	// Both are thick enough to survive a phone-sized screencast.
+	box.style.setProperty('--stroke', Math.max(5, Math.min(9, Math.round(Math.min(w, h) * 0.1))) + 'px');
 	box.style.left = (rec.rect.left * pane.k) + 'px';
 	box.style.top = (rec.rect.top * pane.k) + 'px';
-	box.style.width = (rec.rect.width * pane.k) + 'px';
-	box.style.height = (rec.rect.height * pane.k) + 'px';
+	box.style.width = w + 'px';
+	box.style.height = h + 'px';
 	pane.ov.appendChild(box);
 	return box;
 }
+
+const HEADROOM = 52;	// dark matte above the page, so the top object's badge isn't clipped
 
 function scrollTo(item) {
 	const pane = PANES.ng;
@@ -352,7 +369,7 @@ function scrollTo(item) {
 	if (!rec) return;
 	const h = pane.viewport.clientHeight;
 	const max = Math.max(0, pane.docH * pane.k - h);
-	const y = Math.min(max, Math.max(0, rec.rect.top * pane.k - h * 0.34));
+	const y = Math.min(max, Math.max(-HEADROOM, rec.rect.top * pane.k - h * 0.34));
 	for (const side of SIDES) {
 		PANES[side].scroller.style.transform = 'translate3d(0,' + (-y) + 'px,0)';
 	}
@@ -378,9 +395,12 @@ function tick(i) {
 	for (const side of SIDES) {
 		const el = boxFor(side, item);
 		el.classList.add('now');
-		if (verdict.verdict === 'bad') el.classList.add('bad');
-		else if (verdict.verdict === 'flag') el.classList.add('flag');
-		else el.innerHTML = '<span class="tick">✓</span>';
+		// a box with no object behind it carries its own label — leave it alone
+		if (!el.classList.contains('missing')) {
+			if (verdict.verdict === 'bad') { el.classList.add('bad'); el.innerHTML = GLYPH.bad; }
+			else if (verdict.verdict === 'flag') { el.classList.add('flag'); el.innerHTML = GLYPH.flag; }
+			else el.innerHTML = GLYPH.match;
+		}
 		drawn.push({ side, el });
 	}
 	scrollTo(item);
