@@ -274,7 +274,7 @@ body.interactive .scroller iframe { pointer-events: auto; }
 
 /* ---- the scan pass ---------------------------------------------------- */
 
-/* A copier's light bar, running inside the object being diffed: black 8px
+/* A copier's light bar, running inside the object being diffed: magenta 8px
    squares chequered against 8px of nothing, sparse at the tail and dense at the
    leading edge, sweeping the object from its top edge to its bottom and clipped
    to its bounds — the page around the object is not touched. How long it takes
@@ -298,7 +298,7 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	right: 0;
 	top: 0;
 	height: 45%;				/* the travel below is written for this height */
-	background-image: repeating-conic-gradient(#000 0 25%, transparent 0 50%);
+	background-image: repeating-conic-gradient(#ff00ff 0 25%, transparent 0 50%);
 	background-size: 16px 16px;	/* 8px squares */
 	/* Sparse at the tail, densest at the leading edge, and hard off it: the bar
 	   is strongest where it is going, and trails away behind. */
