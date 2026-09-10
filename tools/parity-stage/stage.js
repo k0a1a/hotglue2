@@ -15,6 +15,9 @@
  * Parameters (all optional)
  *   ?page=<name>          one page
  *   ?pages=<a,b,c>        a montage, in order
+ *   ?all=1                every page in the content tree, asked of the engine
+ *                         (with ?autoplay=1 and, to go round, ?loop=1)
+ *   ?loop=1               come round to the first page at the end instead of stopping
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
  *   ?ms=2000 | ?bpm=30    per-object beat (three frame pulses, then on)
  *   ?speedup=1.12         each page ticks this much faster than the last
