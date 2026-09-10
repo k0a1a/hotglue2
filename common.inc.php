@@ -87,6 +87,10 @@ function default_html($add_glue)
 	$favicon_obj = load_object(['name'=>startpage().'.page']);
 	if (!$favicon_obj['#error'] && !empty($favicon_obj['#data']['page-favicon-file'])) {
 		html_favicon('?favicon');
+		// the uploaded icon is also the best home-screen icon this site has -
+		// deliberately no fallback to the installation's own set here, that
+		// would put hotglue's mark on somebody else's site
+		html_add_icon('apple-touch-icon', '?favicon');
 	} else {
 		$favicon = FAVICON;
 		if (!empty($favicon)) {
@@ -94,6 +98,18 @@ function default_html($add_glue)
 				html_favicon($favicon);
 			} else {
 				html_favicon(base_url().$favicon);
+			}
+		}
+		// svg and its png fallbacks, for the browsers that read them
+		// (see FAVICON_SET)
+		if (is_array(FAVICON_SET)) {
+			foreach (FAVICON_SET as $icon) {
+				if (empty($icon['rel']) || empty($icon['href'])) {
+					continue;
+				}
+				html_add_icon($icon['rel'], $icon['href'],
+					(isset($icon['type']) ? $icon['type'] : ''),
+					(isset($icon['sizes']) ? $icon['sizes'] : ''));
 			}
 		}
 	}

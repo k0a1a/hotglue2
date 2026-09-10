@@ -42,6 +42,16 @@ error_reporting(E_ALL);						// see php documentation
 @define('DEFAULT_PAGE', 'start');
 @define('DEFAULT_TO_EDIT', false);			// edit pages by default
 @define('FAVICON', 'img/favicon.ico');		// can be empty or an absolute url
+// the default icon set, emitted after the .ico above: modern browsers use the
+// svg, the pngs cover the ones that do not read svg icons. A favicon uploaded
+// via the startpage's page menu replaces this whole set. Each entry: rel, href
+// (relative to BASE_URL or an absolute url), type and sizes (both optional)
+@define('FAVICON_SET', [
+	['rel'=>'icon',             'href'=>'img/favicon.svg',         'type'=>'image/svg+xml'],
+	['rel'=>'icon',             'href'=>'img/favicon-32.png',      'type'=>'image/png', 'sizes'=>'32x32'],
+	['rel'=>'icon',             'href'=>'img/favicon-16.png',      'type'=>'image/png', 'sizes'=>'16x16'],
+	['rel'=>'apple-touch-icon', 'href'=>'img/apple-touch-icon.png'],
+]);
 @define('HOTGLUE_VERSION', '1.9.0');		// expected api.version.patchlevel
 @define('LOCK_TIME', 5000);					// maximum time in ms to wait for an object lock
 @define('LOG_FILE', 'content/log.txt');		// log file, must be writable

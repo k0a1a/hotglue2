@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Hotglue</title>
+  <!-- The 16px variant of img/favicon.svg: same diamond, same two oranges,
+       but a thicker underside band and a single thicker gloss stroke with no
+       dot. At 16px the full mark's thin gloss turns to mud and its dot
+       disappears, so this trades the detail for legibility.
+
+       Rendered to favicon-16.png and the 16 layer of favicon.ico. Not linked
+       anywhere on its own - browsers that draw the svg use favicon.svg at
+       every size. See SOW-favicon-orange-diamond.md. -->
+  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#cc5f00" transform="translate(1.7 1.7) rotate(45 16 16)"/>
+  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#ff7700" transform="rotate(45 16 16)"/>
+  <rect x="8.6" y="11.6" width="7.6" height="3.6" rx="1.8" fill="#fff" fill-opacity="0.75" transform="rotate(-45 12.4 13.4)"/>
+</svg>

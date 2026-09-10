@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Hotglue</title>
+  <!-- Hotglue's default mark: a rounded-corner diamond in the brand orange.
+       Three parts, nothing else: the face (#ff7700), an underside nudged
+       down-right so only a band along the lower-right edge shows (#cc5f00,
+       20% darker), and the gloss (a capsule parallel to the upper-left edge
+       plus a dot below it, translucent white so it sits on the face without
+       a second colour to keep in sync).
+
+       Rendered from this file: favicon-32.png, apple-touch-icon.png (180),
+       icon-192.png, icon-512.png and the 32/48 layers of favicon.ico. The
+       16px png and the ico's 16 layer come from favicon-small.svg instead -
+       same mark with a thicker band and one thicker gloss stroke, no dot,
+       which holds up better at that size. See SOW-favicon-orange-diamond.md
+       for the design brief. -->
+  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#cc5f00" transform="translate(1.4 1.4) rotate(45 16 16)"/>
+  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#ff7700" transform="rotate(45 16 16)"/>
+  <rect x="8.25" y="11.4" width="8.5" height="3.2" rx="1.6" fill="#fff" fill-opacity="0.7" transform="rotate(-45 12.5 13)"/>
+  <circle cx="8.95" cy="19.35" r="0.9" fill="#fff" fill-opacity="0.7"/>
+</svg>

@@ -589,6 +589,28 @@ function html_favicon()
 
 
 /**
+ *	add an icon link to the page head
+ *
+ *	html_favicon() above sets the one legacy "shortcut icon"; this appends to
+ *	the set of rel="icon"/"apple-touch-icon" links that goes with it, which is
+ *	how the svg and its png fallbacks are declared (see FAVICON_SET).
+ *
+ *	@param string rel "icon", "apple-touch-icon", ...
+ *	@param string url
+ *	@param string type mime type, optional
+ *	@param string sizes e.g. "32x32", optional
+ */
+function html_add_icon($rel, $url, $type = '', $sizes = '')
+{
+	global $html;
+	if ((!isset($html['header']['icons']) || !is_array($html['header']['icons']))) {
+		$html['header']['icons'] = [];
+	}
+	$html['header']['icons'][] = ['rel'=>$rel, 'url'=>_relativize_asset_url($url), 'type'=>$type, 'sizes'=>$sizes];
+}
+
+
+/**
  *	turn the page into a html string
  *
  *	@param bool &$cache is output cachable (will only modified if $cache is 
@@ -644,6 +666,18 @@ function html_finalize(&$cache = false)
 	}
 	if (!empty($html['header']['favicon'])) {
 		$ret .= '<link rel="shortcut icon" href="'.htmlspecialchars($html['header']['favicon'], ENT_COMPAT, 'UTF-8').'">'.nl();
+	}
+	if ((isset($html['header']['icons']) && is_array($html['header']['icons']))) {
+		foreach ($html['header']['icons'] as $e) {
+			$ret .= '<link rel="'.htmlspecialchars($e['rel'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'"';
+			if (!empty($e['type'])) {
+				$ret .= ' type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'"';
+			}
+			if (!empty($e['sizes'])) {
+				$ret .= ' sizes="'.htmlspecialchars($e['sizes'], ENT_COMPAT, 'UTF-8').'"';
+			}
+			$ret .= '>'.nl();
+		}
 	}
 	if ((isset($html['header']['css']) && is_array($html['header']['css']))) {
 		_array_sort_by_prio($html['header']['css']);
