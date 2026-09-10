@@ -21,6 +21,9 @@
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
  *   ?stackh=80            stacked panes: each pane's share of the stage height,
  *                         in % (default 65; 50 is the old half-and-half frame)
+ *   ?fit=1                scale each page to fit its pane in both directions:
+ *                         the whole page is on screen, and it is the pane's
+ *                         height that sets how large the page is
  *   ?ms=2000 | ?bpm=30    per-object beat (three frame pulses, then on)
  *   ?speedup=1.12         each page ticks this much faster than the last
  *   ?max=30               cap the objects ticked per page
@@ -60,6 +63,7 @@ const CFG = {
 	loop: P.get('loop') === '1',
 	layout: P.get('layout') === 'stack' ? 'stack' : 'side',
 	stackh: STACKH,
+	fit: P.get('fit') === '1',
 	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 2000),
 	speedup: P.has('speedup') ? +P.get('speedup') : 1,
 	max: P.has('max') ? +P.get('max') : 0,
@@ -382,21 +386,44 @@ function frameFor(w, h, sw, seed) {
 function fitScale() {
 	const w = PANES.ng.viewport.clientWidth || 1;
 	const widest = Math.max(...SIDES.map(s => PANES[s].docW || 320));
-	return CFG.k > 0 ? CFG.k : Math.min(1, w / widest);
+	const k = CFG.k > 0 ? CFG.k : Math.min(1, w / widest);
+	// ?fit=1 scales the page to the pane in BOTH directions, so no part of it is
+	// ever cut off and the pane's height is what decides how large the page is —
+	// which is the only thing that makes a taller pane worth having. Without it
+	// the page is scaled to the pane's width alone, and in a stacked pane that is
+	// as wide as the window the page renders several times the pane's height: at
+	// 1280 wide a 1600x1368 page is 1094px tall and a 337px pane shows its top
+	// 31%, whether the pane takes half the stage or two thirds of it. One k for
+	// both panes (the larger of the two), or the engines would render at
+	// different scales and the comparison would be between two sizes.
+	if (!CFG.fit || CFG.k > 0) return k;
+	const h = PANES.ng.viewport.clientHeight || 1;
+	const tallest = Math.max(...SIDES.map(s => PANES[s].docH || 320));
+	return Math.min(k, h / tallest);
 }
 
 function layoutPanes() {
 	const k = fitScale();
+	// The viewport size is measured once for both panes: they differ by the 1px
+	// divider in stacked mode, and centring each page on its own height would put
+	// the two panes a pixel apart from each other.
+	const w = PANES.current.viewport.clientWidth || 1;
+	const h = PANES.current.viewport.clientHeight || 1;
 	for (const side of SIDES) {
 		const pane = PANES[side];
 		pane.k = k;
-		const w = pane.viewport.clientWidth || 1;
 		pane.offX = Math.max(0, (w - pane.docW * k) / 2);
+		// Only ?fit=1 centres vertically: a half-height page on the established
+		// layouts sits at the top of its pane, and moving it now would change
+		// every run's framing to fix something nobody reported.
+		pane.offY = CFG.fit ? Math.max(0, (h - pane.docH * k) / 2) : 0;
 		pane.el.style.width = pane.docW + 'px';
 		pane.el.style.height = pane.docH + 'px';
 		pane.el.style.left = pane.offX + 'px';
+		pane.el.style.top = pane.offY + 'px';
 		pane.el.style.transform = 'scale(' + k + ')';
 		pane.ov.style.left = pane.offX + 'px';
+		pane.ov.style.top = pane.offY + 'px';
 		pane.ov.style.width = (pane.docW * k) + 'px';
 		pane.ov.style.height = (pane.docH * k) + 'px';
 	}
@@ -447,7 +474,10 @@ function scrollTo(item) {
 	if (!rec) return;
 	const h = pane.viewport.clientHeight;
 	const max = Math.max(0, pane.docH * pane.k - h);
-	const y = Math.min(max, Math.max(-HEADROOM, rec.rect.top * pane.k - h * 0.34));
+	// ?fit=1: the whole page is already inside the pane, so there is nothing to
+	// scroll to — and the headroom offset would push the page's bottom back out
+	// of the pane it only just fits into.
+	const y = CFG.fit ? 0 : Math.min(max, Math.max(-HEADROOM, rec.rect.top * pane.k - h * 0.34));
 	for (const side of SIDES) {
 		PANES[side].scroller.style.transform = 'translate3d(0,' + (-y) + 'px,0)';
 	}
