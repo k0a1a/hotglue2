@@ -461,6 +461,15 @@ function tick(i) {
 		}
 		drawn.push({ side, el });
 	}
+	// and the scan pass starts again for this object — a class that is already
+	// there will not restart an animation, so take it off and force a reflow
+	// before putting it back
+	for (const side of SIDES) {
+		const pane = PANES[side].pane;
+		pane.classList.remove('scanning');
+		void pane.offsetWidth;
+		pane.classList.add('scanning');
+	}
 	scrollTo(item);
 	tally();
 	setStatus(view.page + '  ·  object ' + (i + 1) + '/' + view.seq.length + (verdict.diffs.length ? '  ·  ' + clip(verdict.diffs.join('; '), 46) : ''));
