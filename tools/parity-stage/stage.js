@@ -18,6 +18,7 @@
  *   ?all=1                every page in the content tree, asked of the engine
  *                         (with ?autoplay=1 and, to go round, ?loop=1)
  *   ?loop=1               come round to the first page at the end instead of stopping
+ *   ?shuffle=1            play the run in random order instead of the list's
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
  *   ?layout=auto          let each page choose (see autoLayout): wide pages
  *                         stack, taller ones go side-by-side
@@ -63,6 +64,7 @@ const CFG = {
 	// the end rather than stopping, which is what an unattended run wants.
 	all: P.get('all') === '1' && !P.get('pages') && !P.get('page'),
 	loop: P.get('loop') === '1',
+	shuffle: P.get('shuffle') === '1',
 	layout: ['stack', 'auto'].includes(P.get('layout')) ? P.get('layout') : 'side',
 	stackh: STACKH,
 	fit: P.get('fit') === '1',
@@ -784,6 +786,17 @@ async function init() {
 			return;
 		}
 	}
+	// ?shuffle=1: the list the engine hands back is alphabetical, so a run always
+	// shows the same sites in the same order and fronts one account's pages in a
+	// block. Fisher-Yates once, at the start — ?loop=1 then replays that same
+	// order, which is what a second lap of one run should be.
+	if (CFG.shuffle) {
+		for (let i = CFG.pages.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[CFG.pages[i], CFG.pages[j]] = [CFG.pages[j], CFG.pages[i]];
+		}
+	}
+
 	const actions = {
 		play: () => playPause(),
 		step: () => tick(view.ticked),
