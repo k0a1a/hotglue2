@@ -137,7 +137,7 @@ button:disabled { opacity: .4; cursor: default; }
 	top: 8px;
 	left: 8px;
 	z-index: 3;
-	font-size: 10px;
+	font-size: 20px;			/* the badge has to carry at phone scale, which is where this is watched */
 	font-weight: 600;
 	letter-spacing: .12em;
 	text-transform: uppercase;
@@ -149,11 +149,6 @@ button:disabled { opacity: .4; cursor: default; }
 	pointer-events: none;
 }
 
-/* The engine word is what the A/B is about, and it has to carry at phone scale,
-   which is where this is watched: twice the badge's own size, with the padding
-   grown to match. The host stays small — it says which site, not which engine. */
-.pane-label .side { font-size: 20px; }
-
 /* The badge names the engine — that is what the A/B is about — and the site
    it is showing, which is what a viewer recognises. The host is set in its
    own case and spacing: a URL shouted in caps and tracked out reads as a
@@ -162,8 +157,16 @@ button:disabled { opacity: .4; cursor: default; }
 .pane-label .host {
 	text-transform: none;
 	letter-spacing: 0;
-	margin-left: 7px;
+	/* A host is one unbreakable word, and at this size a long account name is
+	   wider than a phone pane on its own: without this it runs off the badge and
+	   is cut by the pane, mid-name. Breaking it is ugly; losing it is worse. */
+	overflow-wrap: anywhere;
 }
+
+/* The pipe belongs to the host, so it comes and goes with it: a page that isn't
+   in the manifest leaves the engine word standing alone rather than trailing a
+   separator with nothing after it. */
+.pane-label .host::before { content: " | "; }
 
 .pane-label .host:empty { display: none; }
 
