@@ -274,35 +274,44 @@ body.interactive .scroller iframe { pointer-events: auto; }
 
 /* ---- the scan pass ---------------------------------------------------- */
 
-/* A copier's light bar: grey 4px squares chequered against 4px of nothing,
-   sparse at the tail and dense at the leading edge, sweeping the pane from the
-   top of the screen to the bottom while the object is diffed. How long it takes
+/* A copier's light bar, running inside the object being diffed: black 8px
+   squares chequered against 8px of nothing, sparse at the tail and dense at the
+   leading edge, sweeping the object from its top edge to its bottom and clipped
+   to its bounds — the page around the object is not touched. How long it takes
    is set per object in tick() (--scan, 0.2-0.8s) rather than by the beat, so
-   the machine does not keep time like a metronome. */
-.scan {
+   the machine does not keep time like a metronome.
+   The clip is a wrapper: overflow on the bar would not clip its own transform,
+   and clip-path on it would travel along with the bar rather than stay put. */
+.box .scan {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	display: none;				/* a scan exists only while the object is being tested */
+}
+
+.box.now .scan { display: block; }
+
+.box .scan .bar {
 	position: absolute;
 	left: 0;
 	right: 0;
 	top: 0;
-	height: 34%;				/* the travel below is written for this height */
-	z-index: 2;					/* over the page and its marks, under the label */
-	pointer-events: none;
-	opacity: 0;
-	background-image: repeating-conic-gradient(rgba(122, 113, 106, .72) 0 25%, transparent 0 50%);
-	background-size: 8px 8px;	/* 4px squares */
+	height: 45%;				/* the travel below is written for this height */
+	background-image: repeating-conic-gradient(#000 0 25%, transparent 0 50%);
+	background-size: 16px 16px;	/* 8px squares */
 	/* Sparse at the tail, densest at the leading edge, and hard off it: the bar
-	   is brightest where it is going, and trails away behind. */
+	   is strongest where it is going, and trails away behind. */
 	mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .18) 30%, rgba(0, 0, 0, .58) 68%, #000 100%);
 }
 
-.pane.scanning .scan {
-	opacity: 1;
+.box.now .scan .bar {
 	animation: scan-pass var(--scan, 500ms) linear 1 forwards;
 }
 
 @keyframes scan-pass {
-	from { transform: translateY(-100%); }	/* leading edge at the top of the screen */
-	to   { transform: translateY(300%); }	/* 300% of a 34% band clears the bottom */
+	from { transform: translateY(-100%); }	/* leading edge at the object's top edge */
+	to   { transform: translateY(225%); }	/* 225% of a 45% bar clears the bottom */
 }
 
 /* the whole pane agrees: one quiet breath of green */
@@ -319,7 +328,7 @@ body.interactive .scroller iframe { pointer-events: auto; }
 	.pane.done .viewport { animation: none; }
 	.box.now .frame path { animation: none; }
 	.box.now .verdict { animation: none; opacity: 1; }	/* the verdict still lands */
-	.scan { display: none; }
+	.box.now .scan { display: none; }	/* same weight as the rule above, later in the file */
 }
 
 /* a page that isn't there (404 shell) */

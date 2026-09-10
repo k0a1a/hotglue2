@@ -405,6 +405,14 @@ function boxFor(side, item) {
 	box.style.width = w + 'px';
 	box.style.height = h + 'px';
 	box.appendChild(frameFor(w, h, sw, item.id));
+	// the scan pass runs inside the object, clipped to its bounds: a wrapper,
+	// because overflow on the bar itself would not clip its own transform
+	const scan = document.createElement('div');
+	const bar = document.createElement('div');
+	scan.className = 'scan';
+	bar.className = 'bar';
+	scan.appendChild(bar);
+	box.appendChild(scan);
 	pane.ov.appendChild(box);
 	return box;
 }
@@ -463,23 +471,16 @@ function tick(i) {
 		}
 		drawn.push({ side, el });
 	}
-	// The scan pass starts again for this object, and how long it takes is a
-	// property of the object rather than of the clock — somewhere between a
-	// fifth and four fifths of a second, so the machine reads as a machine and
-	// not as a metronome. Seeded, like the frame's wobble, so a second take of
-	// the page is the same take; and never longer than the object's turn on the
-	// stage, or a fast montage would cut the bar off mid-screen.
+	// How long the object's scan takes is a property of the object rather than
+	// of the clock — somewhere between a fifth and four fifths of a second, so
+	// the machine reads as a machine and not as a metronome. Seeded, like the
+	// frame's wobble, so a second take of the page is the same take; and never
+	// longer than the object's turn on the stage, or a fast montage would cut
+	// the bar off mid-object. Each tick builds fresh boxes, so the bars animate
+	// from the start without anyone having to restart them.
 	const scan = Math.min(view.beat || Infinity,
 		CFG.scanMin + (CFG.scanMax - CFG.scanMin) * rngFrom(item.id + ':scan')());
 	document.documentElement.style.setProperty('--scan', Math.round(scan) + 'ms');
-	// A class that is already there will not restart an animation, so take it
-	// off and force a reflow before putting it back.
-	for (const side of SIDES) {
-		const pane = PANES[side].pane;
-		pane.classList.remove('scanning');
-		void pane.offsetWidth;
-		pane.classList.add('scanning');
-	}
 	scrollTo(item);
 	tally();
 	setStatus(view.page + '  ·  object ' + (i + 1) + '/' + view.seq.length + (verdict.diffs.length ? '  ·  ' + clip(verdict.diffs.join('; '), 46) : ''));
