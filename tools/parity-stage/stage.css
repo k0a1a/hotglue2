@@ -98,13 +98,13 @@ button:disabled { opacity: .4; cursor: default; }
 	min-height: 0;
 }
 
-/* Stacked (portrait), ?stackh=: each pane takes that share of the stage height
-   — 65% by default, so both are taller than the half-and-half fold and still
-   on screen together (all of A, the top of B; the stage scrolls for the rest).
-   50 reproduces the old frame exactly. The gap goes to zero and a hairline
-   border takes its place: a flex gap is added on top of the two heights, so at
-   every setting — 50 included — the stage would overflow by that 1px and carry
-   a scrollbar for it. */
+/* Stacked (portrait), ?stackh=: each pane takes that share of the stage height.
+   50% by default — the most the two can take and both be whole, which is what
+   the panes are for. Above half the lower pane runs past the fold and the stage
+   scrolls for its bottom, so a taller pane costs B's foot; that trade is
+   opt-in. The gap goes to zero and a hairline border takes its place: a flex
+   gap is added on top of the two heights, so at every setting — 50 included —
+   the stage would overflow by that 1px and carry a scrollbar for it. */
 #stage[data-layout="stack"] {
 	flex-direction: column;
 	gap: 0;

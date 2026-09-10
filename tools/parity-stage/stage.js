@@ -23,7 +23,9 @@
  *   ?layout=auto          let each page choose (see autoLayout): wide pages
  *                         stack, taller ones go side-by-side
  *   ?stackh=80            stacked panes: each pane's share of the stage height,
- *                         in % (default 65; 50 is the old half-and-half frame)
+ *                         in % (default 50 — the most both panes can take and
+ *                         still be whole on screen; above that the lower one
+ *                         runs past the fold and the stage scrolls for it)
  *   ?fit=1                scale each page to fit its pane in both directions:
  *                         the whole page is on screen, and it is the pane's
  *                         height that sets how large the page is
@@ -46,13 +48,17 @@ const DEFAULT_PAGES = [
 	'zermela-zermela',
 ];
 
-/* Stacked panes: how much of the stage height each one takes. More than half
-   means the two cannot both fit — the sum is bounded by the window — so the
-   stage scrolls; the default keeps all of A and the top of B on screen at rest.
+/* Stacked panes: how much of the stage height each one takes. Half is the most
+   the two can take and both still be whole — the sum is bounded by the window,
+   so a taller pane is paid for out of the lower one's bottom, which goes under
+   the fold and takes the stage's scrollbar with it. That is the right trade
+   only on purpose, so it is the opt-in: 65 was the default while pane height
+   was thought to be what put more page on screen; ?fit=1 is what actually does
+   that, and it draws a bigger page out of a shorter pane all by itself.
    Garbage in the parameter falls back to the default rather than reaching the
    stylesheet as NaN, where the invalid calc() would leave the panes unsized. */
-const rawStackh = P.has('stackh') ? +P.get('stackh') : 65;
-const STACKH = Number.isFinite(rawStackh) ? Math.min(100, Math.max(20, rawStackh)) : 65;
+const rawStackh = P.has('stackh') ? +P.get('stackh') : 50;
+const STACKH = Number.isFinite(rawStackh) ? Math.min(100, Math.max(20, rawStackh)) : 50;
 
 const CFG = {
 	pages: (P.get('pages') || P.get('page') || DEFAULT_PAGES.join(',')).split(',').map(s => s.trim()).filter(Boolean),
