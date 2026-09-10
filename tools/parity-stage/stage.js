@@ -19,6 +19,8 @@
  *                         (with ?autoplay=1 and, to go round, ?loop=1)
  *   ?loop=1               come round to the first page at the end instead of stopping
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
+ *   ?stackh=80            stacked panes: each pane's share of the stage height,
+ *                         in % (default 65; 50 is the old half-and-half frame)
  *   ?ms=2000 | ?bpm=30    per-object beat (three frame pulses, then on)
  *   ?speedup=1.12         each page ticks this much faster than the last
  *   ?max=30               cap the objects ticked per page
@@ -38,6 +40,14 @@ const DEFAULT_PAGES = [
 	'zermela-zermela',
 ];
 
+/* Stacked panes: how much of the stage height each one takes. More than half
+   means the two cannot both fit — the sum is bounded by the window — so the
+   stage scrolls; the default keeps all of A and the top of B on screen at rest.
+   Garbage in the parameter falls back to the default rather than reaching the
+   stylesheet as NaN, where the invalid calc() would leave the panes unsized. */
+const rawStackh = P.has('stackh') ? +P.get('stackh') : 65;
+const STACKH = Number.isFinite(rawStackh) ? Math.min(100, Math.max(20, rawStackh)) : 65;
+
 const CFG = {
 	pages: (P.get('pages') || P.get('page') || DEFAULT_PAGES.join(',')).split(',').map(s => s.trim()).filter(Boolean),
 	single: !!P.get('page') && !P.get('pages'),
@@ -49,6 +59,7 @@ const CFG = {
 	all: P.get('all') === '1' && !P.get('pages') && !P.get('page'),
 	loop: P.get('loop') === '1',
 	layout: P.get('layout') === 'stack' ? 'stack' : 'side',
+	stackh: STACKH,
 	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 2000),
 	speedup: P.has('speedup') ? +P.get('speedup') : 1,
 	max: P.has('max') ? +P.get('max') : 0,
@@ -697,7 +708,9 @@ async function toggleRecord() {
 /* ---- controls --------------------------------------------------------- */
 
 function setLayout(mode) {
-	$('#stage').dataset.layout = mode;
+	const stage = $('#stage');
+	stage.dataset.layout = mode;
+	stage.style.setProperty('--stackh', CFG.stackh);	/* read by the stacked rules in stage.css */
 	$('#layout').setAttribute('aria-pressed', mode === 'stack' ? 'true' : 'false');
 	if (view.seq.length) requestAnimationFrame(layoutPanes);
 }

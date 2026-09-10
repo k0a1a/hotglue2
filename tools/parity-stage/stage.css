@@ -98,7 +98,24 @@ button:disabled { opacity: .4; cursor: default; }
 	min-height: 0;
 }
 
-#stage[data-layout="stack"] { flex-direction: column; }
+/* Stacked (portrait), ?stackh=: each pane takes that share of the stage height
+   — 65% by default, so both are taller than the half-and-half fold and still
+   on screen together (all of A, the top of B; the stage scrolls for the rest).
+   50 reproduces the old frame exactly. The gap goes to zero and a hairline
+   border takes its place: a flex gap is added on top of the two heights, so at
+   every setting — 50 included — the stage would overflow by that 1px and carry
+   a scrollbar for it. */
+#stage[data-layout="stack"] {
+	flex-direction: column;
+	gap: 0;
+	overflow-y: auto;
+}
+
+#stage[data-layout="stack"] .pane {
+	flex: 0 0 calc(var(--stackh, 65) * 1%);
+}
+
+#stage[data-layout="stack"] .pane + .pane { border-top: 1px solid var(--line); }
 
 .pane {
 	position: relative;
