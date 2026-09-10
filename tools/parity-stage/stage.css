@@ -65,6 +65,10 @@ body {
 
 #controls { display: flex; gap: 6px; margin-left: auto; }
 
+/* an id rule beats the UA's [hidden], so an unattended run needs this said
+   out loud (see the autoplay branch in stage.js) */
+#controls[hidden] { display: none; }
+
 button {
 	font: inherit;
 	color: var(--dim);			/* at rest the controls recede into the bar */

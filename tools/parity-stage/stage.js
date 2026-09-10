@@ -822,17 +822,14 @@ async function init() {
 		if (b) { b.id = act; b.addEventListener('click', fn); }
 	}
 
-	// ?autoplay=1 is an unattended run: play/pause, step and prev/next page are
-	// manual transport, and in a recording they are four buttons nobody is going
-	// to press. Hidden rather than removed — the handlers and the play label stay
-	// where they are, and the keyboard (space, arrows, n/p) still drives a run
-	// that a human is watching after all.
-	if (CFG.autoplay) {
-		for (const act of ['play', 'step', 'prev', 'next']) {
-			const b = document.querySelector('[data-act="' + act + '"]');
-			if (b) b.hidden = true;
-		}
-	}
+	// ?autoplay=1 is an unattended run, and in a recording every control is a
+	// button nobody is going to press: the bar should be the page's name, the
+	// tally and the status, and nothing else. The whole group goes rather than
+	// the transport alone — including Stacked, which is a manual override that
+	// would silently end ?layout=auto for the rest of the run if it were
+	// clicked. Hidden, not removed: the handlers, the play label and the
+	// keyboard stay, so space still pauses and r still starts the recorder.
+	if (CFG.autoplay) $('#controls').hidden = true;
 
 	if (CFG.audio) {
 		audio.on = audio.init();
