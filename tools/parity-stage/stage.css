@@ -275,9 +275,10 @@ body.interactive .scroller iframe { pointer-events: auto; }
 /* ---- the scan pass ---------------------------------------------------- */
 
 /* A copier's light bar: grey 4px squares chequered against 4px of nothing,
-   fading in and out along its length, sweeping the pane from the top of the
-   screen to the bottom over one beat while the object is diffed. Same clock as
-   the frame's pulses, so the sweep and the colour steps stay together. */
+   sparse at the tail and dense at the leading edge, sweeping the pane from the
+   top of the screen to the bottom while the object is diffed. How long it takes
+   is set per object in tick() (--scan, 0.2-0.8s) rather than by the beat, so
+   the machine does not keep time like a metronome. */
 .scan {
 	position: absolute;
 	left: 0;
@@ -296,7 +297,7 @@ body.interactive .scroller iframe { pointer-events: auto; }
 
 .pane.scanning .scan {
 	opacity: 1;
-	animation: scan-pass calc(var(--pulse, 667ms) * 3) linear 1 forwards;
+	animation: scan-pass var(--scan, 500ms) linear 1 forwards;
 }
 
 @keyframes scan-pass {

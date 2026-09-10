@@ -51,6 +51,8 @@ const CFG = {
 	vs: P.get('vs') || '',
 	hold: 1500,			// ms a fully-green page holds before the montage moves on
 	floor: 300,			// ms — never tick faster than this (three pulses want room)
+	scanMin: 200,		// ms — the scan pass takes a random time per object, in this
+	scanMax: 800,		//      range, so the machine does not keep time like a metronome
 };
 
 const $ = s => document.querySelector(s);
@@ -461,9 +463,17 @@ function tick(i) {
 		}
 		drawn.push({ side, el });
 	}
-	// and the scan pass starts again for this object — a class that is already
-	// there will not restart an animation, so take it off and force a reflow
-	// before putting it back
+	// The scan pass starts again for this object, and how long it takes is a
+	// property of the object rather than of the clock — somewhere between a
+	// fifth and four fifths of a second, so the machine reads as a machine and
+	// not as a metronome. Seeded, like the frame's wobble, so a second take of
+	// the page is the same take; and never longer than the object's turn on the
+	// stage, or a fast montage would cut the bar off mid-screen.
+	const scan = Math.min(view.beat || Infinity,
+		CFG.scanMin + (CFG.scanMax - CFG.scanMin) * rngFrom(item.id + ':scan')());
+	document.documentElement.style.setProperty('--scan', Math.round(scan) + 'ms');
+	// A class that is already there will not restart an animation, so take it
+	// off and force a reflow before putting it back.
 	for (const side of SIDES) {
 		const pane = PANES[side].pane;
 		pane.classList.remove('scanning');
@@ -530,6 +540,7 @@ async function showPage(index, play) {
 	// verdict lands on the last of them, follow the tick interval — so ?ms= and
 	// ?speedup= keep the picture and the clock together
 	const beat = Math.max(CFG.floor, CFG.interval / Math.pow(CFG.speedup, index));
+	view.beat = beat;
 	clock.period = beat / 1000;
 	document.documentElement.style.setProperty('--pulse', (beat / 3) + 'ms');
 	document.documentElement.style.setProperty('--late', (beat * 2 / 3) + 'ms');
