@@ -38,6 +38,13 @@ const DEFAULT_PAGES = [
 const CFG = {
 	pages: (P.get('pages') || P.get('page') || DEFAULT_PAGES.join(',')).split(',').map(s => s.trim()).filter(Boolean),
 	single: !!P.get('page') && !P.get('pages'),
+	// ?all=1 replaces that list with every page the content tree holds, asked of
+	// the engine itself (see allPagenames): a run over the whole corpus must not
+	// be a list kept here, which goes stale the moment a page is added. An
+	// explicit ?pages= wins — it is the narrower request. ?loop=1 keeps going at
+	// the end rather than stopping, which is what an unattended run wants.
+	all: P.get('all') === '1' && !P.get('pages') && !P.get('page'),
+	loop: P.get('loop') === '1',
 	layout: P.get('layout') === 'stack' ? 'stack' : 'side',
 	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 2000),
 	speedup: P.has('speedup') ? +P.get('speedup') : 1,
@@ -165,6 +172,7 @@ const PROBE_W = 1600, PROBE_H = 1200;
 
 function loadPane(pane, page) {
 	return new Promise(resolve => {
+		pane.doc = null;		// the last page's document, let go before the next arrives
 		// Load at a wide viewport. ng carries a mobile viewing layer whose gate is
 		// "viewport <= 768 and the canvas wider than it" — it would wrap the page
 		// in a scale() and every rect we read would be a scaled one. Parity is a
@@ -492,13 +500,47 @@ function finishPage() {
 	for (const side of SIDES) PANES[side].pane.classList.add('done');
 	const bad = view.findings.filter(f => f && f.verdict !== 'match').length;
 	setStatus(view.page + '  ·  ' + (bad ? bad + ' object(s) differ' : 'all ' + view.seq.length + ' objects match'));
-	if (CFG.single || view.pageIndex >= CFG.pages.length - 1) return;
-	setTimeout(() => showPage(view.pageIndex + 1, CFG.autoplay), CFG.hold);
+	if (!CFG.single) advance();
 }
 
 /* ---- page flow -------------------------------------------------------- */
 
 function setStatus(s) { $('#status').textContent = s; }
+
+/* Where a run goes next. One place decides it, so the end of a page, the skip
+   over an empty one and the Next/Prev buttons cannot disagree about where the
+   run ends; with ?loop=1 there is no end and it comes round to the first page. */
+const wrap = i => CFG.loop
+	? (i + CFG.pages.length) % CFG.pages.length
+	: Math.max(0, Math.min(CFG.pages.length - 1, i));
+
+function advance(delay = CFG.hold) {
+	const from = view.pageIndex;
+	setTimeout(() => {
+		if (view.pageIndex !== from) return;		// the run moved on while we waited
+		const next = wrap(from + 1);
+		if (next === from && !CFG.loop) return;		// the last page, and no looping: stop here
+		showPage(next, CFG.autoplay);
+	}, delay);
+}
+
+/* Every page the content tree holds, from the engine's own pagenames service
+   (module_glue) rather than from a list kept here. The referer is suppressed on
+   purpose: the parity copies pin BASE_URL relative, so the engine's xsrf check
+   rejects any request that carries one — and skips the check entirely when there
+   is none. Read-only and unauthenticated, so it works from the stage as it is. */
+async function allPagenames() {
+	const r = await fetch(MOUNT.current + 'json.php', {
+		method: 'POST',
+		referrerPolicy: 'no-referrer',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: 'method=' + encodeURIComponent('"glue.pagenames"'),
+	});
+	const j = await r.json();
+	const list = j && j['#data'];
+	if (!Array.isArray(list) || !list.length) throw new Error('the engine listed no pages');
+	return list;
+}
 
 async function showPage(index, play) {
 	clock.stop();
@@ -534,7 +576,7 @@ async function showPage(index, play) {
 
 	if (!view.seq.length) {
 		setStatus(page + '  ·  no objects on the page');
-		if (!CFG.single) setTimeout(() => showPage(index + 1, play), CFG.hold);
+		if (!CFG.single) advance();
 		return;
 	}
 	// the frame's three pulses ARE the beat: their length, and the moment the
@@ -637,12 +679,23 @@ function setLayout(mode) {
 	if (view.seq.length) requestAnimationFrame(layoutPanes);
 }
 
-function init() {
+async function init() {
+	if (CFG.all) {
+		setStatus('asking the engine for the page list…');
+		try {
+			CFG.pages = await allPagenames();
+		} catch (e) {
+			// Not a fallback to the default six: silently testing six pages when
+			// the run asked for all of them is the one outcome worth refusing.
+			setStatus('could not list the pages — ' + e.message);
+			return;
+		}
+	}
 	const actions = {
 		play: () => playPause(),
 		step: () => tick(view.ticked),
-		next: () => showPage(Math.min(CFG.pages.length - 1, view.pageIndex + 1), CFG.autoplay),
-		prev: () => showPage(Math.max(0, view.pageIndex - 1), CFG.autoplay),
+		next: () => showPage(wrap(view.pageIndex + 1), CFG.autoplay),
+		prev: () => showPage(wrap(view.pageIndex - 1), CFG.autoplay),
 		layout: () => setLayout($('#stage').dataset.layout === 'stack' ? 'side' : 'stack'),
 		interactive: () => {
 			document.body.classList.toggle('interactive');
