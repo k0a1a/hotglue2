@@ -19,6 +19,8 @@
  *                         (with ?autoplay=1 and, to go round, ?loop=1)
  *   ?loop=1               come round to the first page at the end instead of stopping
  *   ?layout=stack         portrait (top/bottom) instead of side-by-side
+ *   ?layout=auto          let each page choose (see autoLayout): wide pages
+ *                         stack, taller ones go side-by-side
  *   ?stackh=80            stacked panes: each pane's share of the stage height,
  *                         in % (default 65; 50 is the old half-and-half frame)
  *   ?fit=1                scale each page to fit its pane in both directions:
@@ -61,7 +63,7 @@ const CFG = {
 	// the end rather than stopping, which is what an unattended run wants.
 	all: P.get('all') === '1' && !P.get('pages') && !P.get('page'),
 	loop: P.get('loop') === '1',
-	layout: P.get('layout') === 'stack' ? 'stack' : 'side',
+	layout: ['stack', 'auto'].includes(P.get('layout')) ? P.get('layout') : 'side',
 	stackh: STACKH,
 	fit: P.get('fit') === '1',
 	interval: P.has('ms') ? +P.get('ms') : (P.has('bpm') ? 60000 / +P.get('bpm') : 2000),
@@ -634,6 +636,9 @@ async function showPage(index, play) {
 		pane.docH = m ? m.h : 240;
 		if (m && m.missing) pane.pane.classList.add('missing');
 	}
+	// before layoutPanes: the pane's shape decides the scale, and the iframes are
+	// sized from the shape they are about to have
+	if (CFG.layout === 'auto') autoLayout();
 	layoutPanes();
 	view.seq = buildSequence();
 	view.findings = new Array(view.seq.length);
@@ -738,11 +743,36 @@ async function toggleRecord() {
 /* ---- controls --------------------------------------------------------- */
 
 function setLayout(mode) {
+	CFG.layout = mode;			/* choosing a layout by hand ends ?layout=auto */
+	applyLayout(mode);
+}
+
+function applyLayout(mode) {
 	const stage = $('#stage');
 	stage.dataset.layout = mode;
 	stage.style.setProperty('--stackh', CFG.stackh);	/* read by the stacked rules in stage.css */
 	$('#layout').setAttribute('aria-pressed', mode === 'stack' ? 'true' : 'false');
 	if (view.seq.length) requestAnimationFrame(layoutPanes);
+}
+
+/* ?layout=auto: the panes take the shape of the page rather than the page being
+   forced into one shape for the whole run — a wide page belongs in panes that
+   span the window, a tall one in the portrait panes side-by-side gives it.
+   The switch is the stage's own aspect, not a fixed 1:1: a page of 1.2:1 is
+   neither vertical nor cast for a letterbox, and at 1280x720 the side panes are
+   0.95:1 while the stacked ones are 1.9:1 or flatter. That is the aspect at
+   which the two layouts are equally unlike the page (the geometric mean of the
+   two pane aspects works out to exactly this), and with ?fit=1 it is also the
+   point where the layouts draw the page the same size — wider than it, the
+   stacked pane is the one that can spend the window on the page; narrower, the
+   side pane is. Both engines must agree on a layout, so the decision is the
+   larger of the two documents, not one pane's. */
+function autoLayout() {
+	const w = Math.max(...SIDES.map(s => PANES[s].docW || 320));
+	const h = Math.max(...SIDES.map(s => PANES[s].docH || 320));
+	const stage = $('#stage');
+	const stageAspect = (stage.clientWidth || 1) / (stage.clientHeight || 1);
+	applyLayout(w / h > stageAspect ? 'stack' : 'side');
 }
 
 async function init() {
@@ -780,7 +810,10 @@ async function init() {
 		audio.on = audio.init();
 		if (!audio.on) setStatus('no web audio here — falling back to a plain clock');
 	}
-	setLayout(CFG.layout);
+	// ?layout=auto starts side-by-side and lets the first page decide (showPage);
+	// going through applyLayout leaves CFG.layout alone, which is what keeps the
+	// run in auto — setLayout here would read as a manual choice of 'side'.
+	applyLayout(CFG.layout === 'stack' ? 'stack' : 'side');
 
 	addEventListener('keydown', e => {
 		if (e.target.tagName === 'INPUT') return;
