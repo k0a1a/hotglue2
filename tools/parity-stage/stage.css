@@ -98,7 +98,22 @@ button:disabled { opacity: .4; cursor: default; }
 	min-height: 0;
 }
 
-#stage[data-layout="stack"] { flex-direction: column; }
+/* Stacked, portrait: one engine per screenful, the stage scrolling between
+   them. A half-height pane wastes the one axis the layout was chosen for —
+   the page is scaled to the pane's WIDTH, so pane height is exactly how much
+   of the page is on screen at once. Snapping makes the pair read as two
+   screens rather than one long scroll. */
+#stage[data-layout="stack"] {
+	flex-direction: column;
+	overflow-y: auto;
+	scroll-snap-type: y mandatory;
+}
+
+#stage[data-layout="stack"] .pane {
+	flex: none;
+	height: 100%;
+	scroll-snap-align: start;
+}
 
 .pane {
 	position: relative;
