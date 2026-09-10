@@ -756,23 +756,20 @@ function applyLayout(mode) {
 }
 
 /* ?layout=auto: the panes take the shape of the page rather than the page being
-   forced into one shape for the whole run — a wide page belongs in panes that
-   span the window, a tall one in the portrait panes side-by-side gives it.
-   The switch is the stage's own aspect, not a fixed 1:1: a page of 1.2:1 is
-   neither vertical nor cast for a letterbox, and at 1280x720 the side panes are
-   0.95:1 while the stacked ones are 1.9:1 or flatter. That is the aspect at
-   which the two layouts are equally unlike the page (the geometric mean of the
-   two pane aspects works out to exactly this), and with ?fit=1 it is also the
-   point where the layouts draw the page the same size — wider than it, the
-   stacked pane is the one that can spend the window on the page; narrower, the
-   side pane is. Both engines must agree on a layout, so the decision is the
-   larger of the two documents, not one pane's. */
+   forced into one shape for the whole run — a page wider than tall goes stacked,
+   a taller one keeps the portrait panes side-by-side.
+   The test is the page's own shape, not the stage's aspect. Keying it to the
+   stage (at which the two layouts are equally unlike the page, and are the same
+   size under ?fit=1 — 1.9:1 on a 1280x720 window) sounds better and reads
+   worse: it meant only pages wider than a letterbox stacked at all, one of the
+   eight sampled off the corpus, and "stacked never kicks in" is the verdict on
+   that. Page shape is also the thing you can see and predict. Both engines must
+   agree on a layout, so the decision uses the larger of the two documents
+   rather than one pane's. */
 function autoLayout() {
 	const w = Math.max(...SIDES.map(s => PANES[s].docW || 320));
 	const h = Math.max(...SIDES.map(s => PANES[s].docH || 320));
-	const stage = $('#stage');
-	const stageAspect = (stage.clientWidth || 1) / (stage.clientHeight || 1);
-	applyLayout(w / h > stageAspect ? 'stack' : 'side');
+	applyLayout(w > h ? 'stack' : 'side');
 }
 
 async function init() {
