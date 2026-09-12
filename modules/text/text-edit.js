@@ -2138,7 +2138,21 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('text', 'text-source', elem, 5);
 
 
-	elem = $.glue.icon('color-swatch', 'change background color');
+	// the background-colour button is a full-colour raster icon (an SVG
+	// with an embedded PNG), so it is painted as a background image rather
+	// than a CSS mask - masks read only alpha and would flatten it to a
+	// silhouette. It lives in img/, not img/icons/, whose files are line
+	// art and are checked as such.
+	elem = document.createElement('div');
+	elem.className = 'glue-btn-raster';
+	elem.style.width = '32px';
+	elem.style.height = '32px';
+	var color_icon_url = new URL($.glue.base_url+'img/color.svg', document.baseURI).href;
+	elem.style.backgroundImage = 'url("'+color_icon_url+'")';
+	elem.style.backgroundSize = 'contain';
+	elem.style.backgroundRepeat = 'no-repeat';
+	elem.style.backgroundPosition = 'center';
+	elem.title = 'change background color';
 	var colorpicker_shown = false;
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
