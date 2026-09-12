@@ -82,6 +82,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('PAGE_MAX_CONTAINER_WIDTH', 4000);		// widest the handles may drag to
 @define('PAGE_DEFAULT_GRID_X', 50);			// default grid x spacing in px
 @define('PAGE_DEFAULT_GRID_Y', 50);			// default grid y spacing in px
+@define('A11Y_ROW_THRESHOLD', 16);			// px: objects whose tops are within this distance count as one reading row (SOW-accessibility.md)
 @define('PAGE_GUIDES_X', '');				// show a grid line after n horizontal px (space-separated string)
 @define('PAGE_GUIDES_Y', '');				// show a grid line after n vertical px (space-separated string)
 @define('PAGES_NEED_AUTH', true);			// page browser needs authentication

@@ -576,3 +576,58 @@ function var_dump_inl($var)
 	} while (0 < $cnt);
 	return trim($ret);
 }
+
+/**
+ *	order objects into the visual reading order
+ *
+ *	Sorts objects by their object-top coordinate, grouping objects whose
+ *	tops are within $row_threshold pixels of each other into a "row", and
+ *	ordering each row left-to-right. This is the automatic reading order
+ *	for screen readers (SOW-accessibility.md, Feature 1): source order
+ *	follows visual flow, while the objects' absolute positioning keeps the
+ *	visual layout exactly as it was.
+ *
+ *	The name tie-break makes the result deterministic regardless of PHP
+ *	version (usort is only guaranteed stable from PHP 8 on).
+ *
+ *	@param array $objs array of arrays with 'name', 'top' and 'left' (int)
+ *	@param int $row_threshold px within which two tops count as one row
+ *	@return array the 'name' values in reading order
+ */
+function a11y_order_objects($objs, $row_threshold)
+{
+	// first sort top-down; left within equal tops is applied per-row below
+	usort($objs, function($a, $b) {
+		if ($a['top'] != $b['top']) {
+			return ($a['top'] < $b['top']) ? -1 : 1;
+		}
+		return strcmp($a['name'], $b['name']);
+	});
+	
+	// group into rows: an object joins the current row while its top is
+	// within the threshold of the row's first (topmost) object
+	$rows = array();
+	$row_top = null;
+	foreach ($objs as $o) {
+		if ($row_top === null || $o['top'] - $row_top > $row_threshold) {
+			$rows[] = array();
+			$row_top = $o['top'];
+		}
+		$rows[count($rows)-1][] = $o;
+	}
+	
+	// each row left-to-right, the name tie-break for identical positions
+	$ret = array();
+	foreach ($rows as $row) {
+		usort($row, function($a, $b) {
+			if ($a['left'] != $b['left']) {
+				return ($a['left'] < $b['left']) ? -1 : 1;
+			}
+			return strcmp($a['name'], $b['name']);
+		});
+		foreach ($row as $o) {
+			$ret[] = $o['name'];
+		}
+	}
+	return $ret;
+}

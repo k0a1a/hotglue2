@@ -693,13 +693,20 @@ register_service('glue.pagenames', 'pagenames');
  */
 function render_object($args)
 {
-	// maybe move this to common.inc.php in the future and get rid of some of 
+	// maybe move this to common.inc.php in the future and get rid of some of
 	// these checks in the beginning
-	$obj = load_object($args);
-	if ($obj['#error']) {
-		return $obj;
+	if (isset($args['obj'])) {
+		// a preloaded object (render_page passes it so the page only reads
+		// each object file once); the glue.render_object service callers
+		// never send this and take the load path below
+		$obj = $args['obj'];
 	} else {
-		$obj = $obj['#data'];
+		$obj = load_object($args);
+		if ($obj['#error']) {
+			return $obj;
+		} else {
+			$obj = $obj['#data'];
+		}
 	}
 	if (!isset($args['edit'])) {
 		return response('Required argument "edit" missing', 400);
@@ -769,7 +776,15 @@ function render_page($args)
 	elem_attr($bdy, 'id', $args['page']);
 	invoke_hook('render_page_early', ['page'=>$args['page'], 'edit'=>$args['edit']]);
 	
-	// for every file in the page directory
+	// load every object in the page directory first, so the emission order
+	// can follow the visual reading order (top-to-bottom, left-to-right
+	// within a row) instead of the filesystem's scandir order - screen
+	// readers follow source order, and because the objects are absolutely
+	// positioned, reordering the source changes nothing visually
+	// (SOW-accessibility.md, Feature 1)
+	$objs = array();	// name => loaded object
+	$page_obj = null;	// the <page>.page pseudo-object is excluded from the sort
+	$page_obj_name = null;
 	$files = @scandir(CONTENT_DIR.'/'.str_replace('.', '/', $args['page']));
 	foreach ($files as $f) {
 		$fn = CONTENT_DIR.'/'.str_replace('.', '/', $args['page']).'/'.$f;
@@ -784,8 +799,40 @@ function render_page($args)
 			}
 			continue;
 		}
-		// render object
-		render_object(['name'=>$args['page'].'.'.$f, 'edit'=>$args['edit']]);
+		$name = $args['page'].'.'.$f;
+		$loaded = load_object(['name'=>$name]);
+		if ($loaded['#error']) {
+			// an unreadable entry (e.g. a stray directory) is skipped,
+			// exactly as the old render_object() load did
+			continue;
+		}
+		// same detection page_render_object uses
+		if (expl('.', $name)[2] == 'page') {
+			$page_obj = $loaded['#data'];
+			$page_obj_name = $name;
+		} else {
+			$objs[$name] = $loaded['#data'];
+		}
+	}
+
+	// the page pseudo-object first: it only writes page-level head css/title,
+	// nothing body-visible, so its position is irrelevant either way
+	if ($page_obj !== null) {
+		render_object(['name'=>$page_obj_name, 'edit'=>$args['edit'], 'obj'=>$page_obj]);
+	}
+	// then the objects in reading order
+	$order = a11y_order_objects(
+		array_map(function($name) use ($objs) {
+			return array(
+				'name' => $name,
+				'top' => !empty($objs[$name]['object-top']) ? intval($objs[$name]['object-top']) : 0,
+				'left' => !empty($objs[$name]['object-left']) ? intval($objs[$name]['object-left']) : 0,
+			);
+		}, array_keys($objs)),
+		A11Y_ROW_THRESHOLD
+	);
+	foreach ($order as $name) {
+		render_object(['name'=>$name, 'edit'=>$args['edit'], 'obj'=>$objs[$name]]);
 	}
 	
 	invoke_hook('render_page_late', ['page'=>$args['page'], 'edit'=>$args['edit']]);
