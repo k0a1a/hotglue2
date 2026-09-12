@@ -705,6 +705,49 @@ $.glue.colorpicker = function()
 	// "50%" needs no explaining.
 	var alpha_row = false;
 
+	// The blend row: a dropdown for the parent OBJECT's mix-blend-mode,
+	// under the recent-colour swatches. Only built when the picker knows
+	// which object it is colouring (see show()).
+	var BLEND_MODES = ['normal', 'multiply', 'screen', 'overlay', 'darken',
+		'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
+		'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
+	var blend_obj = null;
+	var blend_row = false;
+
+	var build_blend = function() {
+		var editor = anchor.querySelector('.picker_editor');
+		if (!editor || !editor.parentNode || !blend_obj) {
+			return;
+		}
+		// same reuse discipline as build_alpha: the wrapper is vanilla-
+		// picker's and survives every close
+		var stale = anchor.querySelector('.glue-picker-blend');
+		if (stale) {
+			stale.remove();
+		}
+		blend_row = $.glue.popover.row('blend');
+		blend_row.classList.add('glue-picker-blend');
+		var sel = document.createElement('select');
+		sel.className = 'glue-picker-blend-select';
+		sel.title = 'how the object blends with what is behind it';
+		BLEND_MODES.forEach(function(m) {
+			var o = document.createElement('option');
+			o.value = m;
+			o.textContent = m;
+			sel.appendChild(o);
+		});
+		var current = getComputedStyle(blend_obj).mixBlendMode || 'normal';
+		sel.value = BLEND_MODES.indexOf(current) != -1 ? current : 'normal';
+		sel.addEventListener('change', function() {
+			// live, like a colour change; the caller's finish save stores it
+			blend_obj.style.mixBlendMode = sel.value;
+		});
+		blend_row.appendChild(sel);
+		// after the swatches, which were inserted first - the row order in
+		// the panel is alpha, swatches, blend, editor
+		editor.parentNode.insertBefore(blend_row, editor);
+	};
+
 	var build_alpha = function() {
 		var editor = anchor.querySelector('.picker_editor');
 		if (!editor || !editor.parentNode) {
@@ -821,6 +864,8 @@ $.glue.colorpicker = function()
 			}
 			shown = false;
 			alpha_row = false;
+			blend_row = false;
+			blend_obj = null;
 			if (!cancelled) {
 				remember_color(color);
 				if (typeof finish_func == 'function') {
@@ -869,7 +914,7 @@ $.glue.colorpicker = function()
 				parseInt(hex.slice(3, 5), 16)+', '+parseInt(hex.slice(5, 7), 16)+', '+
 				rgb.a+')', true);
 		},
-		show: function(def, transp, change, finish) {
+		show: function(def, transp, change, finish, obj) {
 			if (shown) {
 				$.glue.colorpicker.hide(true);
 			}
@@ -877,6 +922,15 @@ $.glue.colorpicker = function()
 			change_func = change;
 			finish_func = finish;
 			cancelled = false;
+
+			// the object the picker is colouring, when it has one: passed
+			// explicitly, or the popover's owner (every popover colour row
+			// opens from one). Page-level pickers get neither and no row.
+			blend_obj = obj;
+			if (blend_obj === undefined) {
+				var p = $.glue.popover.current();
+				blend_obj = p ? $.glue.owner(p) : null;
+			}
 
 			document.body.appendChild(anchor);
 			// Always 'bottom', which is the only one of vanilla-picker's four
@@ -899,6 +953,7 @@ $.glue.colorpicker = function()
 			picker.show();
 			build_alpha();
 			build_swatches();
+			build_blend();
 			// after the swatches, since they are part of what makes it tall
 			place_popup();
 		}

@@ -2156,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}, function (col) {
 			$.glue.object.save(obj);
 			colorpicker_shown = false;
-		});
+		}, obj);
 		colorpicker_shown = true;
 	});
 	elem.addEventListener('glue-deselect', function(e) {

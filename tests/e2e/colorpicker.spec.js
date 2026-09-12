@@ -98,7 +98,10 @@ test('the picker is small enough to leave the object visible', async ({ page, hg
 	// cover the page element being worked on)
 	expect(b.width, 'the picker is back to its full default width')
 		.toBeLessThanOrEqual(180);
-	expect(b.height, 'the picker is back to its full default height').toBeLessThan(210);
+	// the height ceiling is the rows the picker carries: alpha, the recent
+	// swatches, the blend row (for object pickers) and the editor - one
+	// more row than the original 210 allowed
+	expect(b.height, 'the picker is back to its full default height').toBeLessThan(240);
 	// and it is still usable: the hex field, the sample and Ok all present
 	await expect(page.locator('.picker_editor input')).toBeVisible();
 	await expect(page.locator('.picker_done button')).toBeVisible();

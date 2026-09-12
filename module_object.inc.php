@@ -263,6 +263,16 @@ function object_alter_render_early($args)
 	if (!empty($obj['object-border-radius'])) {
 		elem_css($elem, 'border-radius', $obj['object-border-radius']);
 	}
+	// how the object blends with what is behind it. Absent means normal -
+	// the browser default - so only a non-normal mode is ever stored, and
+	// the stored value is allowlisted before it reaches the style attribute.
+	if (!empty($obj['object-mix-blend-mode']) &&
+			in_array($obj['object-mix-blend-mode'], array('multiply', 'screen',
+				'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn',
+				'hard-light', 'soft-light', 'difference', 'exclusion', 'hue',
+				'saturation', 'color', 'luminosity'))) {
+		elem_css($elem, 'mix-blend-mode', $obj['object-mix-blend-mode']);
+	}
 	// A border of the author's own. Solid is the default and is NOT stored -
 	// absent means solid, the way absent means visible for overflow - so an
 	// object with an ordinary border carries two attributes rather than
@@ -464,6 +474,12 @@ function object_alter_save($args)
 		$obj['object-opacity'] = elem_css($elem, 'opacity');
 	} else {
 		unset($obj['object-opacity']);
+	}
+	if (elem_css($elem, 'mix-blend-mode') !== NULL &&
+			elem_css($elem, 'mix-blend-mode') != 'normal') {
+		$obj['object-mix-blend-mode'] = elem_css($elem, 'mix-blend-mode');
+	} else {
+		unset($obj['object-mix-blend-mode']);
 	}
 	if (elem_css($elem, 'overflow') !== NULL) {
 		$obj['object-overflow'] = elem_css($elem, 'overflow');

@@ -497,6 +497,20 @@
 	width: 7.6em !important;
 }
 
+.glue-picker-blend {
+	/* the blend row: its own full-width line under the recent colours,
+	   same flex discipline as the alpha row above */
+	order: 1;
+	flex: 1 1 100%;
+	min-width: 0;
+	margin: 0.3em 0 !important;
+}
+
+.glue-picker-blend select {
+	font-size: 11px;
+	flex: 0 0 auto;
+}
+
 .glue-picker-recent {
 	/* the last few colours used on this page, on their own line directly
 	   above the hex field / sample / Ok row. order:1 puts it in the wrapped
