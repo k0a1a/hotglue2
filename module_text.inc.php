@@ -390,7 +390,16 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-word-spacing']);
 	}
-	
+
+	// accessibility round-trip (SOW-accessibility.md): the serialized tag
+	// itself carries the heading level (html_parse_elem lowercases it)
+	$tag = elem_tag($elem);
+	if (in_array($tag, array('h1', 'h2', 'h3'))) {
+		$obj['text-heading-level'] = $tag;
+	} else {
+		unset($obj['text-heading-level']);
+	}
+
 	return true;
 }
 
@@ -401,6 +410,17 @@ function text_alter_render_early($args)
 	$obj = $args['obj'];
 	if (!elem_has_class($elem, 'text')) {
 		return false;
+	}
+
+	// accessibility (SOW-accessibility.md): a semantic heading level turns
+	// the wrapper into h1/h2/h3. reset.css already neutralises the browser's
+	// heading defaults (margin, size, weight), and every visual property
+	// still comes from the author's own text-* keys below, so the change is
+	// structure-only - appearance is untouched and the author stays in
+	// control of how a heading looks.
+	if (!empty($obj['text-heading-level']) &&
+			in_array($obj['text-heading-level'], array('h1', 'h2', 'h3'))) {
+		$elem['tag'] = $obj['text-heading-level'];
 	}
 
 	// The text module deliberately ships no stylesheet, like the historical

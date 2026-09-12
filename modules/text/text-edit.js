@@ -2035,6 +2035,72 @@ function text_font_popover(obj)
 // touched, rather than one carrying "normal" forever.
 //
 
+// Semantic heading level (SOW-accessibility.md, Feature 4). The stored
+// text-heading-level key maps to the wrapper's tag itself, so the level
+// round-trips through the same serialize-and-save path as every visual
+// property. Tag names are immutable in place, hence the swap below.
+// (attached to the existing $.glue.text namespace defined further up)
+$.glue.text.set_heading = function(obj, level) {
+	var tag = level || 'div';
+	if (obj.tagName.toLowerCase() === tag) {
+		return;
+	}
+	var selected = obj.classList.contains('glue-selected');
+	// the popover's owner points at the node that is about to die
+	$.glue.popover.close();
+	var neu = document.createElement(tag);
+	for (var i = 0; i < obj.attributes.length; i++) {
+		var a = obj.attributes[i];
+		neu.setAttribute(a.name, a.value);	// id, class, style, custom attrs
+	}
+	while (obj.firstChild) {
+		neu.appendChild(obj.firstChild);	// textarea + render div ride along
+	}
+	$.glue.object.unregister(obj);		// destroys the Moveable, clears the guard
+	obj.replaceWith(neu);
+	$.glue.object.register(neu);		// new Moveable
+	if (selected) {
+		$.glue.sel.none();
+		$.glue.sel.select(neu);
+	}
+	// NOTE: the undo WeakMap is keyed by element, so this first save reads
+	// as a 'create' rather than an 'update' - a cosmetic, accepted gap.
+	$.glue.object.save(neu);
+};
+
+function text_heading_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-heading-popover');
+	if (!pop) {
+		return;
+	}
+
+	var row = $.glue.popover.row('heading');
+	var levels = [['normal', 'div'], ['H1', 'h1'], ['H2', 'h2'], ['H3', 'h3']];
+	levels.forEach(function(level) {
+		var b = document.createElement('div');
+		b.className = 'glue-font-toggle glue-heading-toggle';
+		b.textContent = level[0];
+		b.title = 'render this text as a '+level[0]+' heading';
+		var sync = function() {
+			b.classList.toggle('glue-font-toggle-on', obj.tagName.toLowerCase() == level[1]);
+		};
+		b.addEventListener('click', function() {
+			$.glue.text.set_heading(obj, level[1]);
+		});
+		b.addEventListener('glue-menu-activate', sync);
+		sync();
+		row.appendChild(b);
+	});
+	pop.appendChild(row);
+
+	pop.appendChild($.glue.popover.reset('back to a plain text object', function() {
+		$.glue.text.set_heading(obj, 'div');
+	}));
+
+	$.glue.popover.show(pop);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
@@ -2225,6 +2291,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		e.stopPropagation();
 	});
 	$.glue.contextmenu.register('text', 'text-text-padding', elem, 4);
+
+	// semantic heading level: screen readers navigate pages by headings, so
+	// a text object can render as h1/h2/h3 (appearance stays the author's)
+	elem = $.glue.icon('text-shape', 'heading level');
+	elem.addEventListener('click', function(e) {
+		text_heading_popover($.glue.owner(this));
+		e.stopPropagation();
+	});
+	$.glue.contextmenu.register('text', 'text-heading', elem, 7);
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {
