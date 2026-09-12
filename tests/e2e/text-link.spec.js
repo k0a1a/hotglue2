@@ -220,16 +220,15 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 		.toBe('see <a href="https://example.org/">this</a> now');
 });
 
-// --- the panel, rather than the modal it used to be ----------------------
+// --- the strip row, rather than the popover it used to be -----------------
 //
-// It was a modal: a backdrop across the whole page for two fields and a
-// button, centred on the viewport and therefore usually on top of the very
-// text being linked. It is a rollout beside the object now, on the same
-// machinery as the font and spacing panels - which means it closes the way
-// they do, and that the editor's canvas shortcuts had to learn to leave a
-// focused field alone.
+// The link entry is part of the run-formatting strip now: the strip's link
+// button reveals a url/class row UNDER the size slider, docked with the
+// strip to the object's bottom edge. Same contract as the old popover:
+// Enter commits, Escape closes without linking, and the editor's canvas
+// shortcuts leave a focused field alone.
 
-test('the link panel opens beside the object, not over it', async ({ page, hg }) => {
+test('the link row docks into the strip, under the size slider', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
@@ -237,11 +236,12 @@ test('the link panel opens beside the object, not over it', async ({ page, hg })
 	await select(page, a, 'world');
 	await openDialog(page);
 
-	const pop = await page.locator('.glue-link-popover').boundingBox();
-	const obj = await byId(page, a).boundingBox();
-	const overlaps = pop.x < obj.x + obj.width && obj.x < pop.x + pop.width &&
-		pop.y < obj.y + obj.height && obj.y < pop.y + pop.height;
-	expect(overlaps, 'the panel is sitting on top of the text it is linking').toBe(false);
+	const row = page.locator('.glue-text-strip-link');
+	await expect(row).toBeVisible();
+	// the row sits below the size slider, inside the strip
+	const slider = await page.locator('.glue-text-size-slider').boundingBox();
+	const r = await row.boundingBox();
+	expect(r.y, 'the link row is not under the size slider').toBeGreaterThan(slider.y);
 	// and no backdrop over the page
 	expect(await page.locator('.glue-modal-backdrop').count()).toBe(0);
 });
@@ -256,7 +256,7 @@ test('Escape closes it without linking anything', async ({ page, hg }) => {
 
 	await urlField(page).fill('https://example.org');
 	await page.keyboard.press('Escape');
-	await expect(page.locator('.glue-link-popover')).toHaveCount(0);
+	await expect(page.locator('.glue-text-strip-link')).toBeHidden();
 	await finish(page, a);
 	await expect.poll(() => hg.readObject('100000000001').content)
 		.not.toContain('<a');
@@ -272,7 +272,7 @@ test('Enter in the url field is the same as OK', async ({ page, hg }) => {
 
 	await urlField(page).fill('https://example.org');
 	await urlField(page).press('Enter');
-	await expect(page.locator('.glue-link-popover')).toHaveCount(0);
+	await expect(page.locator('.glue-text-strip-link')).toBeHidden();
 	await finish(page, a);
 	await expect.poll(() => hg.readObject('100000000001').content)
 		.toContain('href="https://example.org"');
@@ -297,7 +297,7 @@ test('the canvas shortcuts leave a focused field alone', async ({ page, hg }) =>
 	await urlField(page).press('ArrowLeft');
 
 	// still open, still one object, still selected
-	await expect(page.locator('.glue-link-popover')).toHaveCount(1);
+	await expect(page.locator('.glue-text-strip-link')).toBeVisible();
 	await expect(byId(page, a)).toHaveCount(1);
 	await expect(urlField(page)).toHaveValue('');
 });

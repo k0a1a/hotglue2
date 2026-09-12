@@ -630,223 +630,6 @@ function text_link_normalize(url) {
 	return url;
 }
 
-function text_link_escape_attr(s) {
-	return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-		.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// Find an <a>...</a> in the source that contains the given offsets.
-//
-// A regex over the source, not a parser: the textarea holds text that may not
-// even be well-formed while it is being typed. It is good enough to recognise
-// a link this UI wrote, and it fails by finding nothing rather than by
-// mangling something.
-function text_link_at(value, start, end) {
-	var re = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
-	var m;
-	while ((m = re.exec(value)) !== null) {
-		var from = m.index;
-		var to = m.index + m[0].length;
-		if (start >= from && end <= to) {
-			var href = /href\s*=\s*"([^"]*)"/i.exec(m[1]) || /href\s*=\s*'([^']*)'/i.exec(m[1]);
-			var cls = /class\s*=\s*"([^"]*)"/i.exec(m[1]) || /class\s*=\s*'([^']*)'/i.exec(m[1]);
-			return {
-				from: from, to: to,
-				href: href ? href[1] : '',
-				cls: cls ? cls[1] : '',
-				text: m[2]
-			};
-		}
-	}
-	return null;
-}
-
-// The dialog itself, shared by both editing surfaces. opts:
-//   href, cls   .. current values, '' for a new link
-//   note        .. what the dialog is acting on, shown to the user
-//   on_save(href, cls), on_remove (omitted for a new link)
-// The link panel: a rollout beside the object, not a modal over it.
-//
-// It was a modal, which meant a backdrop across the whole page for what is
-// two fields and a button - and, being centred, it landed on top of the text
-// whose link was being edited. Same panel as the font and spacing ones now:
-// placed in the free space beside the object, closed by Escape or a click
-// outside.
-//
-// Unlike those two it does NOT apply live. They set a property that can be
-// looked at and adjusted; this rewrites the object's markup around a
-// selection, so it commits once, on OK.
-//
-// opts .. obj (what the panel belongs to), note, href, cls,
-//         on_save(href, cls), on_remove (only when editing an existing link)
-function text_link_ui(opts) {
-	var pop = $.glue.popover.open(opts.obj, 'glue-link-popover');
-	if (!pop) {
-		return;
-	}
-
-	var note = document.createElement('div');
-	note.className = 'glue-popover-note';
-	note.textContent = opts.note;
-	pop.appendChild(note);
-
-	function field(label, value) {
-		var row = $.glue.popover.row(label);
-		var inp = document.createElement('input');
-		inp.type = 'text';
-		inp.className = 'glue-link-field';
-		inp.value = value || '';
-		row.appendChild(inp);
-		pop.appendChild(row);
-		return inp;
-	}
-
-	var url_input = field('url', opts.href || 'https://');
-	var class_input = field('class', opts.cls || '');
-	class_input.title = 'optional, for your own CSS';
-
-	var problem = document.createElement('div');
-	problem.className = 'glue-popover-problem';
-	pop.appendChild(problem);
-
-	var buttons = $.glue.popover.row(false);
-	buttons.classList.add('glue-link-buttons');
-	if (opts.on_remove) {
-		var remove = document.createElement('button');
-		remove.type = 'button';
-		remove.textContent = 'Remove link';
-		remove.addEventListener('click', function() {
-			$.glue.popover.close();
-			opts.on_remove();
-		});
-		buttons.appendChild(remove);
-	}
-	var ok = document.createElement('button');
-	ok.type = 'button';
-	ok.textContent = 'OK';
-	ok.className = 'glue-link-ok';
-	var save = function() {
-		if (!validate()) {
-			return;
-		}
-		var href = text_link_normalize(url_input.value);
-		var cls = class_input.value.trim();
-		$.glue.popover.close();
-		opts.on_save(href, cls);
-	};
-	ok.addEventListener('click', save);
-	buttons.appendChild(ok);
-	pop.appendChild(buttons);
-
-	function validate() {
-		var msg = text_link_url_problem(url_input.value);
-		url_input.classList.toggle('glue-tag-invalid', !!msg);
-		problem.textContent = msg || '';
-		ok.disabled = !!msg;
-		return !msg;
-	}
-	url_input.addEventListener('input', validate);
-	// Enter is the same as OK, in either field: this panel commits rather
-	// than applying live, so it needs a way to say "that is the value" from
-	// the keyboard
-	[url_input, class_input].forEach(function(inp) {
-		inp.addEventListener('keydown', function(e) {
-			if (e.key == 'Enter') {
-				e.preventDefault();
-				save();
-			}
-		});
-	});
-	validate();
-
-	$.glue.popover.show(pop);
-	url_input.focus();
-	url_input.select();
-}
-
-// --- source mode: splice literal tags into the textarea's value ----------
-function text_link_dialog(obj, input, start, end) {
-	var value = input.value;
-	var existing = text_link_at(value, start, end);
-	var selected = value.substring(start, end);
-	if (!existing && start === end) {
-		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
-		return;
-	}
-	function splice(from, to, str) {
-		input.value = input.value.substring(0, from) + str + input.value.substring(to);
-		var pos = from + str.length;
-		input.focus();
-		input.setSelectionRange(pos, pos);
-	}
-	var plain = (existing ? existing.text : selected).replace(/<[^>]*>/g, '').substring(0, 40);
-	text_link_ui({
-		obj: obj,
-		href: existing ? existing.href : '',
-		cls: existing ? existing.cls : '',
-		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',
-		on_save: function(href, cls) {
-			var body = existing ? existing.text : selected;
-			var link = '<a href="' + text_link_escape_attr(href) + '"' +
-				(cls ? ' class="' + text_link_escape_attr(cls) + '"' : '') + '>' + body + '</a>';
-			splice(existing ? existing.from : start, existing ? existing.to : end, link);
-		},
-		on_remove: existing ? function() {
-			splice(existing.from, existing.to, existing.text);
-		} : null
-	});
-}
-
-// --- WYSIWYG mode: operate on the DOM, where there is no markup to splice -
-function text_link_dialog_dom(obj, render) {
-	var sel = window.getSelection();
-	if (!sel || !sel.rangeCount || !render.contains(sel.anchorNode)) {
-		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
-		return;
-	}
-	// The modal takes focus, which collapses the live selection - so keep a
-	// copy of the range now and act on that.
-	var range = sel.getRangeAt(0).cloneRange();
-	var node = sel.anchorNode;
-	var existing = node && node.nodeType == 3 ? node.parentElement : node;
-	existing = existing ? existing.closest('a') : null;
-	if (existing && !render.contains(existing)) {
-		existing = null;
-	}
-	if (!existing && range.collapsed) {
-		$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
-		return;
-	}
-	var plain = (existing ? existing.textContent : range.toString()).substring(0, 40);
-	text_link_ui({
-		obj: obj,
-		href: existing ? existing.getAttribute('href') || '' : '',
-		cls: existing ? existing.className : '',
-		note: (existing ? 'editing the link around "' : 'linking "') + plain + '"',
-		on_save: function(href, cls) {
-			var a = existing;
-			if (!a) {
-				a = document.createElement('a');
-				// extractContents rather than surroundContents: the latter
-				// throws when the selection only partly covers an element
-				a.appendChild(range.extractContents());
-				range.insertNode(a);
-			}
-			a.setAttribute('href', href);
-			if (cls) {
-				a.setAttribute('class', cls);
-			} else {
-				a.removeAttribute('class');
-			}
-			render.focus();
-		},
-		on_remove: existing ? function() {
-			existing.replaceWith(...existing.childNodes);
-			render.focus();
-		} : null
-	});
-}
-
 // --- run formatting strip --------------------------------------------------
 //
 // B/I/U/S, a colour button, a font-face dropdown and an arbitrary-px size for
@@ -862,7 +645,7 @@ function text_link_dialog_dom(obj, render) {
 // (html_encode_str_smart), so no server code knows or cares that these tags
 // exist - the browser renders them, on this page and on the published one.
 //
-// The range work is done by hand, the way text_link_dialog_dom does it: no
+// The range work is done by hand - including the strip's link row - no
 // execCommand anywhere. Every op re-installs an explicit range afterwards,
 // because focus drifts to the strip on click and engines differ in what
 // caret they put back. Selection state is kept in text_strip_range (updated
@@ -991,6 +774,23 @@ function text_strip_build() {
 	row1.appendChild(face);
 	text_strip_face = face;
 
+	// --- link --------------------------------------------------------------
+	// A link wraps the SELECTED RUN the way b/i/u/s do. The button snapshots
+	// the selection on mousedown (the click itself collapses it) and reveals
+	// the url/class row under the size slider; the machinery is the old link
+	// panel's, docked into the strip instead of a popover beside the object.
+	var link_btn = $.glue.icon('hyperlink', 'turn the selected text into a link, or edit a link');
+	link_btn.style.width = '26px';		// the size of the b/i/u/s buttons
+	link_btn.style.height = '26px';
+	link_btn.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	link_btn.addEventListener('click', function() {
+		text_strip_link_open();
+	});
+	row1.appendChild(link_btn);
+	text_strip_btns['link'] = link_btn;
+
 	// --- row 2: size slider + manual entry ---------------------------------
 	// The slider is a quick tool (8-100px, like the font popover's); the
 	// field is the precise one, and can say values the slider cannot. Both
@@ -1083,6 +883,147 @@ function text_strip_build() {
 	unit.className = 'glue-popover-unit';
 	unit.textContent = 'px';
 	row2.appendChild(unit);
+
+	// --- link row: url and class, under the size slider --------------------
+	// hidden until the link button above asks for it; Enter commits like OK,
+	// Escape closes without linking (the contract the old link popover had)
+	var link_row = document.createElement('div');
+	link_row.className = 'glue-text-strip-row glue-text-strip-link';
+	link_row.style.display = 'none';
+	var link_url = document.createElement('input');
+	link_url.type = 'text';
+	link_url.className = 'glue-link-field';
+	link_url.title = 'the address the link goes to';
+	var link_cls = document.createElement('input');
+	link_cls.type = 'text';
+	link_cls.className = 'glue-link-field';
+	link_cls.title = 'optional, for your own CSS';
+	var link_problem = document.createElement('div');
+	link_problem.className = 'glue-popover-problem';
+	var link_buttons = document.createElement('div');
+	link_buttons.className = 'glue-link-buttons';
+	var link_remove = document.createElement('button');
+	link_remove.type = 'button';
+	link_remove.textContent = 'Remove link';
+	var link_ok = document.createElement('button');
+	link_ok.type = 'button';
+	link_ok.textContent = 'OK';
+	link_ok.className = 'glue-link-ok';
+	link_buttons.appendChild(link_remove);
+	link_buttons.appendChild(link_ok);
+	link_row.appendChild(link_url);
+	link_row.appendChild(link_cls);
+	link_row.appendChild(link_problem);
+	link_row.appendChild(link_buttons);
+	strip.appendChild(link_row);
+	var link_range = null;      // the snapshot the button's mousedown took
+	var link_existing = null;   // the <a> being edited, if the caret is inside one
+
+	var link_validate = function() {
+		var msg = text_link_url_problem(link_url.value);
+		link_url.classList.toggle('glue-tag-invalid', !!msg);
+		link_problem.textContent = msg || '';
+		link_ok.disabled = !!msg;
+	};
+	var link_hide = function() {
+		link_row.style.display = 'none';
+		link_range = null;
+		link_existing = null;
+	};
+	var link_commit = function() {
+		var render = text_strip_render;
+		if (!render || !link_range) {
+			return;
+		}
+		var existing = link_existing;
+		if (!existing) {
+			existing = document.createElement('a');
+			// extractContents rather than surroundContents: the latter
+			// throws when the selection only partly covers an element
+			existing.appendChild(link_range.extractContents());
+			link_range.insertNode(existing);
+		}
+		existing.setAttribute('href', text_link_normalize(link_url.value));
+		if (link_cls.value.trim()) {
+			existing.setAttribute('class', link_cls.value.trim());
+		} else {
+			existing.removeAttribute('class');
+		}
+		link_hide();
+		text_strip_restore(render, link_range);
+		render.focus();
+	};
+	var link_remove_click = function() {
+		var existing = link_existing;
+		var render = text_strip_render;
+		if (!existing || !render) {
+			return;
+		}
+		existing.replaceWith(...existing.childNodes);
+		link_hide();
+		render.focus();
+	};
+	var link_keydown = function(e) {
+		if (e.key == 'Escape') {
+			e.preventDefault();
+			link_hide();
+			if (text_strip_render) {
+				text_strip_render.focus();
+			}
+			return;
+		}
+		if (e.key == 'Enter') {
+			e.preventDefault();
+			link_validate();
+			if (!link_ok.disabled) {
+				link_commit();
+			}
+		}
+		// no stopPropagation - the editor's global keydown ignores fields
+		// (typing_in_a_field), like the size field above
+	};
+	link_url.addEventListener('input', link_validate);
+	link_cls.addEventListener('input', link_validate);
+	link_url.addEventListener('keydown', link_keydown);
+	link_cls.addEventListener('keydown', link_keydown);
+	link_ok.addEventListener('click', function() {
+		link_validate();
+		if (!link_ok.disabled) {
+			link_commit();
+		}
+	});
+	link_remove.addEventListener('click', link_remove_click);
+	var text_strip_link_open = function() {
+		var render = text_strip_render;
+		if (!render) {
+			return;
+		}
+		var range = text_strip_snapshot || text_strip_range_for();
+		if (!range) {
+			return;
+		}
+		// the selection (or the caret) was inside an existing link? then this
+		// edits that link rather than wrapping a new one
+		var node = range.startContainer;
+		var existing = node && node.nodeType == 3 ? node.parentElement : node;
+		existing = existing ? existing.closest('a') : null;
+		if (existing && !render.contains(existing)) {
+			existing = null;
+		}
+		if (!existing && range.collapsed) {
+			$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+			return;
+		}
+		link_range = range;
+		link_existing = existing;
+		link_url.value = existing ? (existing.getAttribute('href') || '') : 'https://';
+		link_cls.value = existing ? (existing.className || '') : '';
+		link_remove.style.display = existing ? '' : 'none';
+		link_validate();
+		link_row.style.display = '';
+		link_url.focus();
+	};
+
 	// Moveable hears touch on the body container and would drag the object;
 	// its chrome exemption list does not know this element.
 	strip.addEventListener('touchstart', function(e) { e.stopPropagation(); });
@@ -1434,6 +1375,12 @@ function text_strip_apply_color(render, col) {
 function text_strip_hide() {
 	if (text_strip) {
 		text_strip.style.display = 'none';
+		// the link row goes away with the strip; its range/existing state
+		// is always re-derived on the next open
+		var link_row = text_strip.querySelector('.glue-text-strip-link');
+		if (link_row) {
+			link_row.style.display = 'none';
+		}
 	}
 	text_strip_obj = null;
 	text_strip_render = null;
@@ -2175,29 +2122,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	// context menu items
 	//
 
-	// turn the currently selected text into a link - plain text glyph
-	// rather than a new binary icon asset, same convention as the undo/
-	// redo/gear buttons elsewhere. Storage/rendering need no changes at
-	// all: html_encode_str_smart() already passes well-formed tags like
-	// <a href="..."> through unescaped rather than encoding them, and
-	// stop_editing() below already anticipates <a> tags inside rendered
-	// text content (it finds and disables them while editing) - this
-	// button just gives an easier way to insert one than hand-typing the
-	// raw HTML into the textarea
-	elem = $.glue.icon('hyperlink', 'turn the selected text into a link, or edit a link');
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var input = obj.querySelector(':scope > .glue-text-input');
-		var render = obj.querySelector(':scope > .glue-text-render');
-		if (render.isContentEditable) {
-			text_link_dialog_dom(obj, render);
-		} else {
-			// selectionStart/End survive the textarea losing focus to this
-			// click, which is what makes reading them here work at all
-			text_link_dialog(obj, input, input.selectionStart, input.selectionEnd);
-		}
-	});
-	$.glue.contextmenu.register('text', 'text-link', elem, 6);
+	// "turn the selected text into a link" now lives in the run-formatting
+	// strip, where the selection it acts on is - it docks while the text is
+	// edited WYSIWYG and shows the url/class row under the size slider
+	// (text_strip_build above). No context-menu entry any more.
 
 	// Source-mode toggle. WYSIWYG editing hides the markup, which is the
 	// point, but it also means the browser's HTML parser gets a say in what
