@@ -577,58 +577,9 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 });
 
 // --- "make link" for a selection inside a text object ---------------------
-//
-// Text objects are edited as a TEXTAREA holding raw HTML source, not as
-// contenteditable (see js/edit.js:2370). So there is no Selection/Range API to
-// use here and document.execCommand('createLink') does nothing: making a link
-// means splicing literal <a> tags into the textarea's value around the selected
-// characters. That is also why the URL has to be escaped as attribute syntax on
-// the way in - the user is authoring source, and a stray quote produces broken
-// markup rather than a broken DOM.
-
-// Schemes that are allowed to appear in a href here. Anything else - including
-// javascript: and data: - is refused.
-//
-// This is hygiene, not a security boundary: the author is authenticated and is
-// typing raw HTML into a textarea, so they can already write anything at all,
-// this button included or not. The point is that a link the UI builds for you
-// should never be something you did not ask for.
-var LINK_SCHEME_RE = /^([a-z][a-z0-9+.-]*):/i;
-var LINK_ALLOWED_SCHEMES = ['http', 'https', 'mailto', 'ftp'];
-
-function text_link_url_problem(url) {
-	url = url.trim();
-	if (url === '') {
-		return 'enter a URL';
-	}
-	var m = LINK_SCHEME_RE.exec(url);
-	if (m) {
-		if (LINK_ALLOWED_SCHEMES.indexOf(m[1].toLowerCase()) == -1) {
-			return '"' + m[1] + ':" links are not allowed here';
-		}
-		return false;
-	}
-	// no scheme: an anchor, or a page/relative path, or a bare domain
-	return false;
-}
-
-// What actually goes in the href. A bare domain gets https:// so the link
-// works; anchors and relative hotglue paths are left exactly as typed.
-function text_link_normalize(url) {
-	url = url.trim();
-	if (url === '' || LINK_SCHEME_RE.test(url)) {
-		return url;
-	}
-	if (url.charAt(0) == '#' || url.charAt(0) == '/') {
-		return url;
-	}
-	// something.tld[/...] - looks like a domain the user typed without a scheme
-	if (/^[^\s\/]+\.[a-z]{2,}(\/|$|\?|#)/i.test(url)) {
-		return 'https://' + url;
-	}
-	// otherwise treat it as an internal hotglue page name / relative path
-	return url;
-}
+// (An earlier version validated the link URL against a scheme allowlist and
+// normalised bare domains; both are gone - the link takes whatever non-empty
+// string the author typed, and the href attribute escapes it.)
 
 // --- run formatting strip --------------------------------------------------
 //
@@ -661,6 +612,8 @@ var text_strip_btns = {};          // { b, i, u, s } -> button element
 var text_strip_size_field = null;  // the number input
 var text_strip_size_slider = null; // the size slider it rides next to
 var text_strip_face = null;        // the face dropdown
+var text_strip_link_sync = null;   // keeps the link row in step with the selection
+var text_strip_link_reset = null;  // empties the link row's fields
 
 function text_strip_build() {
 	var strip = document.createElement('div');
@@ -774,23 +727,6 @@ function text_strip_build() {
 	row1.appendChild(face);
 	text_strip_face = face;
 
-	// --- link --------------------------------------------------------------
-	// A link wraps the SELECTED RUN the way b/i/u/s do. The button snapshots
-	// the selection on mousedown (the click itself collapses it) and reveals
-	// the url/class row under the size slider; the machinery is the old link
-	// panel's, docked into the strip instead of a popover beside the object.
-	var link_btn = $.glue.icon('hyperlink', 'turn the selected text into a link, or edit a link');
-	link_btn.style.width = '26px';		// the size of the b/i/u/s buttons
-	link_btn.style.height = '26px';
-	link_btn.addEventListener('mousedown', function() {
-		text_strip_snapshot = text_strip_range_for();
-	});
-	link_btn.addEventListener('click', function() {
-		text_strip_link_open();
-	});
-	row1.appendChild(link_btn);
-	text_strip_btns['link'] = link_btn;
-
 	// --- row 2: size slider + manual entry ---------------------------------
 	// The slider is a quick tool (8-100px, like the font popover's); the
 	// field is the precise one, and can say values the slider cannot. Both
@@ -832,6 +768,7 @@ function text_strip_build() {
 	var field = document.createElement('input');
 	field.type = 'number';
 	field.className = 'glue-popover-field glue-text-size';
+	text_strip_size_field = field;
 	field.step = 1;
 	field.min = 1;
 	field.title = 'font size of the selection, in px';
@@ -884,103 +821,111 @@ function text_strip_build() {
 	unit.textContent = 'px';
 	row2.appendChild(unit);
 
-	// --- link row: url and class, under the size slider --------------------
-	// hidden until the link button above asks for it; Enter commits like OK,
-	// Escape closes without linking (the contract the old link popover had)
+	// --- link row: the url field IS the control ---------------------------
+	// Always visible while editing, no icon to press. The selection (or the
+	// caret) decides what the button does: no link under it - 'add link'
+	// wraps the selected run; a link - 'remove link' unwraps it, and the
+	// url pre-fills so Enter edits the href. The sync keeps this current as
+	// the selection moves (text_strip_link_sync, called from the document
+	// selectionchange listener), and never while the author is typing.
 	var link_row = document.createElement('div');
 	link_row.className = 'glue-text-strip-row glue-text-strip-link';
-	link_row.style.display = 'none';
 	var link_url = document.createElement('input');
 	link_url.type = 'text';
 	link_url.className = 'glue-link-field';
-	link_url.title = 'the address the link goes to';
-	var link_cls = document.createElement('input');
-	link_cls.type = 'text';
-	link_cls.className = 'glue-link-field';
-	link_cls.title = 'optional, for your own CSS';
-	link_cls.style.display = 'none';
-	// the class input stays out of the way behind an 'add class' button
-	// until the author asks for it (or the link being edited has one)
-	var link_add_cls = document.createElement('button');
-	link_add_cls.type = 'button';
-	link_add_cls.className = 'glue-link-add-class';
-	link_add_cls.textContent = 'add class';
-	link_add_cls.title = 'put a class on the link, for your own CSS';
-	link_add_cls.addEventListener('click', function() {
-		link_cls.style.display = '';
-		link_add_cls.style.display = 'none';
-		link_cls.focus();
-	});
-	var link_problem = document.createElement('div');
-	link_problem.className = 'glue-popover-problem';
-	var link_buttons = document.createElement('div');
-	link_buttons.className = 'glue-link-buttons';
-	var link_remove = document.createElement('button');
-	link_remove.type = 'button';
-	link_remove.textContent = 'Remove link';
-	var link_ok = document.createElement('button');
-	link_ok.type = 'button';
-	link_ok.textContent = 'OK';
-	link_ok.className = 'glue-link-ok';
-	link_buttons.appendChild(link_remove);
-	link_buttons.appendChild(link_ok);
+	link_url.title = 'the address the selected text links to';
+	var link_btn = document.createElement('button');
+	link_btn.type = 'button';
+	link_btn.className = 'glue-link-add-class';
+	link_btn.textContent = 'add link';
+	link_btn.title = 'wrap the selected text in a link to this address';
 	link_row.appendChild(link_url);
-	link_row.appendChild(link_cls);
-	link_row.appendChild(link_add_cls);
-	link_row.appendChild(link_problem);
-	link_row.appendChild(link_buttons);
+	link_row.appendChild(link_btn);
 	strip.appendChild(link_row);
-	var link_range = null;      // the snapshot the button's mousedown took
-	var link_existing = null;   // the <a> being edited, if the caret is inside one
+	var link_range = null;      // the snapshot the first interaction took
+	var link_mode = 'add';      // what the button does right now
 
-	var link_validate = function() {
-		var msg = text_link_url_problem(link_url.value);
-		link_url.classList.toggle('glue-tag-invalid', !!msg);
-		link_problem.textContent = msg || '';
-		link_ok.disabled = !!msg;
+	// the <a> the range's caret or anchor is inside, validated against the
+	// object being edited
+	var link_existing_for = function(range) {
+		var render = text_strip_render;
+		if (!range || !render) {
+			return null;
+		}
+		var node = range.startContainer;
+		var el = node && node.nodeType == 3 ? node.parentElement : node;
+		el = el ? el.closest('a') : null;
+		return (el && render.contains(el)) ? el : null;
 	};
-	var link_hide = function() {
-		link_row.style.display = 'none';
+	var link_reset_fields = function() {
+		link_url.value = '';
 		link_range = null;
-		link_existing = null;
+	};
+	// the snapshot the first interaction takes wins: mousedown on the field
+	// sees the live selection BEFORE the focus collapse, and every later
+	// mousedown/focus (the button, the click's own focus) must not clobber
+	// it
+	var link_snapshot = function() {
+		if (!link_range) {
+			link_range = text_strip_range_for();
+		}
 	};
 	var link_commit = function() {
 		var render = text_strip_render;
-		if (!render || !link_range) {
+		if (!render) {
 			return;
 		}
-		var existing = link_existing;
+		var range = link_range || text_strip_range_for();
+		if (!range) {
+			return;
+		}
+		var existing = link_existing_for(range);
+		if (!existing && range.collapsed) {
+			$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
+			return;
+		}
+		if (!existing && !link_url.value.trim()) {
+			return;		// nothing typed, nothing to do
+		}
 		if (!existing) {
 			existing = document.createElement('a');
 			// extractContents rather than surroundContents: the latter
 			// throws when the selection only partly covers an element
-			existing.appendChild(link_range.extractContents());
-			link_range.insertNode(existing);
+			existing.appendChild(range.extractContents());
+			range.insertNode(existing);
+			// put the caret inside the new link: insertNode leaves the
+			// range at the DIV level, and the row's state keys off a
+			// selection inside the link
+			range.selectNodeContents(existing);
+			range.collapse(true);
 		}
-		existing.setAttribute('href', text_link_normalize(link_url.value));
-		if (link_cls.value.trim()) {
-			existing.setAttribute('class', link_cls.value.trim());
-		} else {
-			existing.removeAttribute('class');
-		}
-		link_hide();
-		text_strip_restore(render, link_range);
+		// whatever the author typed, as long as it is a (non-empty) string -
+		// no validation, no rewriting
+		existing.setAttribute('href', link_url.value.trim());
+		link_reset_fields();
+		text_strip_restore(render, range);
 		render.focus();
+		text_strip_link_sync();
 	};
 	var link_remove_click = function() {
-		var existing = link_existing;
 		var render = text_strip_render;
-		if (!existing || !render) {
+		if (!render) {
+			return;
+		}
+		var range = link_range || text_strip_range_for();
+		var existing = link_existing_for(range);
+		if (!existing) {
 			return;
 		}
 		existing.replaceWith(...existing.childNodes);
-		link_hide();
+		link_reset_fields();
 		render.focus();
+		text_strip_link_sync();
 	};
 	var link_keydown = function(e) {
 		if (e.key == 'Escape') {
 			e.preventDefault();
-			link_hide();
+			link_reset_fields();
 			if (text_strip_render) {
 				text_strip_render.focus();
 			}
@@ -988,60 +933,52 @@ function text_strip_build() {
 		}
 		if (e.key == 'Enter') {
 			e.preventDefault();
-			link_validate();
-			if (!link_ok.disabled) {
-				link_commit();
-			}
+			link_commit();
 		}
 		// no stopPropagation - the editor's global keydown ignores fields
 		// (typing_in_a_field), like the size field above
 	};
-	link_url.addEventListener('input', link_validate);
-	link_cls.addEventListener('input', link_validate);
 	link_url.addEventListener('keydown', link_keydown);
-	link_cls.addEventListener('keydown', link_keydown);
-	link_ok.addEventListener('click', function() {
-		link_validate();
-		if (!link_ok.disabled) {
+	link_url.addEventListener('mousedown', function() {
+		link_range = text_strip_range_for();	// live selection, pre-collapse
+	});
+	link_url.addEventListener('focus', link_snapshot);
+	link_btn.addEventListener('mousedown', link_snapshot);
+	link_btn.addEventListener('click', function() {
+		if (link_mode == 'remove') {
+			link_remove_click();
+		} else {
 			link_commit();
 		}
 	});
-	link_remove.addEventListener('click', link_remove_click);
-	var text_strip_link_open = function() {
-		var render = text_strip_render;
-		if (!render) {
+	// keep the row in step with a selection that moves into or out of a
+	// link; a selection that moves AWAY must not eat what the author is
+	// typing, so only the existing-link prefill and the button react
+	text_strip_link_sync = function() {
+		if (!text_strip_obj) {
 			return;
 		}
-		var range = text_strip_snapshot || text_strip_range_for();
-		if (!range) {
+		// never overwrite what the author is typing: the prefill only
+		// applies while the field is not focused (focusing it collapses
+		// the render's selection, which would otherwise fire this and eat
+		// the edit mid-typing)
+		if (document.activeElement == link_url) {
 			return;
 		}
-		// the selection (or the caret) was inside an existing link? then this
-		// edits that link rather than wrapping a new one
-		var node = range.startContainer;
-		var existing = node && node.nodeType == 3 ? node.parentElement : node;
-		existing = existing ? existing.closest('a') : null;
-		if (existing && !render.contains(existing)) {
-			existing = null;
+		var existing = link_existing_for(text_strip_range_for());
+		if (existing) {
+			link_url.value = existing.getAttribute('href') || '';
+			link_btn.textContent = 'remove link';
+			link_btn.title = 'take the link off the text';
+			link_mode = 'remove';
+		} else {
+			link_btn.textContent = 'add link';
+			link_btn.title = 'wrap the selected text in a link to this address';
+			link_mode = 'add';
 		}
-		if (!existing && range.collapsed) {
-			$.glue.error('Select the text you want to turn into a link first, or put the cursor inside an existing link to edit it.');
-			return;
-		}
-		link_range = range;
-		link_existing = existing;
-		link_url.value = existing ? (existing.getAttribute('href') || '') : 'https://';
-		link_cls.value = existing ? (existing.className || '') : '';
-		// the class input shows when the link being edited already has one,
-		// otherwise it stays behind the 'add class' button
-		var has_cls = !!(existing && existing.className);
-		link_cls.style.display = has_cls ? '' : 'none';
-		link_add_cls.style.display = has_cls ? 'none' : '';
-		link_remove.style.display = existing ? '' : 'none';
-		link_validate();
-		link_row.style.display = '';
-		link_url.focus();
 	};
+	text_strip_link_reset = link_reset_fields;
+	link_reset_fields();
 
 	// Moveable hears touch on the body container and would drag the object;
 	// its chrome exemption list does not know this element.
@@ -1394,11 +1331,10 @@ function text_strip_apply_color(render, col) {
 function text_strip_hide() {
 	if (text_strip) {
 		text_strip.style.display = 'none';
-		// the link row goes away with the strip; its range/existing state
-		// is always re-derived on the next open
-		var link_row = text_strip.querySelector('.glue-text-strip-link');
-		if (link_row) {
-			link_row.style.display = 'none';
+		// the strip's link row is always visible while editing, so hiding
+		// the strip empties it rather than hiding it
+		if (text_strip_link_reset) {
+			text_strip_link_reset();
 		}
 	}
 	text_strip_obj = null;
@@ -1518,6 +1454,9 @@ document.addEventListener('selectionchange', function() {
 	}
 	text_strip_position();
 	text_strip_sync_state();
+	if (text_strip_link_sync) {
+		text_strip_link_sync();
+	}
 });
 
 // the object can be resized by Moveable's handles while editing (the render's

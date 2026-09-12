@@ -1,4 +1,4 @@
-// "Make link" for a selection inside a text object - SOW-text-link-ui.md.
+// Making text a link - the url field in the run-formatting strip.
 //
 // Text objects are edited WYSIWYG: the rendered div is contenteditable, so a
 // link shows as underlined text rather than as its markup. The source form is
@@ -6,9 +6,14 @@
 // assert on the stored content after leaving edit mode, which exercises the
 // whole chain rather than an intermediate.
 //
+// The strip's link row is ALWAYS visible while editing: a url field and one
+// button. No link under the selection - the button says 'add link' and wraps
+// the selected run; a link - it says 'remove link', the url pre-fills so
+// Enter edits the href, and the button unwraps. Whatever non-empty string is
+// typed becomes the href; no validation, no rewriting.
+//
 // The source-mode toggle (</> in the text menu) puts the textarea back for
-// editing literal markup; the last test covers that path, which splices tags as
-// strings instead of manipulating the DOM.
+// editing literal markup; the last test covers that path.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -21,6 +26,9 @@ const ATTRS = {
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject('100000000001').content;
+const linkRow = (page) => page.locator('.glue-text-strip-link');
+const urlField = (page) => linkRow(page).locator('.glue-link-field').first();
+const linkButton = (page) => linkRow(page).locator('button').first();
 
 async function startEditing(page, id) {
 	await byId(page, id).click();
@@ -52,30 +60,67 @@ async function select(page, id, needle, collapse) {
 	expect(ok, `could not find ${JSON.stringify(needle)} in the rendered text`).toBe(true);
 }
 
-const openDialog = (page) => page.getByTitle(/turn the selected text into a link/).click();
-const urlField = (page) => page.locator('.glue-link-field').first();
-const classField = (page) => page.locator('.glue-link-field').nth(1);
-const okButton = (page) => page.locator('.glue-link-buttons button:has-text("OK")');
+// type into a field the way a person does: the click's mousedown is what
+// snapshots the live selection before focus collapses it
+async function typeInto(loc, value) {
+	await loc.click();
+	await loc.fill(value);
+}
 
 async function finish(page, id) {
 	await page.evaluate((i) => window.$.glue.text.stop_editing(document.getElementById(i)), id);
 }
 
-test('wrapping a selection produces an anchor in the stored source', async ({ page, hg }) => {
+test('the link row is part of the strip, under the size slider', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+
+	// no icon to press - the url field and its button are there from the
+	// moment editing starts, in the strip
+	await expect(linkRow(page)).toBeVisible();
+	await expect(urlField(page)).toBeVisible();
+	await expect(linkButton(page)).toHaveText('add link');
+	// the row sits below the size slider
+	const slider = await page.locator('.glue-text-size-slider').boundingBox();
+	const r = await linkRow(page).boundingBox();
+	expect(r.y, 'the link row is not under the size slider').toBeGreaterThan(slider.y);
+	// and no backdrop over the page
+	expect(await page.locator('.glue-modal-backdrop').count()).toBe(0);
+});
+
+test('Enter wraps a selection in an anchor', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	await openDialog(page);
 
-	await urlField(page).fill('https://example.org/a?b=1&c=2');
-	await okButton(page).click();
+	await typeInto(urlField(page), 'https://example.org/a?b=1&c=2');
+	await urlField(page).press('Enter');
 	await finish(page, a);
 
 	await expect.poll(() => stored(hg))
 		.toBe('hello <a href="https://example.org/a?b=1&amp;c=2">world</a>');
 });
+
+test('the add-link button wraps a selection, and then offers remove',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'hello world');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await startEditing(page, a);
+		await select(page, a, 'world');
+
+		await typeInto(urlField(page), 'https://example.org/');
+		await linkButton(page).click();
+		// the caret now sits inside the new link: the button flips to remove
+		await expect(linkButton(page)).toHaveText('remove link');
+		await finish(page, a);
+		await expect.poll(() => stored(hg))
+			.toBe('hello <a href="https://example.org/">world</a>');
+	});
 
 test('the markup is hidden while editing, and the link is underlined',
 	async ({ page, hg }) => {
@@ -96,40 +141,19 @@ test('the markup is hidden while editing, and the link is underlined',
 		document.querySelector(`[id="${i}"] a`)).textDecorationLine, a)).toContain('underline');
 });
 
-test('a bare domain gets https, an anchor and a page name do not', async ({ page, hg }) => {
-	for (const [typed, expected] of [
-		['example.org/page', 'https://example.org/page'],
-		['#section', '#section'],
-		['mypage', 'mypage'],
-	]) {
+test('whatever string is typed becomes the href', async ({ page, hg }) => {
+	for (const typed of ['https://example.org/a?b=1', '#section', 'mypage',
+		'example.org/page', 'javascript:alert(1)']) {
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await startEditing(page, a);
 		await select(page, a, 'world');
-		await openDialog(page);
-		await urlField(page).fill(typed);
-		await okButton(page).click();
+		await typeInto(urlField(page), typed);
+		await urlField(page).press('Enter');
 		await finish(page, a);
-		await expect.poll(() => stored(hg)).toContain(`href="${expected}"`);
+		await expect.poll(() => stored(hg)).toContain(`href="${typed}"`);
 	}
-});
-
-test('javascript: and data: urls are refused', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	await openDialog(page);
-
-	for (const bad of ['javascript:alert(1)', 'data:text/html,<script>1</script>']) {
-		await urlField(page).fill(bad);
-		await expect(page.locator('.glue-popover-problem')).toContainText('not allowed');
-		await expect(okButton(page)).toBeDisabled();
-	}
-	await urlField(page).fill('');
-	await expect(okButton(page)).toBeDisabled();
 });
 
 test('a url containing quotes cannot break out of the href', async ({ page, hg }) => {
@@ -138,10 +162,9 @@ test('a url containing quotes cannot break out of the href', async ({ page, hg }
 	await waitForEditor(page, 1);
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	await openDialog(page);
 
-	await urlField(page).fill('https://example.org/" onmouseover="alert(1)');
-	await okButton(page).click();
+	await typeInto(urlField(page), 'https://example.org/" onmouseover="alert(1)');
+	await urlField(page).press('Enter');
 	await finish(page, a);
 
 	const src = await stored(hg);
@@ -150,61 +173,48 @@ test('a url containing quotes cannot break out of the href', async ({ page, hg }
 		document.querySelector(`[id="${i}"] a`).getAttribute('onmouseover'), a)).toBeNull();
 });
 
-test('an existing link is pre-filled, editable and removable', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'see <a href="https://old.example/">this</a> now');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'this', true);			// cursor inside the link
-	await openDialog(page);
-	await expect(urlField(page)).toHaveValue('https://old.example/');
+test('a selection inside a link pre-fills the url and offers remove',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS,
+			'see <a href="https://old.example/">this</a> now');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await startEditing(page, a);
+		await select(page, a, 'this', true);		// cursor inside the link
 
-	await urlField(page).fill('https://new.example/');
-	await okButton(page).click();
-	await finish(page, a);
-	await expect.poll(() => stored(hg)).toBe('see <a href="https://new.example/">this</a> now');
+		// the selectionchange sync pre-fills the field and flips the button
+		await expect.poll(async () => urlField(page).inputValue()).toBe('https://old.example/');
+		await expect(linkButton(page)).toHaveText('remove link');
 
-	// and now remove it
-	await startEditing(page, a);
-	await select(page, a, 'this', true);
-	await openDialog(page);
-	await page.locator('.glue-link-buttons button:has-text("Remove link")').click();
-	await finish(page, a);
-	await expect.poll(() => stored(hg)).toBe('see this now');
-});
+		// editing the url and pressing Enter updates the link
+		await typeInto(urlField(page), 'https://new.example/');
+		await urlField(page).press('Enter');
+		await finish(page, a);
+		await expect.poll(() => stored(hg)).toBe('see <a href="https://new.example/">this</a> now');
 
-test('a class can be put on the link, behind the add-class button', async ({ page, hg }) => {
+		// and the button takes it out again
+		await startEditing(page, a);
+		await select(page, a, 'this', true);
+		await expect.poll(async () => urlField(page).inputValue()).toBe('https://new.example/');
+		await linkButton(page).click();
+		await finish(page, a);
+		await expect.poll(() => stored(hg)).toBe('see this now');
+	});
+
+test('Escape empties the field without linking anything', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	await openDialog(page);
-	// the class input stays hidden until asked for
-	await expect(classField(page)).toBeHidden();
-	await urlField(page).fill('https://example.org/');
-	await page.locator('.glue-link-add-class').click();
-	await expect(classField(page)).toBeVisible();
-	await classField(page).fill('cta');
-	await okButton(page).click();
-	await finish(page, a);
-	await expect.poll(() => stored(hg))
-		.toBe('hello <a href="https://example.org/" class="cta">world</a>');
-});
 
-test('an existing link with a class opens with the class input shown',
-	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', ATTRS,
-			'see <a href="https://example.org/" class="cta">this</a> now');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await startEditing(page, a);
-		await select(page, a, 'this', true);
-		await openDialog(page);
-		await expect(classField(page)).toBeVisible();
-		await expect(classField(page)).toHaveValue('cta');
-		await expect(page.locator('.glue-link-add-class')).toBeHidden();
-	});
+	await typeInto(urlField(page), 'https://example.org');
+	await urlField(page).press('Escape');
+	await expect(urlField(page)).toHaveValue('');
+	await finish(page, a);
+	await expect.poll(() => hg.readObject('100000000001').content)
+		.not.toContain('<a');
+});
 
 test('the link renders on the published page', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
@@ -212,9 +222,8 @@ test('the link renders on the published page', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	await openDialog(page);
-	await urlField(page).fill('https://example.org/');
-	await okButton(page).click();
+	await typeInto(urlField(page), 'https://example.org/');
+	await urlField(page).press('Enter');
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toContain('example.org');
 
@@ -222,6 +231,28 @@ test('the link renders on the published page', async ({ page, hg }) => {
 	const link = page.locator('.object a');
 	await expect(link).toHaveAttribute('href', 'https://example.org/');
 	await expect(link).toHaveText('world');
+});
+
+test('the canvas shortcuts leave a focused field alone', async ({ page, hg }) => {
+	// Delete is handled on keyup on documentElement and deletes the selected
+	// object; clearing the url field with it took the object with it. Same
+	// for ctrl+a, which selected every object on the page, and the arrows,
+	// which nudged them. The two text editing surfaces had solved this for
+	// themselves by stopping propagation; the editor's own inputs had not.
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await startEditing(page, a);
+	await select(page, a, 'world');
+
+	await typeInto(urlField(page), 'https://example.org/a');
+	await urlField(page).press('Control+a');
+	await urlField(page).press('Delete');
+	await urlField(page).press('ArrowLeft');
+
+	// still one object, still selected, field cleared (and nothing linked)
+	await expect(byId(page, a)).toHaveCount(1);
+	await expect(urlField(page)).toHaveValue('');
 });
 
 test('source mode puts the textarea back, markup and all', async ({ page, hg }) => {
@@ -236,86 +267,4 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 	await expect(ta).toBeFocused();
 	expect(await ta.inputValue(), 'source mode should show the literal markup')
 		.toBe('see <a href="https://example.org/">this</a> now');
-});
-
-// --- the strip row, rather than the popover it used to be -----------------
-//
-// The link entry is part of the run-formatting strip now: the strip's link
-// button reveals a url/class row UNDER the size slider, docked with the
-// strip to the object's bottom edge. Same contract as the old popover:
-// Enter commits, Escape closes without linking, and the editor's canvas
-// shortcuts leave a focused field alone.
-
-test('the link row docks into the strip, under the size slider', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	await openDialog(page);
-
-	const row = page.locator('.glue-text-strip-link');
-	await expect(row).toBeVisible();
-	// the row sits below the size slider, inside the strip
-	const slider = await page.locator('.glue-text-size-slider').boundingBox();
-	const r = await row.boundingBox();
-	expect(r.y, 'the link row is not under the size slider').toBeGreaterThan(slider.y);
-	// and no backdrop over the page
-	expect(await page.locator('.glue-modal-backdrop').count()).toBe(0);
-});
-
-test('Escape closes it without linking anything', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	await openDialog(page);
-
-	await urlField(page).fill('https://example.org');
-	await page.keyboard.press('Escape');
-	await expect(page.locator('.glue-text-strip-link')).toBeHidden();
-	await finish(page, a);
-	await expect.poll(() => hg.readObject('100000000001').content)
-		.not.toContain('<a');
-});
-
-test('Enter in the url field is the same as OK', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	await openDialog(page);
-
-	await urlField(page).fill('https://example.org');
-	await urlField(page).press('Enter');
-	await expect(page.locator('.glue-text-strip-link')).toBeHidden();
-	await finish(page, a);
-	await expect.poll(() => hg.readObject('100000000001').content)
-		.toContain('href="https://example.org"');
-});
-
-test('the canvas shortcuts leave a focused field alone', async ({ page, hg }) => {
-	// Delete is handled on keyup on documentElement and deletes the selected
-	// object; clearing the url field with it took the object with it. Same
-	// for ctrl+a, which selected every object on the page, and the arrows,
-	// which nudged them. The two text editing surfaces had solved this for
-	// themselves by stopping propagation; the editor's own inputs had not.
-	const a = hg.addObject('100000000001', ATTRS, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	await openDialog(page);
-
-	await urlField(page).fill('https://example.org/a');
-	await urlField(page).press('Control+a');
-	await urlField(page).press('Delete');
-	await urlField(page).press('ArrowLeft');
-
-	// still open, still one object, still selected
-	await expect(page.locator('.glue-text-strip-link')).toBeVisible();
-	await expect(byId(page, a)).toHaveCount(1);
-	await expect(urlField(page)).toHaveValue('');
 });
