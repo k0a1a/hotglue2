@@ -193,6 +193,110 @@ $.glue.live('.image', 'glue-upload-static', function(e, mode) {
 });
 
 
+function image_properties_popover(obj)
+{
+	var pop = $.glue.popover.open(obj, 'glue-image-properties-popover');
+	if (!pop) {
+		return;
+	}
+	var save = function() {
+		$.glue.object.save(obj);
+	};
+
+	// the node carrying the description: the img child in the unsized
+	// case, the object itself in the sized (background-image) case - must
+	// mirror the render branch in module_image.inc.php
+	var t = obj.querySelector('img') || obj;
+	var dec_row, alt_row, input, nudge, toggle;
+
+	var sync = function() {
+		var decorative = t.getAttribute('role') == 'presentation';
+		toggle.classList.toggle('glue-font-toggle-on', decorative);
+		alt_row.style.display = decorative ? 'none' : '';
+		// the nudge appears only for meaningful images without a description
+		var has_alt = (t.tagName.toLowerCase() == 'img') ?
+			(t.getAttribute('alt') || '').length :
+			(obj.getAttribute('aria-label') || '').length;
+		nudge.style.display = !decorative && !has_alt ? '' : 'none';
+	};
+
+	// --- decorative ------------------------------------------------------
+	dec_row = $.glue.popover.row('decorative');
+	toggle = document.createElement('div');
+	toggle.className = 'glue-font-toggle';
+	toggle.textContent = '▦';
+	toggle.title = 'mark the image as decorative (screen readers skip it)';
+	toggle.addEventListener('click', function() {
+		if (t.getAttribute('role') == 'presentation') {
+			t.removeAttribute('role');
+		} else {
+			t.setAttribute('role', 'presentation');
+			if (t.tagName.toLowerCase() == 'img') {
+				// a decorative image must have EMPTY alt text
+				t.setAttribute('alt', '');
+			} else {
+				obj.removeAttribute('aria-label');
+			}
+		}
+		sync();
+		save();
+	});
+	dec_row.appendChild(toggle);
+	pop.appendChild(dec_row);
+
+	// --- alt text --------------------------------------------------------
+	alt_row = $.glue.popover.row('alt text');
+	input = document.createElement('input');
+	input.type = 'text';
+	input.className = 'glue-popover-field glue-image-alt-field';
+	// seed from what the renderer emits (image-alt, falling back to the
+	// legacy image-title)
+	input.value = (t.tagName.toLowerCase() == 'img') ?
+		(t.getAttribute('alt') || '') :
+		(obj.getAttribute('aria-label') || '');
+	input.addEventListener('change', function() {
+		if (t.tagName.toLowerCase() == 'img') {
+			t.setAttribute('alt', input.value);
+		} else {
+			if (input.value.length) {
+				obj.setAttribute('role', 'img');
+				obj.setAttribute('aria-label', input.value);
+			} else {
+				obj.removeAttribute('role');
+				obj.removeAttribute('aria-label');
+			}
+		}
+		sync();
+		save();
+	});
+	alt_row.appendChild(input);
+	pop.appendChild(alt_row);
+
+	// --- nudge -----------------------------------------------------------
+	nudge = document.createElement('div');
+	nudge.className = 'glue-popover-problem';
+	nudge.textContent = 'this image has no description - screen readers will skip it';
+	pop.appendChild(nudge);
+
+	// --- reset -----------------------------------------------------------
+	pop.appendChild($.glue.popover.reset(
+		'drop the description and the decorative mark',
+		function() {
+			if (t.tagName.toLowerCase() == 'img') {
+				t.removeAttribute('alt');
+			}
+			t.removeAttribute('role');
+			obj.removeAttribute('aria-label');
+			sync();
+			save();
+		}
+	));
+
+	sync();
+	$.glue.popover.show(pop);
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('iframe', 'object-link');
 	//
@@ -203,6 +307,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	// so the context menu's duplicate buttons are gone
 
 	var elem;
+	elem = $.glue.icon('font-face', 'image description');
+	elem.addEventListener('click', function(e) {
+		image_properties_popover($.glue.owner(this));
+	});
+	$.glue.contextmenu.register('image', 'image-properties', elem, 1);
+
 	elem = $.glue.icon('download', 'download original file');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);

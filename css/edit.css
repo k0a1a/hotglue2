@@ -635,6 +635,12 @@
 	box-sizing: border-box;
 }
 
+.glue-image-alt-field {
+	/* the alt-text input in the image description panel needs room for
+	   an actual sentence, not three digits */
+	width: 180px;
+}
+
 .glue-popover-unit {
 	/* what follows a number field: em, px, %, or the × of a line-height
 	   multiple */

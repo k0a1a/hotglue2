@@ -127,18 +127,28 @@ function image_alter_render_early($args)
 		$url = '?'.urlencode($obj['name']);
 	}
 	
+	// accessibility (SOW-accessibility.md): image-alt is the description,
+	// image-decorative marks the image as pure decoration. The legacy
+	// image-title still acts as the fallback description.
+	$decorative = !empty($obj['image-decorative']);
+	$alt = isset($obj['image-alt']) ? $obj['image-alt']
+		: (isset($obj['image-title']) ? $obj['image-title'] : '');
+
 	// render a div with background if we have original-{width,height}
 	// otherwise a div with an img inside
 	if (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0) {
 		// render a div with an img inside
 		$i = elem('img');
 		elem_attr($i, 'src', $url);
-		if (!empty($obj['image-title'])) {
-			elem_attr($i, 'alt', $obj['image-title']);
-		} else {
+		if ($decorative) {
+			// a decorative image must have EMPTY alt text and the role
+			// says so explicitly, so screen readers skip it
 			elem_attr($i, 'alt', '');
+			elem_attr($i, 'role', 'presentation');
+		} else {
+			elem_attr($i, 'alt', $alt);
 		}
-		// make sure you only append to the element in alter_render_early 
+		// make sure you only append to the element in alter_render_early
 		// handlers, don't assume that nothing is in there yet
 		elem_append($elem, $i);
 	} else {
@@ -154,8 +164,16 @@ function image_alter_render_early($args)
 		if (!empty($obj['image-background-position'])) {
 			elem_css($elem, 'background-position', $obj['image-background-position']);
 		}
+		// there is no img element to carry the alt text in this case,
+		// so the wrapper carries it instead
+		if ($decorative) {
+			elem_attr($elem, 'role', 'presentation');
+		} else if (!empty($obj['image-alt'])) {
+			elem_attr($elem, 'role', 'img');
+			elem_attr($elem, 'aria-label', $obj['image-alt']);
+		}
 	}
-	
+
 	// additional properties for both
 	if (!empty($obj['image-title'])) {
 		elem_attr($elem, 'title', $obj['image-title']);
@@ -199,7 +217,34 @@ function image_alter_save($args)
 	} else {
 		unset($obj['image-background-position']);
 	}
-	
+
+	// accessibility round-trip (SOW-accessibility.md): the serialized DOM
+	// carries role/aria-label/alt, map them back to image-decorative/
+	// image-alt. save_state() parses the object non-recursively, so the img
+	// child (unsized case only) has to be fished out of the raw inner HTML.
+	$role = elem_attr($elem, 'role');
+	if ($role === 'presentation') {
+		$obj['image-decorative'] = 'yes';
+		unset($obj['image-alt']);	// decorative implies empty alt
+	} else {
+		unset($obj['image-decorative']);
+		$stored_alt = '';
+		if (elem_attr($elem, 'aria-label') !== NULL && elem_attr($elem, 'aria-label') !== '') {
+			// sized case: the description lives on the wrapper
+			$stored_alt = elem_attr($elem, 'aria-label');
+		} else if (is_string(elem_val($elem)) && preg_match('#<img\b[^>]*>#i', elem_val($elem), $m)) {
+			$img = html_parse_elem($m[0]);
+			$stored_alt = elem_attr($img, 'alt');
+		}
+		if ($stored_alt !== '' && $stored_alt !== @$obj['image-title']) {
+			$obj['image-alt'] = $stored_alt;
+		} else {
+			// empty, or identical to the legacy image-title (the render
+			// fallback covers that) - keep the file byte-idempotent
+			unset($obj['image-alt']);
+		}
+	}
+
 	// this is more out of courtesy than anything else
 	return true;
 }
