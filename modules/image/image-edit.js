@@ -307,11 +307,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	// so the context menu's duplicate buttons are gone
 
 	var elem;
-	elem = $.glue.icon('font-face', 'image description');
+	// image-class items always sit in the top row; prio 11 puts this one
+	// right of everything else there (download is the default 10)
+	elem = $.glue.icon('icon_description', 'image description');
 	elem.addEventListener('click', function(e) {
 		image_properties_popover($.glue.owner(this));
 	});
-	$.glue.contextmenu.register('image', 'image-properties', elem, 1);
+	$.glue.contextmenu.register('image', 'image-properties', elem, 11);
 
 	elem = $.glue.icon('download', 'download original file');
 	elem.addEventListener('click', function(e) {
