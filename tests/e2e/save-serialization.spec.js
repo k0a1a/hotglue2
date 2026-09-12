@@ -271,3 +271,21 @@ test('a moved image keeps the file it points at', async ({ page, hg }) => {
 	expect(after['image-file-width']).toBe('120');
 	expect(after['image-file-mime']).toBe('image/png');
 });
+
+test('a no-op save keeps accessibility keys byte-identical', async ({ page, hg }) => {
+	// image-alt/image-decorative (Feature 3) and text-heading-level
+	// (Feature 4) round-trip through the serialized DOM - an unedited save
+	// must reproduce exactly the stored values, not a mutated version of them
+	hg.addObject('100000000001', { ...IMAGE, 'image-alt': 'a red balloon' });
+	hg.addObject('100000000002', { ...TEXT, 'text-heading-level': 'h2' });
+	const before = Object.fromEntries(hg.ids().map((id) => [id, hg.readObjectRaw(id)]));
+
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+	await saveAll(page);
+
+	for (const id of hg.ids()) {
+		expect(hg.readObjectRaw(id), `object ${id} was rewritten by an unedited save`)
+			.toBe(before[id]);
+	}
+});

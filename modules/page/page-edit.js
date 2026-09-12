@@ -248,6 +248,98 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.menu.register('page', elem);
 
+	// reading order (SOW-accessibility.md, Feature 2): the sequence screen
+	// readers follow. The server emits objects in visual reading order by
+	// default; this panel stores an explicit one for pages where position
+	// isn't reading order. Moving an element in the DOM here is the editing
+	// gesture - the objects are absolutely positioned, so the visual layout
+	// does not move, and the stored order takes effect on the next render.
+	var page_reading_order_popover = function() {
+		var pop = $.glue.popover.open(document.documentElement, 'glue-reading-order-popover');
+		if (!pop) {
+			return;
+		}
+
+		var note = document.createElement('div');
+		note.className = 'glue-popover-note';
+		note.textContent = 'the order screen readers follow - top to bottom by position, unless you set one here';
+		pop.appendChild(note);
+
+		// one row per object, in DOM order - which IS the current reading
+		// order, since the server emits it that way
+		var commit = function() {
+			var suffixes = Array.from(document.querySelectorAll('.object'))
+				.map(function(el) { return el.id.slice($.glue.page.length + 1); });
+			$.glue.backend({ method: 'glue.update_object',
+				name: $.glue.page + '.page', 'page-reading-order': JSON.stringify(suffixes) });
+		};
+		var render = function() {
+			pop.querySelectorAll('.glue-reading-order-row').forEach(function(el) { el.remove(); });
+			var objs = document.querySelectorAll('.object');
+			if (!objs.length) {
+				var empty = $.glue.popover.row();
+				empty.textContent = 'no objects on this page yet';
+				pop.appendChild(empty);
+			}
+			objs.forEach(function(obj, i) {
+				var row = document.createElement('div');
+				row.className = 'glue-popover-row glue-reading-order-row';
+				var label = document.createElement('div');
+				label.className = 'glue-popover-label';
+				label.textContent = obj.id.slice($.glue.page.length + 1);
+				row.appendChild(label);
+				var up = document.createElement('div');
+				up.className = 'glue-reading-order-btn';
+				up.textContent = '↑';
+				up.title = 'move up in the reading order';
+				up.addEventListener('click', function() {
+					obj.parentNode.insertBefore(obj, obj.previousElementSibling);
+					commit();
+					render();
+				});
+				if (i == 0) {
+					up.classList.add('glue-reading-order-btn-off');
+				}
+				row.appendChild(up);
+				var down = document.createElement('div');
+				down.className = 'glue-reading-order-btn';
+				down.textContent = '↓';
+				down.title = 'move down in the reading order';
+				down.addEventListener('click', function() {
+					obj.parentNode.insertBefore(obj.nextElementSibling, obj);
+					commit();
+					render();
+				});
+				if (i == objs.length - 1) {
+					down.classList.add('glue-reading-order-btn-off');
+				}
+				row.appendChild(down);
+				pop.appendChild(row);
+			});
+		};
+
+		var hint = document.createElement('div');
+		hint.className = 'glue-popover-note';
+		hint.textContent = 'the order applies once the page is reloaded';
+		pop.appendChild(hint);
+
+		render();
+
+		pop.appendChild($.glue.popover.reset('back to the automatic position order', function() {
+			$.glue.backend({ method: 'glue.object_remove_attr',
+				name: $.glue.page + '.page', attr: 'page-reading-order' });
+		}));
+
+		$.glue.popover.show(pop);
+	};
+
+	elem = $.glue.icon('list-ordered', 'reading order');
+	elem.addEventListener('click', function(e) {
+		$.glue.menu.hide();
+		page_reading_order_popover();
+	});
+	$.glue.menu.register('page', elem);
+
 	elem = $.glue.icon('color-swatch', 'change the background color');
 	elem.addEventListener('click', function(e) {
 		var bg = getComputedStyle(document.documentElement).backgroundImage;

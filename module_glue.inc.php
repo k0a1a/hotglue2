@@ -831,6 +831,33 @@ function render_page($args)
 		}, array_keys($objs)),
 		A11Y_ROW_THRESHOLD
 	);
+
+	// author override (SOW-accessibility.md, Feature 2): a stored reading
+	// order wins over the automatic one for pages where position isn't
+	// reading order (multi-column, grouped, artistic). The list holds
+	// object suffixes, json-encoded, in the page pseudo-object - same
+	// storage shape as page-custom-fonts. Note the 4096-byte fgets line
+	// cap in load_object: a page with hundreds of objects could outgrow
+	// one line.
+	if ($page_obj !== null && !empty($page_obj['page-reading-order'])) {
+		$custom = json_decode($page_obj['page-reading-order'], true);
+		if (is_array($custom)) {
+			$by_suffix = array();
+			foreach ($order as $name) {
+				$by_suffix[expl('.', $name)[2]] = $name;
+			}
+			$overridden = array();
+			foreach ($custom as $suffix) {
+				if (isset($by_suffix[$suffix])) {
+					$overridden[] = $by_suffix[$suffix];
+					unset($by_suffix[$suffix]);	// stale and duplicate names are skipped
+				}
+			}
+			// the listed objects first, then the rest in automatic order
+			$order = array_merge($overridden, array_values($by_suffix));
+		}
+	}
+
 	foreach ($order as $name) {
 		render_object(['name'=>$name, 'edit'=>$args['edit'], 'obj'=>$objs[$name]]);
 	}

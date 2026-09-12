@@ -34,3 +34,19 @@
 	   fields */
 	width: 170px;
 }
+
+.glue-reading-order-btn {
+	/* the up/down reorder buttons in the reading-order panel */
+	cursor: pointer;
+	flex: 0 0 auto;
+	padding: 0 6px;
+	color: #333;
+}
+.glue-reading-order-btn:hover {
+	color: #000;
+}
+.glue-reading-order-btn-off {
+	/* the boundary buttons: nothing to move past */
+	color: #bbb;
+	cursor: default;
+}
