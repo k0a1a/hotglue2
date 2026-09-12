@@ -271,3 +271,11 @@
 	   own CSS decides there) */
 	text-decoration: underline;
 }
+
+.glue-link-add-class {
+	/* the small button that reveals the link row's class input */
+	font-size: 11px;
+	padding: 2px 8px;
+	cursor: pointer;
+	flex: 0 0 auto;
+}

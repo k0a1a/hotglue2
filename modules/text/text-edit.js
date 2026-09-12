@@ -898,6 +898,19 @@ function text_strip_build() {
 	link_cls.type = 'text';
 	link_cls.className = 'glue-link-field';
 	link_cls.title = 'optional, for your own CSS';
+	link_cls.style.display = 'none';
+	// the class input stays out of the way behind an 'add class' button
+	// until the author asks for it (or the link being edited has one)
+	var link_add_cls = document.createElement('button');
+	link_add_cls.type = 'button';
+	link_add_cls.className = 'glue-link-add-class';
+	link_add_cls.textContent = 'add class';
+	link_add_cls.title = 'put a class on the link, for your own CSS';
+	link_add_cls.addEventListener('click', function() {
+		link_cls.style.display = '';
+		link_add_cls.style.display = 'none';
+		link_cls.focus();
+	});
 	var link_problem = document.createElement('div');
 	link_problem.className = 'glue-popover-problem';
 	var link_buttons = document.createElement('div');
@@ -913,6 +926,7 @@ function text_strip_build() {
 	link_buttons.appendChild(link_ok);
 	link_row.appendChild(link_url);
 	link_row.appendChild(link_cls);
+	link_row.appendChild(link_add_cls);
 	link_row.appendChild(link_problem);
 	link_row.appendChild(link_buttons);
 	strip.appendChild(link_row);
@@ -1018,6 +1032,11 @@ function text_strip_build() {
 		link_existing = existing;
 		link_url.value = existing ? (existing.getAttribute('href') || '') : 'https://';
 		link_cls.value = existing ? (existing.className || '') : '';
+		// the class input shows when the link being edited already has one,
+		// otherwise it stays behind the 'add class' button
+		var has_cls = !!(existing && existing.className);
+		link_cls.style.display = has_cls ? '' : 'none';
+		link_add_cls.style.display = has_cls ? 'none' : '';
 		link_remove.style.display = existing ? '' : 'none';
 		link_validate();
 		link_row.style.display = '';

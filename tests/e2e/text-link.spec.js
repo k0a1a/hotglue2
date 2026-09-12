@@ -173,20 +173,38 @@ test('an existing link is pre-filled, editable and removable', async ({ page, hg
 	await expect.poll(() => stored(hg)).toBe('see this now');
 });
 
-test('a class can be put on the link', async ({ page, hg }) => {
+test('a class can be put on the link, behind the add-class button', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await startEditing(page, a);
 	await select(page, a, 'world');
 	await openDialog(page);
+	// the class input stays hidden until asked for
+	await expect(classField(page)).toBeHidden();
 	await urlField(page).fill('https://example.org/');
+	await page.locator('.glue-link-add-class').click();
+	await expect(classField(page)).toBeVisible();
 	await classField(page).fill('cta');
 	await okButton(page).click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('hello <a href="https://example.org/" class="cta">world</a>');
 });
+
+test('an existing link with a class opens with the class input shown',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS,
+			'see <a href="https://example.org/" class="cta">this</a> now');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await startEditing(page, a);
+		await select(page, a, 'this', true);
+		await openDialog(page);
+		await expect(classField(page)).toBeVisible();
+		await expect(classField(page)).toHaveValue('cta');
+		await expect(page.locator('.glue-link-add-class')).toBeHidden();
+	});
 
 test('the link renders on the published page', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
