@@ -66,10 +66,29 @@ function strip(s)
 	// channel of these files is ever read (they are masks), but keeping
 	// them black rather than dropping the colour outright leaves them
 	// usable as plain <img> on light chrome, and a bare stroke with no
-	// colour draws nothing. none/transparent (and any url() paint) are
-	// untouched.
-	s = s.replace(/((?:stroke|fill)\s*=\s*")#[0-9a-f]{3,6}(")/gi, '$1#000$2');
-	s = s.replace(/((?:stroke|fill)\s*:\s*)#[0-9a-f]{3,6}/gi, '$1#000');
+	// colour draws nothing. White (and near-white) is the "hole" colour:
+	// an artist fills what should show the chrome BEHIND the glyph with
+	// white, so it becomes transparent rather than black - in a mask both
+	// are equally opaque, and transparent is what the design means.
+	// none/transparent (and any url() paint) are untouched.
+	var is_near_white = function(hex) {
+		hex = hex.toLowerCase();
+		if (hex.length == 3) {
+			hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+		}
+		var r = parseInt(hex.slice(0, 2), 16);
+		var g = parseInt(hex.slice(2, 4), 16);
+		var b = parseInt(hex.slice(4, 6), 16);
+		return 0xf0 <= r && 0xf0 <= g && 0xf0 <= b;
+	};
+	s = s.replace(/((?:stroke|fill)\s*=\s*")#([0-9a-f]{6}|[0-9a-f]{3})(")/gi,
+		function(all, pre, hex, post) {
+			return pre + (is_near_white(hex) ? 'none' : '#000') + post;
+		});
+	s = s.replace(/((?:stroke|fill)\s*:\s*)#([0-9a-f]{6}|[0-9a-f]{3})/gi,
+		function(all, pre, hex) {
+			return pre + (is_near_white(hex) ? 'none' : '#000');
+		});
 	// wrapper groups that carry no attributes only exist because of how the
 	// artwork was organised in the editor. Innermost first: the lazy match
 	// would otherwise pair an outer <g> with an inner group's </g> and unwrap
