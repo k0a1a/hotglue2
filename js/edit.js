@@ -1262,6 +1262,11 @@ $.glue.grid = function()
 				// dot row live in the class, the length of the line here
 				var line_color = $.glue.color.complementary(bg_color);
 				for (var x=(grid_origin.x % grid_x); x <= grid_width; x+=grid_x) {
+					// no line hugging the page's left edge - the grid
+					// starts one step in
+					if (x == 0) {
+						continue;
+					}
 					var elem = document.createElement('div');
 					// set crucial css properties
 					elem.classList.add('glue-grid-y');
@@ -1279,6 +1284,11 @@ $.glue.grid = function()
 					lines.push(elem);
 				}
 				for (var y=(grid_origin.y % grid_y); y <= grid_height; y+=grid_y) {
+					// no line hugging the page's top edge - the grid
+					// starts one step down
+					if (y == 0) {
+						continue;
+					}
 					var elem = document.createElement('div');
 					elem.classList.add('glue-grid-x');
 					elem.classList.add('glue-grid');

@@ -88,23 +88,79 @@ test('unlocking lets x and y be set separately', async ({ page, hg }) => {
 	await expect(pop(page).locator('.glue-grid-lock')).toHaveText('x≠y');
 });
 
-test('the show toggle draws and removes the dotted grid', async ({ page, hg }) => {
+test('clicking the grid button shows the grid, the panel toggle removes it',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		expect(await page.evaluate(() => document.querySelectorAll('.glue-grid').length)).toBe(0);
+
+		// the button itself draws the grid - no panel interaction needed
+		await openPanel(page);
+		await expect.poll(() => page.evaluate(() =>
+			document.querySelectorAll('.glue-grid').length)).toBeGreaterThan(0);
+		await expect(pop(page).locator('.glue-grid-show-toggle')).toHaveClass(/glue-font-toggle-on/);
+
+		// the lines are dotted and 1px thick
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.glue-grid'))
+				.backgroundImage.includes('radial-gradient'))).toBe(true);
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.glue-grid-x')).height)).toBe('1px');
+
+		// the panel's toggle removes the grid, and brings it back
+		await pop(page).locator('.glue-grid-show-toggle').click();
+		await expect.poll(() => page.evaluate(() =>
+			document.querySelectorAll('.glue-grid').length)).toBe(0);
+		await pop(page).locator('.glue-grid-show-toggle').click();
+		await expect.poll(() => page.evaluate(() =>
+			document.querySelectorAll('.glue-grid').length)).toBeGreaterThan(0);
+	});
+
+test('the grid redraws as the slider moves, before anything is stored',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPanel(page);		// the button itself shows the grid
+		await expect.poll(() => page.evaluate(() =>
+			document.querySelectorAll('.glue-grid-y').length)).toBeGreaterThan(0);
+
+		// input only - fill() fires the live apply, no change event, so
+		// nothing is committed yet
+		const x_row = pop(page).locator('.glue-popover-row').nth(2);
+		await x_row.locator('.glue-popover-field').fill('150');
+		// the drawn grid follows the slider immediately
+		await expect.poll(() => page.evaluate(() => {
+			const lines = document.querySelectorAll('.glue-grid-y');
+			if (lines.length < 2) {
+				return 0;
+			}
+			return Math.round(lines[1].getBoundingClientRect().x
+				- lines[0].getBoundingClientRect().x);
+		})).toBe(150);
+		// the backend write waits for the commit (the change event)
+		expect(pageAttrs(hg)['page-grid-x']).toBeUndefined();
+	});
+
+test('no grid line hugs the page edges', async ({ page, hg }) => {
 	hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	expect(await page.evaluate(() => document.querySelectorAll('.glue-grid').length)).toBe(0);
-
-	await openPanel(page);
-	await pop(page).locator('.glue-grid-show-toggle').click();
+	await openPanel(page);		// the button itself shows the grid
 	await expect.poll(() => page.evaluate(() =>
 		document.querySelectorAll('.glue-grid').length)).toBeGreaterThan(0);
 
-	// the lines are dotted: a radial-gradient paints the dots
-	expect(await page.evaluate(() =>
-		getComputedStyle(document.querySelector('.glue-grid'))
-			.backgroundImage.includes('radial-gradient'))).toBe(true);
-
-	await pop(page).locator('.glue-grid-show-toggle').click();
-	await expect.poll(() => page.evaluate(() =>
-		document.querySelectorAll('.glue-grid').length)).toBe(0);
+	const edges = await page.evaluate(() => ({
+		x0: Array.from(document.querySelectorAll('.glue-grid-y'))
+			.some((l) => Math.round(l.getBoundingClientRect().x) == 0),
+		y0: Array.from(document.querySelectorAll('.glue-grid-x'))
+			.some((l) => Math.round(l.getBoundingClientRect().y) == 0),
+		first: Array.from(document.querySelectorAll('.glue-grid-y'))
+			.map((l) => Math.round(l.getBoundingClientRect().x))[0],
+	}));
+	expect(edges.x0, 'a vertical line at the left edge').toBe(false);
+	expect(edges.y0, 'a horizontal line at the top edge').toBe(false);
+	// the first line sits one grid step in
+	expect(edges.first).toBe(100);
 });

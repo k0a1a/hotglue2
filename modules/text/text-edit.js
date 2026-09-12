@@ -2293,13 +2293,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('text', 'text-text-padding', elem, 4);
 
 	// semantic heading level: screen readers navigate pages by headings, so
-	// a text object can render as h1/h2/h3 (appearance stays the author's)
-	elem = $.glue.icon('text-shape', 'heading level');
+	// a text object can render as h1/h2/h3 (appearance stays the author's).
+	// prio 11 puts it at the right end of the top row, past everything else
+	elem = $.glue.icon('heading', 'heading level');
 	elem.addEventListener('click', function(e) {
 		text_heading_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-heading', elem, 7);
+	$.glue.contextmenu.register('text', 'text-heading', elem, 11);
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {

@@ -593,15 +593,19 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!pop) {
 			return;
 		}
-		var commit = function() {
+		var clamp = function(v) {
+			return Math.max(10, Math.min(500, Math.round(v)));
+		};
+		// redraw the grid on every change so it moves with the sliders;
+		// the backend write only happens on commit
+		var redraw = function() {
 			$.glue.grid.update(true);
+			grid_btn.title = 'grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')';
+		};
+		var commit = function() {
 			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page',
 				'page-grid-x': String($.glue.grid.x()),
 				'page-grid-y': String($.glue.grid.y()) });
-			grid_btn.title = 'grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')';
-		};
-		var clamp = function(v) {
-			return Math.max(10, Math.min(500, Math.round(v)));
 		};
 
 		// --- show / remove -------------------------------------------------
@@ -644,6 +648,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				// re-locking syncs y to x
 				$.glue.grid.y($.glue.grid.x());
 				y_row.set($.glue.grid.y());
+				redraw();
 				commit();
 			}
 			sync_lock();
@@ -672,6 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			value: $.glue.grid.x(),
 			apply: function(v, commit_save) {
 				set_x(clamp(v));
+				redraw();
 				if (commit_save) {
 					commit();
 				}
@@ -683,6 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			value: $.glue.grid.y(),
 			apply: function(v, commit_save) {
 				set_y(clamp(v));
+				redraw();
 				if (commit_save) {
 					commit();
 				}
@@ -696,6 +703,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	elem = $.glue.icon('adjust-grid-size', 'grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
+		// clicking the button draws the grid (the panel's show toggle
+		// removes it again)
+		if (!($.glue.grid.mode() & 1)) {
+			$.glue.grid.mode($.glue.grid.mode() | 1);
+			$.glue.grid.update();
+		}
 		grid_popover();
 	});
 	$.glue.menu.register('page', elem, 13);
