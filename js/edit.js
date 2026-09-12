@@ -1257,6 +1257,10 @@ $.glue.grid = function()
 				// container is centered. No-op in infinite mode, where the
 				// origin is 0.
 				var grid_origin = $.glue.canvas.origin();
+				// the lines are drawn as dotted rows (css/edit.css builds
+				// the dots from --glue-grid-color); the dimensions of the
+				// dot row live in the class, the length of the line here
+				var line_color = $.glue.color.complementary(bg_color);
 				for (var x=(grid_origin.x % grid_x); x <= grid_width; x+=grid_x) {
 					var elem = document.createElement('div');
 					// set crucial css properties
@@ -1264,12 +1268,11 @@ $.glue.grid = function()
 					elem.classList.add('glue-grid');
 					elem.classList.add('glue-ui');
 					// use complementary color
-					elem.style.backgroundColor = $.glue.color.complementary(bg_color);
+					elem.style.setProperty('--glue-grid-color', line_color);
 					elem.style.height = grid_height+'px';
 					elem.style.left = x+'px';
 					elem.style.position = 'absolute';
 					elem.style.top = '0px';
-					elem.style.width = '1px';
 					elem.style.zIndex = '200';
 					// add to dom and list
 					document.body.appendChild(elem);
@@ -1281,8 +1284,7 @@ $.glue.grid = function()
 					elem.classList.add('glue-grid');
 					elem.classList.add('glue-ui');
 					// use complementary color
-					elem.style.backgroundColor = $.glue.color.complementary(bg_color);
-					elem.style.height = '1px';
+					elem.style.setProperty('--glue-grid-color', line_color);
 					elem.style.left = '0px';
 					elem.style.position = 'absolute';
 					elem.style.top = y+'px';

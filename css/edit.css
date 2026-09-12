@@ -136,15 +136,23 @@
 }
 
 .glue-grid {
-	/* a grid line */
+	/* a grid line, drawn as a row of dots (the colour is computed per
+	   background and passed in as --glue-grid-color) */
+	background-image: radial-gradient(circle, var(--glue-grid-color) 1.5px, transparent 1.6px);
 }
 
 .glue-grid-x {
-	/* a horizontal grid line */
+	/* a horizontal grid line: dots repeated along x */
+	height: 3px;
+	background-size: 8px 3px;
+	background-repeat: repeat-x;
 }
 
 .glue-grid-y {
-	/* a vertical grid line */
+	/* a vertical grid line: dots repeated along y */
+	width: 3px;
+	background-size: 3px 8px;
+	background-repeat: repeat-y;
 }
 
 .glue-guide {

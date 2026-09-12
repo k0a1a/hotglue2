@@ -387,11 +387,26 @@ function page_render_page_early($args)
 		}
 		html_add_css(base_url().'modules/page/page-edit.css');
 
-		// set default grid
-		$grid = page_get_grid([]);
-		$grid = $grid['#data'];
-		html_add_js_var('$.glue.conf.page.default_grid_x', $grid['x']);
-		html_add_js_var('$.glue.conf.page.default_grid_y', $grid['y']);
+		// set grid: the page's own stored size (page-grid-x/y on the page
+		// pseudo-object, written by the grid panel), falling back to the
+		// config default. The old global CONTENT_DIR/grid file is retired -
+		// the size is remembered per page now.
+		$grid_x = PAGE_DEFAULT_GRID_X;
+		$grid_y = PAGE_DEFAULT_GRID_Y;
+		if (isset($args['page'])) {
+			$p = load_object(['name'=>$args['page'].'.page']);
+			if (!$p['#error']) {
+				$p = $p['#data'];
+				if (!empty($p['page-grid-x'])) {
+					$grid_x = intval($p['page-grid-x']);
+				}
+				if (!empty($p['page-grid-y'])) {
+					$grid_y = intval($p['page-grid-y']);
+				}
+			}
+		}
+		html_add_js_var('$.glue.conf.page.grid_x', $grid_x);
+		html_add_js_var('$.glue.conf.page.grid_y', $grid_y);
 				
 		// set guides
 		$guide = expl(' ', PAGE_GUIDES_X);
