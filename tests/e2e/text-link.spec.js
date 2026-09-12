@@ -186,9 +186,10 @@ test('a selection inside a link pre-fills the url and offers remove',
 		await expect.poll(async () => urlField(page).inputValue()).toBe('https://old.example/');
 		await expect(linkButton(page)).toHaveText('remove link');
 
-		// editing the url and pressing Enter updates the link
+		// editing the url flips the button to 'update link'
 		await typeInto(urlField(page), 'https://new.example/');
-		await urlField(page).press('Enter');
+		await expect(linkButton(page)).toHaveText('update link');
+		await linkButton(page).click();
 		await finish(page, a);
 		await expect.poll(() => stored(hg)).toBe('see <a href="https://new.example/">this</a> now');
 

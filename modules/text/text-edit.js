@@ -612,6 +612,7 @@ var text_strip_btns = {};          // { b, i, u, s } -> button element
 var text_strip_size_field = null;  // the number input
 var text_strip_size_slider = null; // the size slider it rides next to
 var text_strip_face = null;        // the face dropdown
+var text_strip_face_default = null; // the dropdown's "inherited" option
 var text_strip_link_sync = null;   // keeps the link row in step with the selection
 var text_strip_link_reset = null;  // empties the link row's fields
 
@@ -676,8 +677,9 @@ function text_strip_build() {
 	face.title = 'font family of the selection';
 	var def = document.createElement('option');
 	def.value = '';
-	def.textContent = 'default';
+	def.textContent = 'default';	// the inherited face, named by sync_state
 	face.appendChild(def);
+	text_strip_face_default = def;
 	var uploaded = [];
 	var installed = [];
 	faces.forEach(function(f) {
@@ -844,6 +846,7 @@ function text_strip_build() {
 	strip.appendChild(link_row);
 	var link_range = null;      // the snapshot the first interaction took
 	var link_mode = 'add';      // what the button does right now
+	var link_prefill = null;    // the href the sync put in, for change detection
 
 	// the <a> the range's caret or anchor is inside, validated against the
 	// object being edited
@@ -860,6 +863,7 @@ function text_strip_build() {
 	var link_reset_fields = function() {
 		link_url.value = '';
 		link_range = null;
+		link_prefill = null;
 	};
 	// the snapshot the first interaction takes wins: mousedown on the field
 	// sees the live selection BEFORE the focus collapse, and every later
@@ -951,6 +955,21 @@ function text_strip_build() {
 			link_commit();
 		}
 	});
+	// an edit to a pre-filled url flips the button from 'remove link' to
+	// 'update link' - and back, if the author restores the stored value
+	link_url.addEventListener('input', function() {
+		if (link_mode != 'add' && link_prefill !== null) {
+			if (link_url.value != link_prefill) {
+				link_btn.textContent = 'update link';
+				link_btn.title = 'apply the edited address to the link';
+				link_mode = 'update';
+			} else {
+				link_btn.textContent = 'remove link';
+				link_btn.title = 'take the link off the text';
+				link_mode = 'remove';
+			}
+		}
+	});
 	// keep the row in step with a selection that moves into or out of a
 	// link; a selection that moves AWAY must not eat what the author is
 	// typing, so only the existing-link prefill and the button react
@@ -968,6 +987,7 @@ function text_strip_build() {
 		var existing = link_existing_for(text_strip_range_for());
 		if (existing) {
 			link_url.value = existing.getAttribute('href') || '';
+			link_prefill = link_url.value;
 			link_btn.textContent = 'remove link';
 			link_btn.title = 'take the link off the text';
 			link_mode = 'remove';
@@ -1378,6 +1398,13 @@ function text_strip_position() {
 // div, so object-level inline styles (a bold OBJECT) live outside it and can
 // never light a toggle - computed styles are not consulted at all.
 function text_strip_sync_state() {
+	if (text_strip_face_default && text_strip_render) {
+		// name the "default" option by what it actually is: the font the
+		// run inherits from the object and the page
+		var inherited = getComputedStyle(text_strip_render).fontFamily || '';
+		var first = inherited.split(',')[0].trim().replace(/["']/g, '');
+		text_strip_face_default.textContent = first || 'default';
+	}
 	var render = text_strip_render;
 	var sel = window.getSelection();
 	var node = sel && sel.rangeCount ? sel.anchorNode : null;

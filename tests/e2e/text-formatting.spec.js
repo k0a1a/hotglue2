@@ -210,11 +210,15 @@ test('a face picked after a size joins the same span', async ({ page, hg }) => {
 		'font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
 });
 
-test('"default" unwraps a run-level face', async ({ page, hg }) => {
+test('the first option is the inherited font, and unwraps a run-level face',
+	async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <span style="font-family: \'Courier New\', Courier, monospace;">world</span>');
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	await page.locator('.glue-text-face').selectOption({ label: 'default' });
+	// the option is named by what the run inherits (the page's font), not
+	// by the word "default"
+	await expect(page.locator('.glue-text-face option').first()).toContainText('Verdana');
+	await page.locator('.glue-text-face').selectOption({ value: '' });
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('hello world');
 });
