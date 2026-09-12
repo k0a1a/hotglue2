@@ -77,8 +77,13 @@ test('wrapping a selection produces an anchor in the stored source', async ({ pa
 		.toBe('hello <a href="https://example.org/a?b=1&amp;c=2">world</a>');
 });
 
-test('the markup is hidden while editing, and the link is underlined', async ({ page, hg }) => {
-	// the whole point of WYSIWYG editing: no tags on screen
+test('the markup is hidden while editing, and the link keeps the page link style',
+	async ({ page, hg }) => {
+	// the whole point of WYSIWYG editing: no tags on screen. And the link
+	// is NOT underlined while editing: it inherits the main.css a-reset
+	// (no underline, no blue) exactly as the historical engine rendered
+	// it (parity A/B, F2/F3) - the page's link style is what the author
+	// ships, not an editor affordance
 	const a = hg.addObject('100000000001', ATTRS, 'see <a href="https://example.org/">this</a> now');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
@@ -89,7 +94,7 @@ test('the markup is hidden while editing, and the link is underlined', async ({ 
 	expect(shown, 'raw markup is visible while editing').not.toContain('<a href');
 	expect(shown).toContain('this');
 	expect(await page.evaluate((i) => getComputedStyle(
-		document.querySelector(`[id="${i}"] a`)).textDecorationLine, a)).toContain('underline');
+		document.querySelector(`[id="${i}"] a`)).textDecorationLine, a)).toBe('none');
 });
 
 test('a bare domain gets https, an anchor and a page name do not', async ({ page, hg }) => {

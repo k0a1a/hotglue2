@@ -297,11 +297,11 @@ test('a tap on the padding button opens the padding panel without changing anyth
 		});
 		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
-		// the panel is open, the padding is still the 15px module default,
-		// and the box has not moved
+		// the panel is open, no padding was applied (there is no module
+		// default any more), and the box has not moved
 		await expect(page.locator('.glue-popover.glue-padding-popover')).toBeVisible();
 		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('15px');
+			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('0px');
 		await expect.poll(() => page.evaluate((i) => {
 			const el = document.getElementById(i);
 			return el.offsetWidth+','+el.offsetHeight;

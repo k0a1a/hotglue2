@@ -61,13 +61,12 @@ test('the uniform row applies one value to all four sides', async ({ page, hg })
 	expect(pad[3]).toBe('30px');
 
 	// internal padding: the box did not move, the content area shrank. The
-	// stored width keeps the OUTER box: the renderer inflates the CSS width
-	// by the padding, so a stored width of 250 shows as 250+15+15=280, and
-	// the panel compensates the CSS width by the padding it adds - 220 stored
-	// here means 280 outer again on the next load
+	// stored width keeps the OUTER box, and the panel compensates the CSS
+	// width by the padding it adds - 190 stored here means the 250 box
+	// again on the next load once the 30 left and 30 right come back
 	await expect.poll(() => boxOf(page, a)).toBe(before);
 	await expect.poll(() => hg.readObject(ID).attrs['object-width'])
-		.toBe('220px');		// 250 stored minus the 30 the padding adds
+		.toBe('190px');		// 250 stored minus the 30 left and 30 right
 	// symmetric sides stay the x/y pair, the storage format objects
 	// have always used
 	const attrs = hg.readObject(ID).attrs;
@@ -93,23 +92,23 @@ test('the "more knobs" section sets each side on its own and stores it per-side'
 
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingTop, a)).toBe('20px');
-		// the other sides are untouched, keeping the module defaults
+		// the other sides are untouched - there is no module default any
+		// more, a bare side is flush
 		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingBottom, a)).toBe('12px');
+			getComputedStyle(document.getElementById(i)).paddingBottom, a)).toBe('0px');
 		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('15px');
+			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('0px');
 
-		// asymmetric sides save as longhands (the box is fixed, so the stored
-		// height shrank by the 8px the top gained over its 12px default;
-		// left=right=15 still keeps the x pair)
+		// asymmetric sides save as longhands (the box is fixed, so the
+		// stored height shrank by the 20px the top gained; the panel writes
+		// all four sides, so the untouched ones store as 0px)
 		await expect.poll(() => hg.readObject(ID).attrs['text-padding-top'])
 			.toBe('20px');
-		await expect.poll(() => hg.readObject(ID).attrs['text-padding-bottom'])
-			.toBe('12px');
+		expect(hg.readObject(ID).attrs['text-padding-bottom']).toBe('0px');
 		expect(hg.readObject(ID).attrs['text-padding-y']).toBeUndefined();
-		expect(hg.readObject(ID).attrs['text-padding-x']).toBe('15px');
+		expect(hg.readObject(ID).attrs['text-padding-x']).toBe('0px');
 		await expect.poll(() => hg.readObject(ID).attrs['object-height'])
-			.toBe('112px');		// 120 stored minus the 8 the top gained
+			.toBe('100px');		// 120 stored minus the 20 the top gained
 
 		// and the asymmetry survives a reload through the render path
 		await page.reload();
@@ -117,11 +116,11 @@ test('the "more knobs" section sets each side on its own and stores it per-side'
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingTop, a)).toBe('20px');
 		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingBottom, a)).toBe('12px');
+			getComputedStyle(document.getElementById(i)).paddingBottom, a)).toBe('0px');
 		await expect.poll(() => boxOf(page, a)).toBe(before);
 	});
 
-test('reset goes back to the default padding without moving the box',
+test('reset goes back to no padding without moving the box',
 	async ({ page, hg }) => {
 		const a = await openPanel(page, hg);
 		const before = await boxOf(page, a);
@@ -131,13 +130,14 @@ test('reset goes back to the default padding without moving the box',
 			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('40px');
 		expect(hg.readObject(ID).attrs['text-padding-x']).toBe('40px');
 
-		// the module default is 12px top and bottom, 15px left and right
+		// there is no module default any more - reset means flush, like the
+		// historical engine renders a bare text object
 		await panel(page).locator('.glue-popover-reset').click();
 		const pad = await page.evaluate((i) => {
 			const s = getComputedStyle(document.getElementById(i));
 			return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
 		}, a);
-		expect(pad).toEqual(['12px', '15px', '12px', '15px']);
+		expect(pad).toEqual(['0px', '0px', '0px', '0px']);
 		await expect.poll(() => boxOf(page, a)).toBe(before);
 		// nothing padding-related is left in the object file
 		await expect.poll(() => {

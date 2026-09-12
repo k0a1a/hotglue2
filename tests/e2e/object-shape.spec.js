@@ -376,17 +376,18 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 				}));
 		expect(widths).toEqual([0, 0, 0, 0]);
 
-		// the two rows line up as columns: each control's x matches the one
-		// directly below it
-		const xs = await advanced(page).evaluate(() => {
-			const x = (sel) => Math.round(document
-				.querySelector('.glue-popover-advanced ' + sel)
-				.getBoundingClientRect().x);
-			return [x('.glue-glow-color'), x('.glue-glow-color2'),
-				x('.glue-glow-inner-toggle'), x('.glue-drop-color')];
+		// the pairs sit two per row: labels are content-sized, so the rows
+		// do NOT line up as shared columns - each pair is its own
+		// label-plus-controls unit, stacked two by two
+		const ys = await advanced(page).evaluate(() => {
+			const y = (i) => Math.round(document.querySelectorAll(
+				'.glue-popover-pair .glue-popover-label')[i]
+				.getBoundingClientRect().y);
+			return [y(0), y(1), y(2), y(3)];
 		});
-		expect(xs[0]).toBe(xs[1]);	// glow and 2nd glow share column 1
-		expect(xs[2]).toBe(xs[3]);	// inside and drop shadow share column 2
+		expect(ys[0]).toBe(ys[1]);	// glow and glow inside share row 1
+		expect(ys[2]).toBe(ys[3]);	// 2nd glow and shadow share row 2
+		expect(ys[2]).toBeGreaterThan(ys[1]);	// and row 2 is below row 1
 
 		// and the whole fold fits its 42vh cage, so nothing hides below it
 		const cage = await advanced(page).evaluate((el) => ({
