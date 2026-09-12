@@ -825,7 +825,7 @@ function text_strip_build() {
 
 	// --- link row: the url field IS the control ---------------------------
 	// Always visible while editing, no icon to press. The selection (or the
-	// caret) decides what the button does: no link under it - 'add link'
+	// caret) decides what the button does: no link under it - 'make link'
 	// wraps the selected run; a link - 'remove link' unwraps it, and the
 	// url pre-fills so Enter edits the href. The sync keeps this current as
 	// the selection moves (text_strip_link_sync, called from the document
@@ -839,7 +839,7 @@ function text_strip_build() {
 	var link_btn = document.createElement('button');
 	link_btn.type = 'button';
 	link_btn.className = 'glue-link-add-class';
-	link_btn.textContent = 'add link';
+	link_btn.textContent = 'make link';
 	link_btn.title = 'wrap the selected text in a link to this address';
 	link_row.appendChild(link_url);
 	link_row.appendChild(link_btn);
@@ -992,7 +992,7 @@ function text_strip_build() {
 			link_btn.title = 'take the link off the text';
 			link_mode = 'remove';
 		} else {
-			link_btn.textContent = 'add link';
+			link_btn.textContent = 'make link';
 			link_btn.title = 'wrap the selected text in a link to this address';
 			link_mode = 'add';
 		}

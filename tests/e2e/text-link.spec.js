@@ -7,7 +7,7 @@
 // whole chain rather than an intermediate.
 //
 // The strip's link row is ALWAYS visible while editing: a url field and one
-// button. No link under the selection - the button says 'add link' and wraps
+// button. No link under the selection - the button says 'make link' and wraps
 // the selected run; a link - it says 'remove link', the url pre-fills so
 // Enter edits the href, and the button unwraps. Whatever non-empty string is
 // typed becomes the href; no validation, no rewriting.
@@ -81,7 +81,7 @@ test('the link row is part of the strip, under the size slider', async ({ page, 
 	// moment editing starts, in the strip
 	await expect(linkRow(page)).toBeVisible();
 	await expect(urlField(page)).toBeVisible();
-	await expect(linkButton(page)).toHaveText('add link');
+	await expect(linkButton(page)).toHaveText('make link');
 	// the row sits below the size slider
 	const slider = await page.locator('.glue-text-size-slider').boundingBox();
 	const r = await linkRow(page).boundingBox();
