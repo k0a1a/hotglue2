@@ -262,3 +262,12 @@
 	color: #06c;
 	text-decoration: underline;
 }
+
+.text a {
+	/* css/main.css sets text-decoration:inherit globally so an author's
+	   object-level decoration flows into the link; on top of that, a link
+	   inside a text object is underlined WHILE EDITING so the author can
+	   see it - published pages keep the historical a-reset (the author's
+	   own CSS decides there) */
+	text-decoration: underline;
+}
