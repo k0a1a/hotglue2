@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	var elem;
 	// image-class items always sit in the top row; prio 11 puts this one
 	// right of everything else there (download is the default 10)
-	elem = $.glue.icon('icon_description', 'image description');
+	elem = $.glue.icon('description', 'image description');
 	elem.addEventListener('click', function(e) {
 		image_properties_popover($.glue.owner(this));
 	});

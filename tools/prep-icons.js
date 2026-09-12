@@ -62,11 +62,14 @@ function strip(s)
 		return open + attrs.replace(
 			/\s+(?:enable-background|xml:space|version|x|y)\s*=\s*"[^"]*"/g, '') + '>';
 	});
-	// six hex digits where three will do. Only the alpha channel of these
-	// files is ever read (they are masks), but keeping them white rather
-	// than dropping the colour outright leaves them usable as plain <img>
-	// against dark chrome, and a bare stroke with no colour draws nothing.
-	s = s.replace(/#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3\b/gi, '#$1$2$3');
+	// every visible colour becomes black, on transparent. Only the alpha
+	// channel of these files is ever read (they are masks), but keeping
+	// them black rather than dropping the colour outright leaves them
+	// usable as plain <img> on light chrome, and a bare stroke with no
+	// colour draws nothing. none/transparent (and any url() paint) are
+	// untouched.
+	s = s.replace(/((?:stroke|fill)\s*=\s*")#[0-9a-f]{3,6}(")/gi, '$1#000$2');
+	s = s.replace(/((?:stroke|fill)\s*:\s*)#[0-9a-f]{3,6}/gi, '$1#000');
 	// wrapper groups that carry no attributes only exist because of how the
 	// artwork was organised in the editor. Innermost first: the lazy match
 	// would otherwise pair an outer <g> with an inner group's </g> and unwrap
