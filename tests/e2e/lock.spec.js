@@ -85,3 +85,26 @@ test('select-all leaves locked objects out of the selection', async ({ page, hg 
 	expect(sel).toEqual([free]);
 	expect(sel).not.toContain(locked);
 });
+
+test('the lock glyph swaps with the state', async ({ page, hg }) => {
+	const a = seedFree(hg);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await byId(page, a).click();
+	await page.waitForTimeout(400);		// the menu fades in
+
+	const glyph = () => page.evaluate(() => {
+		const s = getComputedStyle(
+			document.querySelector('#glue-contextmenu-object-lock'), '::before');
+		const v = s.maskImage || s.webkitMaskImage || '';
+		return (v.match(/icons\/([a-z0-9-]+)\.svg/) || [])[1] || null;
+	});
+
+	// unlocked: the open padlock
+	expect(await glyph(), 'unlocked objects show the open padlock').toBe('unlock');
+
+	await page.locator('#glue-contextmenu-object-lock').click();
+	await expect(byId(page, a)).toHaveClass(/\blocked\b/);
+	// the menu stays open on the locked object, and the glyph re-syncs
+	await expect.poll(glyph, 'locked objects show the closed padlock').toBe('lock');
+});

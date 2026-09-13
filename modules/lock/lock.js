@@ -40,6 +40,22 @@ $.glue.live('.object', 'glue-object-lock', function(e) {
 	}
 });
 
+// The padlock glyph swaps with the state the way the page layout toggle
+// swaps artwork: unlock.svg (the open padlock) while the object is
+// unlocked, lock.svg once it is locked. Both live at module scope since
+// Alpine evaluates its expressions as global strings.
+function lock_set_icon(el, locked) {
+	var url = new URL($.glue.base_url+'img/icons/' +
+		(locked ? 'lock' : 'unlock')+'.svg', document.baseURI).href;
+	el.style.setProperty('--glue-icon', 'url("'+url+'")');
+	Alpine.$data(el).locked = locked;
+}
+
+// re-synced whenever the context menu is (re)shown for an object
+function lock_sync(el) {
+	lock_set_icon(el, $.glue.owner(el).classList.contains('locked'));
+}
+
 // toggles the lock state of the icon's current owner object (see
 // $.glue.owner) and returns the new locked state - kept as a plain
 // function rather than inline in the x-on:click expression below since it
@@ -93,18 +109,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	$.glue.contextmenu.hide();
 
-	// the SuperGlue padlock; the two-state tooltip is Alpine's, like the
-	// clip toggle's
-	var elem = $.glue.icon('lock2');
+	// Alpine drives the tooltip text from the same state the glyph uses
+	var elem = $.glue.icon('unlock');
 
-	// Alpine tracks whether the current owner is locked, purely to drive
-	// the tooltip text; re-synced whenever the context menu is (re)shown
-	// for an object (glue-menu-activate), and set directly from
-	// lock_toggle()'s return value on click
 	elem.setAttribute('x-data', '{ locked: false }');
 	elem.setAttribute('x-bind:title', "locked ? 'object is locked, click to unlock it' : 'lock object'");
-	elem.setAttribute('x-on:glue-menu-activate', 'locked = $.glue.owner($el).classList.contains("locked")');
-	elem.setAttribute('x-on:click', 'locked = lock_toggle($el)');
+	elem.setAttribute('x-on:glue-menu-activate', 'lock_sync($el)');
+	elem.setAttribute('x-on:click', 'lock_set_icon($el, lock_toggle($el))');
 
 	$.glue.contextmenu.register('object', 'object-lock', elem, 19);
 });
