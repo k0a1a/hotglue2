@@ -2140,7 +2140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// the new line-art swatch glyph, through the mask pipeline like every
 	// other icon in the set
-	elem = $.glue.icon('background-color', 'change background color');
+	elem = $.glue.icon('color-swatch', 'change background color');
 	var colorpicker_shown = false;
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
