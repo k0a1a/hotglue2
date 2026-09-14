@@ -2458,6 +2458,34 @@ $.glue.undo = function()
 $.glue.clipboard = function()
 {
 	var KEY = 'glue.object-clipboard';
+	// how long a clipboard nobody touches survives. The hour starts at the
+	// copy and is put back to a full one every time the object is pasted, so
+	// it measures an hour of USE, not of age: keep pasting the same object and
+	// it stays. Without this the snapshot simply lived forever - localStorage
+	// has no session to end - and the paste item and its dot stayed lit for a
+	// copy made weeks ago.
+	var TTL = 60 * 60 * 1000;
+
+	var clear = function() {
+		try {
+			window.localStorage.removeItem(KEY);
+		} catch (e) {
+			// nothing to do about it - an unreadable clipboard is an empty one
+		}
+	};
+
+	// a paste puts the hour back. The snapshot is what was just read, so this
+	// rewrites the same object with a fresh timestamp; a copy landing from
+	// another tab inside the same instant would be overwritten, which is a
+	// window of milliseconds and a harmless outcome.
+	var extend = function(snap) {
+		snap.used_at = new Date().toISOString();
+		try {
+			window.localStorage.setItem(KEY, JSON.stringify(snap));
+		} catch (e) {
+			// no write means no extension, not a failed paste
+		}
+	};
 
 	// localStorage throws outright in some privacy modes, and a corrupt or
 	// hand-edited value must not break the editor - so every access is guarded
@@ -2478,7 +2506,16 @@ $.glue.clipboard = function()
 		} catch (e) {
 			return null;
 		}
-		if (!snap || snap.v !== 1 || !snap.name || !snap.attrs || !snap.source_page) {
+		if (!snap || snap.v !== 2 || !snap.name || !snap.attrs || !snap.source_page) {
+			return null;
+		}
+		// past its hour, or carrying no usable timestamp at all (which is not
+		// something this code writes, but is something a hand-edited value can
+		// be): drop the key as well as answering "nothing copied", so the
+		// state does not have to be re-derived wherever else it is asked for
+		var used = Date.parse(snap.used_at);
+		if (isNaN(used) || Date.now() - used > TTL) {
+			clear();
 			return null;
 		}
 		return snap;
@@ -2526,12 +2563,12 @@ $.glue.clipboard = function()
 				}
 				var d = data['#data'];
 				var snap = {
-					v: 1,
+					v: 2,
 					source_page: d.page,
 					name: d.name,
 					attrs: d.attrs,
 					content: d.content,
-					copied_at: new Date().toISOString()
+					used_at: new Date().toISOString()
 				};
 				try {
 					window.localStorage.setItem(KEY, JSON.stringify(snap));
@@ -2591,6 +2628,9 @@ $.glue.clipboard = function()
 				// reason), and captures the undo entry - this is the object's
 				// first save, so undo deletes the paste
 				$.glue.object.save(el);
+				// the paste is what keeps a clipboard alive, so the hour runs
+				// from the last one rather than from the copy
+				extend(snap);
 				on_done(true, el);
 			}, false);
 		}

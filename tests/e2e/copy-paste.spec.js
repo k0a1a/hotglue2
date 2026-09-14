@@ -143,6 +143,36 @@ async function pasteInSingleClickMenu(page) {
 	await page.getByTitle('paste copied object').click();
 }
 
+// A hand-written clipboard, in the shape read() accepts. Tests that need one
+// rather than a real copy use this, so the shape lives in one place: a
+// version, a source page, the stored object, and when it was last used.
+async function writeClipboard(page, snap) {
+	await page.evaluate((s) => {
+		localStorage.setItem('glue.object-clipboard', JSON.stringify(s));
+	}, {
+		v: 2,
+		content: '',
+		used_at: new Date().toISOString(),
+		...snap,
+	});
+}
+
+// Backdate the clipboard's timestamp, which is the only clock it has - an
+// hour of not being pasted is what expires it.
+async function ageClipboard(page, ms) {
+	await page.evaluate((age) => {
+		const key = 'glue.object-clipboard';
+		const snap = JSON.parse(localStorage.getItem(key));
+		snap.used_at = new Date(Date.now() - age).toISOString();
+		localStorage.setItem(key, JSON.stringify(snap));
+	}, ms);
+}
+
+const readClipboard = (page) => page.evaluate(() => {
+	const raw = localStorage.getItem('glue.object-clipboard');
+	return raw === null ? null : JSON.parse(raw);
+});
+
 // dialogs are how the editor reports a frontend error (SHOW_FRONTEND_ERRORS),
 // and an unexpected one is a failure whether or not the paste went through
 function collectErrors(page) {
@@ -519,21 +549,17 @@ test('a clipboard cannot talk the paste into writing outside its page',
 		// what is in localStorage is client-side and editable, so the paste
 		// service cannot trust any of it: the asset names below all try to
 		// climb out of a page's shared directory
-		await page.evaluate((source) => {
-			localStorage.setItem('glue.object-clipboard', JSON.stringify({
-				v: 1,
-				source_page: source,
-				name: source + '.100000000009',
-				attrs: {
-					type: 'image', module: 'image',
-					'image-file': '../canary.png',
-					'image-resized-file': '/etc/passwd',
-					'object-background-file': '../../../../etc/passwd',
-					'object-left': '10px', 'object-top': '10px',
-				},
-				content: '',
-			}));
-		}, hg.pageName);
+		await writeClipboard(page, {
+			source_page: hg.pageName,
+			name: hg.pageName + '.100000000009',
+			attrs: {
+				type: 'image', module: 'image',
+				'image-file': '../canary.png',
+				'image-resized-file': '/etc/passwd',
+				'object-background-file': '../../../../etc/passwd',
+				'object-left': '10px', 'object-top': '10px',
+			},
+		});
 		await page.keyboard.press('Control+v');
 		await expect(page.locator('.object')).toHaveCount(2);
 		await expect.poll(() => second.ids().length).toBe(2);
@@ -545,3 +571,55 @@ test('a clipboard cannot talk the paste into writing outside its page',
 		expect(second.readObject(pasted)).toContain('image-file:../canary.png');
 		expect(second.assets()).toEqual([]);
 	});
+
+// The clipboard is NOT cleared on paste - the same object pastes as often as
+// you like, which is most of what it is for. What bounds it is an hour of not
+// being used, put back to a full hour by each paste.
+test('a clipboard nobody has used for an hour is gone',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', imageObject(80, 120, 10));
+		seedAsset(hg.pageName, 'sample.png', SAMPLE_BYTES);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		await byId(page, `${hg.pageName}.100000000001`).click();
+		await copySelected(page);
+		await ageClipboard(page, 61 * 60 * 1000);
+
+		// the menu takes itself back out, and the key goes with it - a
+		// clipboard that is only *pretended* to be empty would leave the dot
+		// lit and the whole question to be answered again at every call site
+		await page.keyboard.press('Alt+O');
+		await expect(page.getByTitle('undo the last change')).toBeVisible();
+		await expect(page.getByTitle('paste copied object')).toBeHidden();
+		expect(await readClipboard(page)).toBeNull();
+
+		// and the shortcut agrees with the button
+		await page.keyboard.press('Control+v');
+		await expect(page.locator('.object')).toHaveCount(1);
+		expect(hg.ids()).toEqual(['100000000001']);
+	});
+
+test('pasting puts the hour back', async ({ page, hg }) => {
+	hg.addObject('100000000001', imageObject(80, 120, 10));
+	seedAsset(hg.pageName, 'sample.png', SAMPLE_BYTES);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	await byId(page, `${hg.pageName}.100000000001`).click();
+	await copySelected(page);
+	// an hour less a minute: still there, but with nothing to spare
+	await ageClipboard(page, 59 * 60 * 1000);
+
+	await page.keyboard.press('Control+v');
+	await expect(page.locator('.object')).toHaveCount(2);
+
+	// the paste moved the timestamp to now rather than leaving the copy's own
+	// time on it, so it is good for another hour
+	const after = await readClipboard(page);
+	expect(after.used_at).not.toBeNull();
+	expect(Date.now() - Date.parse(after.used_at)).toBeLessThan(60 * 1000);
+
+	// and it is still what was copied - extending is not a re-copy
+	expect(after.name).toBe(`${hg.pageName}.100000000001`);
+});

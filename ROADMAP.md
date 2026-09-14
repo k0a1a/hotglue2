@@ -433,7 +433,9 @@ Shipped 2026-09-14 — copy/paste objects, the page-copy feature's missing half
   menu that shows itself only when there is something to paste. The clipboard is one
   localStorage snapshot of the object **as it is stored** — attributes and content, not
   the DOM — which is what makes the copy complete by construction: the attributes nothing
-  in the editor displays have nowhere to get lost.
+  in the editor displays have nowhere to get lost. It expires an hour after it was last
+  used, and pasting puts the hour back; a paste never consumes it, so one object pastes as
+  often as you like.
 - **Two services do the file work**, in `module_glue.inc.php`: `glue.get_object` (resolves
   a symlink to its target, splits the stored object into attrs + content) and
   `glue.paste_object` (validates the target page, copies the referenced per-page assets,

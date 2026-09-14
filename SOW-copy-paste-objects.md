@@ -126,12 +126,20 @@ page's existing objects, not just globally-timestamp-unique).
 
 **The clipboard is client-side and versioned.** `$.glue.clipboard` (`js/edit.js`) holds one
 snapshot in `localStorage` under `glue.object-clipboard`: `{v, source_page, name, attrs,
-content, copied_at}`. It is the object as it is STORED, not as it is on screen — which is
+content, used_at}`. It is the object as it is STORED, not as it is on screen — which is
 the whole "complete property copy" requirement, since the attributes the editor never shows
 (`image-file-mime`, the original dimensions, anything added later) exist in no DOM element.
 Every read is guarded and any failure — a corrupt value, a privacy mode where
 `localStorage` throws — reads as "nothing copied", so the feature degrades to absent
 rather than broken.
+
+**It expires an hour after it was last used**, and a paste puts the hour back. localStorage
+has no session to end, so without a clock the snapshot simply lived forever and the paste
+item and its dot stayed lit for a copy made weeks ago; the timestamp is the whole of the
+mechanism. Reading an expired snapshot deletes the key rather than only reporting it empty,
+so the state is derived in one place — `has_clipboard()`, the dot and the Ctrl+V branch all
+ask the same question. A paste does NOT consume the clipboard: the same object pastes as
+often as you like, which is most of what it is for, and the hour is what bounds it.
 
 **Two services, `module_glue.inc.php`.** `glue.get_object` resolves a symlink to what it
 points at (assets live on the *resolved* page), loads the object and splits it into
@@ -185,16 +193,19 @@ rather than duplicating the file), then `unique_filename()`, which starts at `_2
   the snapshot format carries a single object, and the seed of a `clipboard` array is
   there for a later multi version.
 - **Same site only**, as scoped — the clipboard names a source page on this install.
-- `version: 1` in the snapshot is the seam: a future format change reads as "nothing
-  copied" rather than as a corrupt object, because the version check is part of the
-  validation.
+- **The clipboard is not per-user, and an hour is its only bound.** localStorage belongs to
+  the origin, so on an install where two editors share one, the second inherits the first's
+  clipboard until it expires. The version check is what makes the format safe to change:
+  `version: 2` added `used_at` and an older snapshot reads as "nothing copied" rather than
+  as a corrupt object.
 
 ### Tests
 
-`tests/e2e/copy-paste.spec.js` — 10 tests, both engines. They assert on the page directory
+`tests/e2e/copy-paste.spec.js` — 12 tests, both engines. They assert on the page directory
 as well as the DOM, because the client half and the server half are separate code paths: a
 paste that looks right while writing the wrong file is the failure worth catching. Beyond
 the happy paths that covers collision renaming (with the target's file checked byte for
 byte), a source asset that has vanished, the font registry left untouched, a symlinked
-source, the empty-clipboard button state, Ctrl+C/V inside a text field, undo, and a
-hand-written clipboard trying to walk asset names out of the page's shared directory.
+source, the empty-clipboard button state, Ctrl+C/V inside a text field, undo, the hour
+running out and being put back, and a hand-written clipboard trying to walk asset names out
+of the page's shared directory.
