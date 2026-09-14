@@ -2445,6 +2445,158 @@ $.glue.undo = function()
 	};
 }();
 
+// The object clipboard. It is the one piece of editor state that has to
+// outlive a page load, because copying on one page and pasting on another
+// crosses a full navigation - so it lives in localStorage rather than in a
+// variable. What it holds is the object as it is STORED (attributes and
+// content, not the dom): a pasted object has to be identical to the one it
+// was copied from, including the attributes that nothing in the editor ever
+// shows, and the dom is missing those.
+//
+// The server does the real work at both ends (glue.get_object / glue.paste_object);
+// this is the storage and the insertion.
+$.glue.clipboard = function()
+{
+	var KEY = 'glue.object-clipboard';
+
+	// localStorage throws outright in some privacy modes, and a corrupt or
+	// hand-edited value must not break the editor - so every access is guarded
+	// and any failure reads as "nothing copied"
+	var read = function() {
+		var raw;
+		try {
+			raw = window.localStorage.getItem(KEY);
+		} catch (e) {
+			return null;
+		}
+		if (!raw) {
+			return null;
+		}
+		var snap;
+		try {
+			snap = JSON.parse(raw);
+		} catch (e) {
+			return null;
+		}
+		if (!snap || snap.v !== 1 || !snap.name || !snap.attrs || !snap.source_page) {
+			return null;
+		}
+		return snap;
+	};
+
+	// the object lands at coordinates that may be nowhere near where the
+	// editor is currently scrolled - the same fit the tab key does
+	var scroll_into_view = function(el) {
+		var o = $.glue.canvas.origin();
+		var p = { left: el.offsetLeft+o.x, top: el.offsetTop+o.y };
+		var w = outer_width(el);
+		var h = outer_height(el);
+		var window_min_x = document.documentElement.scrollLeft;
+		var window_max_x = window_min_x+window.innerWidth;
+		var window_min_y = document.documentElement.scrollTop;
+		var window_max_y = window_min_y+window.innerHeight;
+		if (p.left < window_min_x) {
+			document.documentElement.scrollLeft = p.left;
+		} else if (window_max_x < p.left+w) {
+			document.documentElement.scrollLeft = window_min_x+p.left+w-window_max_x;
+		}
+		if (p.top < window_min_y) {
+			document.documentElement.scrollTop = p.top;
+		} else if (window_max_y < p.top+h) {
+			document.documentElement.scrollTop = window_min_y+p.top+h-window_max_y;
+		}
+	};
+
+	return {
+		// is there something to paste?
+		has_clipboard: function() {
+			return read() !== null;
+		},
+		// take a snapshot of an object (it goes to the server so that what is
+		// captured is the stored object, not what is currently on screen)
+		// on_done .. called with (ok, message) - the message is for the user
+		copy_of: function(el, on_done) {
+			if (typeof on_done != 'function') {
+				on_done = function() {};
+			}
+			$.glue.backend({ method: 'glue.get_object', name: el.id }, function(data) {
+				if (!data || data['#error']) {
+					on_done(false, (data && data['#data']) || 'could not read the object');
+					return;
+				}
+				var d = data['#data'];
+				var snap = {
+					v: 1,
+					source_page: d.page,
+					name: d.name,
+					attrs: d.attrs,
+					content: d.content,
+					copied_at: new Date().toISOString()
+				};
+				try {
+					window.localStorage.setItem(KEY, JSON.stringify(snap));
+				} catch (e) {
+					on_done(false, 'this browser will not let us keep a clipboard');
+					return;
+				}
+				on_done(true);
+			}, false);
+		},
+		// write the snapshot into the current page and put the result on
+		// screen, selected, the way the clone button does
+		// on_done .. called with (ok, message or the new element)
+		paste_into_current_page: function(on_done) {
+			if (typeof on_done != 'function') {
+				on_done = function() {};
+			}
+			var snap = read();
+			if (snap === null) {
+				on_done(false, 'there is nothing to paste');
+				return;
+			}
+			$.glue.backend({ method: 'glue.paste_object', page: $.glue.page, clipboard: snap }, function(data) {
+				if (!data || data['#error']) {
+					on_done(false, (data && data['#data']) || 'could not paste the object');
+					return;
+				}
+				// the server rendered it exactly as a page load would
+				var tmpl = document.createElement('template');
+				tmpl.innerHTML = (data['#data']['html'] || '').trim();
+				var el = tmpl.content.firstElementChild;
+				// the id is the editor's handle on an object, so an element
+				// without one cannot be registered (or saved, or undeleted)
+				if (!el || !el.id) {
+					on_done(false, 'the pasted object came back empty');
+					return;
+				}
+				// from here this is the clone button's sequence, because it is
+				// the same event: a new object arrives fully formed from
+				// stored state. The differences are the ones the two features
+				// are for - the new object is selected rather than the old
+				// one, and the window is scrolled to it, since a paste keeps
+				// its original coordinates and can land off screen.
+				$.glue.sel.none();
+				// same parent as everything else on the canvas
+				$.glue.canvas.add(el);
+				// registers it, and fits the page around it - which matters
+				// here where a clone always lands beside its original: on a
+				// shorter page the paste lands outside what the page covers
+				$.glue.object.register(el);
+				$.glue.sel.select(el);
+				// top of the stack: above whatever it lands on (the editor's
+				// own sense of "on top", the same one shift-pageup uses)
+				$.glue.stack.to_top(el);
+				scroll_into_view(el);
+				// persists the raise above (a clone saves for the same
+				// reason), and captures the undo entry - this is the object's
+				// first save, so undo deletes the paste
+				$.glue.object.save(el);
+				on_done(true, el);
+			}, false);
+		}
+	};
+}();
+
 document.addEventListener('DOMContentLoaded', function() {
 	// visible "Undo" entry in the single-click ("new") menu, not just the
 	// Ctrl+Z shortcut
@@ -2641,6 +2793,31 @@ $.glue.sel = function()
 			});
 			e.preventDefault();
 			return false;
+		} else if (e.ctrlKey && e.which == 67) {
+			// copy the selected object - one at a time for now, so a
+			// multi-selection is left alone rather than half-copied
+			var sel = document.querySelectorAll('.glue-selected');
+			if (sel.length == 1 && !sel[0].classList.contains('locked')) {
+				$.glue.clipboard.copy_of(sel[0], function(ok, msg) {
+					if (!ok) {
+						$.glue.error(msg);
+					}
+				});
+				e.preventDefault();
+				return false;
+			}
+		} else if (e.ctrlKey && e.which == 86) {
+			// paste - only claimed when there is something to paste, so the
+			// browser keeps its own paste otherwise
+			if ($.glue.clipboard.has_clipboard()) {
+				$.glue.clipboard.paste_into_current_page(function(ok, msg) {
+					if (!ok) {
+						$.glue.error(msg);
+					}
+				});
+				e.preventDefault();
+				return false;
+			}
 		} else {
 			// DEBUG
 			//console.log('html keydown '+e.which);

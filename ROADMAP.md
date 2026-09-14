@@ -22,7 +22,7 @@ never to have been listed here at all.
 
 All of these have shipped, so each one now records what was BUILT — read them for the
 reasoning, not as a plan. One further design lives only in git history; see below.
-Checked against the tree on 2026-09-02.
+Checked against the tree on 2026-09-14.
 
 ### In this directory, and SHIPPED
 
@@ -53,6 +53,11 @@ Checked against the tree on 2026-09-02.
   listed here — the file's own status line still said "to implement" until 2026-09-02;
   corrected. Read it for the two-effects-stay-distinct design question, which the fold
   kept to.
+- **SOW-copy-paste-objects.md** — `glue.get_object` / `glue.paste_object` plus
+  `$.glue.clipboard`, built 2026-09-14. Its "Where the brief met the code" section is the
+  part worth reading: the z-order the brief asked for became the editor's own `to_top`,
+  and a symlinked object turned out to have to be copied as its target — assets and all —
+  or the paste would look in the linking page for files that were never there.
 
 ### In this directory, NOT yet built
 
@@ -420,6 +425,37 @@ control box:
   by css-styled with a generated class prefix that outranks plain selectors here. CSS
   only — nothing else moved.
 
+Shipped 2026-09-14 — copy/paste objects, the page-copy feature's missing half
+(`SOW-copy-paste-objects.md`, now a record of what was built):
+
+- **Copy an object, change page, paste it.** Ctrl+C / Ctrl+V, a copy button in the object
+  context menu's top row (the icons already existed), and a paste button in the page menu
+  that shows itself only when there is something to paste. The clipboard is one
+  localStorage snapshot of the object **as it is stored** — attributes and content, not
+  the DOM — which is what makes the copy complete by construction: the attributes nothing
+  in the editor displays have nowhere to get lost.
+- **Two services do the file work**, in `module_glue.inc.php`: `glue.get_object` (resolves
+  a symlink to its target, splits the stored object into attrs + content) and
+  `glue.paste_object` (validates the target page, copies the referenced per-page assets,
+  writes the object under a fresh id, appends it to the page's stored reading order,
+  renders it back). Fonts are never copied — they are site-wide and already resolve — and
+  the asset list is the one the modules' own `has_reference` hooks define.
+- **A symlinked object is copied as what it points at**, assets and all: the resolution in
+  `get_object` means the paste draws from the *target* page's `shared/`, which is where a
+  naive copy would have looked in the wrong place entirely.
+- **"On top" is the editor's own `to_top`** (above what it intersects, 0–199 band), not
+  `max+1` — danja's call, so a paste stays inside the band the rest of the stack lives in.
+  Same-page paste overlays the original exactly, as the SOW asks; clone still offsets by a
+  grid cell, and the two coexist.
+- **One defect found on the way, in the editor's own chrome**: `.glue-menu-enabled`'s green
+  could never paint on a `.glue-btn-icon` — both are one class and the icon frame's rule
+  comes later in `css/edit.css`, so any icon button that tried it was silently unlit (only
+  the older PNG-background toggles ever worked). One rule added, for the copy button.
+- Covered by `tests/e2e/copy-paste.spec.js`, which asserts against the page directory as
+  well as the DOM — including collision renaming, a source asset deleted between copy and
+  paste, the untouched font registry, and a hand-written clipboard trying to walk asset
+  names out of the page's `shared/`.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
@@ -589,11 +625,13 @@ Features and niceties not yet spec'd — the running to-do:
 - **Per-object inline CSS** — extend the object-properties class feature with scoped
   inline CSS (auto-scoped to the object). Safe to run live in the editor (CSS can't
   break editor logic). Deferred from the object-properties SOW.
-- **Copy objects between pages** — copying a *page* is already done and always was:
-  `glue.copy_page` (`module_glue.inc.php:857`), reachable from the page browser
-  (`modules/page_browser/page_browser.js:68`). Objects are the missing half —
+- **Copy objects between pages** — **Done, 2026-09-14** (see the Done entry, and
+  `SOW-copy-paste-objects.md`). Copying a *page* already worked: `glue.copy_page`
+  (`module_glue.inc.php:857`), reachable from the page browser
+  (`modules/page_browser/page_browser.js:68`). Objects were the missing half —
   `glue.clone_object` derives its target page from the source object's own name, so it
-  can only ever clone within one page.
+  could only ever clone within one page; `glue.get_object`/`glue.paste_object` are the
+  pair that crosses.
 - **Adopt the range slider for the remaining drag controls.** `$.glue.rangeslider`
   (`js/edit.js`) draws a visible bar next to a menu button while it is dragged, in the
   toolbar's own frame — the readout Superglue's editor has. It was built for rotation,

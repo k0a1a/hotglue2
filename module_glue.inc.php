@@ -144,6 +144,217 @@ register_service('glue.clone_object', 'clone_object', ['auth'=>true]);
 
 
 /**
+ *	hand an object over for copying
+ *
+ *	returns everything the object file holds - attributes and content - so the
+ *	client can hold it as a clipboard snapshot and send it back to
+ *	paste_object(). Attributes are NOT filtered through the dom: fields that
+ *	never render (image-file-mime, image-file-width, ...) travel too, which is
+ *	what makes a pasted object identical to the one it was copied from.
+ *
+ *	a symlinked object is handed over as the object it points at: the assets
+ *	it uses live on the page the target is on, not on the page the link is.
+ *
+ *	@param array $args arguments
+ *		key 'name' name of the object to hand over
+ *	@return array response
+ *		key 'name' resolved object name
+ *		key 'page' page the object (and its assets) really live on
+ *		key 'attrs' all attributes but name and content
+ *		key 'content' the object's content
+ */
+function get_object($args)
+{
+	if (empty($args['name'])) {
+		return response('Required argument "name" missing or empty', 400);
+	}
+	$name = $args['name'];
+
+	$link = object_get_symlink(['name'=>$name]);
+	if ($link['#error']) {
+		return $link;
+	} elseif ($link['#data'] === '') {
+		// object_get_symlink() has logged the target
+		return response('Cannot copy '.quot($name).': its target is outside the content directory', 400);
+	} elseif ($link['#data'] !== false) {
+		$name = $link['#data'];
+	}
+
+	if (!object_exists($name)) {
+		return response('Object '.quot($name).' does not exist', 404);
+	}
+
+	$obj = load_object(['name'=>$name]);
+	if ($obj['#error']) {
+		return $obj;
+	}
+	$obj = $obj['#data'];
+
+	$attrs = $obj;
+	unset($attrs['name']);
+	// content may come back as false - load_object() reads it that way when a
+	// file ends straight after its attributes - and it travels to the client
+	// as json, where it should be an empty string, not a boolean
+	$content = '';
+	if (isset($attrs['content'])) {
+		$content = strval($attrs['content']);
+		unset($attrs['content']);
+	}
+
+	$a = expl('.', $name);
+	return response([
+		'name'=>$name,
+		'page'=>$a[0].'.'.$a[1],
+		'attrs'=>$attrs,
+		'content'=>$content,
+	]);
+}
+
+register_service('glue.get_object', 'get_object', ['auth'=>true]);
+
+
+/**
+ *	write a copied object into a page
+ *
+ *	takes a snapshot as returned by get_object() and recreates the object in
+ *	the target page under a fresh name, at its original coordinates. the
+ *	assets it references (images, backgrounds, uploads) are copied along with
+ *	it, under names that never overwrite what the target page already has;
+ *	fonts are site-global and are deliberately not copied. a missing or
+ *	unreachable source asset does not fail the paste - the object is written
+ *	either way.
+ *
+ *	@param array $args arguments
+ *		key 'page' page to paste into (i.e. page.rev)
+ *		key 'clipboard' the snapshot: source_page, name, attrs, content
+ *	@return array response
+ *		key 'name' name of the object created
+ *		key 'html' the object as rendered, ready to be added to the editor
+ */
+function paste_object($args)
+{
+	if (empty($args['page'])) {
+		return response('Required argument "page" missing or empty', 400);
+	}
+	if (!valid_pagename($args['page']) || !page_exists($args['page'])) {
+		return response('Page '.quot($args['page']).' does not exist', 404);
+	}
+	if (empty($args['clipboard']) || !is_array($args['clipboard'])) {
+		return response('Required argument "clipboard" missing or empty', 400);
+	}
+	$clip = $args['clipboard'];
+	if (empty($clip['name'])) {
+		return response('Required argument "clipboard.name" missing or empty', 400);
+	}
+	if (!isset($clip['attrs']) || !is_array($clip['attrs'])) {
+		return response('Required argument "clipboard.attrs" missing or not an array', 400);
+	}
+	// the page pseudo-object is page-level state wearing an object's clothes,
+	// and the clipboard we hand out never holds one
+	if (expl('.', $clip['name'])[2] == 'page') {
+		return response('Cannot paste '.quot($clip['name']).' as it is not an object', 400);
+	}
+
+	$attrs = $clip['attrs'];
+	unset($attrs['name']);
+	$content = isset($clip['content']) ? $clip['content'] : '';
+
+	// assets are copied from the page the source object lived on; when that
+	// page is gone (or was never one of ours) the object still pastes, it just
+	// arrives without its files
+	$source_page = isset($clip['source_page']) ? $clip['source_page'] : '';
+	$have_source = (valid_pagename($source_page) && page_exists($source_page));
+	if (!$have_source) {
+		log_msg('warn', 'paste_object: source page '.quot($source_page).' is unavailable, pasting '.quot($clip['name']).' without its assets');
+	}
+
+	// the attributes that name a file in the page's shared directory - the
+	// same set the has_reference hooks answer for (image, download, video and
+	// the object background). note that page-level attributes and the custom
+	// font list are deliberately absent: a font resolves by family name
+	// against the whole site, so there is nothing to copy.
+	$asset_attrs = [
+		'image-file',
+		'image-resized-file',
+		'download-file',
+		'video-file',
+		'video-poster-file',
+		'video-encode-file',
+		'video-encode-poster-file',
+		'object-background-file',
+	];
+	foreach ($asset_attrs as $attr) {
+		if (empty($attrs[$attr])) {
+			continue;
+		}
+		$f = $attrs[$attr];
+		// an upload is always a bare filename inside the page's shared
+		// directory; anything else did not come from one and is left alone
+		if (basename($f) !== $f) {
+			log_msg('warn', 'paste_object: not a plain filename, not copying '.quot($attr).' '.quot($f));
+			continue;
+		}
+		if (!$have_source) {
+			continue;
+		}
+		$src = CONTENT_DIR.'/'.expl('.', $source_page)[0].'/shared/'.$f;
+		if (!is_file($src)) {
+			log_msg('warn', 'paste_object: cannot find '.quot($src).', pasting '.quot($clip['name']).' without it');
+			continue;
+		}
+		$new_f = copy_asset_to_page($src, $args['page']);
+		if ($new_f === false) {
+			continue;
+		}
+		if ($new_f != $f) {
+			$attrs[$attr] = $new_f;
+		}
+	}
+
+	// create the new object - create_object() picks a name that is unique in
+	// the target page, and the clipboard's name is deliberately not reused
+	$new = create_object(['page'=>$args['page']]);
+	if ($new['#error']) {
+		return $new;
+	}
+	$new = $new['#data']['name'];
+
+	$obj = array_merge($attrs, ['name'=>$new, 'content'=>$content]);
+	$ret = save_object($obj);
+	if ($ret['#error']) {
+		return $ret;
+	}
+
+	// Keep the author's reading order complete: an object missing from the
+	// list still renders (it lands after the listed ones), but a screen
+	// reader would meet it last rather than where it sits. Only touched when
+	// the page actually has an order stored - pages that use the automatic
+	// one stay absent.
+	$page_name = $args['page'].'.page';
+	$page_obj = load_object(['name'=>$page_name]);
+	if (!$page_obj['#error'] && !empty($page_obj['#data']['page-reading-order'])) {
+		$order = json_decode($page_obj['#data']['page-reading-order'], true);
+		if (is_array($order)) {
+			$order[] = expl('.', $new)[2];
+			update_object(['name'=>$page_name, 'page-reading-order'=>json_encode($order)]);
+		}
+	}
+
+	// render it the way a page load would, so the client inserts exactly what
+	// a reload would produce
+	$render = render_object(['name'=>$new, 'edit'=>true, 'obj'=>$obj]);
+	if ($render['#error']) {
+		return $render;
+	}
+
+	log_msg('info', 'paste_object: pasted '.quot($clip['name']).' as '.quot($new).' into '.quot($args['page']));
+	return response(['name'=>$new, 'html'=>$render['#data']]);
+}
+
+register_service('glue.paste_object', 'paste_object', ['auth'=>true]);
+
+
+/**
  *	create an empty object in the content directory
  *
  *	@param array $args arguments

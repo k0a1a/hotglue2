@@ -808,6 +808,19 @@
 	user-select: none;
 }
 
+.glue-btn-icon.glue-menu-enabled {
+	/* .glue-menu-enabled's green is the editor's "this state is on" marker,
+	   but on its own it loses to the frame's pale fill above: both are one
+	   class, so the later rule takes the background and the icon looks
+	   exactly like a switched-off one. Two classes beat it, so an icon button
+	   can be stateful at all - the copy button is green while there is
+	   something on the clipboard. Hover is left below to win the tie on
+	   order, because that works here: the frame's fill is what goes grey.
+	   The existing toggle icons never met this: they are plain divs with a
+	   PNG background, so no later rule was competing with the green. */
+	background-color: rgba(0, 255, 0, 0.5);
+}
+
 .glue-btn-icon:hover {
 	background-color: #ccc;
 }

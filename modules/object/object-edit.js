@@ -1359,4 +1359,50 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.canvas.update();
 	});
 	$.glue.contextmenu.register('object', 'object-delete', elem, 20);
+
+	// copy: the object goes onto a clipboard held by the browser itself, so it
+	// survives the page load that changing pages is - copy here, paste on any
+	// other page of the site. The icon lights up while there is something on
+	// the clipboard: that is a state rather than a one-off action, since the
+	// same object can be pasted as many times as you like.
+	elem = $.glue.icon('copy-to-clipboard', 'copy object');
+	// note: elem is reused for every item in this scope, so the closure must
+	// capture this button, not the mutable elem
+	var copy_elem = elem;
+	var copy_sync = function() {
+		copy_elem.classList.toggle('glue-menu-enabled', $.glue.clipboard.has_clipboard());
+	};
+	elem.addEventListener('glue-menu-activate', copy_sync);
+	elem.addEventListener('click', function(e) {
+		var obj = $.glue.owner(this);
+		$.glue.clipboard.copy_of(obj, function(ok, msg) {
+			if (!ok) {
+				$.glue.error(msg);
+			}
+			copy_sync();
+		});
+	});
+	// in the top row with the adjustments (7) and the background (8), after
+	// both: the row runs text items, then those, then this
+	$.glue.contextmenu.register('object', 'object-copy', elem, 9, true);
+
+	// paste: writes whatever was copied into the page that is open now, which
+	// may well be a different page than the one it came from. It is dead
+	// weight while the clipboard is empty, and the page menu is short, so it
+	// shows itself only when there is something to paste.
+	elem = $.glue.icon('paste-from-clipboard', 'paste copied object');
+	elem.addEventListener('glue-menu-activate', function(e) {
+		// menu.show() drops anything that reports itself hidden right after
+		// this event (see the check in js/edit.js)
+		this.style.display = $.glue.clipboard.has_clipboard() ? '' : 'none';
+	});
+	elem.addEventListener('click', function(e) {
+		$.glue.menu.hide();
+		$.glue.clipboard.paste_into_current_page(function(ok, msg) {
+			if (!ok) {
+				$.glue.error(msg);
+			}
+		});
+	});
+	$.glue.menu.register('page', elem, 15);
 });

@@ -824,6 +824,63 @@ function upload_file($fn, $page, $orig_fn = '', &$existed = false)
 
 
 /**
+ *	copy a file into the shared directory of a page
+ *
+ *	the same landing rules upload_file() uses, so a copy behaves exactly like
+ *	an upload: an identical file already in the target directory is reused
+ *	(and its name returned), anything else gets a unique name rather than
+ *	overwriting whatever is there. Used by paste_object() to move an object's
+ *	per-page assets along with it.
+ *	@param string $src_path absolute path of the file to copy
+ *	@param string $page target page (i.e. page.rev)
+ *	@return filename inside the shared directory or false in case of error
+ */
+function copy_asset_to_page($src_path, $page)
+{
+	if (!is_file($src_path)) {
+		return false;
+	}
+
+	$a = expl('.', $page);
+	if (count($a) < 1 || !is_dir(CONTENT_DIR.'/'.$a[0])) {
+		log_msg('error', 'common: page '.quot($page).' does not exist, cannot copy asset');
+		return false;
+	}
+
+	// create shared directory if it doesn't exist yet
+	$d = CONTENT_DIR.'/'.$a[0].'/shared';
+	if (!is_dir($d)) {
+		$m = umask(0000);
+		if (!@mkdir($d, 0777)) {
+			umask($m);
+			log_msg('error', 'common: cannot create shared directory '.quot($d).', cannot copy asset');
+			return false;
+		}
+		umask($m);
+	}
+
+	// check if the very same file is already in the shared directory
+	if (($f = dir_has_same_file($d, $src_path, basename($src_path))) !== false) {
+		log_msg('info', 'common: reusing file '.quot($f).' instead of copied file as they don\'t differ');
+		return $f;
+	} else {
+		// at least give it a unique name
+		$f = unique_filename($d, basename($src_path));
+		$m = umask(0111);
+		if (!@copy($src_path, $d.'/'.$f)) {
+			umask($m);
+			log_msg('error', 'common: error copying file to '.quot($d.'/'.$f));
+			return false;
+		} else {
+			umask($m);
+			log_msg('info', 'common: copied file to '.quot($d.'/'.$f));
+			return $f;
+		}
+	}
+}
+
+
+/**
  *	check whether the string is a valid, canonical page name
  *
  *	the function does not check if the page exists or not.
