@@ -1364,25 +1364,33 @@ document.addEventListener('DOMContentLoaded', function() {
 	// survives the page load that changing pages is - copy here, paste on any
 	// other page of the site. The clipboard is otherwise invisible and a copy
 	// gives no sign of itself, so the icon carries a dot in its top right
-	// corner while there is something on it. A badge, not the editor's "this
-	// state is on" green: that would have said something about THIS object,
-	// and the clipboard is one slot for the whole editor holding an object
-	// that may well not be the one whose menu is open.
+	// corner while there is something on it, and says so in words in its
+	// tooltip - the dot alone is 2px. A badge, not the editor's "this state is
+	// on" green: that would have said something about THIS object, and the
+	// clipboard is one slot for the whole editor holding an object that may
+	// well not be the one whose menu is open.
 	elem = $.glue.icon('copy-to-clipboard', 'copy object');
 	// note: elem is reused for every item in this scope, so the closure must
 	// capture this button, not the mutable elem
 	var copy_elem = elem;
 	var copy_sync = function() {
-		copy_elem.classList.toggle('glue-clipboard-full', $.glue.clipboard.has_clipboard());
+		var full = $.glue.clipboard.has_clipboard();
+		copy_elem.classList.toggle('glue-clipboard-full', full);
+		copy_elem.title = full ? 'copy object [previous data present]' : 'copy object';
 	};
 	elem.addEventListener('glue-menu-activate', copy_sync);
+	// a copy by shortcut leaves this button untouched, so it is told when the
+	// clipboard changes rather than asked only when its menu opens (see the
+	// trigger in $.glue.clipboard)
+	document.addEventListener('glue-clipboard-change', copy_sync);
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
+		// no syncing here: a successful copy fires the event above, and a
+		// failed one changed nothing to sync
 		$.glue.clipboard.copy_of(obj, function(ok, msg) {
 			if (!ok) {
 				$.glue.error(msg);
 			}
-			copy_sync();
 		});
 	});
 	// in the top row with the adjustments (7) and the background (8), after

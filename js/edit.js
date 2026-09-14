@@ -2576,6 +2576,14 @@ $.glue.clipboard = function()
 					on_done(false, 'this browser will not let us keep a clipboard');
 					return;
 				}
+				// the clipboard changed, so anything showing its state can
+				// change too. Dispatched on the document element because
+				// $.glue.trigger needs an Element, and it bubbles, so a
+				// listener on document catches it. The copy button needs this:
+				// Ctrl+C never goes through that button, and without the event
+				// its dot and its tooltip would sit there contradicting the
+				// clipboard until the menu was opened again.
+				$.glue.trigger(document.documentElement, 'glue-clipboard-change');
 				on_done(true);
 			}, false);
 		},

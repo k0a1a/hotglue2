@@ -177,7 +177,13 @@ rather than duplicating the file), then `unique_filename()`, which starts at `_2
   editor: copy object A, select object B, and B's button read as if B were what was copied.
   A 2px dot in the icon's top right corner instead
   (`.glue-btn-icon.glue-clipboard-full::after`) says "the buffer is not empty" without
-  claiming anything about the object — a badge, the way a corner mark is read.
+  claiming anything about the object — a badge, the way a corner mark is read. The tooltip
+  carries the same fact in words, since 2px is a hint rather than a statement: it reads
+  `copy object [previous data present]` while there is something on the clipboard. Both are
+  driven by one `copy_sync`, which listens to a `glue-clipboard-change` event that the
+  clipboard fires when a copy lands — Ctrl+C never goes through the button, and without the
+  event the dot and the tooltip would sit there contradicting the clipboard until the menu
+  was reopened.
 - **A defect surfaced on the way**: `glue-menu-enabled`'s green can never paint on a
   `.glue-btn-icon`. Both selectors are one class and the icon frame's own fill is set in a
   later rule in `css/edit.css`, so the state was silently invisible on every icon button

@@ -453,9 +453,10 @@ Shipped 2026-09-14 — copy/paste objects, the page-copy feature's missing half
   can never paint on a `.glue-btn-icon` — both are one class and the icon frame's rule
   comes later in `css/edit.css`, so any icon button that tried it was silently unlit (only
   the older PNG-background toggles ever worked). Noted on the rule rather than worked
-  around: the copy button marks a full clipboard with a 2px dot in its corner instead,
-  because the editor's green claims a state of the object whose menu it is in and the
-  clipboard is one slot for the whole editor.
+  around: the copy button marks a full clipboard with a 2px dot in its corner and says so in
+  its tooltip (`copy object [previous data present]`), because the editor's green claims a
+  state of the object whose menu it is in and the clipboard is one slot for the whole
+  editor.
 - Covered by `tests/e2e/copy-paste.spec.js`, which asserts against the page directory as
   well as the DOM — including collision renaming, a source asset deleted between copy and
   paste, the untouched font registry, and a hand-written clipboard trying to walk asset

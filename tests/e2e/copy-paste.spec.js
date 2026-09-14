@@ -202,9 +202,14 @@ test('an object pasted into the same page keeps every stored property',
 		await byId(page, `${hg.pageName}.100000000001`).click();
 		await copySelected(page);
 
-		// the copy button says so: its clipboard dot is on while there is
-		// something to paste
-		await expect(page.getByTitle('copy object')).toHaveClass(/glue-clipboard-full/);
+		// the copy button says so: its clipboard dot is on, and its tooltip
+		// says it in words. Located by id rather than by title, since the
+		// title is the thing being asserted - and ctrl+c never goes through
+		// the button, so this is also what checks that a shortcut copy tells
+		// the button about itself
+		const copy_btn = byId(page, 'glue-contextmenu-object-copy');
+		await expect(copy_btn).toHaveClass(/glue-clipboard-full/);
+		await expect(copy_btn).toHaveAttribute('title', 'copy object [previous data present]');
 
 		const before = hg.ids();
 		await page.keyboard.press('Control+v');
@@ -474,10 +479,13 @@ test('the paste button appears only when there is something to paste',
 		const copy_btn = page.getByTitle('copy object');
 		await expect(copy_btn).toBeVisible();
 		await expect(copy_btn).not.toHaveClass(/glue-clipboard-full/);
+		// nothing copied yet, so the tooltip says just what the button does
+		await expect(copy_btn).toHaveAttribute('title', 'copy object');
 		await copy_btn.click();
 		await page.waitForFunction(() =>
 			window.localStorage.getItem('glue.object-clipboard') !== null);
 		await expect(copy_btn).toHaveClass(/glue-clipboard-full/);
+		await expect(copy_btn).toHaveAttribute('title', 'copy object [previous data present]');
 
 		// and now the single-click menu offers it, and it works
 		await page.keyboard.press('Alt+O');
