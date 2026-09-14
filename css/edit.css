@@ -180,6 +180,11 @@
 .glue-menu-enabled {
 	/* menu items that have an enabled/disabled state should use these classes */
 	/* this only works with images that are a bit transparent at least */
+	/* note: this never paints on a .glue-btn-icon - one class each, and the
+	   frame's pale fill is set in a rule further down, so it wins the
+	   background and the icon looks switched off. An icon button that wants a
+	   state needs a two-class rule (the copy button's clipboard dot is the
+	   one that exists, and it went its own way rather than green) */
 	background-color: rgba(0, 255, 0, 0.5);
 }
 
@@ -808,17 +813,23 @@
 	user-select: none;
 }
 
-.glue-btn-icon.glue-menu-enabled {
-	/* .glue-menu-enabled's green is the editor's "this state is on" marker,
-	   but on its own it loses to the frame's pale fill above: both are one
-	   class, so the later rule takes the background and the icon looks
-	   exactly like a switched-off one. Two classes beat it, so an icon button
-	   can be stateful at all - the copy button is green while there is
-	   something on the clipboard. Hover is left below to win the tie on
-	   order, because that works here: the frame's fill is what goes grey.
-	   The existing toggle icons never met this: they are plain divs with a
-	   PNG background, so no later rule was competing with the green. */
-	background-color: rgba(0, 255, 0, 0.5);
+.glue-btn-icon.glue-clipboard-full::after {
+	/* The copy button's "there is something on the clipboard" dot. A badge in
+	   the icon's own ink (#333, the glyph's colour), not a fill: it is the
+	   one thing on this button that says something about the editor rather
+	   than about the object whose menu it is in, and a corner mark reads that
+	   way while a green button does not. 2px is small on purpose - it is a
+	   reminder that the buffer is not empty, not a control. ::after is free
+	   here: the glyph is ::before, and the only other ::after on an icon
+	   button is the sheep's eyelid, on a class this one never has. */
+	content: '';
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	width: 2px;
+	height: 2px;
+	border-radius: 50%;
+	background-color: #333;
 }
 
 .glue-btn-icon:hover {

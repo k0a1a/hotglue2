@@ -172,8 +172,9 @@ test('an object pasted into the same page keeps every stored property',
 		await byId(page, `${hg.pageName}.100000000001`).click();
 		await copySelected(page);
 
-		// the copy button says so: green while there is something to paste
-		await expect(page.getByTitle('copy object')).toHaveClass(/glue-menu-enabled/);
+		// the copy button says so: its clipboard dot is on while there is
+		// something to paste
+		await expect(page.getByTitle('copy object')).toHaveClass(/glue-clipboard-full/);
 
 		const before = hg.ids();
 		await page.keyboard.press('Control+v');
@@ -442,11 +443,11 @@ test('the paste button appears only when there is something to paste',
 		await byId(page, `${hg.pageName}.100000000001`).click();
 		const copy_btn = page.getByTitle('copy object');
 		await expect(copy_btn).toBeVisible();
-		await expect(copy_btn).not.toHaveClass(/glue-menu-enabled/);
+		await expect(copy_btn).not.toHaveClass(/glue-clipboard-full/);
 		await copy_btn.click();
 		await page.waitForFunction(() =>
 			window.localStorage.getItem('glue.object-clipboard') !== null);
-		await expect(copy_btn).toHaveClass(/glue-menu-enabled/);
+		await expect(copy_btn).toHaveClass(/glue-clipboard-full/);
 
 		// and now the single-click menu offers it, and it works
 		await page.keyboard.press('Alt+O');

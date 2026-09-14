@@ -163,11 +163,18 @@ rather than duplicating the file), then `unique_filename()`, which starts at `_2
 - **A symlinked object is copied as its target**: resolving in `get_object` means the
   paste carries the target's attributes *and* takes the asset from the target page's
   `shared/` — not the linking page's, which is where a naive copy would have looked.
-- **A defect surfaced on the way**: `.glue-menu-enabled`'s green could never show on a
-  `.glue-btn-icon`. Both are one class, and the icon frame's own rule comes later in
-  `css/edit.css`, so the state was silently invisible on every icon button that tried it
-  (only the older PNG-background toggles ever worked). One rule added for the copy
-  button, which is green while there is something on the clipboard.
+- **The clipboard mark is a dot, not the editor's green.** `glue-menu-enabled` is the house
+  "this state is on" colour and was the first attempt, but every other green in the editor
+  describes the thing whose menu it sits in, and the clipboard is one slot for the whole
+  editor: copy object A, select object B, and B's button read as if B were what was copied.
+  A 2px dot in the icon's top right corner instead
+  (`.glue-btn-icon.glue-clipboard-full::after`) says "the buffer is not empty" without
+  claiming anything about the object — a badge, the way a corner mark is read.
+- **A defect surfaced on the way**: `glue-menu-enabled`'s green can never paint on a
+  `.glue-btn-icon`. Both selectors are one class and the icon frame's own fill is set in a
+  later rule in `css/edit.css`, so the state was silently invisible on every icon button
+  that tried it (only the older PNG-background toggles ever worked). Recorded as a comment
+  on the rule, since the next stateful icon button will meet it.
 - **`load_object()` returns content as `false`**, not `''`, when a file ends straight
   after its attributes. That travelled into the snapshot as a boolean and is now
   normalized to a string in `glue.get_object`.

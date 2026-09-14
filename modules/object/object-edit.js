@@ -1362,15 +1362,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// copy: the object goes onto a clipboard held by the browser itself, so it
 	// survives the page load that changing pages is - copy here, paste on any
-	// other page of the site. The icon lights up while there is something on
-	// the clipboard: that is a state rather than a one-off action, since the
-	// same object can be pasted as many times as you like.
+	// other page of the site. The clipboard is otherwise invisible and a copy
+	// gives no sign of itself, so the icon carries a dot in its top right
+	// corner while there is something on it. A badge, not the editor's "this
+	// state is on" green: that would have said something about THIS object,
+	// and the clipboard is one slot for the whole editor holding an object
+	// that may well not be the one whose menu is open.
 	elem = $.glue.icon('copy-to-clipboard', 'copy object');
 	// note: elem is reused for every item in this scope, so the closure must
 	// capture this button, not the mutable elem
 	var copy_elem = elem;
 	var copy_sync = function() {
-		copy_elem.classList.toggle('glue-menu-enabled', $.glue.clipboard.has_clipboard());
+		copy_elem.classList.toggle('glue-clipboard-full', $.glue.clipboard.has_clipboard());
 	};
 	elem.addEventListener('glue-menu-activate', copy_sync);
 	elem.addEventListener('click', function(e) {
