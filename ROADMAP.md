@@ -429,8 +429,8 @@ Shipped 2026-09-14 — copy/paste objects, the page-copy feature's missing half
 (`SOW-copy-paste-objects.md`, now a record of what was built):
 
 - **Copy an object, change page, paste it.** Ctrl+C / Ctrl+V, a copy button in the object
-  context menu's top row (the icons already existed), and a paste button in the page menu
-  that shows itself only when there is something to paste. The clipboard is one
+  context menu's top row (the icons already existed), and a paste button in the single-click
+  menu that shows itself only when there is something to paste. The clipboard is one
   localStorage snapshot of the object **as it is stored** — attributes and content, not
   the DOM — which is what makes the copy complete by construction: the attributes nothing
   in the editor displays have nowhere to get lost.

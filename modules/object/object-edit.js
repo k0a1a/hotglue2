@@ -1387,8 +1387,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('object', 'object-copy', elem, 9, true);
 
 	// paste: writes whatever was copied into the page that is open now, which
-	// may well be a different page than the one it came from. It is dead
-	// weight while the clipboard is empty, and the page menu is short, so it
+	// may well be a different page than the one it came from. It belongs with
+	// the other ways of putting something onto this page, so it goes in the
+	// single-click menu, after the object types (10-13) and before undo/redo
+	// (20-21) - and it is dead weight while the clipboard is empty, so it
 	// shows itself only when there is something to paste.
 	elem = $.glue.icon('paste-from-clipboard', 'paste copied object');
 	elem.addEventListener('glue-menu-activate', function(e) {
@@ -1404,5 +1406,5 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 	});
-	$.glue.menu.register('page', elem, 15);
+	$.glue.menu.register('new', elem, 15);
 });

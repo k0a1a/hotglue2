@@ -138,8 +138,8 @@ async function copySelected(page) {
 	});
 }
 
-async function pasteInPageMenu(page) {
-	await page.keyboard.press('Alt+P');
+async function pasteInSingleClickMenu(page) {
+	await page.keyboard.press('Alt+O');
 	await page.getByTitle('paste copied object').click();
 }
 
@@ -232,7 +232,7 @@ test('an object pasted onto another page arrives with its image',
 		// the navigation that makes a client-held clipboard necessary
 		await page.goto(second.editUrl());
 		await waitForEditor(page, 1);
-		await pasteInPageMenu(page);
+		await pasteInSingleClickMenu(page);
 		await expect(page.locator('.object')).toHaveCount(2);
 		await expect.poll(() => second.ids().length).toBe(2);
 
@@ -280,7 +280,7 @@ test('a colliding asset is copied under a new name, never over the target',
 
 		await page.goto(second.editUrl());
 		await waitForEditor(page, 0);
-		await pasteInPageMenu(page);
+		await pasteInSingleClickMenu(page);
 		await expect.poll(() => second.ids().length).toBe(1);
 
 		const pasted = newId([], second.ids());
@@ -316,7 +316,7 @@ test('an asset that is gone from the source page fails soft',
 
 		await page.goto(second.editUrl());
 		await waitForEditor(page, 1);
-		await pasteInPageMenu(page);
+		await pasteInSingleClickMenu(page);
 		await expect(page.locator('.object')).toHaveCount(2);
 		await expect.poll(() => second.ids().length).toBe(2);
 
@@ -355,7 +355,7 @@ test('fonts are not copied: they are site-wide and already resolve',
 
 			await page.goto(second.editUrl());
 			await waitForEditor(page, 1);
-			await pasteInPageMenu(page);
+			await pasteInSingleClickMenu(page);
 			await expect.poll(() => second.ids().length).toBe(2);
 
 			const pasted = newId(['100000000001'], second.ids());
@@ -410,7 +410,7 @@ test('copying through a symlinked object pastes the target, as a real file',
 
 		await page.goto(second.editUrl());
 		await waitForEditor(page, 1);
-		await pasteInPageMenu(page);
+		await pasteInSingleClickMenu(page);
 		await expect.poll(() => second.ids().length).toBe(2);
 
 		const pasted = newId(['100000000001'], second.ids());
@@ -432,13 +432,13 @@ test('the paste button appears only when there is something to paste',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 
-		// page menu opens with alt+p; with an empty clipboard the paste item
-		// takes itself out of it rather than sitting there dead
-		await page.keyboard.press('Alt+P');
-		await expect(page.getByTitle('reading order')).toBeVisible();
+		// the single-click menu opens with alt+o; with an empty clipboard the
+		// paste item takes itself out of it rather than sitting there dead
+		await page.keyboard.press('Alt+O');
+		await expect(page.getByTitle('undo the last change')).toBeVisible();
 		await expect(page.getByTitle('paste copied object')).toBeHidden();
 
-		// selecting an object closes the page menu by itself (glue-select)
+		// selecting an object closes the menu by itself (glue-select)
 		await byId(page, `${hg.pageName}.100000000001`).click();
 		const copy_btn = page.getByTitle('copy object');
 		await expect(copy_btn).toBeVisible();
@@ -448,8 +448,8 @@ test('the paste button appears only when there is something to paste',
 			window.localStorage.getItem('glue.object-clipboard') !== null);
 		await expect(copy_btn).toHaveClass(/glue-menu-enabled/);
 
-		// and now the page menu offers it, and it works
-		await page.keyboard.press('Alt+P');
+		// and now the single-click menu offers it, and it works
+		await page.keyboard.press('Alt+O');
 		await expect(page.getByTitle('paste copied object')).toBeVisible();
 		await page.getByTitle('paste copied object').click();
 		await expect(page.locator('.object')).toHaveCount(2);
