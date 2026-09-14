@@ -1014,18 +1014,59 @@ function object_background_popover(obj)
 
 	// --- move it around ---------------------------------------------------
 	//
-	// Dragged rather than typed, like the page background it is modelled on:
-	// where a picture sits behind text is a thing you judge by eye. A click
-	// with no drag puts it back to the corner, which is what the page
-	// background's own control does.
+	// Armed rather than dragged here: the toggle hands the object's own drag
+	// over to the background, and while it is on you grab the object itself to
+	// slide the image under it. A picture behind text is judged by eye against
+	// the thing it sits behind, so dragging it in place beats dragging a pad
+	// in a panel and watching the object from a distance.
+	//
+	// It is a mode rather than "the panel is open, so dragging moves the
+	// image", because moving the object with this panel open is an ordinary
+	// thing to do. It lasts until the panel closes or the toggle is switched
+	// off; the object cannot be moved or resized while it is on, which is what
+	// the lit toggle says.
+	//
+	// The slider mechanics are the pad's (this row used to be a pad, and the
+	// page background still has one). What is deliberately NOT carried over is
+	// the pad's click-with-no-drag-puts-it-back: a stray click on the object
+	// quietly wiping the position is a trap, and the footer's reset is there
+	// for anyone who wants it back.
 	var move_row = $.glue.popover.row('move');
-	var pad = document.createElement('div');
-	pad.className = 'glue-background-pad';
-	pad.title = 'drag to move the image, click to put it back';
-	pad.textContent = '\u2725';
-	pad.style.touchAction = 'none';
-	pad.addEventListener('pointerdown', function(e) {
-		if (!e.isPrimary) {
+	var move = document.createElement('div');
+	move.className = 'glue-font-toggle glue-background-move';
+	move.textContent = '\u2725';
+	move.title = 'drag the object itself to move the image';
+	move.style.touchAction = 'none';
+
+	var armed = false;
+	var saved = false;
+
+	var restore = function() {
+		if (!saved) {
+			// never armed: nothing was taken, so nothing is put back
+			return;
+		}
+		var m = $.glue.object.moveable_of(obj);
+		if (m) {
+			// saved and put back rather than set to a fixed true: a locked
+			// object is not draggable to begin with, and must stay that way
+			m.draggable = saved.draggable;
+			m.resizable = saved.resizable;
+		}
+		obj.style.touchAction = saved.touch_action;
+		saved = false;
+		pop.keep_open_target = false;
+		obj.removeEventListener('pointerdown', drag);
+		obj.removeEventListener('click', swallow, true);
+		move.classList.remove('glue-font-toggle-on');
+		armed = false;
+	};
+
+	var drag = function(e) {
+		// primary button only: a right click on the object is the context menu
+		// being asked for, and must not be turned into a drag - the pad this
+		// came from sat in a panel, where that could not happen
+		if (!e.isPrimary || e.button) {
 			return;
 		}
 		var start = getComputedStyle(obj).backgroundPosition.split(' ');
@@ -1037,30 +1078,59 @@ function object_background_popover(obj)
 		if (isNaN(from_y)) {
 			from_y = 0;
 		}
-		var moved = false;
 		$.glue.slider(e, function(x, y) {
 			obj.style.backgroundPosition = (from_x+x)+'px '+(from_y+y)+'px';
-			if (x != 0 || y != 0) {
-				moved = true;
-			}
 		}, function(x, y) {
-			if (!moved) {
-				// emptied rather than set to 0 0, so the object file drops
-				// the attribute
-				obj.style.backgroundPosition = '';
-			}
 			save();
 		});
 		e.preventDefault();
+	};
+
+	// A canceled pointerdown does not stop the click the browser sends after
+	// it. That click would reach whatever the object holds (a text object
+	// starts editing) and the editor's own handler (clicking selects), so
+	// while armed the object's clicks are stopped here first - the drag's
+	// leftovers, and nothing else.
+	var swallow = function(e) {
+		e.stopPropagation();
+		e.preventDefault();
+	};
+
+	move.addEventListener('click', function() {
+		if (armed) {
+			restore();
+			return;
+		}
+		var m = $.glue.object.moveable_of(obj);
+		saved = {
+			draggable: m ? m.draggable : false,
+			resizable: m ? m.resizable : false,
+			touch_action: obj.style.touchAction
+		};
+		if (m) {
+			m.draggable = false;
+			m.resizable = false;
+		}
+		// $.glue.slider needs the gesture to itself, or the browser claims it
+		// for scrolling and the drag never arrives - same as the pad
+		obj.style.touchAction = 'none';
+		pop.keep_open_target = obj;
+		obj.addEventListener('pointerdown', drag);
+		obj.addEventListener('click', swallow, true);
+		move.classList.add('glue-font-toggle-on');
+		armed = true;
 	});
-	move_row.appendChild(pad);
+	// whatever the panel took, it puts back - by any of the ways it can close,
+	// none of which is this panel's own code
+	pop.on_close = restore;
+	move_row.appendChild(move);
 	pop.appendChild(move_row);
 
 	// --- size it -----------------------------------------------------------
 	//
 	// A percentage of the object's width; the height keeps the image's own
-	// ratio ('% auto' is composed from the bare number, like the move pad's
-	// composed position). 100 is what the row shows when nothing is stored -
+	// ratio ('% auto' is composed from the bare number, like the position the
+	// move toggle writes). 100 is what the row shows when nothing is stored -
 	// it is not written until the scale is actually touched, so an unscaled
 	// image stays at its natural size, and a zero typed into the field
 	// removes the attribute again, per the "absent means default" rule.

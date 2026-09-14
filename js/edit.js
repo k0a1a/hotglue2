@@ -373,8 +373,17 @@ $.glue.popover = function()
 			$.glue.popover.place(pop, $.glue.popover.pointer());
 			pop.style.visibility = '';
 		},
+		// A panel can leave something running behind it - the background panel's
+		// armed move mode holds the object's own drag while it is on. Every way
+		// a panel goes away comes through here (Escape, a click outside, the
+		// object being deselected or dragged out from under it, another panel
+		// opening), so this is the one place such a panel is told to put back
+		// what it took. Set .on_close on the panel before show() to use it.
 		close: function() {
 			if (open_panel) {
+				if (typeof open_panel.on_close == 'function') {
+					open_panel.on_close();
+				}
 				open_panel.remove();
 				open_panel = false;
 			}
@@ -560,10 +569,21 @@ $.glue.popover = function()
 // the event.
 document.documentElement.addEventListener('click', function(e) {
 	var pop = $.glue.popover.current();
+	if (!pop) {
+		return;
+	}
+	// A panel can name an element that counts as part of it for this purpose.
+	// The background panel's armed move mode does: its whole point is that you
+	// drag the object itself, and a pointerup on the object still sends a
+	// click - which would close the panel and end the mode after every single
+	// drag. Only that panel sets this, and only while armed.
+	if (pop.keep_open_target && pop.keep_open_target.contains(e.target)) {
+		return;
+	}
 	// The colour picker counts as part of whatever panel opened it: a panel
 	// with a colour button on it would otherwise close the moment the picker
 	// was clicked, which is the first thing anyone does with it.
-	if (pop && !pop.contains(e.target) && !e.target.closest('.picker_wrapper')) {
+	if (!pop.contains(e.target) && !e.target.closest('.picker_wrapper')) {
 		$.glue.popover.close();
 	}
 }, true);
