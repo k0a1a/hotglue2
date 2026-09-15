@@ -477,8 +477,9 @@ Shipped 2026-09-14 — the background image is moved by grabbing the object itse
   number, and gets the extra width a sign needs); x 0 y 0 is the corner and is not written,
   absent meaning it as everywhere else in that panel. The pad's
   click-with-no-drag-puts-it-back is deliberately not carried over — a stray click on the
-  object quietly wiping the position is a trap, and the footer's reset still does it. The
-  page background keeps its own pad: a page has nothing behind it to grab.
+  object quietly wiping the position is a trap, and the footer's reset still does it.
+  *(The page background kept its own pad for a day — a page has nothing behind it to grab;
+  it took the same two rows on 2026-09-15, see below.)*
 - **Two small generic pieces in `$.glue.popover`**, both used only by that panel: an
   `on_close` hook on the panel (every way a panel goes away comes through `close()`, so
   that is the one place the panel is told to put back what it took — Escape, a click
@@ -508,6 +509,31 @@ Shipped 2026-09-15 — the pointer says what can be dragged:
   (`glue-text-editing`): that is where the caret is, and inside the contenteditable a link
   really is what is under the pointer. The three rules are ordered so the more specific
   state wins without `!important`.
+
+Shipped 2026-09-15 — the page background's panel is the object's panel:
+
+- **The page's move pad is gone, and the two `x`/`y` rows took its place** — same labels,
+  same range, same arithmetic as the object panel's, so the two panels are now the same
+  panel wherever it makes sense for them to be. Only the thing underneath differs: the
+  page writes `background-position` on `document.documentElement` and the
+  `page-background-image-position` attr on the page object, the object writes its own
+  style and the attr on itself.
+- **The page has no grab gesture, deliberately.** A page has nothing behind it to grab —
+  a drag out on the empty canvas belongs to the objects and the page's own single-click
+  menu — so the by-hand pair IS the page's whole move control. (The object panel's mode
+  works because the object is a thing with an edge you can see the image against; on the
+  page, the thing you are judging against is the whole viewport, which is already in front
+  of you.)
+- **The reset syncs the panel, not just the page**: the rows come back to the corner, the
+  tile toggle re-reads (the page's default IS repeat, so it lights) and the scale field
+  returns to 100 — the object panel's reset already did all three, and the page's only did
+  the first implicitly. `glue-background-scale` names the scale row now that the panel has
+  three number fields, the way `glue-background-repeat` names the tile toggle.
+- `tests/e2e/object-background.spec.js` was brought back in line with the 09-14 change it
+  had gone stale against (it still looked for the object panel's pad): it drags the object
+  and asserts the object did not move, that a plain click does *not* put the image back,
+  and that closing the panel hands the object's own drag over again. There is still no
+  page-background spec — the page's panel is untested.
 
 ---
 

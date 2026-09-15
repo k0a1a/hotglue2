@@ -1000,20 +1000,3 @@
 	width: 200px;
 }
 
-.glue-background-pad {
-	/* drag here to move the page's background image - an object's own
-	   background is moved by grabbing the object (the object panel's x and y
-	   rows are the same thing by hand), which leaves this the page's alone */
-	width: 44px;
-	height: 26px;
-	box-sizing: border-box;
-	border: 1px solid #000;
-	background: #fff;
-	color: #333;
-	font-size: 14px;
-	line-height: 24px;
-	text-align: center;
-	cursor: move;
-	-webkit-user-select: none;
-	user-select: none;
-}

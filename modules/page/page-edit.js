@@ -397,6 +397,19 @@ document.addEventListener('DOMContentLoaded', function() {
 		var bg = getComputedStyle(document.documentElement).backgroundImage;
 		return bg.length != 0 && bg != 'none';
 	};
+	// Where the page's background image sits, in px - the object panel's helper,
+	// pointed at the page's own element. The computed value is the one place the
+	// browser resolves '0% 0%', 'left top' and the pairs with only one number
+	// into something with two of them.
+	var page_background_position = function() {
+		var start = getComputedStyle(document.documentElement).backgroundPosition.split(' ');
+		var x = parseInt(start[0]);
+		var y = parseInt(start[1]);
+		return {
+			x: isNaN(x) ? 0 : x,
+			y: isNaN(y) ? 0 : y
+		};
+	};
 	var page_background_popover = function() {
 		var doc = document.documentElement;
 		var pop = $.glue.popover.open(doc, 'glue-background-popover');
@@ -431,50 +444,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// --- move it around -------------------------------------------------
 		//
-		// The object panel's background is moved by grabbing the object itself
-		// now - a page has nothing behind it to grab, so the page background
-		// keeps this pad: the last one, and the same control that used to sit
-		// in the page menu on its own. A click with no drag puts the image
-		// back to the corner, dropping the attribute.
-		var move_row = $.glue.popover.row('move');
-		var pad = document.createElement('div');
-		pad.className = 'glue-background-pad';
-		pad.title = 'drag to move the image, click to put it back';
-		pad.textContent = '\u2725';
-		pad.style.touchAction = 'none';
-		pad.addEventListener('pointerdown', function(e) {
-			if (!e.isPrimary) {
-				return;
+		// The object panel's two rows, to the letter: same labels, same range,
+		// same arithmetic - only the thing underneath differs. There the panel
+		// IS the move mode, because the object itself is there to grab; a page
+		// has nothing behind it to grab (a drag out on the page belongs to the
+		// objects and the canvas), so the page keeps the by-hand pair, which is
+		// the whole of its move control.
+		//
+		// x 0 y 0 is the corner and is not written - absent means it, the way it
+		// does everywhere else in this panel.
+		var at = page_background_position();
+		var write_at = function() {
+			doc.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
+		};
+		var save_at = function() {
+			if (at.x == 0 && at.y == 0) {
+				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-image-position' });
+			} else {
+				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': at.x+'px '+at.y+'px' });
 			}
-			var start = getComputedStyle(doc).backgroundPosition.split(' ');
-			var from_x = parseInt(start[0]);
-			var from_y = parseInt(start[1]);
-			if (isNaN(from_x)) {
-				from_x = 0;
-			}
-			if (isNaN(from_y)) {
-				from_y = 0;
-			}
-			var moved = false;
-			$.glue.slider(e, function(x, y) {
-				doc.style.backgroundPosition = (from_x+x)+'px '+(from_y+y)+'px';
-				if (x != 0 || y != 0) {
-					moved = true;
+		};
+		// The slider range is a drag length, not a limit: the field keeps the real
+		// number however far the drag went (see $.glue.popover.number_row).
+		var x_row = $.glue.popover.number_row('x', {
+			min: -500, max: 500, step: 1, unit: 'px',
+			value: at.x,
+			apply: function(v, commit) {
+				at.x = v;
+				write_at();
+				if (commit) {
+					save_at();
 				}
-			}, function(x, y) {
-				if (!moved) {
-					// emptied rather than set to 0 0, so the page object drops
-					// the attribute
-					doc.style.backgroundPosition = '';
-					$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-image-position' });
-				} else {
-					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': getComputedStyle(doc).backgroundPosition });
-				}
-			});
-			e.preventDefault();
+			}
 		});
-		move_row.appendChild(pad);
-		pop.appendChild(move_row);
+		var y_row = $.glue.popover.number_row('y', {
+			min: -500, max: 500, step: 1, unit: 'px',
+			value: at.y,
+			apply: function(v, commit) {
+				at.y = v;
+				write_at();
+				if (commit) {
+					save_at();
+				}
+			}
+		});
+		var sync_rows = function() {
+			x_row.set(at.x);
+			y_row.set(at.y);
+		};
+		// the image moves up and left as readily as down and right, so these two
+		// fields get the room for a sign (the shared one allows three digits)
+		x_row.row.classList.add('glue-background-pos');
+		y_row.row.classList.add('glue-background-pos');
+		pop.appendChild(x_row.row);
+		pop.appendChild(y_row.row);
 
 		// --- size it ---------------------------------------------------------
 		//
@@ -501,6 +524,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			}
 		});
+		// the panel has three number fields now, so the scale one is named -
+		// the way the tile toggle is (glue-background-repeat)
+		scale_row.row.classList.add('glue-background-scale');
 		pop.appendChild(scale_row.row);
 
 		// --- take it off, or put it back --------------------------------------
@@ -523,6 +549,13 @@ document.addEventListener('DOMContentLoaded', function() {
 			doc.style.backgroundRepeat = '';
 			doc.style.backgroundPosition = '';
 			doc.style.backgroundSize = '';
+			// and the panel says so: the rows, the tile toggle (the page's
+			// default IS repeat, so it lights) and the scale field
+			at.x = 0;
+			at.y = 0;
+			sync_rows();
+			sync_repeat();
+			scale_row.set(100);
 			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
 				attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
 		}));
