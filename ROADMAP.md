@@ -493,6 +493,22 @@ Shipped 2026-09-14 — the background image is moved by grabbing the object itse
   follows it, and without this the drag would end in a text object starting to edit, or in a
   plain click selecting. Right-clicks are left alone so the context menu still opens.
 
+Shipped 2026-09-15 — the pointer says what can be dragged:
+
+- **Objects carry the move cursor in the editor, content included** (`css/edit.css`; that
+  file is the editor's alone, so published pages are untouched). The rule reaches into the
+  descendants deliberately: `cursor` inherits, but a child that declares its own keeps it,
+  and the two that do are exactly the ones that lie here — a **link**, whose hand says
+  "this goes somewhere" when in the editor clicking one does nothing at all, and a **text
+  object's own surface**, whose I-beam says "this selects text" when a drag from it moves
+  the object. Same cursor as the page background's pad, which is the editor's own use of
+  "drag this".
+- **`.locked` objects take it back** (`cursor: default`) — they cannot be dragged, and the
+  pointer no longer promises they can. While a text object is **edited** the I-beam returns
+  (`glue-text-editing`): that is where the caret is, and inside the contenteditable a link
+  really is what is under the pointer. The three rules are ordered so the more specific
+  state wins without `!important`.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)

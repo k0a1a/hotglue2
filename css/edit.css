@@ -220,6 +220,33 @@
 	/* all ui elements should use this class */
 }
 
+.object,
+.object * {
+	/* In the editor an object is a thing you drag, wherever you take hold of
+	   it, so the pointer says so over the whole of it. It reaches into the
+	   descendants on purpose: 'move' inherits, but a child that declares its
+	   own cursor keeps it, and the two that do are exactly the ones that lie
+	   here - a link, whose hand says "this goes somewhere" when in the editor
+	   clicking it does nothing at all, and a text object's own surface, whose
+	   I-beam says "this selects text" when a drag from it moves the object. */
+	cursor: move;
+}
+
+.object.locked,
+.object.locked * {
+	/* nothing to drag, and the pointer says so rather than promising */
+	cursor: default;
+}
+
+.object.glue-text-editing,
+.object.glue-text-editing * {
+	/* while a text object is EDITED the caret is in there, so the I-beam does
+	   belong - and inside the contenteditable a link keeps it too, because
+	   there the link really is what is under the pointer. Last of the three,
+	   so it wins over both. */
+	cursor: text;
+}
+
 .glue-upload-statusbar {
 	/* statusbar for uploading */
 	background-color: lightgrey;
