@@ -663,6 +663,12 @@
 	box-sizing: border-box;
 }
 
+.glue-background-pos .glue-popover-field {
+	/* the background panel's x and y are signed: a sign and three digits,
+	   since the image moves up and left as readily as down and right */
+	width: 52px;
+}
+
 .glue-image-alt-field {
 	/* the alt-text input in the image description panel needs room for
 	   an actual sentence, not three digits */
@@ -968,8 +974,9 @@
 }
 
 .glue-background-pad {
-	/* drag here to move the image behind the object - the page background is
-	   moved the same way, by dragging its own button */
+	/* drag here to move the page's background image - an object's own
+	   background is moved by grabbing the object (the object panel's x and y
+	   rows are the same thing by hand), which leaves this the page's alone */
 	width: 44px;
 	height: 26px;
 	box-sizing: border-box;

@@ -982,6 +982,20 @@ function object_has_background(obj)
 	return !!(obj && obj.style.backgroundImage && obj.style.backgroundImage != 'none');
 }
 
+// Where the background image sits, in px. parse the computed value because
+// that is the one place the browser resolves '0% 0%', 'left top' and the
+// pairs with only one number into something with two of them.
+function object_background_position(obj)
+{
+	var start = getComputedStyle(obj).backgroundPosition.split(' ');
+	var x = parseInt(start[0]);
+	var y = parseInt(start[1]);
+	return {
+		x: isNaN(x) ? 0 : x,
+		y: isNaN(y) ? 0 : y
+	};
+}
+
 function object_background_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-background-popover');
@@ -1014,36 +1028,62 @@ function object_background_popover(obj)
 
 	// --- move it around ---------------------------------------------------
 	//
-	// Armed rather than dragged here: the toggle hands the object's own drag
-	// over to the background, and while it is on you grab the object itself to
-	// slide the image under it. A picture behind text is judged by eye against
-	// the thing it sits behind, so dragging it in place beats dragging a pad
-	// in a panel and watching the object from a distance.
+	// OPENING this panel is the mode: it hands the object's own drag over to
+	// the background, so you grab the object and the image slides under it. A
+	// picture behind text is judged by eye against the thing it sits behind,
+	// and that judgement wants the picture under the pointer rather than a pad
+	// in a panel. It lasts as long as the panel is open, and while it does the
+	// object cannot be moved or resized - which is why the panel is closed
+	// again when you are done moving the background.
 	//
-	// It is a mode rather than "the panel is open, so dragging moves the
-	// image", because moving the object with this panel open is an ordinary
-	// thing to do. It lasts until the panel closes or the toggle is switched
-	// off; the object cannot be moved or resized while it is on, which is what
-	// the lit toggle says.
-	//
-	// The slider mechanics are the pad's (this row used to be a pad, and the
-	// page background still has one). What is deliberately NOT carried over is
-	// the pad's click-with-no-drag-puts-it-back: a stray click on the object
-	// quietly wiping the position is a trap, and the footer's reset is there
-	// for anyone who wants it back.
-	var move_row = $.glue.popover.row('move');
-	var move = document.createElement('div');
-	move.className = 'glue-font-toggle glue-background-move';
-	move.textContent = '\u2725';
-	move.title = 'drag the object itself to move the image';
-	move.style.touchAction = 'none';
+	// The two rows are the same position by hand, and they follow the drag
+	// live: dragging is how you find the position, typing is how you fix it.
+	// x 0 y 0 is the corner and is not written - absent means it, the way it
+	// does everywhere else in this panel.
+	var at = object_background_position(obj);
+	var write_at = function() {
+		obj.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
+	};
+	// The slider range is a drag length, not a limit: the field keeps the real
+	// number however far the drag went (see $.glue.popover.number_row).
+	var x_row = $.glue.popover.number_row('x', {
+		min: -500, max: 500, step: 1, unit: 'px',
+		value: at.x,
+		apply: function(v, commit) {
+			at.x = v;
+			write_at();
+			if (commit) {
+				save();
+			}
+		}
+	});
+	var y_row = $.glue.popover.number_row('y', {
+		min: -500, max: 500, step: 1, unit: 'px',
+		value: at.y,
+		apply: function(v, commit) {
+			at.y = v;
+			write_at();
+			if (commit) {
+				save();
+			}
+		}
+	});
+	var sync_rows = function() {
+		x_row.set(at.x);
+		y_row.set(at.y);
+	};
+	// the image moves up and left as readily as down and right, so these two
+	// fields get the room for a sign (the shared one allows three digits)
+	x_row.row.classList.add('glue-background-pos');
+	y_row.row.classList.add('glue-background-pos');
+	pop.appendChild(x_row.row);
+	pop.appendChild(y_row.row);
 
 	var armed = false;
 	var saved = false;
 
 	var restore = function() {
-		if (!saved) {
-			// never armed: nothing was taken, so nothing is put back
+		if (!armed) {
 			return;
 		}
 		var m = $.glue.object.moveable_of(obj);
@@ -1054,11 +1094,9 @@ function object_background_popover(obj)
 			m.resizable = saved.resizable;
 		}
 		obj.style.touchAction = saved.touch_action;
-		saved = false;
 		pop.keep_open_target = false;
 		obj.removeEventListener('pointerdown', drag);
 		obj.removeEventListener('click', swallow, true);
-		move.classList.remove('glue-font-toggle-on');
 		armed = false;
 	};
 
@@ -1069,18 +1107,15 @@ function object_background_popover(obj)
 		if (!e.isPrimary || e.button) {
 			return;
 		}
-		var start = getComputedStyle(obj).backgroundPosition.split(' ');
-		var from_x = parseInt(start[0]);
-		var from_y = parseInt(start[1]);
-		if (isNaN(from_x)) {
-			from_x = 0;
-		}
-		if (isNaN(from_y)) {
-			from_y = 0;
-		}
+		var from = object_background_position(obj);
+		at.x = from.x;
+		at.y = from.y;
 		$.glue.slider(e, function(x, y) {
-			obj.style.backgroundPosition = (from_x+x)+'px '+(from_y+y)+'px';
-		}, function(x, y) {
+			at.x = from.x+x;
+			at.y = from.y+y;
+			write_at();
+			sync_rows();
+		}, function() {
 			save();
 		});
 		e.preventDefault();
@@ -1089,16 +1124,15 @@ function object_background_popover(obj)
 	// A canceled pointerdown does not stop the click the browser sends after
 	// it. That click would reach whatever the object holds (a text object
 	// starts editing) and the editor's own handler (clicking selects), so
-	// while armed the object's clicks are stopped here first - the drag's
-	// leftovers, and nothing else.
+	// while the panel is open the object's clicks are stopped here first - the
+	// drag's leftovers, and nothing else.
 	var swallow = function(e) {
 		e.stopPropagation();
 		e.preventDefault();
 	};
 
-	move.addEventListener('click', function() {
+	var arm = function() {
 		if (armed) {
-			restore();
 			return;
 		}
 		var m = $.glue.object.moveable_of(obj);
@@ -1117,20 +1151,17 @@ function object_background_popover(obj)
 		pop.keep_open_target = obj;
 		obj.addEventListener('pointerdown', drag);
 		obj.addEventListener('click', swallow, true);
-		move.classList.add('glue-font-toggle-on');
 		armed = true;
-	});
+	};
 	// whatever the panel took, it puts back - by any of the ways it can close,
 	// none of which is this panel's own code
 	pop.on_close = restore;
-	move_row.appendChild(move);
-	pop.appendChild(move_row);
 
 	// --- size it -----------------------------------------------------------
 	//
 	// A percentage of the object's width; the height keeps the image's own
 	// ratio ('% auto' is composed from the bare number, like the position the
-	// move toggle writes). 100 is what the row shows when nothing is stored -
+	// x and y rows write). 100 is what the row shows when nothing is stored -
 	// it is not written until the scale is actually touched, so an unscaled
 	// image stays at its natural size, and a zero typed into the field
 	// removes the attribute again, per the "absent means default" rule.
@@ -1172,12 +1203,18 @@ function object_background_popover(obj)
 		obj.style.backgroundRepeat = 'no-repeat';
 		obj.style.backgroundPosition = '';
 		obj.style.backgroundSize = '';
+		at.x = 0;
+		at.y = 0;
+		sync_rows();
 		sync_repeat();
 		scale_row.set(100);
 		save();
 	}));
 	pop.appendChild(footer);
 
+	// the panel is the move mode, so it takes the object's drag on the way in
+	// and gives it back on the way out (pop.on_close, above)
+	arm();
 	$.glue.popover.show(pop);
 }
 

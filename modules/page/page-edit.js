@@ -431,9 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// --- move it around -------------------------------------------------
 		//
-		// The object panel's pad, and the same control that used to sit in
-		// the page menu on its own. A click with no drag puts the image back
-		// to the corner, dropping the attribute.
+		// The object panel's background is moved by grabbing the object itself
+		// now - a page has nothing behind it to grab, so the page background
+		// keeps this pad: the last one, and the same control that used to sit
+		// in the page menu on its own. A click with no drag puts the image
+		// back to the corner, dropping the attribute.
 		var move_row = $.glue.popover.row('move');
 		var pad = document.createElement('div');
 		pad.className = 'glue-background-pad';

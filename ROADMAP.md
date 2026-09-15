@@ -464,30 +464,34 @@ Shipped 2026-09-14 — copy/paste objects, the page-copy feature's missing half
 
 Shipped 2026-09-14 — the background image is moved by grabbing the object itself:
 
-- **The background panel's move pad became a mode.** The pad was a small square in the
-  panel you dragged to slide the image behind the object; danja asked for the gesture to be
-  over the element, and it now is: a toggle in the panel's `move` row hands the object's own
-  drag to the background, so you grab the object and the image moves under it — which is the
-  only way to judge a picture against the thing it sits behind. The pad's
-  click-with-no-drag-puts-it-back is deliberately not carried over (a stray click on the
-  object quietly wiping the position is a trap; the footer's reset still does it), and the
-  page background's own pad is untouched.
-- **It is a mode, not "the panel is open".** Moving the object with this panel open is an
-  ordinary thing to do, so the toggle says which drag you are getting; while it is on the
-  object cannot be moved or resized — that is what the lit toggle means. Arm saves the
-  Moveable `draggable`/`resizable` and puts them back rather than setting a fixed true, so a
-  **locked** object stays locked afterwards (lock.js's own state survives for free).
-- **Two small generic pieces in `$.glue.popover`**, both shut behind the panel: an
+- **The background panel's move pad became the panel itself.** The pad was a small square
+  in the panel you dragged to slide the image behind the object; danja asked for the gesture
+  to be over the element, and it now is: **opening the panel hands the object's own drag to
+  the background**, so you grab the object and the image slides under it — which is the only
+  way to judge a picture against the thing it sits behind. While it is open the object
+  cannot be moved or resized; that is the trade, and the reason to close the panel when you
+  are done moving the background.
+- **Two `x` and `y` rows are the same position by hand** — the house slider-plus-field rows,
+  following the drag live, so dragging is how you find the position and typing is how you
+  fix it. The slider's ends are a drag length rather than a limit (the field keeps the real
+  number, and gets the extra width a sign needs); x 0 y 0 is the corner and is not written,
+  absent meaning it as everywhere else in that panel. The pad's
+  click-with-no-drag-puts-it-back is deliberately not carried over — a stray click on the
+  object quietly wiping the position is a trap, and the footer's reset still does it. The
+  page background keeps its own pad: a page has nothing behind it to grab.
+- **Two small generic pieces in `$.glue.popover`**, both used only by that panel: an
   `on_close` hook on the panel (every way a panel goes away comes through `close()`, so
-  that is the one place an armed panel is told to put back what it took — Escape, a click
+  that is the one place the panel is told to put back what it took — Escape, a click
   outside, deselect, another panel opening), and `.keep_open_target`, an element the
   outside-click close treats as part of the panel. The second is needed because the
   pointerup that ends a drag on the object still sends a click, which would otherwise close
-  the panel and end the mode after every single drag.
-- **The object's clicks are swallowed while armed** (capture phase, `stopPropagation` +
-  `preventDefault`): cancelling pointerdown does not stop the click that follows it, and
-  without this the drag would end in a text object starting to edit, or in a plain click
-  selecting. Right-clicks are left alone so the context menu still opens.
+  the panel after every single drag. The arm saves the Moveable `draggable`/`resizable` and
+  puts them back rather than setting a fixed true, so a **locked** object stays locked
+  (lock.js's own state survives for free).
+- **The object's clicks are swallowed while the panel is open** (capture phase,
+  `stopPropagation` + `preventDefault`): cancelling pointerdown does not stop the click that
+  follows it, and without this the drag would end in a text object starting to edit, or in a
+  plain click selecting. Right-clicks are left alone so the context menu still opens.
 
 ---
 
