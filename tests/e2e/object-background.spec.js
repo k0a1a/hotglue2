@@ -29,8 +29,15 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const bgBtn = (page) => page.locator('#glue-contextmenu-object-background');
 const pop = (page) => page.locator('.glue-background-popover');
+// the panel has three number fields (x, y and scale), so the scale one is
+// named - the bare .glue-popover-field matches all of them
+const scaleField = (page) => pop(page).locator('.glue-background-scale .glue-popover-field');
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
+const posOf = (page, id) => page.evaluate((i) => {
+	const el = document.getElementById(i);
+	return [parseFloat(el.style.left), parseFloat(el.style.top)];
+}, id);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
 async function select(page, id) {
@@ -150,10 +157,11 @@ test('with an image, the button opens the panel instead of the picker',
 		await bgBtn(page).click();
 		await expect(pop(page)).toBeVisible();
 		await expect(pop(page).locator('.glue-background-repeat')).toHaveCount(1);
-		await expect(pop(page).locator('.glue-background-pad')).toHaveCount(1);
+		// the position's two rows, x and y
+		await expect(pop(page).locator('.glue-background-pos')).toHaveCount(2);
 	});
 
-test('tiling toggles and stores, and dragging moves the image',
+test('tiling toggles and stores, and dragging the object moves the image',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001',
 			{ ...ATTRS, 'object-background-file': 'sample.png',
@@ -172,18 +180,41 @@ test('tiling toggles and stores, and dragging moves the image',
 		await expect.poll(() => cssOf(page, a, 'backgroundRepeat')).toBe('repeat');
 		await expect.poll(() => attrs(hg)['object-background-repeat']).toBe('repeat');
 
-		// dragging the pad moves the image; a click with no drag puts it back
-		const pad = pop(page).locator('.glue-background-pad');
-		const b = await pad.boundingBox();
-		await page.mouse.move(b.x + b.width/2, b.y + b.height/2);
+		// the panel being open IS the move mode: there is no pad any more, and a
+		// drag on the object itself moves the image, not the object
+		const before = await posOf(page, a);
+		const b = await byId(page, a).boundingBox();
+		const cx = b.x + b.width/2;
+		const cy = b.y + b.height/2;
+		await page.mouse.move(cx, cy);
 		await page.mouse.down();
-		await page.mouse.move(b.x + b.width/2 + 30, b.y + b.height/2 + 20, { steps: 5 });
+		await page.mouse.move(cx + 30, cy + 20, { steps: 5 });
 		await page.mouse.up();
 		await expect.poll(() => cssOf(page, a, 'backgroundPosition')).toBe('30px 20px');
 		await expect.poll(() => attrs(hg)['object-background-position']).toBe('30px 20px');
+		expect(await posOf(page, a), 'the object moved instead of its image')
+			.toEqual(before);
 
-		await pad.click();
-		await expect.poll(() => attrs(hg)['object-background-position']).toBe(undefined);
+		// a click with no drag is NOT the pad's put-it-back: it leaves the
+		// position alone (and does not start editing the text either)
+		await page.mouse.click(cx, cy);
+		await expect.poll(() => attrs(hg)['object-background-position']).toBe('30px 20px');
+		expect(await cssOf(page, a, 'backgroundPosition')).toBe('30px 20px');
+
+		// closing the panel gives the object its own drag back
+		await page.keyboard.press('Escape');
+		await expect(pop(page)).toHaveCount(0);
+		const resting = await posOf(page, a);
+		const b2 = await byId(page, a).boundingBox();
+		await page.mouse.move(b2.x + b2.width/2, b2.y + b2.height/2);
+		await page.mouse.down();
+		await page.mouse.move(b2.x + b2.width/2 + 40, b2.y + b2.height/2, { steps: 5 });
+		await page.mouse.up();
+		// the object drags again: 40px asked for, at least 30 delivered
+		await expect.poll(async () => (await posOf(page, a))[0])
+			.toBeGreaterThan(resting[0] + 30);
+		expect(await cssOf(page, a, 'backgroundPosition'), 'the background moved with it')
+			.toBe('30px 20px');
 	});
 
 test('scale sizes the image, stores the bare number, and zero removes it',
@@ -203,7 +234,7 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 
 		// an image nobody has scaled shows 100 - and nothing is stored, so a
 		// fresh object and an untouched one stay byte-identical
-		const field = pop(page).locator('.glue-popover-field');
+		const field = scaleField(page);
 		await expect(field).toHaveValue('100');
 		expect(attrs(hg)['object-background-scale']).toBe(undefined);
 
@@ -230,8 +261,8 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 		await select(page, a);
 		await bgBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		await pop(page).locator('.glue-popover-field').fill('0');
-		await pop(page).locator('.glue-popover-field').blur();
+		await scaleField(page).fill('0');
+		await scaleField(page).blur();
 		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
 		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
 	});
@@ -273,9 +304,12 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		await select(page, a);
 		await bgBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		// the panel is in the non-default state it was given
+		// the panel is in the non-default state it was given, the position rows
+		// reading it back out of the stored attribute
 		await expect(pop(page).locator('.glue-background-repeat'))
 			.toHaveClass(/glue-font-toggle-on/);
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
+			.toHaveValues(['30', '20']);
 
 		await pop(page).locator('.glue-popover-reset').click();
 		// only the delete button takes the image off; the panel stays open
@@ -294,5 +328,8 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		// and the panel shows the defaults again
 		await expect(pop(page).locator('.glue-background-repeat'))
 			.not.toHaveClass(/glue-font-toggle-on/);
-		await expect(pop(page).locator('.glue-popover-field')).toHaveValue('100');
+		await expect(scaleField(page)).toHaveValue('100');
+		// the two position rows are back at the corner with it
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
+			.toHaveValues(['0', '0']);
 	});

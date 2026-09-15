@@ -1180,6 +1180,9 @@ function object_background_popover(obj)
 			}
 		}
 	});
+	// the panel has three number fields now, so the scale one is named - the
+	// way the tile toggle is (glue-background-repeat)
+	scale_row.row.classList.add('glue-background-scale');
 	pop.appendChild(scale_row.row);
 
 	// --- take it off, or put it back --------------------------------------
