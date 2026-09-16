@@ -557,7 +557,8 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
   set inline where the toggle is built, and `.glue-background-scroll` brings the artwork
   down to 22px — the same trick, in the same place in `css/edit.css`, as
   `.glue-popover-color`. `#glue-menu-page-background-scroll` and the two PNGs are gone
-  from `modules/page/`, so the PNG inventory below is one pair shorter.
+  from `modules/page/`, so the PNG inventory below is one pair shorter. (The page's own
+  controls have since gone back up to the toolbar's 32 — the last bullets here.)
 - **Then the tile toggle took `tile.svg`, in both background panels**, in that same shape:
   one drawing, state in the frame, tooltip naming the state. Those two were the other kind
   of conversion the set makes — a *drawn* glyph for a *typed* one: they were white squares
@@ -566,7 +567,7 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
   (the grid panel's show and the image panel's decorative), and `.glue-background-repeat`
   is now an icon button, which is what `object-background.spec.js` asserts its state on.
 - **Then what the background IS moved in as well, and the page menu's background button
-  became a plain opener.** The panel's first row is now two buttons: one opens the picker
+  became a plain opener.** The panel's first row gained two buttons: one opens the picker
   (`background-color`), one is a file picker (`background-image`, via
   `$.glue.upload.button()`), and the menu button that used to *be* the upload whenever the
   page had no background now only opens the panel — so it opens whether or not there is a
@@ -590,8 +591,33 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
 - **The panel opens on a page with no background now**, where the menu button would not
   have opened it before. The tiling, scroll, position and scale rows are therefore
   reachable with nothing to apply them to; they are not wrong (they write what the next
-  picture will obey) but they are ahead of themselves, and hiding them until there is a
-  picture is a call nobody has made yet.
+  picture will obey) but they are ahead of themselves.
+- **Then the row became a toolbar of four, at the size the icons are drawn.** Danja's call:
+  one unlabelled row holding the colour, the picture and both toggles, on the toolbar's own
+  32px box rather than the panel's 26 — which is `$.glue.icon()`'s default, so the box's 1px
+  border leaves the 30x30 padding box `.glue-btn-icon::before` draws its 30px artwork
+  against, and there is nothing to override. `.glue-background-btn` marks the four (it does
+  no more than stop the flex row shrinking them). The `tile` and `scroll` labels came off
+  with the size change — they were there to fill the panel's label column, and a toolbar
+  needs no labelling — and the tooltips now name the four actions ("set page background
+  color", "set page background image", "tile page background image", "scroll page
+  background image"), which means the two toggles lost the state-naming tooltips they had
+  had for a day.
+- **And the two toggles grey out when the page has no picture.** With none under them,
+  tiling and scrolling describe a background that is not there, so `.glue-background-off`
+  (opacity, and `pointer-events: none` with it — a control that cannot act should not take
+  the cursor or light its frame on hover) sits on both until an image arrives. That is the
+  question the bullet above left open, answered: not hidden, greyed. `sync_has()` reads
+  `page_bg_has()` when the panel opens, and the upload's `finish` calls it again, so a
+  picture dropped in while the panel is open wakes them where they stand.
+- **`.glue-background-repeat` stayed the object panel's own.** One class was on both
+  panels' tile toggles, so the page's would have dragged the object's 26px/22px sizing up
+  with it had the page's kept the name. It did not: the page's four go by
+  `.glue-background-btn` plus one class each (`glue-background-color`, `-image`, `-tile`,
+  `-scroll`), and the 22px mask rule in `css/edit.css` is the object panel's alone. The
+  object panel's tile toggle is untouched by all of this — still 26px, still wearing its
+  `tile` label. Whether it follows the page's onto the toolbar size is open; the two panels
+  have been each other's twins throughout, and that is the one place they now part.
 - Not covered by a spec: the page background panel still has none, and the menu button's
   change of behaviour is exactly the kind of thing one would have caught.
 

@@ -389,13 +389,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			return;
 		}
 
-		// --- what the background is -------------------------------------------
+		// --- what the background is, and what it does -------------------------
 		//
-		// A colour, a picture: the two things a page's background can be, and
-		// both are decided here now. The colour button came in from the page
-		// menu, the picture from the menu button, which used to BE the file
-		// picker whenever the page had no background yet. The panel is the
-		// page's background, so this is where its background is set.
+		// One unlabelled row of four: a colour and a picture to set the page's
+		// background, and the two toggles that say what the picture does with
+		// itself. The buttons are named in their tooltips and nowhere else -
+		// the labels the two toggles used to wear were only there to fill the
+		// panel's label column - and they are the toolbar's size rather than
+		// the panel's 26px, the artwork at the 30px it is drawn at. Four in a
+		// row read as a row, and an unlabelled row of full-size buttons is a
+		// toolbar.
+		//
+		// What the row holds came from the page menu: the colour button, and
+		// the picture, which used to be the menu button itself, a file picker
+		// whenever the page had no background. The panel is the page's
+		// background, so it is where its background is set.
 		var source_row = $.glue.popover.row(false);
 
 		// The colour button. Deliberately not $.glue.popover.color_button():
@@ -405,11 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		// nothing had happened - hence the clear first, with the confirm it
 		// has always had. That answer has to come before the picker opens,
 		// which is also why this is not the shared button with a hook on it.
-		var colour = $.glue.icon('background-color', 'change the background color');
-		colour.classList.add('glue-popover-color');
-		// the toolbar's icons are 32px; the panel's own controls are 26
-		colour.style.width = '26px';
-		colour.style.height = '26px';
+		// (It also sizes itself to the panel's 26px, and this row is not.)
+		var colour = $.glue.icon('background-color', 'set page background color');
+		colour.classList.add('glue-background-btn', 'glue-background-color');
 		colour.addEventListener('click', function(e) {
 			e.stopPropagation();
 			var cleared = false;
@@ -443,12 +449,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// so the button IS the picker and wants no click handler of its own.
 		// The upload leaves the panel open, because what you do next - tiling,
 		// sizing, moving - is all in here.
-		var image = $.glue.icon('background-image', 'upload a background image');
-		image.classList.add('glue-background-image');
-		image.style.width = '26px';
-		image.style.height = '26px';
+		var image = $.glue.icon('background-image', 'set page background image');
+		image.classList.add('glue-background-btn', 'glue-background-image');
 		$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
-			tooltip: 'upload a background image',
+			tooltip: 'set page background image',
 			error: function(e) {
 				if (e && e.target && e.target.status) {
 					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
@@ -466,70 +470,53 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else {
 					// the timestamp here is to trick any caching going on
 					doc.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
+					// the two toggles have something to act on now. sync_has is
+					// defined with them, below; a var, so it is here by now.
+					sync_has();
 				}
 			}
 		});
 		source_row.appendChild(image);
-		pop.appendChild(source_row);
 
-		// --- tile or not ---------------------------------------------------
+		// --- tiled or once, scrolling or fixed --------------------------------
 		//
-		// The set's tile drawing, on the panel's own scale, with its state in
-		// the frame (glue-btn-active) rather than in a second glyph - the
-		// shape the scroll row below takes, and the object panel's own tile
-		// toggle takes with it.
-		var repeat_row = $.glue.popover.row('tile');
-		var repeat = $.glue.icon('tile');
-		repeat.classList.add('glue-background-repeat');
-		// the toolbar's icons are 32px; the panel's own controls are 26
-		repeat.style.width = '26px';
-		repeat.style.height = '26px';
+		// The two toggles. Each wears the set's own drawing with its state in
+		// the frame (glue-btn-active) rather than in a second glyph, the shape
+		// the object panel's tile toggle takes too, and each says what it does
+		// in its name and nowhere else.
+		//
+		// Tile first: tiled across the page is the browser's default, so that
+		// is the lit state and the one that stores nothing - absent means
+		// default, as everywhere else in this panel.
+		var repeat = $.glue.icon('tile', 'tile page background image');
+		repeat.classList.add('glue-background-btn', 'glue-background-tile');
 		var sync_repeat = function() {
-			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
-			repeat.classList.toggle('glue-btn-active', tiled);
-			repeat.title = tiled ?
-				'the image is tiled across the page - click to show it once' :
-				'the image is shown once - click to tile it across the page';
+			repeat.classList.toggle('glue-btn-active',
+				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
 		};
 		repeat.addEventListener('click', function() {
 			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
 			doc.style.backgroundRepeat = tiled ? 'no-repeat' : 'repeat';
 			sync_repeat();
 			if (tiled) {
-				// absent means the browser default, which is repeat
 				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-repeat' });
 			} else {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-repeat': 'no-repeat' });
 			}
 		});
-		sync_repeat();
-		repeat_row.appendChild(repeat);
-		pop.appendChild(repeat_row);
+		source_row.appendChild(repeat);
 
-		// --- scroll with the page, or stay still -----------------------------
-		//
-		// This was the page menu's own button until it moved in here: it is a
-		// setting of the background image like the rest of the panel, and it
-		// is the PAGE's alone - an object and its background move together,
-		// so there is nothing for it to say about one.
-		//
-		// On is the default, and on means the image scrolls with the page:
-		// that is what background-attachment: scroll is, which is why the on
-		// state writes no attribute at all (absent means default, as
-		// everywhere else in this panel). The lit frame is the state the
-		// editor's other icon toggles speak (glue-btn-active).
-		var scroll_row = $.glue.popover.row('scroll');
-		var scroll = $.glue.icon('background-scroll');
-		scroll.classList.add('glue-background-scroll');
-		// the toolbar's icons are 32px; the panel's own controls are 26
-		scroll.style.width = '26px';
-		scroll.style.height = '26px';
+		// Then scroll, which came in from the page menu: it is a setting of the
+		// background image like the rest of the panel, and it is the PAGE's
+		// alone - an object and its background move together, so there is
+		// nothing for it to say about one. On (the lit state, and what an
+		// absent attribute means) is background-attachment: scroll, the image
+		// going up the page with everything else.
+		var scroll = $.glue.icon('background-scroll', 'scroll page background image');
+		scroll.classList.add('glue-background-btn', 'glue-background-scroll');
 		var sync_scroll = function() {
-			var fixed = getComputedStyle(doc).backgroundAttachment == 'fixed';
-			scroll.classList.toggle('glue-btn-active', !fixed);
-			scroll.title = fixed ?
-				'the background is fixed - click to make it scroll with the page' :
-				'the background scrolls with the page - click to fix it';
+			scroll.classList.toggle('glue-btn-active',
+				getComputedStyle(doc).backgroundAttachment != 'fixed');
 		};
 		scroll.addEventListener('click', function() {
 			var fixed = getComputedStyle(doc).backgroundAttachment == 'fixed';
@@ -543,9 +530,22 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
 			}
 		});
+		source_row.appendChild(scroll);
+		pop.appendChild(source_row);
+
+		// Both toggles are about the picture: with none on the page they would
+		// be toggling a background that is not there. So they grey out and go
+		// inert until one arrives - the upload above calls this too, so a
+		// picture dropped in while the panel is open wakes them where they
+		// stand.
+		var sync_has = function() {
+			var off = !page_bg_has();
+			repeat.classList.toggle('glue-background-off', off);
+			scroll.classList.toggle('glue-background-off', off);
+		};
+		sync_repeat();
 		sync_scroll();
-		scroll_row.appendChild(scroll);
-		pop.appendChild(scroll_row);
+		sync_has();
 
 		// --- move it around -------------------------------------------------
 		//
@@ -630,7 +630,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 		// the panel has three number fields now, so the scale one is named -
-		// the way the tile toggle is (glue-background-repeat)
+		// the two above share glue-background-pos, and the bare
+		// .glue-popover-field would match all three
 		scale_row.row.classList.add('glue-background-scale');
 		pop.appendChild(scale_row.row);
 

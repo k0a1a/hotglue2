@@ -1000,24 +1000,41 @@
 	width: 200px;
 }
 
-.glue-background-scroll,
-.glue-background-repeat,
-.glue-background-image {
-	/* the background panels' own icon controls: panel controls, so the panel's
-	   26px rather than the toolbar's 32, with the artwork coming down to match
-	   (same trick, same reason, as .glue-popover-color above). The two toggles
-	   among them need nothing here for their on states - glue-btn-active is
-	   the frame-thickens language the editor's other icon toggles use. */
+.glue-background-repeat {
+	/* The OBJECT panel's tile toggle: a panel control, so the panel's 26px
+	   rather than the toolbar's 32, with the artwork coming down to match
+	   (same trick, same reason, as .glue-popover-color above). It needs
+	   nothing here for its on state - glue-btn-active is the frame-thickens
+	   language the editor's other icon toggles use. */
 	flex: 0 0 auto;
-	cursor: pointer;
 }
 
-.glue-background-scroll::before,
-.glue-background-repeat::before,
-.glue-background-image::before {
+.glue-background-repeat::before {
 	/* 22px because the frame is what the box is sized against: a 26px button
 	   less the pressed-in 2px border leaves exactly this, so the art neither
 	   shrinks nor clips when the state changes. */
 	-webkit-mask-size: 22px 22px;
 	mask-size: 22px 22px;
+}
+
+.glue-background-btn {
+	/* The PAGE panel's four, in one unlabelled row: set the colour, set the
+	   picture, tile it, scroll it. These are NOT the panel's 26px - they are
+	   $.glue.icon()'s own 32px box, whose 1px border leaves the 30x30 padding
+	   box that .glue-btn-icon::before draws its 30px artwork against, so
+	   there is nothing to override here and nothing to come down: the size
+	   the icons were drawn at. Four of them in a row read as a row, which is
+	   why they can carry their toolbar size - and their names - in a panel
+	   that otherwise labels every control it has. */
+	flex: 0 0 auto;
+}
+
+.glue-background-off {
+	/* A toggle with nothing to toggle. Tile and scroll are about the page's
+	   background picture, and a page without one has no picture to act on:
+	   they grey out and step out of the pointer's way. The cursor goes with
+	   them (pointer-events: none), so the frame neither lights up on hover
+	   nor promises a click it would not honour. */
+	opacity: 0.35;
+	pointer-events: none;
 }
