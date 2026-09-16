@@ -664,8 +664,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	// not the page has a background - it has to, since a page with none gets
 	// one in there. "Page background" rather than "background image" because
 	// what it opens is the page's background whole: the picture, the colour
-	// under it, and what each of them does.
-	var page_bg_button = $.glue.icon('page-background-image', 'page background');
+	// under it, and what each of them does. The glyph followed the name on
+	// 09-16: background-set, the half-filled frame, which says "the background
+	// is set" where the old one only said "there is a picture back here".
+	var page_bg_button = $.glue.icon('background-set', 'page background');
 	page_bg_button.addEventListener('click', function(e) {
 		page_background_popover();
 		e.stopPropagation();

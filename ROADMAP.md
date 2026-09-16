@@ -536,8 +536,8 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   page-background spec — the page's panel is untested.
 
 Shipped 2026-09-16 — the page background panel becomes the page background (danja's
-drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` and
-`background-image.svg`):
+drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
+`background-image.svg` and `background-set.svg`):
 
 - **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
   row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
@@ -618,6 +618,15 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
   object panel's tile toggle is untouched by all of this — still 26px, still wearing its
   `tile` label. Whether it follows the page's onto the toolbar size is open; the two panels
   have been each other's twins throughout, and that is the one place they now part.
+- **And the page menu's button took a drawing of its own** (`background-set`, danja's):
+  a frame with one corner filled, where `page-background-image` had been. The old drawing
+  is not retired — the object's background button still wears it, and the object is the
+  one whose background is a picture rather than a picture *and* a colour under it. The new
+  one says "the background is set"; whether the object's follows is open, as it is for the
+  tile toggle above. Prep note: the file arrived as `background_set.svg`, and
+  `tools/prep-icons.js` hyphenates underscores (`icon_font_size.svg` → `font-size.svg`),
+  so it lives in `img/icons/` as `background-set.svg` — the name a regeneration would
+  produce anyway.
 - Not covered by a spec: the page background panel still has none, and the menu button's
   change of behaviour is exactly the kind of thing one would have caught.
 
@@ -642,7 +651,7 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
   licensing question below is the only thing left blocking release.)*
 
   **Wiring is done and proven.** `tools/prep-icons.js` regenerates `img/icons/` from the
-  upstream artwork (54 files at first wiring, 206K → 38K — 78 now, as redraws and new
+  upstream artwork (54 files at first wiring, 206K → 38K — 87 now, as redraws and new
   drawings keep landing upstream: the source files are ~85% Inkscape metadata,
   RDF and attribution blocks that a mask never reads). An `extra/` subdirectory of the
   source holds what is not part of the set proper — redraws under a name already in it,
@@ -674,8 +683,9 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` 
   broken-link `object-link` and code-brackets `object-props`, `hyperlink`, `font-size`
   (the Font panel), `padding`, `background-color-remove` (make background transparent),
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
-  `clip` (state shown by the pressed-in frame), `page-background-image` (both background
-  buttons), `tile` (the tile toggles in both background panels), `background-color` and
+  `clip` (state shown by the pressed-in frame), `page-background-image` (the object's
+  background button), `background-set` (the page's own, danja's drawing, since 09-16),
+  `tile` (the tile toggles in both background panels), `background-color` and
   `background-image` (the page background panel's colour button and its upload),
   `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
   and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
