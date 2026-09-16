@@ -1,16 +1,3 @@
-#glue-menu-page-background-scroll {
-	/* overwrite the default greenish hue for .glue-menu-enabled */
-	background-color: transparent;
-}
-
-#glue-menu-page-background-scroll.glue-menu-disabled {
-	background-image: url(page-background-scroll-off.png);
-}
-
-#glue-menu-page-background-scroll.glue-menu-enabled {
-	background-image: url(page-background-scroll-on.png);
-}
-
 .glue-container-handle {
 	/* the centered container's boundary while authoring: a visible edge and
 	   the grip that sets the container width. Fixed, so it stays reachable

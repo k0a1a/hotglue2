@@ -535,6 +535,30 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   and that closing the panel hands the object's own drag over again. There is still no
   page-background spec — the page's panel is untested.
 
+Shipped 2026-09-16 — the background's scroll toggle, and the icon set's first two-state
+pair converted (danja's drawing, `img/icons/background-scroll.svg`):
+
+- **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
+  row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
+  the page, off means it is `fixed`. It is the page's alone by nature — an object and its
+  background move together, so there is nothing for such a control to say about one.
+- **The state needs no second glyph.** The two-state pair that was there
+  (`page-background-scroll-on.png` / `-off.png`, deleted with the button) became one
+  drawing plus the pressed-in frame (`glue-btn-active`) — the state language the flip,
+  clip and format toggles already speak. That is the open decision in the icon section
+  below answered for this pair: yes, a PNG on/off pair can convert, and it converts to one
+  glyph whose frame carries the state.
+- **On writes no attribute at all.** `page-background-attachment: fixed` is the whole of
+  what the toggle stores; going back to on empties the inline style and drops the attr,
+  since `background-attachment: scroll` is the CSS default and absent means default here
+  as it does for every other row in that panel.
+- **Sized like the panel's other controls** (26px against the toolbar's 32): the box is
+  set inline where the toggle is built, and `.glue-background-scroll` brings the artwork
+  down to 22px — the same trick, in the same place in `css/edit.css`, as
+  `.glue-popover-color`. `#glue-menu-page-background-scroll` and the two PNGs are gone
+  from `modules/page/`, so the PNG inventory below is one pair shorter.
+- Not covered by a spec: the page background panel still has none.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
@@ -633,16 +657,18 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   popover maps them by what they depict, with a comment saying so — worth fixing in the
   upstream set, after which that table can be straightened out.
 
-  **Open decision:** what is left in PNG is two-state artwork pairs (scroll on/off,
-  autoplay on/off, …), small runtime pictures, two `<img>` menu buttons no set member
-  fits yet (the iframe module's change-URL, the video module's reset-size), and fifteen
-  unreferenced PNGs: the ones restored on 2026-08-30, which that afternoon's conversion
-  orphaned again (nothing in the tree loads them), so the second sweep can happen
-  whenever it is wanted. Whether the two-state pairs and the last two buttons ever
-  convert to the set is the remaining call: mask buttons show one state with their
-  pressed-in frame, and the set carries no on/off pairs, so each would want a redraw
-  first. Mixing PNG and SVG shows seams at high zoom and on HiDPI — the chrome that
-  matters has stopped mixing.
+  **Open decision:** *(narrowed on 2026-09-16: the scroll pair converted — danja drew one
+  glyph, `background-scroll.svg`, and the toggle's state is its pressed-in frame. So the
+  answer to "would the pairs convert?" is yes, and the recipe is that one. The pairs that
+  are left need the same redraw.)* What is left in PNG is two-state artwork pairs
+  (autoplay on/off, loop on/off, …), small runtime pictures, two `<img>` menu buttons no
+  set member fits yet (the iframe module's change-URL, the video module's reset-size), and
+  fifteen unreferenced PNGs: the ones restored on 2026-08-30, which that afternoon's
+  conversion orphaned again (nothing in the tree loads them), so the second sweep can happen
+  whenever it is wanted — the scroll pair's two files went with the button rather than
+  joining them. Whether the surviving pairs and the last two buttons convert is still the
+  call, each wanting a redraw first. Mixing PNG and SVG shows seams at high zoom and on
+  HiDPI — the chrome that matters has stopped mixing.
 
   **Landmine, hit once already:** a relative `url()` inside a custom property resolves
   against the stylesheet that uses the `var()`, not the document — so `img/icons/x.svg`

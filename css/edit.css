@@ -1000,3 +1000,17 @@
 	width: 200px;
 }
 
+.glue-background-scroll {
+	/* the page background's scroll toggle: a panel control, so the panel's
+	   26px rather than the toolbar's 32, with the artwork coming down to
+	   match (same trick, same reason, as .glue-popover-color above). Its on
+	   state needs nothing here - glue-btn-active is the frame-thickens
+	   language the editor's other icon toggles use. */
+	flex: 0 0 auto;
+	cursor: pointer;
+}
+
+.glue-background-scroll::before {
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}

@@ -7,27 +7,6 @@
  *	See the file COPYING for more details.
  */
 
-function page_bg_scroll_sync(elem) {
-	var bg = getComputedStyle(document.documentElement).backgroundImage;
-	var has_bg = (bg.length != 0 && bg != 'none');
-	elem.style.display = has_bg ? 'block' : 'none';
-	Alpine.$data(elem).enabled = (getComputedStyle(document.documentElement).backgroundAttachment != 'fixed');
-}
-
-function page_bg_scroll_toggle(elem) {
-	var data = Alpine.$data(elem);
-	if (getComputedStyle(document.documentElement).backgroundAttachment == 'fixed') {
-		document.documentElement.style.backgroundAttachment = 'scroll';
-		$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'scroll' });
-		data.enabled = true;
-	} else {
-		document.documentElement.style.backgroundAttachment = 'fixed';
-		$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
-		data.enabled = false;
-	}
-}
-
-
 // --- centered layout mode -------------------------------------------------
 //
 // The container is rendered server-side (module_page.inc.php,
@@ -442,6 +421,47 @@ document.addEventListener('DOMContentLoaded', function() {
 		repeat_row.appendChild(repeat);
 		pop.appendChild(repeat_row);
 
+		// --- scroll with the page, or stay still -----------------------------
+		//
+		// This was the page menu's own button until it moved in here: it is a
+		// setting of the background image like the rest of the panel, and it
+		// is the PAGE's alone - an object and its background move together,
+		// so there is nothing for it to say about one.
+		//
+		// On is the default, and on means the image scrolls with the page:
+		// that is what background-attachment: scroll is, which is why the on
+		// state writes no attribute at all (absent means default, as
+		// everywhere else in this panel). The lit frame is the state the
+		// editor's other icon toggles speak (glue-btn-active).
+		var scroll_row = $.glue.popover.row('scroll');
+		var scroll = $.glue.icon('background-scroll');
+		scroll.classList.add('glue-background-scroll');
+		// the toolbar's icons are 32px; the panel's own controls are 26
+		scroll.style.width = '26px';
+		scroll.style.height = '26px';
+		var sync_scroll = function() {
+			var fixed = getComputedStyle(doc).backgroundAttachment == 'fixed';
+			scroll.classList.toggle('glue-btn-active', !fixed);
+			scroll.title = fixed ?
+				'the background is fixed - click to make it scroll with the page' :
+				'the background scrolls with the page - click to fix it';
+		};
+		scroll.addEventListener('click', function() {
+			var fixed = getComputedStyle(doc).backgroundAttachment == 'fixed';
+			// emptied rather than set to 'scroll', so going back to the
+			// default leaves no inline style behind
+			doc.style.backgroundAttachment = fixed ? '' : 'fixed';
+			sync_scroll();
+			if (fixed) {
+				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-attachment' });
+			} else {
+				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
+			}
+		});
+		sync_scroll();
+		scroll_row.appendChild(scroll);
+		pop.appendChild(scroll_row);
+
 		// --- move it around -------------------------------------------------
 		//
 		// The object panel's two rows, to the letter: same labels, same range,
@@ -608,15 +628,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.menu.register('page', page_bg_button);
 
-	elem = document.createElement('div');
-	elem.id = 'glue-menu-page-background-scroll';
-	elem.setAttribute('alt', 'btn');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
-	$.glue.toggle_button(elem, 'page_bg_scroll_sync', 'page_bg_scroll_toggle',
-		'background scrolls with the page - click to make it fixed',
-		'background is fixed - click to make it scroll with the page');
-	$.glue.menu.register('page', elem);
+	// (the scroll toggle that used to sit in this menu is in the panel above
+	// now, with the rest of the background's settings - see
+	// page_background_popover)
 
 	// grid: the button opens a panel - a show/hide toggle, and x/y size
 	// sliders that are interlocked by default (set one, both move) until
