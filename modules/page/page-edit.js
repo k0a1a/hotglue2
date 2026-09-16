@@ -414,7 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		// has always had. That answer has to come before the picker opens,
 		// which is also why this is not the shared button with a hook on it.
 		// (It also sizes itself to the panel's 26px, and this row is not.)
-		var colour = $.glue.icon('background-color', 'set page background color');
+		//
+		// The glyph is the shared one, though - color-swatch, what every other
+		// colour button in the editor wears. It wore background-color for a day
+		// to say "this one replaces the background rather than recolouring
+		// something", and danja's call on 09-16 was that a colour button is a
+		// colour button: the difference is in what the click does, which the
+		// tooltip says, not in the drawing.
+		var colour = $.glue.icon('color-swatch', 'set page background color');
 		colour.classList.add('glue-background-btn', 'glue-background-color');
 		colour.addEventListener('click', function(e) {
 			e.stopPropagation();

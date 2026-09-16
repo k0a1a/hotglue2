@@ -537,7 +537,8 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
 
 Shipped 2026-09-16 — the background panel becomes the background, on the page and then on
 the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
-`background-color.svg`, `background-image.svg` and `background-set.svg`):
+`background-color.svg` — worn for a day, see the colour-button bullet — `background-image.svg`
+and `background-set.svg`):
 
 - **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
   row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
@@ -583,9 +584,10 @@ the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
   like nothing happened. It is the one colour button in the editor that is not
   `$.glue.popover.color_button()` — the shared one sets the colour of a thing that is
   there, and this one replaces what the background is, and it can be cancelled before the
-  picker opens, which a `current()` callback cannot express. It also wears its own glyph
-  (`background-color`) rather than the shared `color-swatch`; if that is the shape the
-  other change-background-colour buttons should take, they have not been moved yet. That
+  picker opens, which a `current()` callback cannot express. It briefly wore a glyph of its
+  own (`background-color`) to say so; it took the shared `color-swatch` back the same day
+  (danja's call, end of 09-16 — a colour button is a colour button, and the difference is
+  in what the click does, which the tooltip says, not in the drawing). That
   clear *and* the panel's own remove button now share one `page_bg_clear()` — dropping the
   picture is the same act whether you asked for it or asked for a colour in its place, and
   the old colour button left the repeat/position/size attrs behind when it cleared, which
@@ -741,8 +743,8 @@ the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
   `clip` (state shown by the pressed-in frame), `background-set` (both background
   buttons — the page's and the object's — danja's drawing, since 09-16),
-  `tile` (the tile toggles in both background panels), `background-color` and
-  `background-image` (the colour button and the upload in both background panels),
+  `tile` (the tile toggles in both background panels), `background-image`
+  (the picture button, the upload, in both background panels),
   `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
   and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
   run-format strip, the four `align-*` inside the font panel's fold (still mapped by
@@ -754,13 +756,11 @@ the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
   `composition-mode-absolute`/`-centered` — that last one shows the mode you are
   switching TO, preserving the old split where the tooltip describes the present and the
   button names the destination. Every colour button in every panel shares one glyph,
-  `color-swatch` (which succeeded `color-quadrant`) — with the single exception of the two
-  background panels', which took `background-color` on 09-16. That one replaces what
-  the background *is* rather than setting the colour of a thing that is there, and it is
-  the only one whose answer can be cancelled before the picker opens; whether the
-  change-background-colour buttons elsewhere should follow it onto its own glyph is a call
-  nobody has made. Those buttons are colour buttons and share `color-swatch` for now, and
-  only the make-transparent action keeps a glyph of its own.
+  `color-swatch` (which succeeded `color-quadrant`), and that is now every colour button
+  without exception: the two background panels' took `background-color` for a day and gave
+  it back on danja's call at the end of 09-16, since a colour button is a colour button
+  whatever the click does with the colour. Only the make-transparent action keeps a glyph
+  of its own.
 
   Judge new artwork by rendering its ALPHA at 30px, which is what a mask paints: the
   colour in the file never reaches the screen, so a black drawing and a white one look
@@ -803,6 +803,12 @@ the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
   joining them. Whether the surviving pairs and the last two buttons convert is still the
   call, each wanting a redraw first. Mixing PNG and SVG shows seams at high zoom and on
   HiDPI — the chrome that matters has stopped mixing.
+
+  Two of the SVGs have lost their last reference the same way, and are kept rather than
+  deleted, like the PNGs: `page-background-image.svg` (the object's background button until
+  09-16) and `background-color.svg` (both background panels' colour button, worn for a day
+  before it took `color-swatch`). Neither is a placeholder and neither is broken; nothing
+  in the tree loads them.
 
   **Landmine, hit once already:** a relative `url()` inside a custom property resolves
   against the stylesheet that uses the `var()`, not the document — so `img/icons/x.svg`
