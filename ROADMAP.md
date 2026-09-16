@@ -669,6 +669,20 @@ the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
   tests are new: one for a text object, which must still store `text-background-color`, and
   one for an image object, which must store the new `object-background-color` and read it
   back through a reload.
+- **A wrinkle the colour button inherits, noticed while writing its test.** An image object
+  rendered with `image-file-width`/`-height` paints its picture as a `background-image` on
+  the object *itself* (`module_image.inc.php`), and `object_has_background()` — "the object
+  has an inline background-image", the object's reading of the page's `page_bg_has()` —
+  cannot tell that picture from a background the panel put there. So on such an object the
+  colour button asks whether to clear "the current background image" and, yes, blanks the
+  module's own picture in the editor until the next load; the tile toggle and the armed
+  drag write `background-repeat`/`-position`, which `image_alter_save()` reads back as
+  `image-background-repeat`/`-position`. None of it is new — the panel's delete button has
+  done the same since the panel existed — and none of it is stored wrongly; it is undecided
+  rather than broken: whether the panel owns "the object's background" or only "the
+  background the object module did not paint" is a call nobody has made. The spec works
+  around it (its image object is unsized, so the module appends an `<img>` and the object's
+  own background stays empty), which is also why it is written down here.
 - Not covered by a spec: the page background panel still has none — the same gap as before,
   and now the only one in either panel.
 
