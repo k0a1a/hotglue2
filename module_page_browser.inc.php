@@ -43,7 +43,9 @@ function controller_pages($args)
 	$site_obj = load_object(['name'=>startpage().'.page']);
 	$site_obj = $site_obj['#error'] ? [] : $site_obj['#data'];
 
-	body_append('<h1>Site settings</h1>'.nl());
+	// the page's own name for itself, and the same two words the editor's
+	// page-menu button uses to get here (page_browser-edit.js)
+	body_append('<h1>Site options</h1>'.nl());
 
 	body_append('<h1>Favicon</h1>'.nl());
 	body_append('<div id="site_settings_favicon">'.nl());
