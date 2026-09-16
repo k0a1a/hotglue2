@@ -102,7 +102,13 @@ function object_properties_modal_show(obj, data) {
 	// the editor binds its shortcuts on documentElement, so without stopping
 	// propagation Tab would cycle the objects behind this one and Delete would
 	// delete one. Shared so the next dialog cannot get it wrong. See js/edit.js.
-	var dialog = $.glue.modal.open('object properties', 'glue-modal-tag');
+	// 'object attributes', not 'object properties': the button that opens this
+	// dialog says 'object attributes' now (see the registrations at the bottom
+	// of this file), and the panel's menu button is the one that carries the
+	// other name. This string is only the dialog's accessible name - nothing
+	// displays it - so it is here to keep the two in step rather than to be
+	// read off the screen.
+	var dialog = $.glue.modal.open('object attributes', 'glue-modal-tag');
 	var modal = dialog.modal;
 	var close = dialog.close;
 
@@ -1799,12 +1805,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
 
-	// 'object identity', not 'object properties': the panel button above took
-	// that name on 2026-09-16, and it is the better one for the panel - what is
+	// 'object attributes', not 'object properties: id, classes and custom
+	// attributes', which is what this said until 2026-09-16. The panel button
+	// above took that name, and it is the better one for the panel - what is
 	// under an object, and how it is flipped, is as much a property of it as
-	// the id is. What this modal is about is the object as an element: what it
+	// the id is. What this action is about is the object as an element: what it
 	// is called, what classes it carries, what it points at.
-	elem = $.glue.icon('object-props', 'object identity: id, classes and custom attributes');
+	elem = $.glue.icon('object-props', 'object attributes');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {

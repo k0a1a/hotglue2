@@ -23,9 +23,11 @@ const attrs = (hg) => hg.readObject('100000000001').attrs;
 async function openPicker(page, id) {
 	await byId(page, id).click();
 	await page.waitForTimeout(400);		// the menu fades in
-	// exact: getByTitle matches a substring, and "set object background
-	// image" is in the same panel - as is "object identity", the modal's
-	// button, which the panel's own tooltip must not be confused with
+	// exact: getByTitle matches substrings, and this tooltip was the fragment
+	// trap itself - the modal's button read "object properties: id, classes and
+	// custom attributes" until 2026-09-16, so the plain match found two. It says
+	// "object attributes" now and finds one again, but the whole name is what is
+	// meant either way.
 	await page.getByTitle('object properties', { exact: true }).click();
 	await page.getByTitle('set object background color', { exact: true }).click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();

@@ -73,7 +73,7 @@ popovers.
 **DONE 2026-09-16 — and it did not go to the modal this line names.** It went to the
 *panel*, which is called "object properties" now: danja moved the background, the flip and
 the transparency into the one panel and renamed it, and padding is its fourth section
-(`object_padding_section()`, modules/object/object-edit.js). The modal is "object identity"
+(`object_padding_section()`, modules/object/object-edit.js). The modal is "object attributes"
 — id, classes and attributes. The two names wanted the same words and the panel won them.
 The relocation resolved the "BROKEN" note above rather than carrying it: the panel's one
 slider and its four per-side knobs both go through a single `apply()`, which is the

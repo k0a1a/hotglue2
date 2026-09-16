@@ -809,12 +809,14 @@ What that came to:
   `background-set`.** The icon is unchanged (danja's call): a filled square is what an
   object's properties panel looks like from here, and the button has not moved — still
   prio 0, left-most in the top row.
-- **The modal's button became "object identity: id, classes and custom attributes".** It was
-  "object properties: …", and there cannot be two. The panel has the better claim to the
-  name — what is under an object, and how it is flipped, is as much a property of it as the
-  id is — and the modal is about the object as an element: what it is called, what classes it
-  carries, what it points at. `object-properties.spec.js` (which tests the modal, and keeps
-  its name) looks it up as `/object identity/` now.
+- **The modal became "object attributes".** It was "object properties: id, classes and custom
+  attributes", and there cannot be two. The panel has the better claim to the name — what is
+  under an object, and how it is flipped, is as much a property of it as the id is — and the
+  modal is about the object as an element: what it is called, what classes it carries, what it
+  points at, which is its attributes. So the button is `object attributes`, and the dialog it
+  opens carries the same two words as its accessible name (`$.glue.modal.open`'s label is an
+  `aria-label`; nothing renders it). `object-properties.spec.js` (which tests the modal, and
+  keeps its name) looks the button up by its tooltip now.
 - **`modules/image/image-edit.js` loses its `object-background` veto**, and the long comment
   explaining it became the comment explaining where the problem went instead: the panel omits
   the section for the class, which a veto could not do — a veto is per class and all or

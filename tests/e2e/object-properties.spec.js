@@ -28,16 +28,16 @@ const byId = (page, id) => page.locator(`[id="${id}"]`);
 
 // Open the object's context menu and click the properties icon.
 //
-// The button says "object identity" now, not "object properties": on
+// The button says "object attributes" now, not "object properties": on
 // 2026-09-16 the object background panel grew the padding, the flip and the
 // transparency and took the name, and it has the better claim to it - what is
 // under an object, and how it is flipped, is as much a property of it as the id
 // is. This modal is about the object as an element: what it is called, what
-// classes it carries, what it points at. Matched on the head of the tooltip so
-// the test does not have to spell out the whole of it.
+// classes it carries, what it points at - which is its attributes. The dialog
+// carries the same two words as its accessible name, though nothing renders it.
 async function openProperties(page, id) {
 	await byId(page, id).click();
-	await page.getByTitle(/object identity/).click();
+	await page.getByTitle('object attributes').click();
 	await expect(page.locator('.glue-modal-tag')).toBeVisible();
 }
 
