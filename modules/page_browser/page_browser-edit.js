@@ -8,10 +8,15 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	var elem = $.glue.icon('site-settings', 'pages / site settings');
+	// /?options is the same controller as /?pages (module_page_browser.inc.php
+	// registers both), and this button is what the site-wide settings are
+	// reached from - so it names the settings, not the page list that happens
+	// to share the page with them. /?pages stays as it was: it is out there in
+	// links and bookmarks, and an alias is the whole point of it.
+	var elem = $.glue.icon('site-settings', 'site options');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
-		window.location = $.glue.base_url+'?pages';
+		window.location = $.glue.base_url+'?options';
 	});
 	$.glue.menu.register('page', elem, 11);
 });
