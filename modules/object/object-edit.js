@@ -962,19 +962,30 @@ function object_adjust_popover(obj)
 }
 
 //
-// --- background image ------------------------------------------------------
+// --- background ------------------------------------------------------------
 //
-// One button that does two things, because there are two states and only one
-// of them needs a panel. With no image on the object, the button IS the file
-// input - the browser's own picker, no dialog of ours in front of it. With an
-// image already there, the input is switched off and the button opens a panel
-// for what you can then do to it: tile it, move it, scale it - and, in the
-// footer, reset it to a fresh state or delete it.
+// One button that opens the panel where the object's background is set: what
+// it IS (a colour, a picture) and what the picture does with itself (tile it,
+// move it, scale it, or take it off again). It is the page's background panel,
+// one button shorter - the page's fourth is the scroll toggle, which is the
+// page's alone, since an object and its background move together and there is
+// nothing for such a control to say about one.
+//
+// It used to be two buttons in one: with no image the button WAS the file
+// input, and only an object that already had a picture got a panel at all.
+// That is the arrangement the page menu's background button had until
+// 2026-09-16, and it went the same way it went there - when the panel can set
+// the background itself, the menu button has nothing left to do but open it,
+// and it opens whether or not there is a background, since an object with none
+// needs somewhere to get one.
 //
 // The image belongs to the object rather than to the page: it uploads with
 // preferred_module 'object' and the object's name, which object_upload() in
 // module_object.inc.php takes. The url points at the
-// object, not at the file - see object_serve_resource() there.
+// object, not at the file - see object_serve_resource() there. The colour is
+// the element's ordinary background-color: text objects have kept theirs in
+// text-background-color since long before there was a panel, and
+// object_alter_save() keeps it for every other kind of object.
 //
 
 function object_has_background(obj)
@@ -1006,24 +1017,125 @@ function object_background_popover(obj)
 		$.glue.object.save(obj);
 	};
 
-	// --- tile or not ------------------------------------------------------
+	// --- what the background is, and what it does -------------------------
 	//
-	// The set's tile drawing on the panel's own scale, with its state in the
-	// frame (glue-btn-active) rather than in a second glyph: the same icon
-	// button the page's panel uses for its scroll row, and the reason the two
-	// panels still read as one panel with different plumbing underneath.
-	var repeat_row = $.glue.popover.row('tile');
-	var repeat = $.glue.icon('tile');
-	repeat.classList.add('glue-background-repeat');
-	// the toolbar's icons are 32px; the panel's own controls are 26
-	repeat.style.width = '26px';
-	repeat.style.height = '26px';
+	// The page panel's row, one button shorter: a colour and a picture to set
+	// the object's background, and the tile toggle for the picture. The buttons
+	// are named in their tooltips and nowhere else, and they are the toolbar's
+	// size rather than the panel's 26px - $.glue.icon()'s own 32px box, whose
+	// 1px border leaves the 30x30 the artwork is drawn at, so there is nothing
+	// to override and nothing to bring down.
+	var source_row = $.glue.popover.row(false);
+
+	// Take the picture off the object, and the settings that described it, the
+	// way the page's page_bg_clear() does. The footer's delete button and the
+	// colour button below both do this - dropping the picture is the same act
+	// whether you asked for it or asked for a colour to put in its place - so
+	// they share the one function.
+	var bg_clear = function() {
+		obj.style.backgroundImage = '';
+		obj.style.backgroundRepeat = '';
+		obj.style.backgroundPosition = '';
+		obj.style.backgroundSize = '';
+		// saved BEFORE the file attribute goes: object_alter_save() clears the
+		// settings that described the picture only while the object still names
+		// one, so a save that arrives after the name has gone leaves them on
+		// disk with no picture to belong to
+		save();
+		// the file itself is dropped by the object no longer naming it
+		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id,
+			attr: 'object-background-file' });
+	};
+
+	// The colour button, which is the page panel's: a colour sits BEHIND an
+	// opaque picture, so picking one while a picture is up would look like
+	// nothing had happened - hence the clear first, with the confirm it has
+	// always had. See page_background_popover() in modules/page/page-edit.js
+	// for the long version of why this is not $.glue.popover.color_button().
+	var colour = $.glue.icon('background-color', 'set object background color');
+	colour.classList.add('glue-background-btn', 'glue-background-color');
+	colour.addEventListener('click', function(e) {
+		e.stopPropagation();
+		var cleared = false;
+		if (object_has_background(obj)) {
+			if (!confirm('Do you want to clear the current background image?')) {
+				return;
+			}
+			bg_clear();
+			cleared = true;
+		}
+		// the object is passed as the picker's blend object - it is what the
+		// colour is being picked against
+		$.glue.colorpicker.show(getComputedStyle(obj).backgroundColor, false,
+			function(col) {
+				obj.style.backgroundColor = col;
+			},
+			function(col) {
+				save();
+			}, obj);
+		if (cleared) {
+			// the picture the rest of this panel describes has just gone, so
+			// the panel goes with it rather than sitting there showing rows
+			// about a background that is not there any more
+			$.glue.popover.close();
+		}
+	});
+	source_row.appendChild(colour);
+
+	// The picture: a file picker $.glue.upload.button() lays over the icon, so
+	// the button IS the picker and wants no click handler of its own. This is
+	// what the menu button used to be, moved in with the rest; the upload
+	// leaves the panel open, because what you do next - tiling, sizing, moving
+	// - is all in here.
+	//
+	// 'object', not 'object-background': upload_files() dispatches by calling
+	// "{preferred_module}_upload", so the name has to be the module's own or
+	// the file falls through to the image module and becomes a new object.
+	var image = $.glue.icon('background-image', 'set object background image');
+	image.classList.add('glue-background-btn', 'glue-background-image');
+	$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page,
+		preferred_module: 'object', object: obj.id }, {
+		tooltip: 'set object background image',
+		error: function(e) {
+			$.glue.error('There was a problem uploading the file.');
+		},
+		finish: function(data) {
+			if (!data || data['#error']) {
+				$.glue.error('There was a problem uploading the file'+
+					(data && data['#data'] ? ' ('+data['#data']+')' : ''));
+				return;
+			}
+			// the timestamp defeats the cache: the url does not change when
+			// the file behind it does
+			obj.style.backgroundImage = 'url('+$.glue.base_url+'?'+obj.id+
+				'&'+(new Date().getTime())+')';
+			obj.style.backgroundRepeat = 'no-repeat';
+			save();
+			// the panel is the move mode (see arm() below) and there is
+			// something to move now; the tile toggle has something to tile
+			arm();
+			sync_has();
+		}
+	});
+	source_row.appendChild(image);
+
+	// --- tiled or not -----------------------------------------------------
+	//
+	// The page's tile toggle, down to the drawing: the set's own, with the
+	// state in the frame (glue-btn-active) rather than in a second glyph. Lit
+	// means the picture repeats - which is what a browser does with a
+	// background it has been told nothing about.
+	//
+	// The object writes the value either way, unlike the page, which drops the
+	// attribute for "tiled": an object's picture goes up as no-repeat
+	// (object_alter_render_early()'s own default when the attribute is absent),
+	// so an empty inline style here would tile the picture live until the next
+	// load. The reset button below sets no-repeat for the same reason.
+	var repeat = $.glue.icon('tile', 'tile object background image');
+	repeat.classList.add('glue-background-btn', 'glue-background-tile');
 	var sync_repeat = function() {
-		var tiled = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
-		repeat.classList.toggle('glue-btn-active', tiled);
-		repeat.title = tiled ?
-			'the image is tiled across the object - click to show it once' :
-			'the image is shown once - click to tile it across the object';
+		repeat.classList.toggle('glue-btn-active',
+			getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1);
 	};
 	repeat.addEventListener('click', function() {
 		var tiled = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
@@ -1031,9 +1143,19 @@ function object_background_popover(obj)
 		sync_repeat();
 		save();
 	});
+	source_row.appendChild(repeat);
+	pop.appendChild(source_row);
+
+	// The tile toggle is about the picture: with none on the object it would be
+	// tiling a background that is not there, so it greys out and goes inert
+	// until one arrives - the upload above calls this too, so a picture dropped
+	// in while the panel is open wakes it where it stands. (The page's panel
+	// greys its scroll toggle with it, and for the same reason.)
+	var sync_has = function() {
+		repeat.classList.toggle('glue-background-off', !object_has_background(obj));
+	};
 	sync_repeat();
-	repeat_row.appendChild(repeat);
-	pop.appendChild(repeat_row);
+	sync_has();
 
 	// --- move it around ---------------------------------------------------
 	//
@@ -1190,22 +1312,16 @@ function object_background_popover(obj)
 		}
 	});
 	// the panel has three number fields now, so the scale one is named - the
-	// way the tile toggle is (glue-background-repeat)
+	// two above share glue-background-pos, and the bare .glue-popover-field
+	// would match all three
 	scale_row.row.classList.add('glue-background-scale');
 	pop.appendChild(scale_row.row);
 
 	// --- take it off, or put it back --------------------------------------
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.delete('remove the background image', function() {
-		obj.style.backgroundImage = '';
-		obj.style.backgroundRepeat = '';
-		obj.style.backgroundPosition = '';
-		obj.style.backgroundSize = '';
+		bg_clear();
 		$.glue.popover.close();
-		save();
-		// the file itself is dropped by the object no longer naming it
-		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id,
-			attr: 'object-background-file' });
 	}));
 	footer.appendChild($.glue.popover.reset('reset tiling, scale and position to their defaults', function() {
 		// no-repeat is the default tiling - the state a fresh upload leaves,
@@ -1225,8 +1341,12 @@ function object_background_popover(obj)
 	pop.appendChild(footer);
 
 	// the panel is the move mode, so it takes the object's drag on the way in
-	// and gives it back on the way out (pop.on_close, above)
-	arm();
+	// and gives it back on the way out (pop.on_close, above) - but only when
+	// there is a picture to move: an object with none has nothing for a drag to
+	// move and must keep its own, until the upload above gives it something
+	if (object_has_background(obj)) {
+		arm();
+	}
 	$.glue.popover.show(pop);
 }
 
@@ -1319,61 +1439,21 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-edge', elem, 3);
 
-	// background image: the file picker when there is none, a panel when
-	// there is. The upload's data object is filled in when the menu opens,
-	// since which object it belongs to is not known before then.
-	elem = $.glue.icon('page-background-image', 'background image');
-	// 'object', not 'object-background': upload_files() dispatches by calling
-	// "{preferred_module}_upload", so the name has to be the module's own or
-	// the file falls through to the image module and becomes a new object
-	var bg_data = { method: 'glue.upload_files', page: $.glue.page,
-		preferred_module: 'object' };
-	$.glue.upload.button(elem, bg_data, {
-		tooltip: 'choose a background image for this object',
-		error: function(e) {
-			$.glue.error('There was a problem uploading the file.');
-		},
-		finish: function(data) {
-			if (!data || data['#error']) {
-				$.glue.error('There was a problem uploading the file'+
-					(data && data['#data'] ? ' ('+data['#data']+')' : ''));
-				return;
-			}
-			var obj = document.getElementById(bg_data.object);
-			if (!obj) {
-				return;
-			}
-			// the timestamp defeats the cache: the url does not change when
-			// the file behind it does
-			obj.style.backgroundImage = 'url('+$.glue.base_url+'?'+bg_data.object+
-				'&'+(new Date().getTime())+')';
-			obj.style.backgroundRepeat = 'no-repeat';
-			$.glue.object.save(obj);
-			bg_sync(elem);
-		}
-	});
-	var bg_input = elem.querySelector('input[type=file]');
-	// with an image already on the object the picker gets out of the way, so
-	// the button's own click can open the panel instead
-	var bg_sync = function(button) {
-		var obj = $.glue.owner(button);
-		bg_data.object = obj ? obj.id : '';
-		var has = object_has_background(obj);
-		bg_input.style.display = has ? 'none' : '';
-		button.title = has ? 'background image: tile it, move it, remove it' :
-			'background image';
-	};
-	elem.addEventListener('glue-menu-activate', function(e) {
-		bg_sync(this);
-	});
+	// background: the panel, which is where the object's background is set -
+	// the colour under it, the picture on it, and what the picture does. The
+	// menu button only opens it, and opens it whether or not there is a
+	// background, since an object with none has to get one in there; it used to
+	// be the file picker itself until the panel took that over.
+	//
+	// Left-most in the top row (prio 0): the background is the object-wide
+	// setting the rest of the row sits on top of, and it is the button whose
+	// panel everything else in this menu is read against.
+	elem = $.glue.icon('background-set', 'object background');
 	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		if (object_has_background(obj)) {
-			object_background_popover(obj);
-			e.stopPropagation();
-		}
+		object_background_popover($.glue.owner(this));
+		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('object', 'object-background', elem, 8, true);
+	$.glue.contextmenu.register('object', 'object-background', elem, 0, true);
 
 	// Toggle whether content bigger than the object's box is cut off or spills
 	// out of it. Absent means visible, the browser default and what hotglue has

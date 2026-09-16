@@ -311,6 +311,13 @@ function object_alter_render_early($args)
 				$obj['object-background-scale'].'% auto');
 		}
 	}
+	// The colour under it, or - for an object with no picture - the background
+	// itself. Text objects have their own (text-background-color, which the
+	// text module renders), so this is every other kind, matching the guard in
+	// object_alter_save().
+	if (!elem_has_class($elem, 'text') && !empty($obj['object-background-color'])) {
+		elem_css($elem, 'background-color', $obj['object-background-color']);
+	}
 	// The box-shadow family - a soft halo behind the content, a solid band
 	// outside the box and one inside it, and a directional drop shadow - see
 	// .glue-glow in css/main.css. Like the fade above, what is stored is the
@@ -490,6 +497,17 @@ function object_alter_save($args)
 		$obj['object-border-radius'] = elem_css($elem, 'border-radius');
 	} else {
 		unset($obj['object-border-radius']);
+	}
+	// The colour under the picture, and - for an object with no picture - the
+	// whole of its background. Text objects keep theirs in text-background-color
+	// (the text module has owned that property since long before there was a
+	// background panel, and renders it itself), so this is every other kind:
+	// without it a colour picked in the background panel would live in the
+	// editor's DOM and nowhere else.
+	if (!elem_has_class($elem, 'text') && elem_css($elem, 'background-color') !== NULL) {
+		$obj['object-background-color'] = elem_css($elem, 'background-color');
+	} else {
+		unset($obj['object-background-color']);
 	}
 	// Only the two settings, never the image URL: that is derived from
 	// object-background-file, which the upload sets and nothing else touches.

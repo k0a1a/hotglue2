@@ -535,9 +535,9 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   and that closing the panel hands the object's own drag over again. There is still no
   page-background spec — the page's panel is untested.
 
-Shipped 2026-09-16 — the page background panel becomes the page background (danja's
-drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
-`background-image.svg` and `background-set.svg`):
+Shipped 2026-09-16 — the background panel becomes the background, on the page and then on
+the object (danja's drawings, `img/icons/background-scroll.svg`, `tile.svg`,
+`background-color.svg`, `background-image.svg` and `background-set.svg`):
 
 - **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
   row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
@@ -564,8 +564,10 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
   of conversion the set makes — a *drawn* glyph for a *typed* one: they were white squares
   wearing the text glyph `▦` in `.glue-font-toggle`, so they were the set's unfinished
   business rather than the PNG sweep's. `▦` survives in the two toggles this did not touch
-  (the grid panel's show and the image panel's decorative), and `.glue-background-repeat`
-  is now an icon button, which is what `object-background.spec.js` asserts its state on.
+  (the grid panel's show and the image panel's decorative), and each tile toggle is now an
+  icon button whose state `object-background.spec.js` asserts on. (The object panel's copy
+  of that class was `glue-background-repeat` until the end of the day, when its row was
+  rebuilt and it took `glue-background-tile` — see the last bullets.)
 - **Then what the background IS moved in as well, and the page menu's background button
   became a plain opener.** The panel's first row gained two buttons: one opens the picker
   (`background-color`), one is a file picker (`background-image`, via
@@ -614,21 +616,61 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
   panels' tile toggles, so the page's would have dragged the object's 26px/22px sizing up
   with it had the page's kept the name. It did not: the page's four go by
   `.glue-background-btn` plus one class each (`glue-background-color`, `-image`, `-tile`,
-  `-scroll`), and the 22px mask rule in `css/edit.css` is the object panel's alone. The
-  object panel's tile toggle is untouched by all of this — still 26px, still wearing its
-  `tile` label. Whether it follows the page's onto the toolbar size is open; the two panels
-  have been each other's twins throughout, and that is the one place they now part.
+  `-scroll`). *(Later the same day the object panel's row followed the page's onto the
+  toolbar size, took `.glue-background-btn` and `glue-background-tile` itself, and the
+  22px mask rule went out of `css/edit.css` — the question this bullet left open is
+  answered, see the last bullets.)*
 - **And the page menu's button took a drawing of its own** (`background-set`, danja's):
-  a frame with one corner filled, where `page-background-image` had been. The old drawing
-  is not retired — the object's background button still wears it, and the object is the
-  one whose background is a picture rather than a picture *and* a colour under it. The new
-  one says "the background is set"; whether the object's follows is open, as it is for the
-  tile toggle above. Prep note: the file arrived as `background_set.svg`, and
-  `tools/prep-icons.js` hyphenates underscores (`icon_font_size.svg` → `font-size.svg`),
-  so it lives in `img/icons/` as `background-set.svg` — the name a regeneration would
-  produce anyway.
-- Not covered by a spec: the page background panel still has none, and the menu button's
-  change of behaviour is exactly the kind of thing one would have caught.
+  a frame with one corner filled, where `page-background-image` had been. Prep note: the
+  file arrived as `background_set.svg`, and `tools/prep-icons.js` hyphenates underscores
+  (`icon_font_size.svg` → `font-size.svg`), so it lives in `img/icons/` as
+  `background-set.svg` — the name a regeneration would produce anyway.
+- **Then the object's button followed it, and the panel behind it became the background.**
+  Danja's call: the object panel gets the page's panel minus the scroll toggle, its menu
+  button takes `background-set` too, and it moves to the **left-most** position in the top
+  row (`object-background` at prio 0, ahead of the text items' 1–5 and the adjustments'
+  7). `page-background-image` is what all that leaves behind: nothing in the tree
+  references it any more, and it stays in `img/icons/` for danja to keep or drop.
+- **Its two-state menu button went the way the page's went**, for the same reason as the
+  page's: with no image the button *was* the file input, and only an object that already
+  had a picture got a panel. The panel can set the picture itself, so the button has
+  nothing left to do but open it — and it opens whether or not there is a background,
+  since an object with none needs somewhere to get one. The upload is one of the panel's
+  buttons now, so it is reachable on an object that has no background, and the panel stays
+  open through it: what you do next — tiling, sizing, moving — is all in there.
+- **The panel's first row is the page's, one button shorter**: the colour, the picture and
+  the tile toggle, unlabelled, at `$.glue.icon()`'s own 32px box, sharing
+  `.glue-background-btn` and greying the tile toggle through `.glue-background-off` when
+  there is no picture — the page panel's classes throughout, since the two panels now
+  behave identically here. The tile toggle lost its `tile` label with the size, and the
+  three are named in their tooltips ("set object background color", "set object background
+  image", "tile object background image").
+- **The colour button moved in with the rest** — the same one the page's panel has, the
+  clear-first confirm and all — which raised the question of where an object's colour is
+  *kept*. Text objects have kept theirs in `text-background-color` since long before there
+  was a panel (the text module writes and renders it itself), but nothing kept it for any
+  other kind of object: a colour picked on an image or an iframe would have lived in the
+  editor's DOM and nowhere else, and been gone on the next load. So
+  `object_alter_save()`/`object_alter_render_early()` gained `object-background-color`,
+  guarded with `elem_has_class($elem, 'text')` on both sides so text objects keep the
+  attribute they have always had and an untouched object file stays byte-identical.
+- **The panel arms the drag only when there is a picture to move.** Opening the panel hands
+  the object's own drag over to `background-position` — that is the panel's move mode — and
+  an object with no background has nothing for a drag to move, so arming it there would
+  swallow the object's drag silently. `arm()` is now called on open only
+  `if (object_has_background(obj))`, and from the upload's `finish` when a picture arrives
+  while the panel is open.
+- **`tests/e2e/object-background.spec.js` again.** The behaviour it pinned is gone, so the
+  tests that pinned it changed with it: the upload now goes through the panel's own
+  `.glue-background-image input[type=file]`, the tile toggle is `.glue-background-tile`,
+  the top-row order test now asserts the background button leads the row, and the old
+  "with no image the button is the picker" test asserts what replaced it (the panel opens,
+  the picker is in it, the toggle is greyed, and the object keeps its own drag). Two colour
+  tests are new: one for a text object, which must still store `text-background-color`, and
+  one for an image object, which must store the new `object-background-color` and read it
+  back through a reload.
+- Not covered by a spec: the page background panel still has none — the same gap as before,
+  and now the only one in either panel.
 
 ---
 
@@ -683,10 +725,10 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
   broken-link `object-link` and code-brackets `object-props`, `hyperlink`, `font-size`
   (the Font panel), `padding`, `background-color-remove` (make background transparent),
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
-  `clip` (state shown by the pressed-in frame), `page-background-image` (the object's
-  background button), `background-set` (the page's own, danja's drawing, since 09-16),
+  `clip` (state shown by the pressed-in frame), `background-set` (both background
+  buttons — the page's and the object's — danja's drawing, since 09-16),
   `tile` (the tile toggles in both background panels), `background-color` and
-  `background-image` (the page background panel's colour button and its upload),
+  `background-image` (the colour button and the upload in both background panels),
   `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
   and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
   run-format strip, the four `align-*` inside the font panel's fold (still mapped by
@@ -698,8 +740,8 @@ drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg`,
   `composition-mode-absolute`/`-centered` — that last one shows the mode you are
   switching TO, preserving the old split where the tooltip describes the present and the
   button names the destination. Every colour button in every panel shares one glyph,
-  `color-swatch` (which succeeded `color-quadrant`) — with the single exception of the
-  page background panel's, which took `background-color` on 09-16. That one replaces what
+  `color-swatch` (which succeeded `color-quadrant`) — with the single exception of the two
+  background panels', which took `background-color` on 09-16. That one replaces what
   the background *is* rather than setting the colour of a thing that is there, and it is
   the only one whose answer can be cancelled before the picker opens; whether the
   change-background-colour buttons elsewhere should follow it onto its own glyph is a call

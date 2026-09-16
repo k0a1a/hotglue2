@@ -1,17 +1,25 @@
-// A background image on any object.
+// A background on any object.
 //
-// One button with two states, because only one of them needs a panel: with no
-// image on the object the button IS the file input - the browser's own picker
-// - and with an image already there the input is switched off and the button
-// opens a panel to tile it, move it or scale it, with a footer that either
-// resets those to their defaults (keeping the image) or deletes the image
-// (taking it and the file off the object).
+// One button that opens one panel, because the panel is where the object's
+// background is set: a colour and a picture, and what the picture does - tile
+// it, move it, scale it - with a footer that either resets those to their
+// defaults (keeping the picture) or deletes it (taking it and the file off the
+// object). It is the page's background panel one button shorter: the page's
+// fourth is the scroll toggle, which an object has no use for.
+//
+// The button used to be two buttons in one - with no image it WAS the file
+// input, and only an object that already had a picture got a panel - and these
+// tests used to assert that. The upload is one of the panel's buttons now, at
+// 32px in an unlabelled row of three, and the tile toggle greys out when there
+// is no picture to tile.
 //
 // The image belongs to the OBJECT: it uploads with preferred_module 'object'
 // - the module's own name, since upload_files() dispatches by calling
 // "{preferred_module}_upload" - and the object's name, and the url points at the object
 // rather than at the file in the shared directory, which is the arrangement
-// image objects already use.
+// image objects already use. The colour is the object's own background-color:
+// a text object stores it as text-background-color, as it always has, and
+// every other kind as object-background-color.
 
 const fs = require('fs');
 const path = require('path');
@@ -46,20 +54,38 @@ async function select(page, id) {
 	await page.waitForTimeout(400);		// the menu fades in
 }
 
-test('with no image, the button is the file picker itself', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await select(page, a);
+test('with no image, the button opens the panel and the picker is in it',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
 
-	const input = bgBtn(page).locator('input[type=file]');
-	await expect(input).toBeAttached();
-	expect(await input.evaluate((e) => getComputedStyle(e).display),
-		'the picker is hidden on an object that has no background yet').not.toBe('none');
-	// and no panel opens on top of it
-	await bgBtn(page).click({ position: { x: 2, y: 2 }, force: true });
-	await expect(pop(page)).toHaveCount(0);
-});
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		// the row of three: set the colour, set the picture, tile it
+		await expect(pop(page).locator('.glue-background-btn')).toHaveCount(3);
+		await expect(pop(page).locator('.glue-background-color')).toHaveCount(1);
+		// the picture button IS a file picker, the way the menu button was
+		const input = pop(page).locator('.glue-background-image input[type=file]');
+		await expect(input).toBeAttached();
+		expect(await input.evaluate((e) => getComputedStyle(e).display),
+			'the picker is hidden on an object that has no background yet').not.toBe('none');
+		// nothing to tile, so the toggle is greyed out and inert
+		await expect(pop(page).locator('.glue-background-tile'))
+			.toHaveClass(/glue-background-off/);
+
+		// and with no picture to move the panel leaves the object its own drag
+		// - arming a background that is not there would swallow it silently
+		const before = await posOf(page, a);
+		const b = await byId(page, a).boundingBox();
+		await page.mouse.move(b.x + b.width/2, b.y + b.height/2);
+		await page.mouse.down();
+		await page.mouse.move(b.x + b.width/2 + 40, b.y + b.height/2, { steps: 5 });
+		await page.mouse.up();
+		await expect.poll(async () => (await posOf(page, a))[0])
+			.toBeGreaterThan(before[0] + 30);
+	});
 
 test('uploading sets it as the object background, stored on the object',
 	async ({ page, hg }) => {
@@ -68,7 +94,10 @@ test('uploading sets it as the object background, stored on the object',
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		await bgBtn(page).locator('input[type=file]').setInputFiles(SAMPLE);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		await pop(page).locator('.glue-background-image input[type=file]')
+			.setInputFiles(SAMPLE);
 
 		await expect.poll(() => attrs(hg)['object-background-file'], { timeout: 10000 })
 			.toBe('sample.png');
@@ -76,6 +105,94 @@ test('uploading sets it as the object background, stored on the object',
 		// the file landed in the page's shared directory
 		expect(fs.readdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared')))
 			.toContain('sample.png');
+		// the panel stays open - what you do next (tiling, sizing, moving) is in
+		// here - and the tile toggle has something to tile now
+		await expect(pop(page)).toBeVisible();
+		await expect(pop(page).locator('.glue-background-tile'))
+			.not.toHaveClass(/glue-background-off/);
+	});
+
+test('the colour button picks a colour, stored the way a text object stores one',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+
+		await pop(page).locator('.glue-background-color').click();
+		await expect(page.locator('.picker_wrapper')).toBeVisible();
+		// an exact colour rather than aiming at the gradient. Enter in the hex
+		// field is vanilla-picker's own "done", so the picker closes on it
+		const field = page.locator('.picker_editor input');
+		await field.fill('#ff0000');
+		await field.press('Enter');
+		await expect(page.locator('.picker_wrapper')).toBeHidden();
+
+		expect(await cssOf(page, a, 'backgroundColor')).toBe('rgb(255, 0, 0)');
+		// text-background-color, as it has been since long before there was a
+		// panel - the new object-background-color is for every other kind
+		await expect.poll(() => attrs(hg)['text-background-color']).toBe('#ff0000');
+		expect(attrs(hg)['object-background-color']).toBe(undefined);
+
+		// and it reaches the published page
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.object')).backgroundColor))
+			.toBe('rgb(255, 0, 0)');
+	});
+
+test("on any other kind of object the colour is the object's own",
+	async ({ page, hg }) => {
+		// an image object: not a text object, so text_alter_save() does not
+		// carry the colour - object_alter_save()/object_alter_render_early()
+		// do, in object-background-color.
+		//
+		// Unsized, deliberately: with image-file-width/-height the module paints
+		// the picture onto the OBJECT as its background-image, and the panel
+		// reads any background-image as a background of its own - the colour
+		// button would ask to clear "the current background image" before it
+		// opened the picker, and Playwright's default is to dismiss a dialog,
+		// which is the cancel path. Unsized, the module appends an <img> and the
+		// object's own background is empty, which is the state this test is
+		// about.
+		const a = hg.addObject('100000000002', {
+			type: 'image', module: 'image',
+			'image-file': 'sample.png', 'image-file-mime': 'image/png',
+			'object-left': '300px', 'object-top': '300px',
+			'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+		});
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		const attrsOf = () => hg.readObject('100000000002').attrs;
+
+		await select(page, a);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		await pop(page).locator('.glue-background-color').click();
+		const field = page.locator('.picker_editor input');
+		await field.fill('#00ff00');
+		await field.press('Enter');
+		await expect(page.locator('.picker_wrapper')).toBeHidden();
+
+		await expect.poll(() => attrsOf()['object-background-color']).toBe('#00ff00');
+		expect(attrsOf()['text-background-color'], 'a non-text object has no text colour')
+			.toBe(undefined);
+
+		// it survives a reload, which is object_alter_render_early() reading it
+		// back out of the attribute, and reaches the published page
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		expect(await cssOf(page, a, 'backgroundColor')).toBe('rgb(0, 255, 0)');
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() =>
+			getComputedStyle(document.querySelector('.object')).backgroundColor))
+			.toBe('rgb(0, 255, 0)');
 	});
 
 test('the object serves its own background, and it survives a reload',
@@ -86,7 +203,10 @@ test('the object serves its own background, and it survives a reload',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await select(page, a);
-		await bgBtn(page).locator('input[type=file]').setInputFiles(SAMPLE);
+		await bgBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		await pop(page).locator('.glue-background-image input[type=file]')
+			.setInputFiles(SAMPLE);
 		await expect.poll(() => attrs(hg)['object-background-file'], { timeout: 10000 })
 			.toBe('sample.png');
 
@@ -103,7 +223,7 @@ test('the object serves its own background, and it survives a reload',
 			.not.toContain('shared');
 	});
 
-test('adjustments and background ride the top row, after the text items',
+test('the background button leads the top row, and the object-wide pair rides it',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001',
 			{ ...ATTRS, 'object-background-file': 'sample.png',
@@ -125,19 +245,20 @@ test('adjustments and background ride the top row, after the text items',
 			.toHaveCount(0);
 		await expect(page.locator('.glue-contextmenu-left#glue-contextmenu-object-background'))
 			.toHaveCount(0);
-		// and in the top row they follow the text items (prios 1-6): the
-		// object-wide pair sits at the end of the row
+		// background is prio 0 - the object-wide setting the rest of the row is
+		// read against - so it is left-most, ahead of the text items (prios
+		// 1-5), and adjust (7) stays at the end of them
 		const order = await page.evaluate(() =>
 			[...document.querySelectorAll('.glue-contextmenu-top')]
 				.map((b) => b.id));
-		expect(order.indexOf('glue-contextmenu-text-font')).toBeGreaterThan(-1);
+		expect(order[0]).toBe('glue-contextmenu-object-background');
+		expect(order.indexOf('glue-contextmenu-object-background'))
+			.toBeLessThan(order.indexOf('glue-contextmenu-text-font'));
 		expect(order.indexOf('glue-contextmenu-text-font'))
 			.toBeLessThan(order.indexOf('glue-contextmenu-object-adjust'));
-		expect(order.indexOf('glue-contextmenu-object-adjust'))
-			.toBeLessThan(order.indexOf('glue-contextmenu-object-background'));
 	});
 
-test('with an image, the button opens the panel instead of the picker',
+test('with an image, the panel opens onto the image it describes',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001',
 			{ ...ATTRS, 'object-background-file': 'sample.png',
@@ -150,13 +271,16 @@ test('with an image, the button opens the panel instead of the picker',
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		expect(await bgBtn(page).locator('input[type=file]')
-			.evaluate((e) => getComputedStyle(e).display),
-		'the file picker is still in front of the button').toBe('none');
-
 		await bgBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		await expect(pop(page).locator('.glue-background-repeat')).toHaveCount(1);
+		await expect(pop(page).locator('.glue-background-btn')).toHaveCount(3);
+		await expect(pop(page).locator('.glue-background-tile')).toHaveCount(1);
+		// nothing stored about the tiling, so it is the renderer's own default
+		// - no-repeat - and the toggle is lit only when the image repeats
+		await expect(pop(page).locator('.glue-background-tile'))
+			.not.toHaveClass(/glue-background-off/);
+		await expect(pop(page).locator('.glue-background-tile'))
+			.not.toHaveClass(/glue-btn-active/);
 		// the position's two rows, x and y
 		await expect(pop(page).locator('.glue-background-pos')).toHaveCount(2);
 	});
@@ -176,7 +300,7 @@ test('tiling toggles and stores, and dragging the object moves the image',
 		await bgBtn(page).click();
 		await expect(pop(page)).toBeVisible();
 
-		await pop(page).locator('.glue-background-repeat').click();
+		await pop(page).locator('.glue-background-tile').click();
 		await expect.poll(() => cssOf(page, a, 'backgroundRepeat')).toBe('repeat');
 		await expect.poll(() => attrs(hg)['object-background-repeat']).toBe('repeat');
 
@@ -306,7 +430,7 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		await expect(pop(page)).toBeVisible();
 		// the panel is in the non-default state it was given, the position rows
 		// reading it back out of the stored attribute
-		await expect(pop(page).locator('.glue-background-repeat'))
+		await expect(pop(page).locator('.glue-background-tile'))
 			.toHaveClass(/glue-btn-active/);
 		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
 			.toHaveValues(['30', '20']);
@@ -326,7 +450,7 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		expect(await cssOf(page, a, 'backgroundRepeat')).toBe('no-repeat');
 		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
 		// and the panel shows the defaults again
-		await expect(pop(page).locator('.glue-background-repeat'))
+		await expect(pop(page).locator('.glue-background-tile'))
 			.not.toHaveClass(/glue-btn-active/);
 		await expect(scaleField(page)).toHaveValue('100');
 		// the two position rows are back at the corner with it
