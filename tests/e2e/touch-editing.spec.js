@@ -14,8 +14,10 @@
 // ($.glue.slider) listens for pointer events, the buttons set
 // touch-action: none on themselves, and a finger drags them exactly like a
 // mouse. The transparency control that used to be one of those drag buttons
-// is a plain range input in the adjustment popout now, which a finger drags
-// with no gesture layer of its own. The last tests are those drags.
+// is a plain range input in the object properties panel now, which a finger
+// drags with no gesture layer of its own - as is the padding, which was a
+// drag-with-shift gesture on a menu button before it became the panel's own
+// row. The last tests are those drags.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -142,24 +144,25 @@ test('dragging an unselected object selects it', async ({ page, hg, browserName 
 	await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
 });
 
-test('a finger drags the opacity slider in the adjustment popout',
+test('a finger drags the opacity slider in the properties panel',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		// the transparency button used to be a drag button itself; it is a
-		// range input in the adjustment popout now, so the touch story is the
-		// browser's own slider: no gesture layer, no touch-action, a finger
-		// just drags it
+		// range input in the object properties panel now (the adjustments
+		// popout until 2026-09-16), so the touch story is the browser's own
+		// slider: no gesture layer, no touch-action, a finger just drags it
 		const a = hg.addObject('100000000001', ATTRS, 'hello');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await byId(page, a).tap();
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
-		await page.getByTitle('object adjustments').tap();
-		await expect(page.locator('.glue-popover.glue-adjust-popover')).toBeVisible();
+		await page.getByTitle('object properties').tap();
+		await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
 
-		const slider = page.locator('.glue-popover-slider');
+		// named: the panel has an x, a y, a scale and a padding slider besides
+		const slider = page.locator('.glue-opacity-row .glue-popover-slider');
 		const box = await slider.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
@@ -188,14 +191,15 @@ test('a finger drags the opacity slider in the adjustment popout',
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a finger drags the padding slider in the padding panel without scrolling the page',
+test('a finger drags the padding slider in the properties panel without scrolling the page',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
-		// the padding button used to be a drag target itself; it opens a panel
-		// now (the way the transparency button became a slider in the
-		// adjustment popout), and the panel's slider is a native range input:
-		// no gesture layer, no touch-action, a finger just drags it
+		// the padding button used to be a drag target itself, then a button
+		// opening a panel of its own (the way the transparency button became a
+		// slider in the adjustment popout), and it is a section of the object
+		// properties panel now. Its slider is a native range input: no gesture
+		// layer, no touch-action, a finger just drags it
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		// a second object far down the page, so the page genuinely can scroll
 		// - the scrollY assertion below only proves something if it could
@@ -211,15 +215,16 @@ test('a finger drags the padding slider in the padding panel without scrolling t
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		await page.getByTitle(/change padding/).tap();
-		const panel = page.locator('.glue-popover.glue-padding-popover');
+		await page.getByTitle('object properties').tap();
+		const panel = page.locator('.glue-popover.glue-properties-popover');
 		await expect(panel).toBeVisible();
 
 		const outerBefore = await page.evaluate((i) => {
 			const el = document.getElementById(i);
 			return el.offsetWidth+','+el.offsetHeight;
 		}, a);
-		const slider = panel.locator('input[type="range"]').first();
+		// named: the panel has an x, a y, a scale and an opacity slider besides
+		const slider = panel.locator('.glue-padding-row .glue-popover-slider');
 		const box = await slider.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
@@ -271,10 +276,12 @@ test('a finger drags the padding slider in the padding panel without scrolling t
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a tap on the padding button opens the padding panel without changing anything',
+test('a tap on the properties button opens the panel without changing anything',
 	async ({ page, hg, browserName }) => {
-		// the button used to be a drag target whose click reset the padding;
-		// the reset lives in the panel now, and opening it must be inert
+		// the padding button used to be a drag target whose click reset the
+		// padding, and it is not in the menu at all any more - but the button
+		// that opens the panel the padding moved into has the same obligation:
+		// a tap opens it, and opening it changes nothing
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
@@ -289,7 +296,7 @@ test('a tap on the padding button opens the padding panel without changing anyth
 			const el = document.getElementById(i);
 			return el.offsetWidth+','+el.offsetHeight;
 		}, a);
-		const button = page.getByTitle(/change padding/);
+		const button = page.getByTitle('object properties');
 		const box = await button.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		await cdp.send('Input.dispatchTouchEvent', {
@@ -299,7 +306,7 @@ test('a tap on the padding button opens the padding panel without changing anyth
 
 		// the panel is open, no padding was applied (there is no module
 		// default any more), and the box has not moved
-		await expect(page.locator('.glue-popover.glue-padding-popover')).toBeVisible();
+		await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('0px');
 		await expect.poll(() => page.evaluate((i) => {

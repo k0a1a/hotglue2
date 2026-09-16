@@ -299,27 +299,37 @@ function image_properties_popover(obj)
 
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('iframe', 'object-link');
-	// a sized image object *is* a background: the module paints the picture
-	// with the object's own background-image at background-size 100% 100%,
-	// and image_alter_save() reads background-repeat and -position back out
-	// of the element (module_image.inc.php). The object background panel
-	// would find the picture where it looks for a background, offer to clear
-	// it, and write its tiling and position into the image's own settings -
-	// two owners for one background. An unsized image object keeps its
-	// picture in an img child and would take the panel happily, but the veto
-	// is per class: a button that came and went with the object's size would
-	// be worse than one that never comes
-	$.glue.contextmenu.veto('image', 'object-background');
+	//
+	// the image class has no veto in this file any more, and the one it had is
+	// worth a line because it went somewhere rather than away. An image object
+	// used to be barred from the object background panel: a sized image object
+	// *is* a background - the module paints the picture with the object's own
+	// background-image at background-size 100% 100%, and image_alter_save()
+	// reads background-repeat and -position back out of the element
+	// (module_image.inc.php) - so the panel would have found the picture where
+	// it looks for a background, offered to clear it, and written its tiling
+	// and position into the image's own settings. Two owners for one
+	// background.
+	//
+	// The panel is the object properties panel now, and the background is a
+	// section of it rather than the whole of it: object_properties_popover()
+	// does not build that section for an image object, so the two owners are
+	// still impossible and the class keeps the rest of the panel - the flip,
+	// the transparency. A veto could not do that, because a veto is per class
+	// and all or nothing: it would have taken the flip off image objects too,
+	// and it could not have told a sized image object from an unsized one
+	// (which keeps its picture in an img child and has no background to
+	// collide with) without the button coming and going with the object's
+	// size.
 	//
 	// register menu items
 	//
 	// the tiling, ratio and position adjustments of an image object have no
 	// buttons here any more. They left when the object background panel took
-	// them over, and the veto above puts that panel out of an image object's
-	// reach as well, so nothing in the editor writes image-background-repeat
-	// or -position now. The module still reads and renders them, and a
-	// picture drawn at exactly the object's size has nothing to tile and
-	// nowhere to be positioned, so the loss is on paper only
+	// them over, and nothing in the editor writes image-background-repeat or
+	// -position now. The module still reads and renders them, and a picture
+	// drawn at exactly the object's size has nothing to tile and nowhere to be
+	// positioned, so the loss is on paper only
 
 	var elem;
 	// image-class items always sit in the top row; prio 11 puts this one

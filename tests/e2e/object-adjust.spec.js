@@ -1,12 +1,18 @@
-// The 'object adjustment' popout: flip, z-level and transparency in one
-// panel. These were three menu buttons with hidden gestures - the flip
-// cycled through four states, and the z-level and the transparency were both
-// drag-distance sliders - and the popout trades those for visible controls.
+// The 'object adjustments' popout: where the object sits in the stack, and
+// nothing else.
 //
-// The stored formats are the ones the modules always used (transform-flip
-// holds the whole transform, object-zindex and object-opacity hold the
-// literal style values), so the round-trips below assert against the flat
-// files exactly the way the rotation spec does.
+// It was three things - flip, z-level and transparency - until 2026-09-16, when
+// danja moved the other two to the object properties panel and left this one
+// the relation between an object and its neighbours. The flip and transparency
+// tests that used to be in this file are in object-background.spec.js now, with
+// the panel they moved to.
+//
+// The panel itself replaces a menu button that hid a drag-distance slider (drag
+// right, drag further right...), and the four buttons it offers are the four
+// moves the object adjustment menu always had: to top, level up, level down, to
+// bottom. The stored format is the one the module always used - object-zindex
+// holds the literal style value - so the round-trips below assert against the
+// flat files exactly the way the rotation spec does.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -20,15 +26,8 @@ const OBJ = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const adjust = (page) => page.getByTitle('object adjustments');
 const popover = (page) => page.locator('.glue-popover.glue-adjust-popover');
-const flipV = (page) => page.getByTitle('flip vertically');
-const flipH = (page) => page.getByTitle('flip horizontally');
-// the literal inline style, which is what the modules parse and store
-const transformOf = (page, id) => page.evaluate((i) =>
-	document.getElementById(i).style.getPropertyValue('transform'), id);
 const zOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).zIndex, id);
-const opacityOf = (page, id) => page.evaluate((i) =>
-	getComputedStyle(document.getElementById(i)).opacity, id);
 
 async function selectAndOpen(page, id) {
 	await byId(page, id).click();
@@ -37,74 +36,26 @@ async function selectAndOpen(page, id) {
 	await expect(popover(page)).toBeVisible();
 }
 
-test('the popout opens, and the three buttons it folds are gone',
+test('the popout opens, and the old hidden-gesture buttons are gone',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await selectAndOpen(page, a);
 
-		// the old hidden-gesture buttons are out of the menu
 		expect(await page.getByTitle('flip object').count()).toBe(0);
 		expect(await page.getByTitle(/change transparency/).count()).toBe(0);
 		expect(await page.getByTitle('bring object to foreground or background').count()).toBe(0);
 
-		// and the panel has the promised rows: two flip toggles, four
-		// z-level buttons, an opacity slider and a reset
-		await expect(flipV(page)).toBeVisible();
-		await expect(flipH(page)).toBeVisible();
+		// and the panel has the promised rows: the four z buttons and a reset,
+		// and nothing else - the flip toggles and the opacity slider are the
+		// properties panel's now, so neither is in here
 		for (const t of ['to top', 'level up', 'level down', 'to bottom']) {
 			await expect(page.getByTitle(t)).toBeVisible();
 		}
-		await expect(popover(page).locator('.glue-popover-slider')).toBeVisible();
 		await expect(popover(page).locator('.glue-popover-reset')).toBeVisible();
-	});
-
-test('the flip toggles are independent, tracked, and round-trip',
-	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', OBJ, 'A');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await selectAndOpen(page, a);
-
-		const active = (loc) => loc.evaluate((el) =>
-			el.classList.contains('glue-btn-active'));
-
-		// nothing flipped, nothing active
-		expect(await transformOf(page, a)).toBe('');
-		expect(await active(flipV(page))).toBe(false);
-		expect(await active(flipH(page))).toBe(false);
-
-		// one axis at a time: h is the a entry of the matrix, v the d
-		await flipV(page).click();
-		expect(await transformOf(page, a)).toContain('matrix(1, 0, 0, -1, 0, 0)');
-		expect(await active(flipV(page))).toBe(true);
-		expect(await active(flipH(page))).toBe(false);
-
-		await flipH(page).click();
-		expect(await transformOf(page, a)).toContain('matrix(-1, 0, 0, -1, 0, 0)');
-		expect(await active(flipH(page))).toBe(true);
-
-		// stored whole, the same way the rotation is
-		await expect.poll(() => hg.readObject('100000000001').attrs['transform-flip'])
-			.toBe('matrix(-1, 0, 0, -1, 0, 0)');
-
-		// reopening the panel restores the toggle state from the object. The
-		// panel opens at the click point and covers the menu, so the way to
-		// close it is Escape, not a second click on the opener.
-		await page.keyboard.press('Escape');
-		await expect(popover(page)).toHaveCount(0);
-		await adjust(page).click();
-		await expect(popover(page)).toBeVisible();
-		expect(await active(flipV(page))).toBe(true);
-		expect(await active(flipH(page))).toBe(true);
-
-		// each toggle off again removes just its axis, then all of it
-		await flipH(page).click();
-		expect(await transformOf(page, a)).toContain('matrix(1, 0, 0, -1, 0, 0)');
-		expect(await active(flipH(page))).toBe(false);
-		await flipV(page).click();
-		expect(await transformOf(page, a)).toBe('');
+		await expect(popover(page).locator('.glue-popover-slider')).toHaveCount(0);
+		expect(await page.getByTitle('flip vertically').count()).toBe(0);
 	});
 
 test('to top/to bottom push to the ends; level up/down swap one step',
@@ -187,45 +138,17 @@ test('an object without its own z swaps with the implicit 0',
 			.toBe(undefined);
 	});
 
-test('transparency: the slider applies live, the field commits',
+test('reset clears the z index, and only the z index',
 	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', OBJ, 'A');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await selectAndOpen(page, a);
-
-		const slider = popover(page).locator('.glue-popover-slider');
-		const field = popover(page).locator('.glue-popover-field');
-
-		// the row opens at the object's current opacity
-		expect(await slider.inputValue()).toBe('100');
-		expect(await field.inputValue()).toBe('100');
-
-		// a slider move applies live (commit false)...
-		await slider.evaluate((el) => {
-			el.value = 30;
-			el.dispatchEvent(new Event('input', { bubbles: true }));
-		});
-		expect(await opacityOf(page, a)).toBe('0.3');
-		// ...and the change that ends the drag is what stores it
-		await slider.evaluate((el) => {
-			el.dispatchEvent(new Event('change', { bubbles: true }));
-		});
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
-			.toBe('0.3');
-
-		// the field does the same for a typed value
-		await field.fill('60');
-		await field.press('Enter');
-		expect(await opacityOf(page, a)).toBe('0.6');
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
-			.toBe('0.6');
-		expect(await field.inputValue()).toBe('60');
-	});
-
-test('reset clears flip, z and transparency in one save',
-	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', { ...OBJ, 'object-zindex': '100' }, 'A');
+		// It used to clear the flip and the transparency too. Both are the
+		// properties panel's now, and this panel's reset has to leave them
+		// alone: an object that is flipped and dimmed and then has its layer
+		// reset keeps being flipped and dimmed.
+		const a = hg.addObject('100000000001', {
+			...OBJ, 'object-zindex': '100',
+			'transform-flip': 'matrix(-1, 0, 0, -1, 0, 0)',
+			'object-opacity': '0.4',
+		}, 'A');
 		const b = hg.addObject('100000000002', {
 			...OBJ, 'object-left': '440px', 'object-top': '360px',
 			'object-zindex': '103',
@@ -234,33 +157,17 @@ test('reset clears flip, z and transparency in one save',
 		await waitForEditor(page, 2);
 		await selectAndOpen(page, a);
 
-		// work the object: flip both axes, push it above its neighbour, dim it
-		await flipV(page).click();
-		await flipH(page).click();
 		await page.getByTitle('to top').click();
-		await popover(page).locator('.glue-popover-field').fill('25');
-		await popover(page).locator('.glue-popover-field').press('Enter');
-		// the last writes have to land before the reset writes, or the saves
-		// could come back in the wrong order
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
-			.toBe('0.25');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
 			.toBe('104');
 
-		// the panel's reset restores every default at once
 		await popover(page).locator('.glue-popover-reset').click();
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
 			.toBe(undefined);
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
-			.toBe(undefined);
-		await expect.poll(() => hg.readObject('100000000001').attrs['transform-flip'])
-			.toBe(undefined);
-		expect(await transformOf(page, a)).toBe('');
 		expect(await zOf(page, a)).toBe('auto');
-		expect(await opacityOf(page, a)).toBe('1');
-		expect(await popover(page).locator('.glue-popover-field').inputValue()).toBe('100');
-		expect(await flipV(page).evaluate((el) =>
-			el.classList.contains('glue-btn-active'))).toBe(false);
-		expect(await flipH(page).evaluate((el) =>
-			el.classList.contains('glue-btn-active'))).toBe(false);
+		// untouched: the reset has no business with what this panel does not own
+		await expect.poll(() => hg.readObject('100000000001').attrs['transform-flip'])
+			.toBe('matrix(-1, 0, 0, -1, 0, 0)');
+		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
+			.toBe('0.4');
 	});

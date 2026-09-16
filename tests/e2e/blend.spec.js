@@ -15,16 +15,18 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
-// The picker comes from the object background panel: the text menu's own
+// The picker comes from the object properties panel: the text menu's own
 // "change background color" went when the panel took the object's background
 // over (with it "make background transparent", which was this picker's alpha
-// row at 0%).
+// row at 0%). The panel is the object background panel until 2026-09-16, when
+// padding, flip and transparency joined its background section.
 async function openPicker(page, id) {
 	await byId(page, id).click();
 	await page.waitForTimeout(400);		// the menu fades in
 	// exact: getByTitle matches a substring, and "set object background
-	// image" is in the same panel
-	await page.getByTitle('object background', { exact: true }).click();
+	// image" is in the same panel - as is "object identity", the modal's
+	// button, which the panel's own tooltip must not be confused with
+	await page.getByTitle('object properties', { exact: true }).click();
 	await page.getByTitle('set object background color', { exact: true }).click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 }

@@ -2,8 +2,10 @@
 
 Status: **Font and Spacing popovers BUILT 2026-08-23** (`text_font_popover()` and
 `text_spacing_popover()` in `modules/text/text-edit.js`, tests in
-`tests/e2e/text-font-popover.spec.js` and `text-spacing-popover.spec.js`). Still to do:
-moving padding out to object properties. Branch: `ng`.
+`tests/e2e/text-font-popover.spec.js` and `text-spacing-popover.spec.js`). **Padding
+relocated 2026-09-16** — out of this module and into the object properties panel; see the
+Padding note under "The collapse", which also closes the BROKEN item. Nothing in this SOW
+is outstanding. Branch: `ng`.
 
 Decisions taken while building, so the record is not just the plan:
 - **Toggles are two-state** — option (a) under Row 3. Per-selection styling was not
@@ -67,6 +69,16 @@ from the object's sides — a property of the object/container, not typography. 
 ALSO currently BROKEN. Relocate it to the Object Properties feature
 (SOW-object-properties.md) and fix it there. Do not carry it into the Font/Spacing
 popovers.
+
+**DONE 2026-09-16 — and it did not go to the modal this line names.** It went to the
+*panel*, which is called "object properties" now: danja moved the background, the flip and
+the transparency into the one panel and renamed it, and padding is its fourth section
+(`object_padding_section()`, modules/object/object-edit.js). The modal is "object identity"
+— id, classes and attributes. The two names wanted the same words and the panel won them.
+The relocation resolved the "BROKEN" note above rather than carrying it: the panel's one
+slider and its four per-side knobs both go through a single `apply()`, which is the
+asymmetry the note was pointing at — the drag computed width from the size at mousedown
+while the reset recomputed it from the current `offsetWidth`, and there is no drag any more.
 
 **NOT CHECKED — "broken" wants a repro before anyone fixes it.** The control does two
 things at once: it sets padding AND resizes the object to compensate, so the text box

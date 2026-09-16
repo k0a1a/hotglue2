@@ -764,6 +764,90 @@ and `background-set.svg`):
   counts none once a picture lands. The helper is one selector list of the four and a count
   of how many carry the class, so a renamed class fails it rather than passing vacuously.
 
+Shipped 2026-09-16 — **the background panel becomes the object properties panel**, and three
+controls move into it. Danja: *"move 'change padding' and 'flip vertically / horizontally'
+and 'transparency' from under 'object adjustments' to 'object background' and rename it to
+'object properties'."* Three answers given before any of it was written:
+
+- **The z-level stays where it is, and keeps the name.** Asked whether "object adjustments"
+  should go too, danja's answer was that it stays: it keeps its button, its tooltip and its
+  four z buttons. What it loses is the flip and the transparency — so it is now one row, a
+  reset, and nothing else, which is the honest size of what is left of it. The panel was
+  three relations wearing one name; the two that were *properties* left, and the one that is
+  a relation (where the object sits among its neighbours) stayed.
+- **The padding rows are built for text objects only.** *"Only build for text."*
+  `text-padding-x` / `text-padding-y` is the only padding hotglue stores
+  (`module_text.inc.php`), so the section is the text module's to build even though the panel
+  is every object's. An iframe object's panel has no padding section at all — not a greyed
+  one, an absent one.
+- **An image object gets the panel, minus its background section.** With the veto lifted, an
+  image object would otherwise have lost the flip and the transparency too, since they would
+  live in a panel it was kept out of. It does not, and it never sees the background section.
+
+What that came to:
+
+- **The panel is a list of sections now, and one panel function builds it.**
+  `object_properties_popover()` calls four: `object_background_section()` (the old
+  `object_background_popover()` with its own open/footer/show taken off it),
+  `object_padding_section()`, `object_flip_section()` and `object_transparency_section()`.
+  Each draws its own rows into the popover and hands back a `reset` for what it owns; the
+  background's `remove` is the footer's delete button, since the picture is the only thing in
+  here that can be taken off an object. The footer runs every reset in the order the sections
+  were drawn and saves **once** — one write, and nothing left behind that the save happened
+  before.
+- **Absent, not greyed.** A section an object cannot have is not drawn at all. That is a
+  different thing from `.glue-background-off`, which greys a control that is about something
+  not there *yet* (a tile toggle with no picture); a property this kind of object does not
+  have is not a control waiting for something to arrive.
+- **Each reset clears only what is set**, so a reset on an object nobody has touched writes
+  nothing new. The padding reset guards on the four sides being zero — it compensates the
+  object's width and height, and an object nobody has padded must not be handed a width and
+  height it never asked for. The flip reset guards on an axis actually being flipped, and the
+  background reset on there being a picture. `object-background.spec.js` pins it: the file
+  after the reset is the file before it, byte for byte.
+- **The button is `object-properties`, titled "object properties", and it keeps
+  `background-set`.** The icon is unchanged (danja's call): a filled square is what an
+  object's properties panel looks like from here, and the button has not moved — still
+  prio 0, left-most in the top row.
+- **The modal's button became "object identity: id, classes and custom attributes".** It was
+  "object properties: …", and there cannot be two. The panel has the better claim to the
+  name — what is under an object, and how it is flipped, is as much a property of it as the
+  id is — and the modal is about the object as an element: what it is called, what classes it
+  carries, what it points at. `object-properties.spec.js` (which tests the modal, and keeps
+  its name) looks it up as `/object identity/` now.
+- **`modules/image/image-edit.js` loses its `object-background` veto**, and the long comment
+  explaining it became the comment explaining where the problem went instead: the panel omits
+  the section for the class, which a veto could not do — a veto is per class and all or
+  nothing, and it cannot tell a sized image object from an unsized one without the button
+  coming and going with the object's size.
+- **`text_padding_popover()` and its "change padding" button are gone from
+  `modules/text/text-edit.js`**, which is what `SOW-text-controls-redesign.md` said to do
+  with them ("It's the text's inset from the object's sides — a property of the
+  object/container, not typography"). The remaining text items renumbered again: font 1,
+  source 2 (it was 3), heading 11. The text menu's own controls are now font, source and
+  heading — everything else it had was about the object rather than the type.
+- **The two panels no longer share a class.** `glue-background-popover` was the object's
+  panel *and* the page's (`page-edit.js`); the object's is `glue-properties-popover` now, so
+  `css/edit.css`'s `width: 200px` rule is the page's alone and the object's has one of its
+  own (230px — its labels are the longest any panel has, and a content-sized
+  `.glue-popover-label` takes that width out of the slider beside it).
+- **The move mode is untouched, and worth knowing about.** Opening the panel with a picture
+  present still hands the object's own drag to `background-position` — that is the mode, and
+  it now lasts as long as a panel with more reasons to be open. Nothing about it changed
+  here; it is written down because the panel it belongs to got bigger around it.
+- **Specs.** `object-adjust.spec.js` is the z panel's now: the flip and transparency tests
+  moved to `object-background.spec.js` with the toggles, and it gained one for the reset that
+  checks the z index is cleared *and* the flip and the opacity are not (they are no longer
+  this panel's to clear). `object-background.spec.js` is the properties panel's spec and
+  keeps its name — the background is still most of what it tests — and the image test is
+  inverted: the class gets the button, and the absence is the section's. `text-padding.spec.js`
+  drives the section in its new panel, naming its rows through `.glue-padding-row` (the panel
+  has six number fields and a bare `.glue-popover-field` matches several); it gained a test
+  that a non-text object's panel has no padding section and no fold. `rotate.spec.js`,
+  `colorpicker.spec.js`, `blend.spec.js` and `touch-editing.spec.js` all reach their controls
+  through the renamed button and class, and `touch-editing.spec.js`'s padding tests name their
+  slider now — the panel has five, and `.first()` was landing on the x row.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)

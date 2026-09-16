@@ -341,7 +341,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.menu.register('page', elem);
 
 	//
-	// page background: one panel, the object background panel's twin, and the
+	// page background: one panel, the object properties panel's background
+	// section's twin (the object background panel's, until that panel grew the
+	// padding, the flip and the transparency on 2026-09-16), and the
 	// menu button now only opens it. What the background IS gets decided in
 	// there too - the colour and the picture both - which is why the menu's own
 	// colour button is gone. The page stores its background as attrs on the

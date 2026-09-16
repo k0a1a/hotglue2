@@ -12,7 +12,7 @@ function object_overflow_hidden(obj) {
 	return getComputedStyle(obj).overflow == 'hidden';
 }
 
-// the object's opacity as a whole percentage, for the adjustment popout's
+// the object's opacity as a whole percentage, for the properties panel's
 // transparency row
 function object_transparency_percent(obj) {
 	return Math.round(parseFloat(getComputedStyle(obj).opacity)*100);
@@ -853,12 +853,19 @@ function object_edge_popover(obj)
 //
 // --- object adjustment ------------------------------------------------------
 //
-// Flip, z-level and transparency in one panel. These used to be three menu
-// buttons with hidden gestures: the flip cycled through four states, and the
-// z-level and the transparency were both drag-distance sliders (drag right,
-// drag further right...). The popout trades the hidden gestures for visible
-// controls, and the flip becomes two independent toggles instead of a cycle,
-// so 'flip both axes' is a state rather than a stop on the way back to none.
+// One thing: where the object sits in the stack. Up, down, to the ends.
+//
+// It was three things until 2026-09-16 - flip, z-level and transparency in one
+// panel - and the other two went to the object properties panel, where an
+// object's own properties are. What is left here is the relation: z-level is
+// not a property of the object but of the company it keeps. That is the whole
+// of the panel now, so it may as well be one row and a reset.
+//
+// The three were menu buttons with hidden gestures once: the flip cycled
+// through four states, and the z-level and the transparency were both
+// drag-distance sliders (drag right, drag further right...). The popout trades
+// the hidden gestures for visible controls, and the flip became two independent
+// toggles instead of a cycle - that part is in the properties panel now.
 function object_adjust_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-adjust-popover');
@@ -868,39 +875,6 @@ function object_adjust_popover(obj)
 	var save = function() {
 		$.glue.object.save(obj);
 	};
-
-	// flip: two toggles. The state lives in a matrix() term of the object's
-	// transform, which the transform module owns and stores; its helpers are
-	// plain functions in this same scope, and are guarded in case the module
-	// was disabled. The active class is the pressed-in frame from the icon
-	// buttons' toggle state.
-	var flip_row = $.glue.popover.row(false);
-	var flip_v = $.glue.icon('flip-v', 'flip vertically');
-	var flip_h = $.glue.icon('flip-h', 'flip horizontally');
-	var flip_sync = function() {
-		var axes = (typeof transform_flip_axes === 'function') ?
-			transform_flip_axes(obj) : { h: false, v: false };
-		flip_v.classList.toggle('glue-btn-active', axes.v);
-		flip_h.classList.toggle('glue-btn-active', axes.h);
-	};
-	var flip_toggle = function(axis) {
-		return function() {
-			if (typeof transform_set_flip !== 'function') {
-				return;
-			}
-			var axes = transform_flip_axes(obj);
-			axes[axis] = !axes[axis];
-			transform_set_flip(obj, axes.h, axes.v);
-			save();
-			flip_sync();
-		};
-	};
-	flip_v.addEventListener('click', flip_toggle('v'));
-	flip_h.addEventListener('click', flip_toggle('h'));
-	flip_row.appendChild(flip_v);
-	flip_row.appendChild(flip_h);
-	pop.appendChild(flip_row);
-	flip_sync();
 
 	// z-level: to the ends or one place at a time. level_up/level_down swap
 	// with the nearest intersecting object and save both ends of the swap
@@ -928,33 +902,16 @@ function object_adjust_popover(obj)
 	});
 	pop.appendChild(z_row);
 
-	// transparency: the same slider-plus-field as the other panels
-	var opacity = $.glue.popover.number_row('opacity', {
-		min: 0, max: 100, step: 1, unit: '%',
-		value: object_transparency_percent(obj),
-		apply: function(pct, commit) {
-			obj.style.opacity = pct/100;
-			if (commit) {
-				save();
-			}
-		}
-	});
-	pop.appendChild(opacity.row);
-
 	// The reset clears everything this panel owns, and only then saves - one
 	// write, and nothing left behind that the save happened before. Same
-	// ordering as the edge panel's footer.
+	// ordering as the edge panel's footer. What it owns is the z-index alone
+	// now: it used to clear the flip and the opacity too, and those are the
+	// properties panel's to clear.
 	var footer = $.glue.popover.row(false);
 	footer.appendChild($.glue.popover.reset(
-		'no flip, no transparency, back in the default stack', function() {
-			if (typeof transform_set_flip === 'function') {
-				transform_set_flip(obj, false, false);
-			}
+		'no manual layer: back in the default stack', function() {
 			obj.style.zIndex = '';
-			obj.style.opacity = '';
 			save();
-			flip_sync();
-			opacity.set(100);
 		}));
 	pop.appendChild(footer);
 
@@ -962,30 +919,31 @@ function object_adjust_popover(obj)
 }
 
 //
-// --- background ------------------------------------------------------------
+// --- properties ------------------------------------------------------------
 //
-// One button that opens the panel where the object's background is set: what
-// it IS (a colour, a picture) and what the picture does with itself (tile it,
-// move it, scale it, or take it off again). It is the page's background panel,
-// one button shorter - the page's fourth is the scroll toggle, which is the
-// page's alone, since an object and its background move together and there is
-// nothing for such a control to say about one.
+// One button that opens the panel where an object's own properties are set:
+// what is under and on it (the background - a colour, a picture, and what the
+// picture does with itself), the inset between its box and its content
+// (padding), and two things about the object itself (its flip and its
+// transparency).
 //
-// It used to be two buttons in one: with no image the button WAS the file
-// input, and only an object that already had a picture got a panel at all.
-// That is the arrangement the page menu's background button had until
-// 2026-09-16, and it went the same way it went there - when the panel can set
-// the background itself, the menu button has nothing left to do but open it,
-// and it opens whether or not there is a background, since an object with none
-// needs somewhere to get one.
+// Everything in here is the object's OWN. How it sits against its neighbours
+// (z-level) is the adjustments panel's, and how it is shaped (rounded corners,
+// glow, shadow) is the edge panel's; those are relations and drawing, not
+// properties.
 //
-// The image belongs to the object rather than to the page: it uploads with
-// preferred_module 'object' and the object's name, which object_upload() in
-// module_object.inc.php takes. The url points at the
-// object, not at the file - see object_serve_resource() there. The colour is
-// the element's ordinary background-color: text objects have kept theirs in
-// text-background-color since long before there was a panel, and
-// object_alter_save() keeps it for every other kind of object.
+// It was three places until 2026-09-16, and danja's call joined them: the
+// background panel ("object background", the page's panel one button shorter),
+// the adjustments panel's flip and transparency, and the text menu's own
+// padding button. One panel per idea, and the idea here is the object's own
+// properties - so the panel is named for them.
+//
+// The panel is a list of sections. Each draws its own rows into the popover and
+// hands back the reset for what it owns; the footer runs them all and saves
+// once. A section can be absent, and absent means not drawn at all rather than
+// greyed: an image object has no background section (below), and only a text
+// object has a padding one (the text module is the only thing in hotglue that
+// stores padding).
 //
 
 function object_has_background(obj)
@@ -1007,9 +965,9 @@ function object_background_position(obj)
 	};
 }
 
-function object_background_popover(obj)
+function object_properties_popover(obj)
 {
-	var pop = $.glue.popover.open(obj, 'glue-background-popover');
+	var pop = $.glue.popover.open(obj, 'glue-properties-popover');
 	if (!pop) {
 		return;
 	}
@@ -1017,6 +975,88 @@ function object_background_popover(obj)
 		$.glue.object.save(obj);
 	};
 
+	// The sections, in the order they are drawn. Two of them are not always
+	// there, and absent means not drawn at all rather than greyed out: the panel
+	// is the object's properties panel, and a property this kind of object does
+	// not have is not a control that is waiting for something to arrive.
+	//
+	// An image object has no background section. The image module paints that
+	// object's picture with the object's own background-image
+	// (module_image.inc.php) and reads background-repeat/-position back out of
+	// it, so a panel that also owned "the background" would be a second owner of
+	// one picture - which is what took the background button off the class in
+	// the first place. The background is a section of this panel now rather than
+	// the whole of it, so what it costs an image object is the section: its flip
+	// and its transparency are in here with everything else.
+	//
+	// Only a text object has a padding section: text-padding-x / text-padding-y
+	// is the only padding hotglue stores (module_text.inc.php).
+	var background = (obj.classList.contains('image')) ? null :
+		object_background_section(pop, obj, save);
+	var padding = (obj.classList.contains('text')) ?
+		object_padding_section(pop, obj, save) : null;
+	var flip = object_flip_section(pop, obj, save);
+	var transparency = object_transparency_section(pop, obj, save);
+	var sections = [background, padding, flip, transparency];
+
+	// --- take it off, or put it back --------------------------------------
+	//
+	// Delete is the background's own - the picture is the only thing in here
+	// that can be taken off the object - and the reset is every section's, run
+	// in the order they were drawn with one save at the end of it: one write,
+	// and nothing left behind that the save happened before. Each section's
+	// reset clears only what is set, so a reset on an object nobody has touched
+	// writes nothing at all.
+	var footer = $.glue.popover.row(false);
+	if (background) {
+		footer.appendChild($.glue.popover.delete('remove the background image', function() {
+			background.remove();
+			$.glue.popover.close();
+		}));
+	}
+	footer.appendChild($.glue.popover.reset(
+		'reset tiling, scale, position, padding, flip and transparency to their defaults',
+		function() {
+			sections.forEach(function(section) {
+				if (section) {
+					section.reset();
+				}
+			});
+			save();
+		}));
+	pop.appendChild(footer);
+
+	$.glue.popover.show(pop);
+}
+
+// The background section: what the background IS (a colour, a picture) and what
+// the picture does with itself (tile it, move it, scale it, or take it off
+// again). It is the page's background panel, one button shorter - the page's
+// fourth is the scroll toggle, which is the page's alone, since an object and
+// its background move together and there is nothing for such a control to say
+// about one.
+//
+// The picture button used to BE the menu button: with no image the whole
+// button was the file input, and only an object that already had a picture got
+// a panel at all. That is the arrangement the page menu's background button had
+// until 2026-09-16, and it went the same way it went there - when the panel can
+// set the background itself, the menu button has nothing left to do but open
+// it, and it opens whether or not there is a background, since an object with
+// none needs somewhere to get one.
+//
+// The image belongs to the object rather than to the page: it uploads with
+// preferred_module 'object' and the object's name, which object_upload() in
+// module_object.inc.php takes. The url points at the
+// object, not at the file - see object_serve_resource() there. The colour is
+// the element's ordinary background-color: text objects have kept theirs in
+// text-background-color since long before there was a panel, and
+// object_alter_save() keeps it for every other kind of object.
+//
+// Returns the two things the panel's footer needs: remove(), which takes the
+// picture and its settings off the object, and reset(), which puts the rows it
+// owns back to their defaults without touching the picture itself.
+function object_background_section(pop, obj, save)
+{
 	// --- what the background is, and what it does -------------------------
 	//
 	// The page panel's row, one button shorter: a colour and a picture to set
@@ -1303,9 +1343,11 @@ function object_background_popover(obj)
 			}
 		}
 	});
-	// the panel has three number fields now, so the scale one is named - the
+	// this section has three number fields, so the scale one is named - the
 	// two above share glue-background-pos, and the bare .glue-popover-field
-	// would match all three
+	// would match all three. (The panel they sit in has six now that padding
+	// and transparency are in it, and the padding rows name themselves too,
+	// for the same reason.)
 	scale_row.row.classList.add('glue-background-scale');
 	pop.appendChild(scale_row.row);
 
@@ -1326,29 +1368,6 @@ function object_background_popover(obj)
 	};
 	sync_has();
 
-	// --- take it off, or put it back --------------------------------------
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.delete('remove the background image', function() {
-		bg_clear();
-		$.glue.popover.close();
-	}));
-	footer.appendChild($.glue.popover.reset('reset tiling, scale and position to their defaults', function() {
-		// no-repeat is the default tiling - the state a fresh upload leaves,
-		// and the one the renderer fills in when the attribute is absent;
-		// clearing the style to '' would tile the image live until the next
-		// load
-		obj.style.backgroundRepeat = 'no-repeat';
-		obj.style.backgroundPosition = '';
-		obj.style.backgroundSize = '';
-		at.x = 0;
-		at.y = 0;
-		sync_rows();
-		sync_repeat();
-		scale_row.set(100);
-		save();
-	}));
-	pop.appendChild(footer);
-
 	// the panel is the move mode, so it takes the object's drag on the way in
 	// and gives it back on the way out (pop.on_close, above) - but only when
 	// there is a picture to move: an object with none has nothing for a drag to
@@ -1356,7 +1375,245 @@ function object_background_popover(obj)
 	if (object_has_background(obj)) {
 		arm();
 	}
-	$.glue.popover.show(pop);
+
+	return {
+		remove: bg_clear,
+		reset: function() {
+			// Only what there is to reset: an object with no picture has no
+			// tiling, position or scale to put back, and writing no-repeat at it
+			// would store a setting about a picture that does not exist.
+			if (object_has_background(obj)) {
+				// no-repeat is the default tiling - the state a fresh upload
+				// leaves, and the one the renderer fills in when the attribute is
+				// absent; clearing the style to '' would tile the image live
+				// until the next load
+				obj.style.backgroundRepeat = 'no-repeat';
+				obj.style.backgroundPosition = '';
+				obj.style.backgroundSize = '';
+			}
+			at.x = 0;
+			at.y = 0;
+			sync_rows();
+			sync_repeat();
+			scale_row.set(100);
+		}
+	};
+}
+
+// The padding rows: the inset between the object's box and its content.
+//
+// Text objects only, and the reason is storage rather than taste: padding is
+// kept as text-padding-x / text-padding-y, which the text module writes and
+// renders (per-side attributes when the sides differ). Nothing else in hotglue
+// has padding to store, so the rows are not drawn for anything else - the panel
+// belongs to every object, but this section is the text module's.
+//
+// It was the text menu's own button until 2026-09-16 - "change padding", the
+// module's last control in the menu after the font and spacing redesign - and
+// moving it here is what the text-controls SOW said to do with it: the text's
+// inset from the object's sides is a property of the object, not typography.
+//
+// Padding is internal: the outer box is captured once here and every change
+// below compensates width/height by the padding it adds, so the object never
+// moves while the panel is open (see the drag handler this replaced).
+//
+// Returns an object with the section's reset.
+function object_padding_section(pop, obj, save)
+{
+	var outer_w = obj.offsetWidth;
+	var outer_h = obj.offsetHeight;
+	// padding can't eat more than half the shorter side without collapsing
+	// the content area; the field is allowed to say more, and the apply below
+	// clamps it
+	var max = Math.floor(Math.min(outer_w, outer_h)/2);
+	var pad = {};
+	var side = function(name) {
+		var v = parseInt(getComputedStyle(obj)['padding-'+name]);
+		return isNaN(v) ? 0 : v;
+	};
+	pad.top = side('top');
+	pad.right = side('right');
+	pad.bottom = side('bottom');
+	pad.left = side('left');
+
+	var apply = function(commit) {
+		obj.style.paddingLeft = pad.left+'px';
+		obj.style.paddingRight = pad.right+'px';
+		obj.style.paddingTop = pad.top+'px';
+		obj.style.paddingBottom = pad.bottom+'px';
+		obj.style.width = (outer_w-pad.left-pad.right)+'px';
+		obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
+		if (commit) {
+			save();
+		}
+	};
+
+	// one value for all four sides. Starts at the left padding, and shows
+	// what a drag would set all four to rather than chasing the knobs.
+	var all = $.glue.popover.number_row('padding', {
+		min: 0, max: max, step: 1, unit: 'px',
+		value: pad.left,
+		apply: function(v, commit) {
+			pad.left = pad.right = pad.top = pad.bottom =
+				Math.max(0, Math.min(max, Math.round(v)));
+			apply(commit);
+		}
+	});
+	// named, because the panel this section now sits in holds six number fields
+	// - the background's x, y and scale and this section's uniform row and four
+	// knobs - and a bare .glue-popover-field would match several. The four knobs
+	// need no name of their own: they are the whole of the fold, so
+	// .glue-popover-advanced reaches them. (The background section names its
+	// rows the same way: glue-background-pos and glue-background-scale.)
+	all.row.classList.add('glue-padding-row');
+	pop.appendChild(all.row);
+
+	// --- more knobs: each side on its own --------------------------------
+	var fold = $.glue.popover.fold(pop, 'more knobs');
+	pop.appendChild(fold.toggle);
+	var adv = fold.body;
+	var knob = function(label, name) {
+		var row = $.glue.popover.number_row(label, {
+			min: 0, max: max, step: 1, unit: 'px',
+			value: pad[name],
+			apply: function(v, commit) {
+				pad[name] = Math.max(0, Math.min(max, Math.round(v)));
+				apply(commit);
+			}
+		});
+		adv.appendChild(row.row);
+		return row;
+	};
+	var top = knob('top', 'top');
+	var right = knob('right', 'right');
+	var bottom = knob('bottom', 'bottom');
+	var left = knob('left', 'left');
+	pop.appendChild(adv);
+
+	return {
+		reset: function() {
+			// Only when there is padding to clear: the compensation below writes
+			// the object's width and height, and an object nobody has padded
+			// should be left alone rather than have the size it already has
+			// written back at it.
+			if (!(pad.top || pad.right || pad.bottom || pad.left)) {
+				return;
+			}
+			// No module default any more: reset means flush, the way the
+			// historical engine renders a bare text object. Clearing the inline
+			// padding is also what removes the stored text-padding-* keys on
+			// save, and the box is compensated so nothing moves here either.
+			obj.style.paddingLeft = '';
+			obj.style.paddingRight = '';
+			obj.style.paddingTop = '';
+			obj.style.paddingBottom = '';
+			var c = getComputedStyle(obj);
+			pad.top = parseInt(c.paddingTop);
+			pad.right = parseInt(c.paddingRight);
+			pad.bottom = parseInt(c.paddingBottom);
+			pad.left = parseInt(c.paddingLeft);
+			obj.style.width = (outer_w-pad.left-pad.right)+'px';
+			obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
+			all.set(pad.left);
+			top.set(pad.top);
+			right.set(pad.right);
+			bottom.set(pad.bottom);
+			left.set(pad.left);
+		}
+	};
+}
+
+// The flip: two toggles, one per axis, independent of each other.
+//
+// The state lives in a matrix() term of the object's transform, which the
+// transform module owns and stores; its helpers are plain functions in this
+// same scope, and are guarded here in case the module was disabled. The active
+// class is the pressed-in frame from the icon buttons' toggle state.
+//
+// It was the adjustments panel's until 2026-09-16 - a flip is a property of the
+// object itself, where z-level is its relation to its neighbours - and a menu
+// button before that, whose one click cycled through four states (none, h, v,
+// both). Two toggles make 'flip both axes' a state rather than a stop on the
+// way back to none.
+//
+// Returns an object with the section's reset.
+function object_flip_section(pop, obj, save)
+{
+	var flip_row = $.glue.popover.row(false);
+	var flip_v = $.glue.icon('flip-v', 'flip vertically');
+	var flip_h = $.glue.icon('flip-h', 'flip horizontally');
+	var flip_sync = function() {
+		var axes = (typeof transform_flip_axes === 'function') ?
+			transform_flip_axes(obj) : { h: false, v: false };
+		flip_v.classList.toggle('glue-btn-active', axes.v);
+		flip_h.classList.toggle('glue-btn-active', axes.h);
+	};
+	var flip_toggle = function(axis) {
+		return function() {
+			if (typeof transform_set_flip !== 'function') {
+				return;
+			}
+			var axes = transform_flip_axes(obj);
+			axes[axis] = !axes[axis];
+			transform_set_flip(obj, axes.h, axes.v);
+			save();
+			flip_sync();
+		};
+	};
+	flip_v.addEventListener('click', flip_toggle('v'));
+	flip_h.addEventListener('click', flip_toggle('h'));
+	flip_row.appendChild(flip_v);
+	flip_row.appendChild(flip_h);
+	pop.appendChild(flip_row);
+	flip_sync();
+
+	return {
+		reset: function() {
+			if (typeof transform_set_flip == 'function') {
+				var axes = transform_flip_axes(obj);
+				// nothing flipped, nothing written: the transform is left
+				// exactly as it is, so an object nobody has flipped keeps the
+				// rotation it may have without a write putting the same value
+				// back. (set_flip edits its own term and would leave a rotation
+				// alone, but a write is a write.)
+				if (axes.h || axes.v) {
+					transform_set_flip(obj, false, false);
+				}
+			}
+			flip_sync();
+		}
+	};
+}
+
+// Transparency: the object's opacity as a percentage, on the shared
+// slider-plus-field row. It was the adjustments panel's until 2026-09-16, and
+// a menu button with a hidden drag-distance gesture before that.
+//
+// Returns an object with the section's reset.
+function object_transparency_section(pop, obj, save)
+{
+	var opacity = $.glue.popover.number_row('opacity', {
+		min: 0, max: 100, step: 1, unit: '%',
+		value: object_transparency_percent(obj),
+		apply: function(pct, commit) {
+			obj.style.opacity = pct/100;
+			if (commit) {
+				save();
+			}
+		}
+	});
+	opacity.row.classList.add('glue-opacity-row');
+	pop.appendChild(opacity.row);
+
+	return {
+		reset: function() {
+			// clearing the inline value, not writing 1 into it: that is what
+			// object_alter_save() reads as "no opacity" (unset on the way out),
+			// so an object nobody has dimmed keeps the file it had
+			obj.style.opacity = '';
+			opacity.set(100);
+		}
+	};
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1428,11 +1685,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
 
-	// object adjustment: flip, z-level and transparency in one popout, in
-	// place of the three menu buttons that each hid a gesture - the flip's
-	// four-state cycle and the two drag-distance sliders. The PNG artwork of
-	// the removed buttons stays in this directory, like transform-rotate.png
-	// in the transform module's.
+	// object adjustment: z-level in one popout. It was flip, z-level and
+	// transparency, in place of the three menu buttons that each hid a gesture
+	// - the flip's four-state cycle and the two drag-distance sliders; the
+	// other two went to the properties button below on 2026-09-16. The PNG
+	// artwork of the removed buttons stays in this directory, like
+	// transform-rotate.png in the transform module's.
 	elem = $.glue.icon('change-layer', 'object adjustments');
 	elem.addEventListener('click', function(e) {
 		object_adjust_popover($.glue.owner(this));
@@ -1448,21 +1706,28 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-edge', elem, 3);
 
-	// background: the panel, which is where the object's background is set -
-	// the colour under it, the picture on it, and what the picture does. The
-	// menu button only opens it, and opens it whether or not there is a
-	// background, since an object with none has to get one in there; it used to
-	// be the file picker itself until the panel took that over.
+	// object properties: the panel, which is where the object's own properties
+	// are set - the background under and on it, the padding between its box and
+	// its content, and its flip and its transparency. The menu button only
+	// opens it, and opens it whatever the object has: an object with no
+	// background has to get one in there, and one with no padding has to be
+	// able to be given some; the button used to be the file picker itself until
+	// the panel took that over.
 	//
 	// Left-most in the top row (prio 0): the background is the object-wide
 	// setting the rest of the row sits on top of, and it is the button whose
-	// panel everything else in this menu is read against.
-	elem = $.glue.icon('background-set', 'object background');
+	// panel everything else in this menu is read against. The key and the
+	// tooltip were 'object background' until 2026-09-16, when the panel grew
+	// the padding, the flip and the transparency and stopped being about the
+	// background alone. The icon is unchanged - a filled square is what an
+	// object's properties panel looks like from here, and the button's place in
+	// the row has not moved.
+	elem = $.glue.icon('background-set', 'object properties');
 	elem.addEventListener('click', function(e) {
-		object_background_popover($.glue.owner(this));
+		object_properties_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('object', 'object-background', elem, 0, true);
+	$.glue.contextmenu.register('object', 'object-properties', elem, 0, true);
 
 	// Toggle whether content bigger than the object's box is cut off or spills
 	// out of it. Absent means visible, the browser default and what hotglue has
@@ -1534,7 +1799,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);
 
-	elem = $.glue.icon('object-props', 'object properties: id, classes and custom attributes');
+	// 'object identity', not 'object properties': the panel button above took
+	// that name on 2026-09-16, and it is the better one for the panel - what is
+	// under an object, and how it is flipped, is as much a property of it as
+	// the id is. What this modal is about is the object as an element: what it
+	// is called, what classes it carries, what it points at.
+	elem = $.glue.icon('object-props', 'object identity: id, classes and custom attributes');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {

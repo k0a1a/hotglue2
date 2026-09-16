@@ -427,10 +427,13 @@ function text_alter_render_early($args)
 	// engine: a text object without stored text-font-size/text-padding-*
 	// keys renders with the page's inherited font-size and no padding, and
 	// links inside text inherit the main.css a-reset (no underline, no blue)
-	// exactly as they did in 2010 (parity A/B, F2/F3). The "change padding"/
-	// "change font size" editor controls reset by clearing their own inline
+	// exactly as they did in 2010 (parity A/B, F2/F3). The padding rows and
+	// the "change font size" control reset by clearing their own inline
 	// override, which then immediately falls back to that inherent default
-	// (no reload needed, and nothing to keep in sync here)
+	// (no reload needed, and nothing to keep in sync here). The padding rows
+	// are the object properties panel's section, not a text control of their
+	// own, since 2026-09-16 - the storage is unchanged, which is why this file
+	// still owns the keys
 
 	// background-color
 	if (!empty($obj['text-background-color'])) {

@@ -270,7 +270,8 @@ function paste_object($args)
 
 	// the attributes that name a file in the page's shared directory - the
 	// same set the has_reference hooks answer for (image, download, video and
-	// the object background). note that page-level attributes and the custom
+	// the object's background picture, whatever the editor calls the panel it
+	// is set in). note that page-level attributes and the custom
 	// font list are deliberately absent: a font resolves by family name
 	// against the whole site, so there is nothing to copy.
 	$asset_attrs = [

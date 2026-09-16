@@ -19,117 +19,19 @@ function text_align_sync(elem) {
 	Alpine.$data(elem).tip = 'change text alignment ('+label+')';
 }
 
-// The padding panel: one value for all four sides up top, the sides
-// individually in a folded-away "more knobs" section, and a reset that goes
-// back to no padding (the inherent default). Twin of the object panels
-// (object_adjust_popover / object_edge_popover in object-edit.js).
-function text_padding_popover(obj)
-{
-	var pop = $.glue.popover.open(obj, 'glue-padding-popover');
-	if (!pop) {
-		return;
-	}
-	var save = function() {
-		$.glue.object.save(obj);
-	};
-
-	// Padding is internal: the outer box is captured once here and every
-	// change below compensates width/height by the padding it adds, so the
-	// object never moves while the panel is open (see the drag handler this
-	// panel replaced).
-	var outer_w = obj.offsetWidth;
-	var outer_h = obj.offsetHeight;
-	// padding can't eat more than half the shorter side without collapsing
-	// the content area; the field is allowed to say more, and the apply below
-	// clamps it
-	var max = Math.floor(Math.min(outer_w, outer_h)/2);
-	var pad = {};
-	var side = function(name) {
-		var v = parseInt(getComputedStyle(obj)['padding-'+name]);
-		return isNaN(v) ? 0 : v;
-	};
-	pad.top = side('top');
-	pad.right = side('right');
-	pad.bottom = side('bottom');
-	pad.left = side('left');
-
-	var apply = function(commit) {
-		obj.style.paddingLeft = pad.left+'px';
-		obj.style.paddingRight = pad.right+'px';
-		obj.style.paddingTop = pad.top+'px';
-		obj.style.paddingBottom = pad.bottom+'px';
-		obj.style.width = (outer_w-pad.left-pad.right)+'px';
-		obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
-		if (commit) {
-			save();
-		}
-	};
-
-	// one value for all four sides. Starts at the left padding, and shows
-	// what a drag would set all four to rather than chasing the knobs.
-	var all = $.glue.popover.number_row('padding', {
-		min: 0, max: max, step: 1, unit: 'px',
-		value: pad.left,
-		apply: function(v, commit) {
-			pad.left = pad.right = pad.top = pad.bottom =
-				Math.max(0, Math.min(max, Math.round(v)));
-			apply(commit);
-		}
-	});
-	pop.appendChild(all.row);
-
-	// --- more knobs: each side on its own --------------------------------
-	var fold = $.glue.popover.fold(pop, 'more knobs');
-	pop.appendChild(fold.toggle);
-	var adv = fold.body;
-	var knob = function(label, name) {
-		var row = $.glue.popover.number_row(label, {
-			min: 0, max: max, step: 1, unit: 'px',
-			value: pad[name],
-			apply: function(v, commit) {
-				pad[name] = Math.max(0, Math.min(max, Math.round(v)));
-				apply(commit);
-			}
-		});
-		adv.appendChild(row.row);
-		return row;
-	};
-	var top = knob('top', 'top');
-	var right = knob('right', 'right');
-	var bottom = knob('bottom', 'bottom');
-	var left = knob('left', 'left');
-	pop.appendChild(adv);
-
-	// Reset: back to no padding (there is no class default anymore - a bare
-	// text object renders flush, like the historical engine), with the box
-	// compensated so nothing moves here either. Clearing the inline padding
-	// is what removes the stored text-padding-* keys on save, the way the
-	// old click-to-reset did.
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset(
-		'back to the default (no padding)', function() {
-			obj.style.paddingLeft = '';
-			obj.style.paddingRight = '';
-			obj.style.paddingTop = '';
-			obj.style.paddingBottom = '';
-			var c = getComputedStyle(obj);
-			pad.top = parseInt(c.paddingTop);
-			pad.right = parseInt(c.paddingRight);
-			pad.bottom = parseInt(c.paddingBottom);
-			pad.left = parseInt(c.paddingLeft);
-			obj.style.width = (outer_w-pad.left-pad.right)+'px';
-			obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
-			save();
-			all.set(pad.left);
-			top.set(pad.top);
-			right.set(pad.right);
-			bottom.set(pad.bottom);
-			left.set(pad.left);
-		}));
-	pop.appendChild(footer);
-
-	$.glue.popover.show(pop);
-}
+// The padding panel lived here until 2026-09-16, as text_padding_popover(),
+// opened by the menu's own 'change padding' button. Both are gone: padding is
+// the inset between an object's box and its content, which is a property of the
+// object rather than of its typography, and it is now object_padding_section()
+// in modules/object/object-edit.js, a section of the object properties panel.
+//
+// It is the text module's to build all the same - text-padding-x /
+// text-padding-y is the only padding hotglue stores, so the object panel only
+// draws the section for a text object - and the code that moved is the code
+// that was here, with its own panel's open/footer/show taken off it. What the
+// text menu keeps is font, source and heading: what is left of its own
+// controls once the ones that were about the object rather than the type went
+// where they belong.
 
 $.glue.text = function()
 {
@@ -2135,12 +2037,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		}
 	});
-	$.glue.contextmenu.register('text', 'text-source', elem, 3);
+	// prio 2: it was 3, and moved up when the padding button between it and the
+	// font button left the menu (2026-09-16, to the object properties panel)
+	$.glue.contextmenu.register('text', 'text-source', elem, 2);
 
 
 	// The text menu's own two background buttons - "change background color"
-	// and "make background transparent" - are gone. The object background
-	// panel took over what an object's background is: its colour button is
+	// and "make background transparent" - are gone. The object properties
+	// panel's background section took over what an object's background is: its
+	// colour button is
 	// this same picker onto obj.style.backgroundColor, which text_alter_save()
 	// stores as text-background-color, and the picker's alpha row taken to 0%
 	// stores 'transparent', the keyword the second button used to set outright
@@ -2166,15 +2071,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-	// padding: the drag-with-shift gesture is a panel now (text_padding_popover
-	// above), the way the transparency and z-index buttons folded into the
-	// object adjustment panel
-	elem = $.glue.icon('padding', 'change padding');
-	elem.addEventListener('click', function(e) {
-		text_padding_popover($.glue.owner(this));
-		e.stopPropagation();
-	});
-	$.glue.contextmenu.register('text', 'text-text-padding', elem, 2);
+	// padding has no button here any more (2026-09-16). It was this menu's last
+	// control that was about the object rather than the type - the text's inset
+	// from its own box, which the object properties panel owns now, for every
+	// object that can have padding. The icon ('padding', a box with an inset
+	// frame) went with it; img/icons/padding.svg is still in the tree, like the
+	// other artwork of buttons that folded into a panel.
 
 	// semantic heading level: screen readers navigate pages by headings, so
 	// a text object can render as h1/h2/h3 (appearance stays the author's).

@@ -20,9 +20,12 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-// the flip now lives behind the 'object adjustments' popout: the adjustment
-// button is in the menu, and the two flip toggles are inside the panel
-const adjustBtn = (page) => page.getByTitle('object adjustments');
+// the flip lives behind the 'object properties' popout - it was the object
+// adjustments panel until 2026-09-16, and moved with the transparency when the
+// background panel became the object's properties panel. The button is in the
+// menu; the two flip toggles are inside the panel. The rotation handle is not
+// in any panel, so nothing here opens it.
+const propsBtn = (page) => page.getByTitle('object properties');
 const flipBtn = (page, axis) => page.getByTitle(axis == 'h' ? 'flip horizontally' : 'flip vertically');
 // the literal inline style, which is what the module parses - never the
 // computed one, where a rotation and a flip are the same matrix()
@@ -33,14 +36,14 @@ const degOf = async (page, id) =>
 
 async function select(page, id) {
 	await byId(page, id).click();
-	await expect(adjustBtn(page)).toBeVisible();
+	await expect(propsBtn(page)).toBeVisible();
 	// the menu and the handles fade in
 	await page.waitForTimeout(400);
 }
 
-async function openAdjust(page) {
-	await adjustBtn(page).click();
-	await expect(page.locator('.glue-popover.glue-adjust-popover')).toBeVisible();
+async function openProps(page) {
+	await propsBtn(page).click();
+	await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
 }
 
 // swing the rotation handle 'sweep' degrees clockwise around the object's
@@ -339,7 +342,7 @@ test('flipping keeps the rotation, and rotating keeps the flip',
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		await openAdjust(page);
+		await openProps(page);
 		await flipBtn(page, 'v').click();
 		await flipBtn(page, 'h').click();
 		let t = await transformOf(page, a);

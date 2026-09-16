@@ -1,6 +1,16 @@
-// The "change padding" panel: one slider-plus-field for all four sides, a
-// folded-away "more knobs" section with a row per side, and a reset back to
-// the module default.
+// Padding: one slider-plus-field for all four sides, a folded-away "more knobs"
+// section with a row per side, and a reset back to flush.
+//
+// The rows are a section of the OBJECT PROPERTIES panel, not a panel of their
+// own. They were the text menu's "change padding" button until 2026-09-16: the
+// text's inset from the object's sides is a property of the object, not
+// typography, which is what the text-controls SOW said when the Font and
+// Spacing panels were built. The section is still the text module's to build -
+// text-padding-x / text-padding-y is the only padding hotglue stores, so
+// object_properties_popover() in modules/object/object-edit.js only draws it
+// for a text object - and the panel's one reset runs its reset with the other
+// sections'. The rows carry .glue-padding-row so they can be named inside a
+// panel that has six number fields.
 //
 // Padding is internal: the outer box never moves, every row compensates the
 // object's width/height by the padding it adds. And storage follows the box:
@@ -23,7 +33,10 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const panel = (page) => page.locator('.glue-popover.glue-padding-popover');
+const panel = (page) => page.locator('.glue-popover.glue-properties-popover');
+// the uniform row, named: the panel it lives in has an x, a y, a scale and an
+// opacity row besides, so a bare .glue-popover-row would match the wrong one
+const uniform = (page) => panel(page).locator('.glue-padding-row');
 const boxOf = (page, id) => page.evaluate((i) => {
 	const el = document.getElementById(i);
 	return el.offsetWidth+','+el.offsetHeight;
@@ -40,7 +53,7 @@ async function openPanel(page, hg) {
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await byId(page, `${hg.pageName}.${ID}`).click();
-	await page.getByTitle(/change padding/).click();
+	await page.getByTitle('object properties').click();
 	await expect(panel(page)).toBeVisible();
 	return `${hg.pageName}.${ID}`;		// the DOM id the object element carries
 }
@@ -49,7 +62,7 @@ test('the uniform row applies one value to all four sides', async ({ page, hg })
 	const a = await openPanel(page, hg);
 	const before = await boxOf(page, a);
 
-	await fillRow(page, panel(page).locator('.glue-popover-row').first(), 30);
+	await fillRow(page, uniform(page), 30);
 
 	const pad = await page.evaluate((i) => {
 		const s = getComputedStyle(document.getElementById(i));
@@ -120,18 +133,43 @@ test('the "more knobs" section sets each side on its own and stores it per-side'
 		await expect.poll(() => boxOf(page, a)).toBe(before);
 	});
 
+test('the panel only draws the section for a text object, and there it is flush to start',
+	async ({ page, hg }) => {
+		// An iframe object: not a text object, so no padding section - the
+		// section is not greyed out, it is not built. The rest of the panel is.
+		hg.addObject(ID, {
+			type: 'iframe', module: 'iframe',
+			'object-left': '200px', 'object-top': '200px',
+			'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+			'iframe-url': '//example.org/',
+		});
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await byId(page, `${hg.pageName}.${ID}`).click();
+		await page.getByTitle('object properties').click();
+		await expect(panel(page)).toBeVisible();
+
+		await expect(panel(page).locator('.glue-padding-row')).toHaveCount(0);
+		await expect(panel(page).locator('.glue-popover-disclosure')).toHaveCount(0);
+		// and the panel is still the panel: the flip and the transparency
+		await expect(page.getByTitle('flip vertically')).toBeVisible();
+		await expect(panel(page).locator('.glue-opacity-row')).toBeVisible();
+	});
+
 test('reset goes back to no padding without moving the box',
 	async ({ page, hg }) => {
 		const a = await openPanel(page, hg);
 		const before = await boxOf(page, a);
 
-		await fillRow(page, panel(page).locator('.glue-popover-row').first(), 40);
+		await fillRow(page, uniform(page), 40);
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('40px');
 		expect(hg.readObject(ID).attrs['text-padding-x']).toBe('40px');
 
 		// there is no module default any more - reset means flush, like the
-		// historical engine renders a bare text object
+		// historical engine renders a bare text object. The panel's reset is
+		// one button and runs every section's, of which this object has only
+		// the padding's to do anything with.
 		await panel(page).locator('.glue-popover-reset').click();
 		const pad = await page.evaluate((i) => {
 			const s = getComputedStyle(document.getElementById(i));
@@ -147,4 +185,6 @@ test('reset goes back to no padding without moving the box',
 				&& attrs['text-padding-top'] === undefined
 				&& attrs['text-padding-left'] === undefined;
 		}).toBe(true);
+		// and the row shows it, rather than still reading the old value
+		await expect(uniform(page).locator('.glue-popover-field')).toHaveValue('0');
 	});

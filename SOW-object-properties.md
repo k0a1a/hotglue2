@@ -7,6 +7,16 @@ Goal: replace the current per-object "target" action with an "Object Properties"
 action that lets the user see and edit the object's identity/attributes, presented
 as the actual `<div>` element it renders as — honest and self-documenting.
 
+**Renamed 2026-09-16: the action is "object identity", not "object properties".** The
+object background panel took the name — it grew the padding, the flip and the transparency
+and became the object's properties panel (`object_properties_popover()` in
+`modules/object/object-edit.js`), which is a better claim on the words than this modal has.
+This modal is about the object as an element: what it is called, what classes it carries,
+what it points at. Its button's tooltip is now "object identity: id, classes and custom
+attributes", and `object-properties.spec.js` (which keeps its filename) looks it up as
+`/object identity/`. Nothing else about it changed: the modal, the service, the validation
+and the eleven tests are as this document describes them.
+
 ## Corrections to this document
 
 Three premises in the original draft were wrong for this codebase, and one risk it
