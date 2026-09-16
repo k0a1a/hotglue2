@@ -736,6 +736,33 @@ and `background-set.svg`):
 - Not covered by a spec: the page background panel still has none — the same gap as before,
   and now the only one in either panel. Neither of the two buttons that went had a spec;
   what noticed was the pair of specs that reach the picker through them.
+- **The rows that describe a picture grey out without one — danja's call.** *"In 'object
+  background' popout x, y, scale sliders should be grayed out unless background image in
+  set."* The tile toggle had done this alone since the panel was built, on the reasoning the
+  page panel's two toggles share (greyed and inert rather than hidden, `.glue-background-off`
+  being opacity plus `pointer-events: none` — a control that cannot act should take neither
+  the cursor nor a hover frame). Now the two position rows and the scale row wear the class
+  with it, so nothing in the panel can be dragged, typed into or hovered into promising a
+  move or a size for a background that is not there. `sync_has()` reads
+  `object_has_background()` once and toggles all four, and it moved down the function to
+  after the scale row — the last of the four to exist — so the one call that sets them stands
+  after everything it sets. The upload's `finish` calls it as before, so a picture dropped in
+  while the panel is open wakes all four where they stand; the two ways out of that state
+  (the colour button's clear, the footer's delete) both close the panel, so there is no
+  second waking to arrange. The armed drag was already conditional on a picture; this is the
+  same condition made visible.
+- **`css/edit.css`'s note on `.glue-background-off` was rewritten with it.** It spoke only of
+  toggles ("a toggle with nothing to toggle"), and the class now covers three labelled number
+  rows as well — where it also means the slider cannot be dragged and the field cannot be
+  typed into, which is worth saying in the one place the state is defined.
+- **The page panel's x, y and scale rows are the object's "to the letter" and still act on
+  nothing.** That panel greys its two toggles alone, so it now differs from the object's in
+  the one thing the two panels were built to share. Danja asked about the object panel and
+  the page's is a separate call; the same three lines are there to write if it is wanted.
+- **Both halves of it are pinned in `tests/e2e/object-background.spec.js`**: the no-image
+  test counts four greyed controls — the tile toggle and the three rows — and the upload test
+  counts none once a picture lands. The helper is one selector list of the four and a count
+  of how many carry the class, so a renamed class fails it rather than passing vacuously.
 
 ---
 

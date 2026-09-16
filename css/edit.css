@@ -1014,11 +1014,13 @@
 }
 
 .glue-background-off {
-	/* A toggle with nothing to toggle. Tile and scroll are about the page's
-	   background picture, and a page without one has no picture to act on:
-	   they grey out and step out of the pointer's way. The cursor goes with
-	   them (pointer-events: none), so the frame neither lights up on hover
-	   nor promises a click it would not honour. */
+	/* A control with nothing to act on. The tile and scroll toggles are about
+	   a background picture, and the object panel's two position rows and its
+	   scale row with them: without a picture there is nothing to tile, move or
+	   size, so they grey out and step out of the pointer's way. The cursor goes
+	   with them (pointer-events: none), so the frame neither lights up on hover
+	   nor promises a click it would not honour - and on a number row, nothing
+	   in it can be dragged or typed into either. */
 	opacity: 0.35;
 	pointer-events: none;
 }

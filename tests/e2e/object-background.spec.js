@@ -10,8 +10,9 @@
 // The button used to be two buttons in one - with no image it WAS the file
 // input, and only an object that already had a picture got a panel - and these
 // tests used to assert that. The upload is one of the panel's buttons now, at
-// 32px in an unlabelled row of three, and the tile toggle greys out when there
-// is no picture to tile.
+// 32px in an unlabelled row of three, and the four controls that describe the
+// picture - the tile toggle, x, y and scale - grey out and go inert together
+// while there is no picture to describe.
 //
 // The image belongs to the OBJECT: it uploads with preferred_module 'object'
 // - the module's own name, since upload_files() dispatches by calling
@@ -45,6 +46,13 @@ const pop = (page) => page.locator('.glue-background-popover');
 // the panel has three number fields (x, y and scale), so the scale one is
 // named - the bare .glue-popover-field matches all of them
 const scaleField = (page) => pop(page).locator('.glue-background-scale .glue-popover-field');
+// everything in the panel that is about the picture - the tile toggle and the
+// three number rows - and how many of the four are greyed out (.glue-background-
+// off, the opacity-and-pointer-events state the toggles have always used)
+const picture_controls = (page) => pop(page).locator(
+	'.glue-background-tile, .glue-background-pos, .glue-background-scale');
+const greyed = (page) => picture_controls(page).evaluateAll((els) =>
+	els.filter((e) => e.classList.contains('glue-background-off')).length);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
 const posOf = (page, id) => page.evaluate((i) => {
@@ -76,9 +84,13 @@ test('with no image, the button opens the panel and the picker is in it',
 		await expect(input).toBeAttached();
 		expect(await input.evaluate((e) => getComputedStyle(e).display),
 			'the picker is hidden on an object that has no background yet').not.toBe('none');
-		// nothing to tile, so the toggle is greyed out and inert
+		// nothing to tile, move or size, so the four controls that do those
+		// things are greyed out and inert: the tile toggle and the x, y and
+		// scale number rows
 		await expect(pop(page).locator('.glue-background-tile'))
 			.toHaveClass(/glue-background-off/);
+		expect(await greyed(page), 'a row about a picture that is not there is live')
+			.toBe(4);
 
 		// and with no picture to move the panel leaves the object its own drag
 		// - arming a background that is not there would swallow it silently
@@ -111,10 +123,13 @@ test('uploading sets it as the object background, stored on the object',
 		expect(fs.readdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared')))
 			.toContain('sample.png');
 		// the panel stays open - what you do next (tiling, sizing, moving) is in
-		// here - and the tile toggle has something to tile now
+		// here - and the picture wakes the four controls that describe it where
+		// they stand: the tile toggle and the x, y and scale rows
 		await expect(pop(page)).toBeVisible();
 		await expect(pop(page).locator('.glue-background-tile'))
 			.not.toHaveClass(/glue-background-off/);
+		await expect.poll(() => greyed(page),
+			{ message: 'the upload did not wake the picture rows' }).toBe(0);
 	});
 
 test('the colour button picks a colour, stored the way a text object stores one',

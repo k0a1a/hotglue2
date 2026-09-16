@@ -1147,17 +1147,7 @@ function object_background_popover(obj)
 	});
 	source_row.appendChild(repeat);
 	pop.appendChild(source_row);
-
-	// The tile toggle is about the picture: with none on the object it would be
-	// tiling a background that is not there, so it greys out and goes inert
-	// until one arrives - the upload above calls this too, so a picture dropped
-	// in while the panel is open wakes it where it stands. (The page's panel
-	// greys its scroll toggle with it, and for the same reason.)
-	var sync_has = function() {
-		repeat.classList.toggle('glue-background-off', !object_has_background(obj));
-	};
 	sync_repeat();
-	sync_has();
 
 	// --- move it around ---------------------------------------------------
 	//
@@ -1318,6 +1308,23 @@ function object_background_popover(obj)
 	// would match all three
 	scale_row.row.classList.add('glue-background-scale');
 	pop.appendChild(scale_row.row);
+
+	// The tile toggle and the three number rows are all about the picture:
+	// tiling it, moving it, sizing it. With none on the object they would be
+	// tiling, moving and sizing a background that is not there, so they grey out
+	// and go inert together until one arrives - the upload above calls this too,
+	// so a picture dropped in while the panel is open wakes them where they
+	// stand. (The page's panel greys its two toggles with it, and for the same
+	// reason.) Defined here rather than with the tile toggle above because it
+	// reaches all four, and the last of them is the row just appended.
+	var sync_has = function() {
+		var off = !object_has_background(obj);
+		repeat.classList.toggle('glue-background-off', off);
+		x_row.row.classList.toggle('glue-background-off', off);
+		y_row.row.classList.toggle('glue-background-off', off);
+		scale_row.row.classList.toggle('glue-background-off', off);
+	};
+	sync_has();
 
 	// --- take it off, or put it back --------------------------------------
 	var footer = $.glue.popover.row(false);
