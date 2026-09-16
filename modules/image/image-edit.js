@@ -299,12 +299,27 @@ function image_properties_popover(obj)
 
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('iframe', 'object-link');
+	// a sized image object *is* a background: the module paints the picture
+	// with the object's own background-image at background-size 100% 100%,
+	// and image_alter_save() reads background-repeat and -position back out
+	// of the element (module_image.inc.php). The object background panel
+	// would find the picture where it looks for a background, offer to clear
+	// it, and write its tiling and position into the image's own settings -
+	// two owners for one background. An unsized image object keeps its
+	// picture in an img child and would take the panel happily, but the veto
+	// is per class: a button that came and went with the object's size would
+	// be worse than one that never comes
+	$.glue.contextmenu.veto('image', 'object-background');
 	//
 	// register menu items
 	//
-	// the tiling, ratio and position adjustments of an image object are now
-	// part of the object's own panel (object-background in object-edit.js),
-	// so the context menu's duplicate buttons are gone
+	// the tiling, ratio and position adjustments of an image object have no
+	// buttons here any more. They left when the object background panel took
+	// them over, and the veto above puts that panel out of an image object's
+	// reach as well, so nothing in the editor writes image-background-repeat
+	// or -position now. The module still reads and renders them, and a
+	// picture drawn at exactly the object's size has nothing to tile and
+	// nowhere to be positioned, so the loss is on paper only
 
 	var elem;
 	// image-class items always sit in the top row; prio 11 puts this one

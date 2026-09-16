@@ -20,6 +20,11 @@
 // image objects already use. The colour is the object's own background-color:
 // a text object stores it as text-background-color, as it always has, and
 // every other kind as object-background-color.
+//
+// Image objects are the one kind without the button. A sized image object is
+// painted *as* a background - the module puts the picture on the object's own
+// background-image - so the panel and the module would be editing one
+// background between them, and image-edit.js vetoes the button for the class.
 
 const fs = require('fs');
 const path = require('path');
@@ -145,28 +150,22 @@ test('the colour button picks a colour, stored the way a text object stores one'
 
 test("on any other kind of object the colour is the object's own",
 	async ({ page, hg }) => {
-		// an image object: not a text object, so text_alter_save() does not
+		// an iframe object: not a text object, so text_alter_save() does not
 		// carry the colour - object_alter_save()/object_alter_render_early()
 		// do, in object-background-color.
 		//
-		// Unsized, deliberately: with image-file-width/-height the module paints
-		// the picture onto the OBJECT as its background-image, and the panel
-		// reads any background-image as a background of its own - the colour
-		// button would ask to clear "the current background image" before it
-		// opened the picker, and Playwright's default is to dismiss a dialog,
-		// which is the cancel path. Unsized, the module appends an <img> and the
-		// object's own background is empty, which is the state this test is
+		// An image object used to stand here - it is not a text object either
+		// - but the background button is vetoed for that class now (see the
+		// test below), so the panel cannot be opened on one. An iframe has no
+		// background of its own: the module puts a transparent one on the
+		// inner iframe, never on the object, which is the state this test is
 		// about.
 		const a = hg.addObject('100000000002', {
-			type: 'image', module: 'image',
-			'image-file': 'sample.png', 'image-file-mime': 'image/png',
+			type: 'iframe', module: 'iframe',
 			'object-left': '300px', 'object-top': '300px',
 			'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+			'iframe-url': '//example.org/',
 		});
-		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
-			{ recursive: true });
-		fs.copyFileSync(SAMPLE,
-			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		const attrsOf = () => hg.readObject('100000000002').attrs;
@@ -193,6 +192,44 @@ test("on any other kind of object the colour is the object's own",
 		expect(await page.evaluate(() =>
 			getComputedStyle(document.querySelector('.object')).backgroundColor))
 			.toBe('rgb(0, 255, 0)');
+	});
+
+test('an image object is the one kind without the button',
+	async ({ page, hg }) => {
+		// a sized image object is painted *as* a background: the module puts
+		// the picture on the object's own background-image, and
+		// image_alter_save() reads the tiling and position back out of that
+		// same property. So the panel would find the picture where it looks
+		// for a background, offer to clear it, and write its own settings into
+		// the image's - which is why image-edit.js vetoes the button for the
+		// class.
+		const img = hg.addObject('100000000003', {
+			type: 'image', module: 'image',
+			'image-file': 'sample.png', 'image-file-mime': 'image/png',
+			'image-file-width': '120', 'image-file-height': '80',
+			'object-left': '600px', 'object-top': '300px',
+			'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+		});
+		// and a text object well clear of it, so that what the second half of
+		// this test sees is the button the veto did NOT take away: an absence
+		// on its own would also be what a button that failed to render at all
+		// looks like
+		const txt = hg.addObject('100000000004', ATTRS, 'A');
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+
+		// the image object's menu comes up and its own items are in it
+		await byId(page, img).click();
+		await expect(page.locator('#glue-contextmenu-image-properties')).toBeVisible();
+		await expect(page.locator('#glue-contextmenu-object-background')).toHaveCount(0);
+
+		// the text object still gets the button - the veto is per class
+		await byId(page, txt).click();
+		await expect(bgBtn(page)).toBeVisible();
 	});
 
 test('the object serves its own background, and it survives a reload',

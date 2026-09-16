@@ -669,8 +669,9 @@ and `background-set.svg`):
   "with no image the button is the picker" test asserts what replaced it (the panel opens,
   the picker is in it, the toggle is greyed, and the object keeps its own drag). Two colour
   tests are new: one for a text object, which must still store `text-background-color`, and
-  one for an image object, which must store the new `object-background-color` and read it
-  back through a reload.
+  one for a non-text object, which must store the new `object-background-color` and read it
+  back through a reload. (That second one used an image object for a few hours; the veto
+  below took the button off that class, so its object is an iframe now.)
 - **A wrinkle the colour button inherits, noticed while writing its test.** An image object
   rendered with `image-file-width`/`-height` paints its picture as a `background-image` on
   the object *itself* (`module_image.inc.php`), and `object_has_background()` — "the object
@@ -680,11 +681,33 @@ and `background-set.svg`):
   module's own picture in the editor until the next load; the tile toggle and the armed
   drag write `background-repeat`/`-position`, which `image_alter_save()` reads back as
   `image-background-repeat`/`-position`. None of it is new — the panel's delete button has
-  done the same since the panel existed — and none of it is stored wrongly; it is undecided
+  done the same since the panel existed — and none of it is stored wrongly; it was undecided
   rather than broken: whether the panel owns "the object's background" or only "the
-  background the object module did not paint" is a call nobody has made. The spec works
-  around it (its image object is unsized, so the module appends an `<img>` and the object's
-  own background stays empty), which is also why it is written down here.
+  background the object module did not paint" was a call nobody had made. Danja made it the
+  same day; see the next bullet.
+- **An image object has no background button — danja's call on the wrinkle.** *"Remove
+  'object background' UI icon from image object menu."* So the answer is the second reading:
+  "an object's background" means, on every kind of object, the background the module did not
+  paint. `modules/image/image-edit.js` vetoes the item for the class, as it already vetoed
+  `object-link`; the veto runs at menu build time and splices the name out of both columns,
+  so the button is gone from an image object's menu
+  whatever its size, sized (picture on the object's background-image) or unsized (picture in
+  an `<img>`, where the panel would have worked but only until something resized the
+  object). The panel and the image module were never going to share `background-image`
+  politely — "has a background" *is* that property — and the module is the one that knows
+  what its painting means, so the panel is the one that leaves.
+- **What the veto leaves orphaned.** `image-background-repeat` and
+  `image-background-position` keep their reader and their renderer
+  (`image_alter_save()`, `module_image.inc.php`) but lose their last writer: they were the
+  context menu's tiling and position buttons, which went when the panel took them over, and
+  the panel now keeps out of an image object. A picture drawn at exactly the object's size
+  has nothing to tile and nowhere to be positioned, so nothing visible is lost. Written
+  down rather than settled, though: tiling an image object would be a request to the image
+  module's own panel, not to this one.
+- **And a third test pins it** (`tests/e2e/object-background.spec.js`): an image object's
+  menu comes up with its own items in it and no background button, and the text object on
+  the same page still gets one — an absence alone would also be what a button that failed
+  to render at all looks like.
 - Not covered by a spec: the page background panel still has none — the same gap as before,
   and now the only one in either panel.
 
