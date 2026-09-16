@@ -535,8 +535,9 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   and that closing the panel hands the object's own drag over again. There is still no
   page-background spec — the page's panel is untested.
 
-Shipped 2026-09-16 — the background's scroll toggle, and both background panels' toggles
-onto the icon set (danja's drawings, `img/icons/background-scroll.svg` and `tile.svg`):
+Shipped 2026-09-16 — the page background panel becomes the page background (danja's
+drawings, `img/icons/background-scroll.svg`, `tile.svg`, `background-color.svg` and
+`background-image.svg`):
 
 - **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
   row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
@@ -564,7 +565,35 @@ onto the icon set (danja's drawings, `img/icons/background-scroll.svg` and `tile
   business rather than the PNG sweep's. `▦` survives in the two toggles this did not touch
   (the grid panel's show and the image panel's decorative), and `.glue-background-repeat`
   is now an icon button, which is what `object-background.spec.js` asserts its state on.
-- Not covered by a spec: the page background panel still has none.
+- **Then what the background IS moved in as well, and the page menu's background button
+  became a plain opener.** The panel's first row is now two buttons: one opens the picker
+  (`background-color`), one is a file picker (`background-image`, via
+  `$.glue.upload.button()`), and the menu button that used to *be* the upload whenever the
+  page had no background now only opens the panel — so it opens whether or not there is a
+  background, which a page with none needs in order to get one. It is called "page
+  background" rather than "background image" for the same reason: it opens the background
+  whole, picture and colour. The page menu's own colour button went with it (danja's call:
+  moved, not duplicated), and its shift-click "type a colour instead" went with that — the
+  picker is the one way in now.
+- **The colour button clears the picture first, as it always has**, confirm and all,
+  because a colour sits *behind* an opaque picture: picking one with a picture up looks
+  like nothing happened. It is the one colour button in the editor that is not
+  `$.glue.popover.color_button()` — the shared one sets the colour of a thing that is
+  there, and this one replaces what the background is, and it can be cancelled before the
+  picker opens, which a `current()` callback cannot express. It also wears its own glyph
+  (`background-color`) rather than the shared `color-swatch`; if that is the shape the
+  other change-background-colour buttons should take, they have not been moved yet. That
+  clear *and* the panel's own remove button now share one `page_bg_clear()` — dropping the
+  picture is the same act whether you asked for it or asked for a colour in its place, and
+  the old colour button left the repeat/position/size attrs behind when it cleared, which
+  this does not.
+- **The panel opens on a page with no background now**, where the menu button would not
+  have opened it before. The tiling, scroll, position and scale rows are therefore
+  reachable with nothing to apply them to; they are not wrong (they write what the next
+  picture will obey) but they are ahead of themselves, and hiding them until there is a
+  picture is a call nobody has made yet.
+- Not covered by a spec: the page background panel still has none, and the menu button's
+  change of behaviour is exactly the kind of thing one would have caught.
 
 ---
 
@@ -620,7 +649,8 @@ onto the icon set (danja's drawings, `img/icons/background-scroll.svg` and `tile
   (the Font panel), `padding`, `background-color-remove` (make background transparent),
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
   `clip` (state shown by the pressed-in frame), `page-background-image` (both background
-  buttons), `tile` (the tile toggles in both background panels),
+  buttons), `tile` (the tile toggles in both background panels), `background-color` and
+  `background-image` (the page background panel's colour button and its upload),
   `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
   and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
   run-format strip, the four `align-*` inside the font panel's fold (still mapped by
@@ -632,9 +662,13 @@ onto the icon set (danja's drawings, `img/icons/background-scroll.svg` and `tile
   `composition-mode-absolute`/`-centered` — that last one shows the mode you are
   switching TO, preserving the old split where the tooltip describes the present and the
   button names the destination. Every colour button in every panel shares one glyph,
-  `color-swatch` (which succeeded `color-quadrant`); the change-background-colour
-  buttons are colour buttons and share it too, and only the make-transparent action
-  keeps a glyph of its own.
+  `color-swatch` (which succeeded `color-quadrant`) — with the single exception of the
+  page background panel's, which took `background-color` on 09-16. That one replaces what
+  the background *is* rather than setting the colour of a thing that is there, and it is
+  the only one whose answer can be cancelled before the picker opens; whether the
+  change-background-colour buttons elsewhere should follow it onto its own glyph is a call
+  nobody has made. Those buttons are colour buttons and share `color-swatch` for now, and
+  only the make-transparent action keeps a glyph of its own.
 
   Judge new artwork by rendering its ALPHA at 30px, which is what a mask paints: the
   colour in the file never reaches the screen, so a black drawing and a white one look

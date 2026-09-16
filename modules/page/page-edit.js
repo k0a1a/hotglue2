@@ -320,35 +320,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.menu.register('page', elem);
 
-	elem = $.glue.icon('color-swatch', 'change the background color');
-	elem.addEventListener('click', function(e) {
-		var bg = getComputedStyle(document.documentElement).backgroundImage;
-		if (bg.length != 0 && bg != 'none') {
-			if (confirm('Do you want to clear the current background image?')) {
-				$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page });
-				document.documentElement.style.backgroundImage = '';
-			} else {
-				$.glue.menu.hide();
-				return;
-			}
-		}
-		var col = getComputedStyle(document.documentElement).backgroundColor;
-		if (e.shiftKey) {
-			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
-			if (!col) {
-				return;
-			}
-		}
-		$.glue.colorpicker.show(col, false, function(col) {
-			document.documentElement.style.backgroundColor = col;
-		}, function(col) {
-			// update grid as well
-			$.glue.grid.update(true);
-			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-color': col });
-		});
-		$.glue.menu.hide();
-	});
-	$.glue.menu.register('page', elem);
+	// (the colour button that used to sit here is in the background panel now,
+	// next to the picture it shares the background with - see
+	// page_background_popover. Its shift-click "type a colour instead" went
+	// with it: the picker is the one way in, in a panel where the button sits
+	// next to the thing it colours.)
 
 	elem = $.glue.icon('page-new', 'create a new page');
 	elem.addEventListener('click', function(e) {
@@ -365,16 +341,33 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.menu.register('page', elem);
 
 	//
-	// page background: the menu button uploads when there is no image (the
-	// button IS the file input, like the object background's), and opens a
-	// panel - the object background panel's twin - when there is one. The
-	// page stores its background as attrs on the page object
-	// (page-background-file/-mime from the upload, plus the repeat, position
-	// and size attrs below), which page_render_object() applies for visitors.
+	// page background: one panel, the object background panel's twin, and the
+	// menu button now only opens it. What the background IS gets decided in
+	// there too - the colour and the picture both - which is why the menu's own
+	// colour button is gone. The page stores its background as attrs on the
+	// page object (page-background-file/-mime and -color, plus the repeat,
+	// position and size attrs below), which page_render_object() applies for
+	// visitors.
 	//
 	var page_bg_has = function() {
 		var bg = getComputedStyle(document.documentElement).backgroundImage;
 		return bg.length != 0 && bg != 'none';
+	};
+	// Take the picture off the page, and everything that described it off the
+	// page object. The panel's remove button and its colour button both do
+	// this - dropping the picture is the same act whether you asked for it or
+	// asked for a colour to put in its place - so they share the one function.
+	var page_bg_clear = function() {
+		var doc = document.documentElement;
+		doc.style.backgroundImage = '';
+		doc.style.backgroundRepeat = '';
+		doc.style.backgroundPosition = '';
+		doc.style.backgroundSize = '';
+		$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page }, function(data) {
+			// the file and its settings are gone with it
+			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
+				attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
+		});
 	};
 	// Where the page's background image sits, in px - the object panel's helper,
 	// pointed at the page's own element. The computed value is the one place the
@@ -395,6 +388,89 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!pop) {
 			return;
 		}
+
+		// --- what the background is -------------------------------------------
+		//
+		// A colour, a picture: the two things a page's background can be, and
+		// both are decided here now. The colour button came in from the page
+		// menu, the picture from the menu button, which used to BE the file
+		// picker whenever the page had no background yet. The panel is the
+		// page's background, so this is where its background is set.
+		var source_row = $.glue.popover.row(false);
+
+		// The colour button. Deliberately not $.glue.popover.color_button():
+		// that one sets the colour of a thing that is there, and this one
+		// replaces what the background is. The colour sits BEHIND an opaque
+		// picture, so picking one while a picture is up would look like
+		// nothing had happened - hence the clear first, with the confirm it
+		// has always had. That answer has to come before the picker opens,
+		// which is also why this is not the shared button with a hook on it.
+		var colour = $.glue.icon('background-color', 'change the background color');
+		colour.classList.add('glue-popover-color');
+		// the toolbar's icons are 32px; the panel's own controls are 26
+		colour.style.width = '26px';
+		colour.style.height = '26px';
+		colour.addEventListener('click', function(e) {
+			e.stopPropagation();
+			var cleared = false;
+			if (page_bg_has()) {
+				if (!confirm('Do you want to clear the current background image?')) {
+					return;
+				}
+				page_bg_clear();
+				cleared = true;
+			}
+			$.glue.colorpicker.show(getComputedStyle(doc).backgroundColor, false,
+				function(col) {
+					doc.style.backgroundColor = col;
+				},
+				function(col) {
+					// update grid as well
+					$.glue.grid.update(true);
+					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-color': col });
+				});
+			if (cleared) {
+				// the picture the rest of this panel describes has just gone,
+				// so the panel goes with it rather than sitting there showing
+				// rows about a background that is not there any more
+				$.glue.popover.close();
+			}
+		});
+		source_row.appendChild(colour);
+
+		// The picture itself: the page menu's upload, moved in with the rest.
+		// $.glue.upload.button() lays a transparent file input over the icon,
+		// so the button IS the picker and wants no click handler of its own.
+		// The upload leaves the panel open, because what you do next - tiling,
+		// sizing, moving - is all in here.
+		var image = $.glue.icon('background-image', 'upload a background image');
+		image.classList.add('glue-background-image');
+		image.style.width = '26px';
+		image.style.height = '26px';
+		$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
+			tooltip: 'upload a background image',
+			error: function(e) {
+				if (e && e.target && e.target.status) {
+					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+				} else {
+					$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+					// DEBUG
+					console.error(e);
+				}
+			},
+			finish: function(data) {
+				if (!data) {
+					$.glue.error('There was a problem communicating with the server');
+				} else if (data['#error']) {
+					$.glue.error('There was a problem uploading the file ('+data['#data']+')');
+				} else {
+					// the timestamp here is to trick any caching going on
+					doc.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
+				}
+			}
+		});
+		source_row.appendChild(image);
+		pop.appendChild(source_row);
 
 		// --- tile or not ---------------------------------------------------
 		//
@@ -561,18 +637,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// --- take it off, or put it back --------------------------------------
 		var footer = $.glue.popover.row(false);
 		footer.appendChild($.glue.popover.delete('remove the background image', function() {
-			doc.style.backgroundImage = '';
-			doc.style.backgroundRepeat = '';
-			doc.style.backgroundPosition = '';
-			doc.style.backgroundSize = '';
+			page_bg_clear();
 			$.glue.popover.close();
-			$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page }, function(data) {
-				// the file and its settings are gone with it
-				$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
-					attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
-			});
-			// the menu button goes back to being a file picker
-			page_bg_sync(page_bg_button);
 		}));
 		footer.appendChild($.glue.popover.reset('reset tiling, position and scale to their defaults', function() {
 			doc.style.backgroundRepeat = '';
@@ -592,48 +658,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		$.glue.popover.show(pop);
 	};
-	// the menu button: upload when there is no image, the panel when there is
-	var page_bg_button = $.glue.icon('page-background-image', 'background image');
-	var page_bg_data = { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' };
-	$.glue.upload.button(page_bg_button, page_bg_data, {
-		tooltip: 'background image',
-		error: function(e) {
-			if (e && e.target && e.target.status) {
-				$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
-			} else {
-				$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
-				// DEBUG
-				console.error(e);
-			}
-			$.glue.menu.hide();
-		},
-		finish: function(data) {
-			if (!data) {
-				$.glue.error('There was a problem communicating with the server');
-			} else if (data['#error']) {
-				$.glue.error('There was a problem uploading the file ('+data['#data']+')');
-			} else {
-				// the timestamp here is to trick any caching going on
-				document.documentElement.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
-			}
-			$.glue.menu.hide();
-			page_bg_sync(page_bg_button);
-		}
-	});
-	var page_bg_input = page_bg_button.querySelector('input[type=file]');
-	var page_bg_sync = function(button) {
-		var has = page_bg_has();
-		page_bg_input.style.display = has ? 'none' : '';
-		button.title = has ? 'background image: tile it, move it, remove it' : 'background image';
-	};
-	page_bg_button.addEventListener('glue-menu-activate', function(e) {
-		page_bg_sync(this);
-	});
+	// The menu button opens the panel, and that is all it does now: the upload
+	// it used to be is in there with the colour button. It opens whether or
+	// not the page has a background - it has to, since a page with none gets
+	// one in there. "Page background" rather than "background image" because
+	// what it opens is the page's background whole: the picture, the colour
+	// under it, and what each of them does.
+	var page_bg_button = $.glue.icon('page-background-image', 'page background');
 	page_bg_button.addEventListener('click', function(e) {
-		if (page_bg_has()) {
-			page_background_popover();
-			e.stopPropagation();
-		}
+		page_background_popover();
+		e.stopPropagation();
 	});
 	$.glue.menu.register('page', page_bg_button);
 
