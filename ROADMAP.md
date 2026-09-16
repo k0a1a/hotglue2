@@ -907,8 +907,10 @@ What that came to:
   buttons — the page's and the object's — danja's drawing, since 09-16),
   `tile` (the tile toggles in both background panels), `background-image`
   (the picture button, the upload, in both background panels),
-  `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
-  and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
+  `change-layer` (the adjustments button) with its
+  `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, `flip-vertical`/`flip-horizontal` (the
+  properties panel's two toggles — danja's redraw, in place of the set's `flip-v`/`flip-h`,
+  09-16), the four `font-style-*` on the
   run-format strip, the four `align-*` inside the font panel's fold (still mapped by
   what the artwork shows — two names are swapped at source), `download`/`upload` (the
   solid arrows, redrawn upstream in the `extra/` folder), `text-object`,

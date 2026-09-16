@@ -1546,8 +1546,11 @@ function object_padding_section(pop, obj, save)
 function object_flip_section(pop, obj, save)
 {
 	var flip_row = $.glue.popover.row(false);
-	var flip_v = $.glue.icon('flip-v', 'flip vertically');
-	var flip_h = $.glue.icon('flip-h', 'flip horizontally');
+	// The artwork is flip-vertical.svg and flip-horizontal.svg - the words of
+	// the tooltips beside them, and danja's redraw of both (the set's
+	// flip-v/flip-h, which this called until 2026-09-16).
+	var flip_v = $.glue.icon('flip-vertical', 'flip vertically');
+	var flip_h = $.glue.icon('flip-horizontal', 'flip horizontally');
 	var flip_sync = function() {
 		var axes = (typeof transform_flip_axes === 'function') ?
 			transform_flip_axes(obj) : { h: false, v: false };
