@@ -702,6 +702,24 @@
 	width: 180px;
 }
 
+.glue-object-link-popover {
+	/* wider than the other panels: a url is long, and a field it cannot be
+	   read in is a field people paste into blind */
+	width: 330px;
+}
+
+.glue-object-link-field {
+	/* The url and target fields of the object link panel. Sized by the row
+	   rather than by a number: what is left after the label, whatever the
+	   label's length, so the address is read whole however long it is. The
+	   flex-basis of 0 is what makes the field take the remainder - the
+	   number field it shares .glue-popover-field with is three digits wide
+	   on purpose, and would leave this one at 44px. */
+	flex: 1 1 0;
+	width: auto;
+	min-width: 0;
+}
+
 .glue-popover-unit {
 	/* what follows a number field: em, px, %, or the × of a line-height
 	   multiple */

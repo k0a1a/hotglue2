@@ -1625,6 +1625,153 @@ function object_transparency_section(pop, obj, save)
 	};
 }
 
+// --- link -------------------------------------------------------------------
+
+// Where clicking the object sends the reader: a panel beside the object, where
+// it used to be a browser prompt().
+//
+// The prompt asked both questions in one string - the address, a space, the
+// target - and its one line of help was the only thing that said so. Two rows
+// say it instead, and the address can be READ: a native box cannot be widened,
+// styled, or shown what the object already has, which is why editing an
+// existing link meant parsing it back out of the text you were given.
+//
+// What the prompt did that this does not lose. The link is not a dom
+// attribute: it is stored (object-link, object-target) and applied by the
+// renderer in viewing mode only, which is why this is handed the object as
+// loaded rather than reading the element, and why every change is a backend
+// write. Those writes are not undoable - undo replays the dom, and a link
+// never appears in it. The prompt was not undoable either.
+//
+// Nothing is written until the field is committed: Enter, or clicking away.
+// That is the one place this panel differs from the ones beside it, which
+// apply while they are being dragged - a url is typed, and half a url is not a
+// value worth storing. Escape therefore drops what was typed since the last
+// commit, the way Escape on the prompt dropped everything; clicking away
+// commits, because the field blurs before the click lands.
+//
+// The button is vetoed for iframe and download objects (modules/iframe,
+// modules/download): an iframe is already somewhere, and a download is what
+// clicking it does.
+function object_link_popover(obj, data)
+{
+	var pop = $.glue.popover.open(obj, 'glue-object-link-popover');
+	if (!pop) {
+		return;
+	}
+	var link = data['object-link'] || '';
+	var target = data['object-target'] || '';
+
+	var url_row = $.glue.popover.row('link');
+	var url_input = document.createElement('input');
+	url_input.type = 'text';
+	url_input.className = 'glue-popover-field glue-object-link-field';
+	url_input.value = link;
+	// the prompt's examples, which were this feature's only documentation
+	url_input.title = 'a full address (https://hotglue.me), a page name, or an anchor (#top)';
+	url_row.appendChild(url_input);
+	pop.appendChild(url_row);
+
+	// The target, folded away: _blank is the whole of it for almost everyone,
+	// and the row the button is named for should be the one you see. Every
+	// other fold in the editor is 'more knobs' - controls an object may never
+	// use - and this one is different: a target is STORED, so an object that
+	// has one must not have it hidden in a closed fold. The label says so,
+	// and is rewritten as the value is committed, so it can never stand there
+	// naming a target that has since been changed or taken off.
+	var fold = $.glue.popover.fold(pop, 'target');
+	var target_row = $.glue.popover.row(false);
+	var target_input = document.createElement('input');
+	target_input.type = 'text';
+	target_input.className = 'glue-popover-field glue-object-link-field';
+	target_input.value = target;
+	target_input.title = '_blank opens a new window; a frame name works too';
+	target_row.appendChild(target_input);
+	fold.body.appendChild(target_row);
+	pop.appendChild(fold.toggle);
+	pop.appendChild(fold.body);
+
+	var footer = $.glue.popover.row(false);
+	var remove = $.glue.popover.delete('take the link off the object', function() {
+		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
+		if (target) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
+		}
+		link = '';
+		target = '';
+		url_input.value = '';
+		target_input.value = '';
+		sync();
+		fold_label();
+	});
+	footer.appendChild(remove);
+	pop.appendChild(footer);
+
+	// the remove is only offered when there is something to remove, the way
+	// the properties panel only offers its delete when there is a picture
+	var sync = function() {
+		remove.style.display = link ? '' : 'none';
+	};
+
+	// fold() owns the label and rewrites it on every toggle, so the disclosure
+	// is read back for the arrow it has just written and the value put after
+	// it - this listener is registered second on the same element and so runs
+	// after fold's own.
+	var fold_label = function() {
+		var disclosure = fold.toggle.querySelector('.glue-popover-disclosure');
+		disclosure.textContent = (fold.body.style.display == 'none' ?
+			'\u25b8' : '\u25be')+' target'+(target ? ': '+target : '');
+	};
+	fold.toggle.querySelector('.glue-popover-disclosure').addEventListener('click', fold_label);
+
+	var write = function() {
+		var url = url_input.value.trim();
+		var tgt = target_input.value.trim();
+		// an emptied field takes the link off, which is what an emptied
+		// prompt box did too
+		if (url) {
+			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-link': url });
+		} else if (link) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
+		}
+		// a target with no link to open is not a thing to store
+		if (tgt && url) {
+			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-target': tgt });
+		} else if (target) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
+		}
+		link = url;
+		target = url ? tgt : '';
+		// the fields are left showing what was stored, trimmed - the same
+		// tidying a settled number field gets
+		url_input.value = link;
+		target_input.value = target;
+		sync();
+		fold_label();
+	};
+
+	// Enter commits from either field - change would fire on blur anyway, but
+	// only when focus leaves, and Enter is how a url is finished
+	var on_enter = function(e) {
+		if (e.key == 'Enter') {
+			e.preventDefault();
+			write();
+		}
+	};
+	url_input.addEventListener('change', write);
+	target_input.addEventListener('change', write);
+	url_input.addEventListener('keydown', on_enter);
+	target_input.addEventListener('keydown', on_enter);
+
+	sync();
+	fold_label();
+	$.glue.popover.show(pop);
+	url_input.focus();
+	// selected rather than just focused: a link is usually replaced whole,
+	// and a new one has nothing in the field to select
+	url_input.select();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	//
 	// register menu items
@@ -1765,45 +1912,17 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('object', 'object-overflow', elem, 4);
 
 	elem = $.glue.icon('object-link', 'make the object a link');
+	// the link is not on the element - the renderer adds it in viewing mode -
+	// so the panel is opened once the stored object has arrived, and it is
+	// that load the panel reads the current link out of
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
-		// get link
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
 			if (data['#error']) {
 				$.glue.error(data['#error']);
-			} else {
-				var old_link = '';
-				if (data['#data']['object-link'] !== undefined) {
-					old_link = data['#data']['object-link'];
-				}
-				var old_target = '';
-				if (data['#data']['object-target'] !== undefined) {
-					old_target = data['#data']['object-target'];
-				}
-				old_linkdata = (old_target == '') ? old_link : old_link + ' ' + old_target;
-				var linkdata = prompt('Enter link (e.g. http://hotglue.me or pagename or anchor name).\nTo add target specify its name after a space (e.g. http://hotglue.me _blank)', old_linkdata);
-				if (linkdata === null || linkdata == old_link + ' ' + old_target) {
-					return;
-				}
-				t = linkdata.split(' '); // if there is no space split() returns the string
-				link = t[0];
-				target = t[1];
-
-				if (link == undefined) {
-					$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
-				} else {
-					// set link
-					$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-link': link });
-					if (target !== undefined) {
-						// set target
-						$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-target': target });
-					}
-				}
-				if (old_target !== '' && (target == '' || target == undefined)) {
-					// delete target
-					$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
-				}
+				return;
 			}
+			object_link_popover(obj, data['#data']);
 		}, false);
 	});
 	$.glue.contextmenu.register('object', 'object-link', elem);

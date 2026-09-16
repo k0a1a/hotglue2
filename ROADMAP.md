@@ -850,6 +850,45 @@ What that came to:
   through the renamed button and class, and `touch-editing.spec.js`'s padding tests name their
   slider now — the panel has five, and `.first()` was landing on the x row.
 
+Shipped 2026-09-16 — **"make the object a link" stops being a `prompt()`**. Danja: *"replace
+'make object a link' (browser native) URL prompt with a prompt that looks like our other
+popouts."* It was the last native dialog in the editor, and it was doing two jobs badly: the
+address and the target went into one string separated by a space, and the only thing that said
+so was the prompt's own help line. Editing an existing link meant reading it back out of that
+string and reassembling it.
+
+- **The panel is a `link` row, a folded `target` row, and a delete.** `object_link_popover()`
+  in `modules/object/object-edit.js`, `$.glue.popover` parts throughout. The address is now a
+  field you can read a url in — `glue-object-link-popover` is 330px wide (the widest panel,
+  after the properties panel's 230) and its two fields take the row's remainder rather than a
+  width, through `.glue-object-link-field`; the number field they share
+  `.glue-popover-field` with is 44px on purpose and would have left them at that.
+- **The fold names what it holds, which no other fold does.** Every other fold in the editor
+  is "more knobs" — controls an object may never use. A target is *stored*: an object that has
+  one must not have it invisible in a closed fold, so this one's label reads `target: _blank`
+  and is rewritten as the value is committed, so it can never stand there naming a target that
+  has since been changed or taken off. `fold()` owns the label, so the disclosure is read back
+  for the arrow it has written — a listener registered second on the same element, running
+  after fold's own.
+- **Nothing is written until the field is committed** — Enter, or clicking away. Every other
+  panel applies while it is being dragged; a url is typed, and half a url is not a value worth
+  storing. Escape therefore drops what was typed since the last commit, the way Escape on the
+  prompt dropped everything, and clicking away commits, because the field blurs before the
+  outside click lands. An emptied address field takes the link off, and a target with no link
+  to open is not stored. None of it is undoable either way: undo replays the DOM, and a link
+  is never in the DOM — the renderer wraps the object in an `<a>` in viewing mode only
+  (`module_object.inc.php:414`), and the panel is handed the object as loaded for that reason.
+- **The button, its icon and its prio are unchanged**, and so is its veto for iframe and
+  download objects. `glue.load_object` is still the round trip that gets the current link; the
+  panel just replaces what the callback then did with it.
+- **`tests/e2e/object-link.spec.js` is new** — the link action had no spec at all. Four tests:
+  an object with no link gets one typed in, an existing link and target are shown whole and
+  taking it off takes the target too, Escape discards where clicking away commits, and the
+  renderer wraps the object in viewing mode and not in the editor. Two traps are written into
+  it: `fill()` fires `change` and would commit before the test meant to, and `ctrl+a` is the
+  editor's select-all-objects with a `preventDefault()`, so the field is emptied one Backspace
+  at a time. **Not run** — the suite is danja's to run.
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
