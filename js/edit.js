@@ -476,6 +476,54 @@ $.glue.popover = function()
 			}
 			return row;
 		},
+		// The house style for a panel's controls, in two pieces: the row of
+		// icon buttons that IS the panel - one per thing it can do, each named
+		// in its tooltip and nowhere else - and the "more knobs" fold under it
+		// holding everything that is a value rather than an act.
+		//
+		// The whole convention, because writing it down once is the point of
+		// these two:
+		//
+		//   * one row per panel, first in it, unlabelled - three, four or five
+		//     icons read as a row, and they are the panel's own 26px, like every
+		//     other control in a panel (the toolbar's are 32);
+		//   * one fold per panel, always at (pop, 'more knobs') - never two,
+		//     since a spec locating .glue-popover-advanced inside a panel
+		//     should find exactly one, and never a fold named for its
+		//     contents;
+		//   * every slider and every field goes inside that fold, however
+		//     central it is to the panel: the icons are what the panel looks
+		//     like from outside, the fold is what it turns into when you work;
+		//   * the delete and the reset are the fold's last row, not a footer
+		//     under the panel;
+		//   * a panel with nothing to fold has an icon row and no fold at all,
+		//     rather than an empty one;
+		//   * the one panel whose fold is not 'more knobs' is the link panel,
+		//     whose folded row holds a STORED value (a target) rather than a
+		//     knob, and says so in its label (object_link_popover).
+		//
+		// Returns the empty row to fill; $.glue.popover.fold() builds the fold.
+		// Append the row to the panel first and the fold after it, filling the
+		// fold's body in between - order into the panel is what fixes the DOM.
+		icon_row: function() {
+			var row = $.glue.popover.row(false);
+			row.classList.add('glue-popover-icons');
+			return row;
+		},
+		// One action in such a row: $.glue.icon() with the panel's own 26px box
+		// - the size every other control in a panel is, the colour buttons and
+		// the font panel's toggles alike; $.glue.icon() sizes its own box at the
+		// toolbar's 32, so this is the bring-down, and the mask follows it in
+		// css/edit.css (.glue-popover-icon::before). Plus the class that says
+		// which row the button belongs to, so a panel cannot add an action and
+		// forget either.
+		icon_button: function(name, title) {
+			var b = $.glue.icon(name, title);
+			b.classList.add('glue-popover-icon');
+			b.style.width = '26px';
+			b.style.height = '26px';
+			return b;
+		},
 		// A slider paired with a number field for the same value, kept in
 		// step. Lives here rather than in the module that first needed it,
 		// because the panels are meant to be each other's twins: the font

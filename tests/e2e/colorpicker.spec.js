@@ -31,7 +31,10 @@ for (const [name, centered] of [['infinite', false], ['centered', true]]) {
 		await page.locator(`[id="${a}"]`).click();
 
 		// the button that opens the picker is the background panel's colour
-		// button, so it is the panel that has to be up first
+		// button, so it is the panel that has to be up first. It is one of the
+		// panel's icon-row actions - the row the panel opens onto - so nothing
+		// here has to open the "more knobs" fold, and this spec did not change
+		// when everything with a label moved into it (2026-09-17).
 		const menu_btn = page.locator('#glue-contextmenu-object-properties');
 		await expect(menu_btn).toBeVisible();
 		await page.waitForTimeout(400);		// the menu fades in

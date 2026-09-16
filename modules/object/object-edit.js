@@ -504,8 +504,13 @@ function object_edge_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(radius.row);
 
+	// The fade: the edge softening inwards from the object's own sides. It is
+	// the one edge control the panel does not show - danja's call on 2026-09-17,
+	// when the panel became the house style's shape: style and colour, then the
+	// two numbers they act on, and everything else folded. Appended at the foot
+	// of this function, into the fold, because the appends are what fix the
+	// panel's order and the fold is built below.
 	var fade = $.glue.popover.number_row('fade', {
 		min: 0, max: max, step: 1, unit: 'px',
 		value: object_edge_fade(obj),
@@ -516,7 +521,6 @@ function object_edge_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(fade.row);
 
 	// A border of the object's own, which only became possible when the
 	// editor's selection stopped being a border on this same element.
@@ -530,7 +534,6 @@ function object_edge_popover(obj)
 			}
 		}
 	});
-	pop.appendChild(border.row);
 
 	// Style and colour on one row: neither is a number, and a border is one
 	// thing to think about rather than three.
@@ -582,19 +585,34 @@ function object_edge_popover(obj)
 		});
 	colour.classList.add('glue-border-color');
 	style_row.appendChild(colour);
-	pop.appendChild(style_row);
 
-	// --- more knobs: the glow ---------------------------------------------
+	// --- what the panel shows ---------------------------------------------
 	//
-	// A halo painted AROUND the box, which is a different mechanism from
-	// the fade above and worth keeping apart from it: the fade is a mask,
-	// so it takes the text with it, while this is a box-shadow and never
-	// touches the content. Folded away because most objects will never want
-	// it, and the panel is already four rows.
+	// Four controls, in the order danja named them (2026-09-17): the style and
+	// the colour, which are what a border IS, then the two numbers they act on -
+	// how round the box is, and how thick the line. The rows were built in
+	// another order above; what the panel looks like is the order of these
+	// appends and nothing else.
+	pop.appendChild(style_row);
+	pop.appendChild(radius.row);
+	pop.appendChild(border.row);
+
+	// --- more knobs: the fade and the glow --------------------------------
+	//
+	// Everything else the object's edge can do, and most objects want none of
+	// it. The fade is first, because it is the oldest and the plainest: it
+	// softens the object inwards from its own sides.
+	//
+	// The glow is a halo painted AROUND the box, which is a different mechanism
+	// from the fade beside it and worth keeping apart from it: the fade is a
+	// mask, so it takes the text with it, while this is a box-shadow and never
+	// touches the content.
 	var fold = $.glue.popover.fold(pop, 'more knobs');
 	pop.appendChild(fold.toggle);
 	var adv = fold.body;
 	pop.appendChild(adv);
+
+	adv.appendChild(fade.row);
 
 	var glow = object_glow(obj);
 	var write_glow = function(commit) {
@@ -886,9 +904,15 @@ function object_adjust_popover(obj)
 	// with the nearest intersecting object and save both ends of the swap
 	// themselves; to_top/to_bottom follow the menu's old pattern of save on
 	// the way out.
-	var z_row = $.glue.popover.row(false);
+	//
+	// Four actions and a reset is the house style's first half already - this
+	// panel has nothing that is a value rather than an act - so it takes the
+	// shared row and button classes and stays as it is, with no fold. (A panel
+	// with nothing to fold has an icon row and no fold, rather than an empty
+	// one: the convention, in js/edit.js beside icon_row().)
+	var z_row = $.glue.popover.icon_row();
 	var z_btn = function(icon, title, fn) {
-		var b = $.glue.icon(icon, title);
+		var b = $.glue.popover.icon_button(icon, title);
 		b.addEventListener('click', fn);
 		z_row.appendChild(b);
 	};
@@ -981,10 +1005,22 @@ function object_properties_popover(obj)
 		$.glue.object.save(obj);
 	};
 
-	// The sections, in the order they are drawn. Two of them are not always
-	// there, and absent means not drawn at all rather than greyed out: the panel
-	// is the object's properties panel, and a property this kind of object does
-	// not have is not a control that is waiting for something to arrive.
+	// The panel is the house style, in two pieces: a row of icon buttons that
+	// is the panel from the outside - one per thing an object can be told to
+	// do - and, under it, one "more knobs" fold holding everything that is a
+	// value rather than an act. The convention is written down once, in
+	// js/edit.js beside icon_row(). The row is built before the sections (they
+	// fill it as they are built) and appended after them (the append order is
+	// what the panel looks like).
+	var icons = $.glue.popover.icon_row();
+	var fold = $.glue.popover.fold(pop, 'more knobs');
+	var body = fold.body;
+
+	// The sections, in the order their controls are drawn. Two of them are not
+	// always there, and absent means not drawn at all rather than greyed out:
+	// the panel is the object's properties panel, and a property this kind of
+	// object does not have is not a control that is waiting for something to
+	// arrive.
 	//
 	// An image object has no background section. The image module paints that
 	// object's picture with the object's own background-image
@@ -998,11 +1034,11 @@ function object_properties_popover(obj)
 	// Only a text object has a padding section: text-padding-x / text-padding-y
 	// is the only padding hotglue stores (module_text.inc.php).
 	var background = (obj.classList.contains('image')) ? null :
-		object_background_section(pop, obj, save);
+		object_background_section(pop, icons, body, obj, save);
 	var padding = (obj.classList.contains('text')) ?
-		object_padding_section(pop, obj, save) : null;
-	var flip = object_flip_section(pop, obj, save);
-	var transparency = object_transparency_section(pop, obj, save);
+		object_padding_section(body, obj, save) : null;
+	var flip = object_flip_section(icons, obj, save);
+	var transparency = object_transparency_section(body, obj, save);
 	var sections = [background, padding, flip, transparency];
 
 	// --- take it off, or put it back --------------------------------------
@@ -1013,6 +1049,11 @@ function object_properties_popover(obj)
 	// and nothing left behind that the save happened before. Each section's
 	// reset clears only what is set, so a reset on an object nobody has touched
 	// writes nothing at all.
+	//
+	// Both are the fold's last row rather than a footer under the panel, and
+	// the delete is therefore behind a fold when the panel opens: that is the
+	// house style's one cost, and it is the price of a panel that opens on the
+	// five things you came for rather than on the ten you did not.
 	var footer = $.glue.popover.row(false);
 	if (background) {
 		footer.appendChild($.glue.popover.delete('remove the background image', function() {
@@ -1030,7 +1071,11 @@ function object_properties_popover(obj)
 			});
 			save();
 		}));
-	pop.appendChild(footer);
+	body.appendChild(footer);
+
+	pop.appendChild(icons);
+	pop.appendChild(fold.toggle);
+	pop.appendChild(body);
 
 	$.glue.popover.show(pop);
 }
@@ -1058,24 +1103,22 @@ function object_properties_popover(obj)
 // text-background-color since long before there was a panel, and
 // object_alter_save() keeps it for every other kind of object.
 //
-// Returns the two things the panel's footer needs: remove(), which takes the
-// picture and its settings off the object, and reset(), which puts the rows it
-// owns back to their defaults without touching the picture itself.
-function object_background_section(pop, obj, save)
+// Returns the two things the panel's fold-footer needs: remove(), which takes
+// the picture and its settings off the object, and reset(), which puts the rows
+// it owns back to their defaults without touching the picture itself.
+function object_background_section(pop, icons, body, obj, save)
 {
 	// --- what the background is, and what it does -------------------------
 	//
-	// The page panel's row, one button shorter: a colour and a picture to set
-	// the object's background, and the tile toggle for the picture. The buttons
-	// are named in their tooltips and nowhere else, and they are the toolbar's
-	// size rather than the panel's 26px - $.glue.icon()'s own 32px box, whose
-	// 1px border leaves the 30x30 the artwork is drawn at, so there is nothing
-	// to override and nothing to bring down.
-	var source_row = $.glue.popover.row(false);
+	// Three of the panel's five actions - the page panel's own, one shorter: a
+	// colour and a picture to set the object's background, and the tile toggle
+	// for the picture. They go in the icon row, named in their tooltips and
+	// nowhere else. What the picture then DOES with itself - where it sits, how
+	// big it is - is the fold's first business, below.
 
 	// Take the picture off the object, and the settings that described it, the
-	// way the page's page_bg_clear() does. The footer's delete button and the
-	// colour button below both do this - dropping the picture is the same act
+	// way the page's page_bg_clear() does. The delete in the fold's last row and
+	// the colour button below both do this - dropping the picture is the same act
 	// whether you asked for it or asked for a colour to put in its place - so
 	// they share the one function.
 	var bg_clear = function() {
@@ -1100,8 +1143,8 @@ function object_background_section(pop, obj, save)
 	// for the long version of why this is not $.glue.popover.color_button().
 	// The glyph is the shared color-swatch, the same as the page panel's and
 	// every other colour button in the editor (danja's call, 09-16).
-	var colour = $.glue.icon('color-swatch', 'set object background color');
-	colour.classList.add('glue-background-btn', 'glue-background-color');
+	var colour = $.glue.popover.icon_button('color-swatch', 'set object background color');
+	colour.classList.add('glue-background-color');
 	colour.addEventListener('click', function(e) {
 		e.stopPropagation();
 		var cleared = false;
@@ -1128,7 +1171,7 @@ function object_background_section(pop, obj, save)
 			$.glue.popover.close();
 		}
 	});
-	source_row.appendChild(colour);
+	icons.appendChild(colour);
 
 	// The picture: a file picker $.glue.upload.button() lays over the icon, so
 	// the button IS the picker and wants no click handler of its own. This is
@@ -1139,8 +1182,8 @@ function object_background_section(pop, obj, save)
 	// 'object', not 'object-background': upload_files() dispatches by calling
 	// "{preferred_module}_upload", so the name has to be the module's own or
 	// the file falls through to the image module and becomes a new object.
-	var image = $.glue.icon('background-image', 'set object background image');
-	image.classList.add('glue-background-btn', 'glue-background-image');
+	var image = $.glue.popover.icon_button('background-image', 'set object background image');
+	image.classList.add('glue-background-image');
 	$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page,
 		preferred_module: 'object', object: obj.id }, {
 		tooltip: 'set object background image',
@@ -1165,7 +1208,7 @@ function object_background_section(pop, obj, save)
 			sync_has();
 		}
 	});
-	source_row.appendChild(image);
+	icons.appendChild(image);
 
 	// --- tiled or not -----------------------------------------------------
 	//
@@ -1179,8 +1222,8 @@ function object_background_section(pop, obj, save)
 	// (object_alter_render_early()'s own default when the attribute is absent),
 	// so an empty inline style here would tile the picture live until the next
 	// load. The reset button below sets no-repeat for the same reason.
-	var repeat = $.glue.icon('tile', 'tile object background image');
-	repeat.classList.add('glue-background-btn', 'glue-background-tile');
+	var repeat = $.glue.popover.icon_button('tile', 'tile object background image');
+	repeat.classList.add('glue-background-tile');
 	var sync_repeat = function() {
 		repeat.classList.toggle('glue-btn-active',
 			getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1);
@@ -1191,8 +1234,7 @@ function object_background_section(pop, obj, save)
 		sync_repeat();
 		save();
 	});
-	source_row.appendChild(repeat);
-	pop.appendChild(source_row);
+	icons.appendChild(repeat);
 	sync_repeat();
 
 	// --- move it around ---------------------------------------------------
@@ -1245,8 +1287,8 @@ function object_background_section(pop, obj, save)
 	// fields get the room for a sign (the shared one allows three digits)
 	x_row.row.classList.add('glue-background-pos');
 	y_row.row.classList.add('glue-background-pos');
-	pop.appendChild(x_row.row);
-	pop.appendChild(y_row.row);
+	body.appendChild(x_row.row);
+	body.appendChild(y_row.row);
 
 	var armed = false;
 	var saved = false;
@@ -1351,11 +1393,11 @@ function object_background_section(pop, obj, save)
 	});
 	// this section has three number fields, so the scale one is named - the
 	// two above share glue-background-pos, and the bare .glue-popover-field
-	// would match all three. (The panel they sit in has six now that padding
-	// and transparency are in it, and the padding rows name themselves too,
-	// for the same reason.)
+	// would match all three. Since the fold took everything with a label in it,
+	// every row in there needs a name of its own: it is one list now, and the
+	// only way to address a row in it is the class the row was given.
 	scale_row.row.classList.add('glue-background-scale');
-	pop.appendChild(scale_row.row);
+	body.appendChild(scale_row.row);
 
 	// The tile toggle and the three number rows are all about the picture:
 	// tiling it, moving it, sizing it. With none on the object they would be
@@ -1423,8 +1465,12 @@ function object_background_section(pop, obj, save)
 // below compensates width/height by the padding it adds, so the object never
 // moves while the panel is open (see the drag handler this replaced).
 //
+// The rows are the panel's fold's, since 2026-09-17: the uniform row first,
+// the four sides under it. Building once is what makes the capture above safe -
+// the fold only sets display, it never rebuilds a row.
+//
 // Returns an object with the section's reset.
-function object_padding_section(pop, obj, save)
+function object_padding_section(body, obj, save)
 {
 	var outer_w = obj.offsetWidth;
 	var outer_h = obj.offsetHeight;
@@ -1465,19 +1511,23 @@ function object_padding_section(pop, obj, save)
 			apply(commit);
 		}
 	});
-	// named, because the panel this section now sits in holds six number fields
-	// - the background's x, y and scale and this section's uniform row and four
-	// knobs - and a bare .glue-popover-field would match several. The four knobs
-	// need no name of their own: they are the whole of the fold, so
-	// .glue-popover-advanced reaches them. (The background section names its
-	// rows the same way: glue-background-pos and glue-background-scale.)
+	// named, like every row of the fold it now sits in - a bare
+	// .glue-popover-field matches several of them, and the fold is one list:
+	// the background's x, y and scale, this section's uniform row, its four
+	// sides, then the transparency.
 	all.row.classList.add('glue-padding-row');
-	pop.appendChild(all.row);
+	body.appendChild(all.row);
 
-	// --- more knobs: each side on its own --------------------------------
-	var fold = $.glue.popover.fold(pop, 'more knobs');
-	pop.appendChild(fold.toggle);
-	var adv = fold.body;
+	// --- each side on its own ---------------------------------------------
+	//
+	// These four were a fold of their own until 2026-09-17, also labelled "more
+	// knobs" - which is now the name of the one fold the panel has, and they
+	// are rows of it rather than of a fold inside a fold. A panel may hold only
+	// one disclosure: a spec locating .glue-popover-advanced inside a panel must
+	// find exactly one, and two folds would be two ways to hide the same knob.
+	// Flattened, they lost the anonymity the fold gave them - they were its
+	// whole contents, so a bare row could reach one - and each side takes a
+	// name of its own.
 	var knob = function(label, name) {
 		var row = $.glue.popover.number_row(label, {
 			min: 0, max: max, step: 1, unit: 'px',
@@ -1487,14 +1537,14 @@ function object_padding_section(pop, obj, save)
 				apply(commit);
 			}
 		});
-		adv.appendChild(row.row);
+		row.row.classList.add('glue-padding-'+name);
+		body.appendChild(row.row);
 		return row;
 	};
 	var top = knob('top', 'top');
 	var right = knob('right', 'right');
 	var bottom = knob('bottom', 'bottom');
 	var left = knob('left', 'left');
-	pop.appendChild(adv);
 
 	return {
 		reset: function() {
@@ -1542,15 +1592,17 @@ function object_padding_section(pop, obj, save)
 // both). Two toggles make 'flip both axes' a state rather than a stop on the
 // way back to none.
 //
+// The two toggles are the panel's last two actions, in the icon row after the
+// background's three - horizontal first, the order the concept names them in.
+//
 // Returns an object with the section's reset.
-function object_flip_section(pop, obj, save)
+function object_flip_section(icons, obj, save)
 {
-	var flip_row = $.glue.popover.row(false);
 	// The artwork is flip-vertical.svg and flip-horizontal.svg - the words of
 	// the tooltips beside them, and danja's redraw of both (the set's
 	// flip-v/flip-h, which this called until 2026-09-16).
-	var flip_v = $.glue.icon('flip-vertical', 'flip vertically');
-	var flip_h = $.glue.icon('flip-horizontal', 'flip horizontally');
+	var flip_h = $.glue.popover.icon_button('flip-horizontal', 'flip horizontally');
+	var flip_v = $.glue.popover.icon_button('flip-vertical', 'flip vertically');
 	var flip_sync = function() {
 		var axes = (typeof transform_flip_axes === 'function') ?
 			transform_flip_axes(obj) : { h: false, v: false };
@@ -1571,9 +1623,8 @@ function object_flip_section(pop, obj, save)
 	};
 	flip_v.addEventListener('click', flip_toggle('v'));
 	flip_h.addEventListener('click', flip_toggle('h'));
-	flip_row.appendChild(flip_v);
-	flip_row.appendChild(flip_h);
-	pop.appendChild(flip_row);
+	icons.appendChild(flip_h);
+	icons.appendChild(flip_v);
 	flip_sync();
 
 	return {
@@ -1599,7 +1650,7 @@ function object_flip_section(pop, obj, save)
 // a menu button with a hidden drag-distance gesture before that.
 //
 // Returns an object with the section's reset.
-function object_transparency_section(pop, obj, save)
+function object_transparency_section(body, obj, save)
 {
 	var opacity = $.glue.popover.number_row('opacity', {
 		min: 0, max: 100, step: 1, unit: '%',
@@ -1612,7 +1663,7 @@ function object_transparency_section(pop, obj, save)
 		}
 	});
 	opacity.row.classList.add('glue-opacity-row');
-	pop.appendChild(opacity.row);
+	body.appendChild(opacity.row);
 
 	return {
 		reset: function() {

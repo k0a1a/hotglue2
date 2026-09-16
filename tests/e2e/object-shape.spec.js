@@ -9,6 +9,13 @@
 // gradient itself lives in css/main.css so there is one of it rather than one
 // in the editor and one in the renderer. That is the thing most likely to rot
 // here, so the tests check what is STORED as well as what is drawn.
+//
+// The panel is the house style's shape since 2026-09-17 (danja's call): what it
+// SHOWS is the border's style and colour and the two numbers they act on - how
+// round the box is, how thick the line - and everything else is under "more
+// knobs". The fade is the one that moved in there with the glow and the drop
+// shadow, which is why several tests below open the fold before they type: the
+// rows are in the DOM either way, but a folded field has no box to fill.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -27,7 +34,11 @@ const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
-const ROUND = 0, FADE = 1, WIDTH = 2;
+// field() is document order across the whole panel, so it runs out front first
+// and then into the fold: round and width are the panel's (the style row above
+// them has a select and a colour button, neither of which is a field) and the
+// fade is now the fold's first row, ahead of the glow's knobs
+const ROUND = 0, WIDTH = 1, FADE = 2;
 
 async function open(page, id) {
 	const obj = byId(page, id);
@@ -53,9 +64,12 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	// three on the panel itself; the fold has two more of its own
+	// two on the panel itself - round and width, the numbers the style and the
+	// colour above them act on - and the fade is not one of them any more
 	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-slider'))
-		.toHaveCount(3);
+		.toHaveCount(2);
+	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-slider'))
+		.toHaveCount(7);	// the fade, the glow and the drop shadow
 	// and the reset is in the fold with them, not under the rows above it
 	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-reset'))
 		.toHaveCount(0);
@@ -109,6 +123,9 @@ test('the fade stores its distance, not its gradient', async ({ page, hg }) => {
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
+	// the fade is the fold's first row now, and a folded row has no box to type
+	// into
+	await pop(page).locator('.glue-popover-disclosure').click();
 
 	await setRow(page, FADE, 30);
 	await expect.poll(() => attrs(hg)['object-edge-fade']).toBe('30px');
@@ -332,9 +349,9 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page)).toBeHidden();
 		await pop(page).locator('.glue-popover-disclosure').click();
 		await expect(advanced(page)).toBeVisible();
-		// the glow (spread + strength) and the drop shadow's distance,
-		// angle, blur and spread
-		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(6);
+		// the fade, the glow (spread + strength) and the drop shadow's
+		// distance, angle, blur and spread
+		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(7);
 	});
 
 test('the four face controls sit in a 2x2 grid, not four rows',

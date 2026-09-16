@@ -889,6 +889,152 @@ string and reassembling it.
   editor's select-all-objects with a `preventDefault()`, so the field is emptied one Backspace
   at a time. **Not run** — the suite is danja's to run.
 
+Shipped 2026-09-17 — **the icon-row popout: a panel's actions first, everything labelled under
+"more knobs"**. Danja: *"There is a new concept for popouts like this one. On click we only
+show actions represented by icons — in the case of 'object properties' those would be
+'background color', 'background image', 'tile background', 'flip horizontal', 'flip
+vertical'. Everything else — the sliders and input fields, as well as the reset button — are
+tucked away under 'more knobs'."*
+
+The shape was not new to the tree — the font panel has had it since the spacing redesign
+(icon toggles, one fold holding the labelled controls **and its own reset**) — but nothing had
+written it down and no other panel followed it. It is now the house style, stated once:
+
+> A panel opens as one row of icon buttons — the verbs, at the panel's own 26px, named in
+> their tooltips and nowhere else — and one fold labelled "more knobs" under it, holding
+> everything that is a value rather than an act. Exactly one fold per panel. A panel with
+> nothing to fold has an icon row and no fold, rather than an empty one.
+
+- **Two parts in `$.glue.popover`, and the convention in a comment beside them.**
+  `icon_row()` hands back the empty row (`.glue-popover-icons`) to fill and `icon_button(name,
+  title)` is one action in it (`.glue-popover-icon`, which replaced `.glue-background-btn` on
+  both panels — the class had one declaration and no behaviour, and its comment became the
+  shared one). `fold()` itself is untouched, including its inability to open by default; what
+  the panels needed was not a new mechanism but the same one in the same place every time.
+- **And the row is the PANEL's 26px, not the toolbar's 32** — *"resize object properties popout
+  button to 26x26px"*, later the same day, which reverses the 09-16 call that put that row on the
+  toolbar's own box ("the size the icons are drawn at"). The icons are drawn at 30 and a panel
+  control is 26, and a row of actions inside a panel is a panel control — which is what the
+  colour buttons, the font panel's toggles and the align buttons have been all along, so the
+  panels' rows were the one thing in them at the toolbar's size. `icon_button()` sets the box
+  inline, because `$.glue.icon()` sizes its own at 32, and `.glue-popover-icon::before` brings
+  the mask down to 22 — the same bring-down `.glue-popover-color` and `.glue-align-btn` do;
+  without it the artwork is clipped by the box it is drawn in, which on a mask means it simply
+  disappears. One helper, so both background panels and the adjust panel's four follow together
+  and the twins stay twins.
+- **And a panel is as wide as its content, not a number written in CSS** — *"minimize popout size
+  by only making a popout as wide/tall as there is content."* Six panels pinned a width (object
+  link 330, text link 330, edge 265, font 250, properties 230, page background 200) and the other
+  five never had one; the six are gone. What a panel comes out at is its widest row, and for a
+  panel with knobs that is now decided by ONE number: `.glue-popover-slider` is 80px, about what
+  the longest labels ('padding', 'opacity') had left of the old 230 — and it is a fixed number on
+  purpose, since a range input's own width is the browser's and Chrome and Firefox disagree about
+  it by a third. Height was always the content's; the tall folds keep their 42vh cap.
+
+  Two consequences worth knowing, both of them the point rather than side effects. A panel that
+  opens on its icon row is now the width of that row — the properties panel's five buttons come
+  out at 170px where 230 was pinned — **and it widens when the fold is opened**, because a
+  `display: none` fold contributes nothing to layout and its rows are the widest thing in there.
+  `fold()` already re-places the panel on every toggle for exactly this kind of reason, so it
+  re-anchors rather than jumping. And the link panels are now as wide as a url field rather than
+  as wide as someone once decided a url field should be.
+- **Object properties is an icon row and one fold.** The row is the five danja named — set the
+  colour, set the picture, tile it, flip horizontally, flip vertically — and the fold holds
+  the background's x, y and scale, the padding, the transparency, then the delete and reset as
+  its last row. **The flip pair swapped order with it** (the code drew vertical first; the
+  concept names horizontal first), and the footer is gone entirely.
+- **The padding's own "more knobs" fold is flattened into the panel's, and that is what the
+  one-fold rule costs.** A panel may hold only one disclosure — `text-padding.spec.js` locates
+  `.glue-popover-advanced` inside the panel without naming a section, so a second fold is a
+  strict-mode failure — and two folds would be two ways to hide the same knob. The four sides
+  were that fold's whole contents, so a bare row could reach one; sharing the fold with the
+  background, the padding and the transparency, **each side now carries a class of its own**
+  (`.glue-padding-top` / `-right` / `-bottom` / `-left`, order preserved).
+- **The page's background panel is the same panel, one action shorter**: colour, picture, tile
+  and scroll over a fold holding x, y, scale and the delete and reset.
+- **Everything that reads a value keeps working while the fold is closed**, which is the point
+  of the fold being `display`-only: `sync_has()` still greys the tile toggle and the three
+  rows, the upload's `finish` still wakes them where they stand, and `arm()`'s move mode
+  (opening the panel hands the object's drag to `background-position`) is unaffected. The fold
+  is **not** opened by the upload: toggling it re-places the panel, so it would jump as the
+  file dialog closes.
+- **The known cost, written down rather than discovered**: "remove the background image" is
+  destructive and now lives in a closed fold. The panel opens on what you came for and not on
+  what you might; that is the trade, and it is the one thing to revisit if it bites.
+- **`page-background.spec.js` is new** — the page's panel had **no spec at all**, which is the
+  gap that made converting it the riskier half of this. Four tests: the four actions and the
+  closed fold on a page with no picture, the fold's rows with one, the position and scale
+  writing `page-background-image-position` / `-size` and surviving a reload, and the delete
+  taking the picture off the page. `object-background.spec.js` gained the fold discipline (the
+  delete, the reset, the scale field and the byte-identical reset all open it first — and that
+  last one now reads the file with the fold already open, so "opening writes nothing" is part
+  of what it proves) and one new test that the open fold does not put the panel over the
+  object, which is the constraint `place_for()` exists for.
+- **Then the font panel, twice in one day.** First: *"For 'font' button, show font selection,
+  size controls, four style options + color and four align options. Everything else folded under
+  'more knobs'."* — which took the four alignments out of the fold, where they had been since
+  the spacing redesign, to sit under the style row at the 26px the style toggles wear. Then:
+  *"show three font sizes [s 8px], [n 16px], [b 32px], then style and align as it is, move font
+  selection and size slider + input under 'more knobs'."* — which is the panel as it stands:
+
+  | | |
+  |---|---|
+  | shown | **s / n / b / x** (8, 16, 24, 32px), the four style toggles with the colour beside them, the four alignments |
+  | folded | the face dropdown, the size slider and its field, the three spacings, the shadow and its colour, the note, the reset |
+
+  The sizes are letters rather than drawings — there is no artwork for "8px" that reads at
+  26px — and **each letter is set at the size it applies**, the same joke as the T wearing its own
+  effect; the one in force is lit, and a size that is none of them leaves all of them unlit
+  rather than rounding to the nearest. There were three (**s / n / b**, 8/16/32) until a fourth
+  was asked for the same day — *"add [x 32px] font sie button to font"* — and b moved down to 24
+  rather than x duplicating it: the row is a scale now, 8, 16, 24, 32, and what it called big is
+  what it now calls extra. The buttons and the slider are two views of one number, so
+  they share one writer (`set_size`, which holds line-height in step as the old drag control did
+  and re-syncs the buttons) — the one place this panel was in danger of drifting. **And the
+  `style` and `align` labels came off in a third pass the same day** — *"remove 'style' and
+  'align' lables from font popout"* — which is the convention reached from the other end: the
+  panel now shows three rows of buttons, each named in its tooltip and nowhere else, with no
+  labelled rows among them and no exception left to write down.
+  This panel is also where the convention came FROM — its fold has held the labelled controls
+  and its own reset since the spacing redesign — so it is the one the house style was read off
+  and the last to be converted to it.
+- **The edge panel too, and it is the one where a control moved the other way.** *"For 'edges'
+  button, show style and color, then 'round' and 'width' sliders. everything else under 'more
+  knobs'."* So the panel shows the border's style dropdown with the colour button beside it,
+  then the two numbers that act on them; and **the fade — a row of the panel since the panel
+  existed — joins the glow and the drop shadow in the fold.** That is the first control this
+  work has folded away rather than unfolded, and it is worth knowing the fade is there: it is
+  the panel's own headline effect, and the reset at the fold's foot clears it with the rest.
+  The rows are built in one order and appended in another now — the style row is built last —
+  because the append order is the only thing that fixes what a panel looks like, which is worth
+  saying out loud in a file where the build order reads like the display order. The panel's
+  spec had `const ROUND = 0, FADE = 1, WIDTH = 2` for its fields, and now reads
+  `ROUND = 0, WIDTH = 1, FADE = 2`: the field lookup is document order across the whole panel,
+  so folding the fade moved it behind the two that stayed.
+- **Which panels did NOT convert, and why** — the concept fits panels whose controls are
+  actions, and there are more that aren't than that are:
+  - **link** — the url field *is* the panel; its fold holds a stored target, which is the
+    documented exception to the label rule.
+  - **adjust / z-level** — four actions and a reset: it takes the shared row and button classes
+    (four lines) and stays as it is, with no fold, because there is nothing to fold.
+  - **image properties, heading, grid, page settings, reading order** — single fields, word
+    buttons, or text-glyph toggles with no honest artwork in the set. Each is already at its
+    minimum, and converting them would be churn with a glyph invented to justify it.
+
+Two things noticed and deliberately not done: the disclosure is still a `div` with a click
+listener and no keyboard path (pre-existing in every panel that has one — `SOW-accessibility.md`
+is where that lives), and `img/icons/transparency.svg` stays unused, since transparency is a
+slider and the concept puts sliders in the fold.
+
+**Not run** — the suite is danja's to run. Suggested, with `colorpicker`, `blend` and `rotate`
+on the list precisely because they should need no edits:
+
+```
+npx playwright test --config tests/e2e/playwright.config.js \
+  object-background text-padding touch-editing page-background \
+  text-font-popover text-spacing-popover object-shape colorpicker blend rotate min-files
+```
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)

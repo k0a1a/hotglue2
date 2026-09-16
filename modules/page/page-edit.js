@@ -406,7 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		// the picture, which used to be the menu button itself, a file picker
 		// whenever the page had no background. The panel is the page's
 		// background, so it is where its background is set.
-		var source_row = $.glue.popover.row(false);
+		//
+		// The panel is the house style since 2026-09-17 - the row of actions
+		// over one "more knobs" fold - and this row became the panel's icon row
+		// rather than a row in it. Where the picture sits and how big it is are
+		// the fold's, with the delete and the reset as its last row.
+		var icons = $.glue.popover.icon_row();
+		var fold = $.glue.popover.fold(pop, 'more knobs');
+		var body = fold.body;
 
 		// The colour button. Deliberately not $.glue.popover.color_button():
 		// that one sets the colour of a thing that is there, and this one
@@ -423,8 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// something", and danja's call on 09-16 was that a colour button is a
 		// colour button: the difference is in what the click does, which the
 		// tooltip says, not in the drawing.
-		var colour = $.glue.icon('color-swatch', 'set page background color');
-		colour.classList.add('glue-background-btn', 'glue-background-color');
+		var colour = $.glue.popover.icon_button('color-swatch', 'set page background color');
+		colour.classList.add('glue-background-color');
 		colour.addEventListener('click', function(e) {
 			e.stopPropagation();
 			var cleared = false;
@@ -451,15 +458,15 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.popover.close();
 			}
 		});
-		source_row.appendChild(colour);
+		icons.appendChild(colour);
 
 		// The picture itself: the page menu's upload, moved in with the rest.
 		// $.glue.upload.button() lays a transparent file input over the icon,
 		// so the button IS the picker and wants no click handler of its own.
 		// The upload leaves the panel open, because what you do next - tiling,
 		// sizing, moving - is all in here.
-		var image = $.glue.icon('background-image', 'set page background image');
-		image.classList.add('glue-background-btn', 'glue-background-image');
+		var image = $.glue.popover.icon_button('background-image', 'set page background image');
+		image.classList.add('glue-background-image');
 		$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
 			tooltip: 'set page background image',
 			error: function(e) {
@@ -485,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			}
 		});
-		source_row.appendChild(image);
+		icons.appendChild(image);
 
 		// --- tiled or once, scrolling or fixed --------------------------------
 		//
@@ -497,8 +504,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Tile first: tiled across the page is the browser's default, so that
 		// is the lit state and the one that stores nothing - absent means
 		// default, as everywhere else in this panel.
-		var repeat = $.glue.icon('tile', 'tile page background image');
-		repeat.classList.add('glue-background-btn', 'glue-background-tile');
+		var repeat = $.glue.popover.icon_button('tile', 'tile page background image');
+		repeat.classList.add('glue-background-tile');
 		var sync_repeat = function() {
 			repeat.classList.toggle('glue-btn-active',
 				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
@@ -513,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-repeat': 'no-repeat' });
 			}
 		});
-		source_row.appendChild(repeat);
+		icons.appendChild(repeat);
 
 		// Then scroll, which came in from the page menu: it is a setting of the
 		// background image like the rest of the panel, and it is the PAGE's
@@ -521,8 +528,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// nothing for it to say about one. On (the lit state, and what an
 		// absent attribute means) is background-attachment: scroll, the image
 		// going up the page with everything else.
-		var scroll = $.glue.icon('background-scroll', 'scroll page background image');
-		scroll.classList.add('glue-background-btn', 'glue-background-scroll');
+		var scroll = $.glue.popover.icon_button('background-scroll', 'scroll page background image');
+		scroll.classList.add('glue-background-scroll');
 		var sync_scroll = function() {
 			scroll.classList.toggle('glue-btn-active',
 				getComputedStyle(doc).backgroundAttachment != 'fixed');
@@ -539,8 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
 			}
 		});
-		source_row.appendChild(scroll);
-		pop.appendChild(source_row);
+		icons.appendChild(scroll);
 
 		// Both toggles are about the picture: with none on the page they would
 		// be toggling a background that is not there. So they grey out and go
@@ -610,8 +616,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// fields get the room for a sign (the shared one allows three digits)
 		x_row.row.classList.add('glue-background-pos');
 		y_row.row.classList.add('glue-background-pos');
-		pop.appendChild(x_row.row);
-		pop.appendChild(y_row.row);
+		body.appendChild(x_row.row);
+		body.appendChild(y_row.row);
 
 		// --- size it ---------------------------------------------------------
 		//
@@ -642,9 +648,13 @@ document.addEventListener('DOMContentLoaded', function() {
 		// the two above share glue-background-pos, and the bare
 		// .glue-popover-field would match all three
 		scale_row.row.classList.add('glue-background-scale');
-		pop.appendChild(scale_row.row);
+		body.appendChild(scale_row.row);
 
 		// --- take it off, or put it back --------------------------------------
+		//
+		// The fold's last row, not a footer under the panel: the delete and the
+		// reset are the two things you do to the panel's work rather than to the
+		// page, and the house style keeps everything with a label in the fold.
 		var footer = $.glue.popover.row(false);
 		footer.appendChild($.glue.popover.delete('remove the background image', function() {
 			page_bg_clear();
@@ -664,7 +674,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
 				attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
 		}));
-		pop.appendChild(footer);
+		body.appendChild(footer);
+
+		pop.appendChild(icons);
+		pop.appendChild(fold.toggle);
+		pop.appendChild(body);
 
 		$.glue.popover.show(pop);
 	};

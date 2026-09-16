@@ -576,6 +576,14 @@
 	z-index: 450;
 	box-sizing: border-box;
 	padding: 6px;
+	/* As wide and as tall as what is in it, and no more: no panel pins a width
+	   of its own (they all did until 2026-09-17, and a panel that opens on a row
+	   of five icons was carrying the width of the knobs folded away under them).
+	   What a panel comes out at is therefore its widest row - the number rows
+	   are the usual answer, and .glue-popover-slider is the knob for those.
+	   Height was always the content's. max-width so that a row which is wide by
+	   nature (a url field) still cannot push the panel off a narrow viewport. */
+	max-width: calc(100vw - 16px);
 	background: #f2f2f2;
 	box-shadow: 0 0 0 1px silver, 0 0 10px 1px rgba(0, 0, 0, 0.4);
 	color: #444;
@@ -654,6 +662,17 @@
 }
 
 .glue-popover-slider {
+	/* A panel is as wide as its content since 2026-09-17 - no panel pins a width
+	   of its own any more - and a number row is label + this + field + unit, so
+	   THIS is what decides how wide a row of knobs comes out, and with it how
+	   wide the panel is. 80px is about what the longest labels ('padding',
+	   'opacity') had left of the 230px the properties panel used to be pinned
+	   to. It is a fixed number on purpose: a range input's own width is the
+	   browser's, and Chrome and Firefox disagree about it by a third.
+	   flex-grow stays 1 so a row that DOES have width to spare - the colour
+	   picker's alpha, inside a wrapper of the picker's own size - still fills
+	   it, as it always did. */
+	width: 80px;
 	flex: 1 1 auto;
 	min-width: 0;
 	/* the browser's own blue thumb against this grey chrome is the one thing
@@ -702,11 +721,6 @@
 	width: 180px;
 }
 
-.glue-object-link-popover {
-	/* wider than the other panels: a url is long, and a field it cannot be
-	   read in is a field people paste into blind */
-	width: 330px;
-}
 
 .glue-object-link-field {
 	/* The url and target fields of the object link panel. Sized by the row
@@ -958,11 +972,6 @@
 }
 
 
-.glue-edge-popover {
-	/* three number rows, a style dropdown with a colour button, a fold and a
-	   reset - and room to read them */
-	width: 265px;
-}
 
 .glue-border-style {
 	/* the border style dropdown in the edge panel */
@@ -995,6 +1004,35 @@
 	color: #000;
 }
 
+.glue-popover-icons {
+	/* the row of icon buttons a panel opens with - the house style, built by
+	   $.glue.popover.icon_row(). A marker class, and the name the next panel is
+	   told to start from: the row is .glue-popover-row and its buttons are
+	   .glue-popover-icon, so there is nothing to declare here. It exists so a
+	   spec can count a panel's actions, and so that "what is the panel's first
+	   row" has one answer in every panel. */
+}
+
+.glue-popover-icon {
+	/* One action in such a row - see $.glue.popover.icon_button(), which sets
+	   the 26px inline because $.glue.icon() sizes its own box at the toolbar's
+	   32. The PANEL's size, not the toolbar's: every other control a panel has
+	   is 26, from the colour buttons to the font panel's toggles, and a row of
+	   actions belongs to the panel it is in. Three, four or five of them read
+	   as a row, and their names are in their tooltips. flex: 0 0 auto so a full
+	   row cannot be squeezed by the flex row they sit in: the row overflows
+	   instead, which is the visible sign that the panel needs to be wider. */
+	flex: 0 0 auto;
+}
+
+.glue-popover-icon::before {
+	/* the mask comes down with the box: the artwork is drawn at 30px, and the
+	   frame's 1px border leaves 24px of padding box at 26 - so 22, the same
+	   bring-down .glue-popover-color and .glue-align-btn do */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
 .glue-popover-advanced {
 	/* set off from the rows above it, since it is a different mechanism
 	   rather than more of the same */
@@ -1003,48 +1041,28 @@
 	margin-bottom: 5px;
 }
 
-.glue-edge-popover .glue-popover-advanced {
+.glue-edge-popover .glue-popover-advanced,
+.glue-properties-popover .glue-popover-advanced {
 	/* The edge fold is now tall enough (glow, bands, drop shadow) to run past
 	   the bottom of a phone screen, and the popover must not push its anchor
 	   off-viewport on mobile - the open() placement runs out of room first
 	   and the fold ends up unreachable. The fold scrolls in place instead;
 	   the font panel shares the class and stays unscoped, because its fold
-	   is short and a scrollbar there would be noise. */
+	   is short and a scrollbar there would be noise.
+
+	   The properties panel joined it on 2026-09-17, when everything with a
+	   label moved into its fold: ten rows on a text object, which is taller
+	   than the edge fold that rule was written for. Nothing scrolls at a
+	   desktop viewport - the window is taller than the fold - so this is
+	   mobile insurance, the same kind the edge panel carries. */
 	max-height: 42vh;
 	overflow-y: auto;
 }
 
-.glue-background-popover {
-	/* the page's background panel, and only its now: the object's is the
-	   properties panel below, which outgrew this width. They shared the class
-	   (and so this rule) from the object panel's first version until
-	   2026-09-16, when padding, flip and transparency joined it. */
-	width: 200px;
-}
-
-.glue-properties-popover {
-	/* The object's properties panel: a row of buttons, five number rows
-	   (x, y, scale, padding, opacity), a fold holding four more, a pair of flip
-	   toggles and a footer. Wider than the page's background panel it came
-	   from, because its labels are the longest any panel has - 'padding',
-	   'opacity' against that panel's 'scale', 'x', 'y' - and a content-sized
-	   label (.glue-popover-label) takes that width out of the slider beside
-	   it. 230px leaves those sliders about what the background rows had. */
-	width: 230px;
-}
-
-.glue-background-btn {
-	/* Every icon in the background row, in one unlabelled row: the page panel's
-	   four (set the colour, set the picture, tile it, scroll it) and the
-	   properties panel's three (the same minus scroll). They are NOT the
-	   panel's 26px - they are $.glue.icon()'s own 32px box, whose 1px border
-	   leaves the 30x30 padding box that .glue-btn-icon::before draws its 30px
-	   artwork against, so there is nothing to override here and nothing to come
-	   down: the size the icons were drawn at. Three or four of them in a row
-	   read as a row, which is why they can carry their toolbar size - and their
-	   names - in a panel that otherwise labels every control it has. */
-	flex: 0 0 auto;
-}
+/* .glue-background-popover and .glue-properties-popover have no rules of their
+   own any more: both pinned a width (200px and 230px) until 2026-09-17, when
+   panels became as wide as their content - see .glue-popover above. The classes
+   stay on the panels, as the name each one is opened by. */
 
 .glue-background-off {
 	/* A control with nothing to act on. The tile and scroll toggles are about

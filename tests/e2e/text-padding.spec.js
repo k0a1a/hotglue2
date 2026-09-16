@@ -1,5 +1,6 @@
-// Padding: one slider-plus-field for all four sides, a folded-away "more knobs"
-// section with a row per side, and a reset back to flush.
+// Padding: one slider-plus-field for all four sides, a row per side under it,
+// and a reset back to flush - all of it inside the object properties panel's
+// one "more knobs" fold.
 //
 // The rows are a section of the OBJECT PROPERTIES panel, not a panel of their
 // own. They were the text menu's "change padding" button until 2026-09-16: the
@@ -9,8 +10,14 @@
 // text-padding-x / text-padding-y is the only padding hotglue stores, so
 // object_properties_popover() in modules/object/object-edit.js only draws it
 // for a text object - and the panel's one reset runs its reset with the other
-// sections'. The rows carry .glue-padding-row so they can be named inside a
-// panel that has six number fields.
+// sections'.
+//
+// The four sides were a fold of their own until 2026-09-17 (also "more knobs"),
+// and are rows of the panel's fold now - a panel may hold only one disclosure,
+// and a spec locating .glue-popover-advanced inside a panel has to find exactly
+// one. Flattened, they lost the anonymity their own fold gave them: every row in
+// there carries a name now, .glue-padding-row for the uniform one and
+// .glue-padding-top / -right / -bottom / -left for the sides.
 //
 // Padding is internal: the outer box never moves, every row compensates the
 // object's width/height by the padding it adds. And storage follows the box:
@@ -37,6 +44,14 @@ const panel = (page) => page.locator('.glue-popover.glue-properties-popover');
 // the uniform row, named: the panel it lives in has an x, a y, a scale and an
 // opacity row besides, so a bare .glue-popover-row would match the wrong one
 const uniform = (page) => panel(page).locator('.glue-padding-row');
+// the panel's one fold - the way in to every row with a label in it, this
+// section's included. Counts and classes read the same closed or open; the
+// fields below are typed into, so they need it open.
+const knobs = (page) => panel(page).locator('.glue-popover-advanced');
+async function openFold(page) {
+	await panel(page).locator('.glue-popover-disclosure').click();
+	await expect(knobs(page)).toBeVisible();
+}
 const boxOf = (page, id) => page.evaluate((i) => {
 	const el = document.getElementById(i);
 	return el.offsetWidth+','+el.offsetHeight;
@@ -61,6 +76,7 @@ async function openPanel(page, hg) {
 test('the uniform row applies one value to all four sides', async ({ page, hg }) => {
 	const a = await openPanel(page, hg);
 	const before = await boxOf(page, a);
+	await openFold(page);
 
 	await fillRow(page, uniform(page), 30);
 
@@ -95,13 +111,19 @@ test('the "more knobs" section sets each side on its own and stores it per-side'
 		const before = await boxOf(page, a);
 
 		// folded away to start with
-		const knobs = panel(page).locator('.glue-popover-advanced');
-		await expect(knobs).toBeHidden();
-		await panel(page).locator('.glue-popover-disclosure').click();
-		await expect(knobs).toBeVisible();
+		await expect(knobs(page)).toBeHidden();
+		await openFold(page);
 
-		// rows are top, right, bottom, left
-		await fillRow(page, knobs.locator('.glue-popover-row').nth(0), 20);
+		// the sides are top, right, bottom, left - the order the fold they used
+		// to be kept, and the part of that arrangement worth pinning now that
+		// they are four rows among the panel's others
+		const sides = await knobs(page).locator(
+			'.glue-padding-top, .glue-padding-right, .glue-padding-bottom, .glue-padding-left')
+			.evaluateAll((els) => els.map((e) =>
+				['top', 'right', 'bottom', 'left'].find((s) => e.classList.contains('glue-padding-'+s))));
+		expect(sides).toEqual(['top', 'right', 'bottom', 'left']);
+
+		await fillRow(page, knobs(page).locator('.glue-padding-top'), 20);
 
 		await expect.poll(() => page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingTop, a)).toBe('20px');
@@ -150,7 +172,15 @@ test('the panel only draws the section for a text object, and there it is flush 
 		await expect(panel(page)).toBeVisible();
 
 		await expect(panel(page).locator('.glue-padding-row')).toHaveCount(0);
-		await expect(panel(page).locator('.glue-popover-disclosure')).toHaveCount(0);
+		await expect(panel(page).locator('.glue-padding-top')).toHaveCount(0);
+		// the panel's own fold is there, though - it holds the background rows,
+		// the transparency and the reset for every object, and an iframe is an
+		// object. What is absent is the padding INSIDE it, which is the absence
+		// that matters: a section this kind of object cannot have is not built,
+		// rather than built greyed.
+		await expect(panel(page).locator('.glue-popover-disclosure')).toHaveCount(1);
+		await openFold(page);
+		await expect(knobs(page).locator('.glue-padding-row')).toHaveCount(0);
 		// and the panel is still the panel: the flip and the transparency
 		await expect(page.getByTitle('flip vertically')).toBeVisible();
 		await expect(panel(page).locator('.glue-opacity-row')).toBeVisible();
@@ -160,6 +190,7 @@ test('reset goes back to no padding without moving the box',
 	async ({ page, hg }) => {
 		const a = await openPanel(page, hg);
 		const before = await boxOf(page, a);
+		await openFold(page);
 
 		await fillRow(page, uniform(page), 40);
 		await expect.poll(() => page.evaluate((i) =>

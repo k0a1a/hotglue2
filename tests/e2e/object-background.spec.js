@@ -5,8 +5,18 @@
 // the picture does - tile it, move it, scale it), the inset between its box and
 // its content (padding), and two things about the object itself (its flip and
 // its transparency). The panel is a list of sections and each draws its own
-// rows; the footer's reset runs them all and saves once, and the background's
-// delete button takes the picture and the file off the object.
+// controls; the reset - the fold's last row, with the delete - runs them all
+// and saves once, and the delete takes the picture and the file off the object.
+//
+// Since 2026-09-17 the panel is the house style, in two pieces: an icon row
+// that is the panel from the outside - set the colour, set the picture, tile
+// it, flip it both ways - and ONE "more knobs" fold holding everything with a
+// label in it: x, y, scale, the padding, the transparency, and the delete and
+// reset as its last row. The fold is closed when the panel opens, which is the
+// whole point of it and the thing these tests had to learn. The rows are in the
+// DOM either way, so counts and classes read the same folded or open - it is
+// clicking, filling, tapping and measuring that need the way in (openFold
+// below), and opening re-places the panel, so measure after it and never before.
 //
 // It was "object background" until 2026-09-16, and the padding, the flip and
 // the transparency were somewhere else - the text menu's own padding button,
@@ -19,14 +29,14 @@
 // its tests are about; the flip, the transparency and the object-with-no-
 // background-section are here too, because it is the same panel's spec.
 //
-// The background section is the page's background panel one button shorter: the
+// The background section is the page's background panel one action shorter: the
 // page's fourth is the scroll toggle, which an object has no use for. The
 // picture button used to BE the menu button - with no image the whole button
 // was the file input, and only an object that already had a picture got a panel
 // at all - and these tests used to assert that. The upload is one of the
-// panel's buttons now, at 32px in an unlabelled row of three, and the four
-// controls that describe the picture - the tile toggle, x, y and scale - grey
-// out and go inert together while there is no picture to describe.
+// panel's actions now, and the four controls that describe the picture - the
+// tile toggle up in the row, x, y and scale down in the fold - grey out and go
+// inert together while there is no picture to describe.
 //
 // The image belongs to the OBJECT: it uploads with preferred_module 'object'
 // - the module's own name, since upload_files() dispatches by calling
@@ -59,9 +69,18 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const propsBtn = (page) => page.locator('#glue-contextmenu-object-properties');
 const pop = (page) => page.locator('.glue-properties-popover');
-// the panel has six number fields (x, y, scale, padding, and the opacity one),
-// so the ones that need naming are named - the bare .glue-popover-field would
-// match several
+// the panel's one fold, and the way in to everything with a label in it. The
+// rows are in the DOM whether or not it is open, so counts and classes do not
+// need it; anything that clicks, fills, taps or measures does, because a
+// display:none control has no box to aim at.
+const disclosure = (page) => pop(page).locator('.glue-popover-disclosure');
+const advanced = (page) => pop(page).locator('.glue-popover-advanced');
+async function openFold(page) {
+	await disclosure(page).click();
+	await expect(advanced(page)).toBeVisible();
+}
+// the panel's number fields (x, y, scale, padding, and the opacity one), so the
+// ones that need naming are named - the bare .glue-popover-field matches several
 const scaleField = (page) => pop(page).locator('.glue-background-scale .glue-popover-field');
 const opacityField = (page) => pop(page).locator('.glue-opacity-row .glue-popover-field');
 const flipV = (page) => page.getByTitle('flip vertically');
@@ -100,9 +119,15 @@ test('with no image, the button opens the panel and the picker is in it',
 
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		// the row of three: set the colour, set the picture, tile it
-		await expect(pop(page).locator('.glue-background-btn')).toHaveCount(3);
+		// the row of five: set the colour, set the picture, tile it, flip it
+		// both ways - the panel from the outside, and one action more than the
+		// page's panel has, which is the flip the page has no use for
+		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(5);
 		await expect(pop(page).locator('.glue-background-color')).toHaveCount(1);
+		// and everything with a label is behind the one fold, closed to start
+		// with: opening the panel on what you came for, not on ten rows
+		await expect(disclosure(page)).toHaveCount(1);
+		await expect(advanced(page)).toBeHidden();
 		// the picture button IS a file picker, the way the menu button was
 		const input = pop(page).locator('.glue-background-image input[type=file]');
 		await expect(input).toBeAttached();
@@ -131,6 +156,30 @@ test('with no image, the button opens the panel and the picker is in it',
 		await page.mouse.up();
 		await expect.poll(async () => (await posOf(page, a))[0])
 			.toBeGreaterThan(before[0] + 30);
+	});
+
+test('the fold makes the panel taller without putting it over the object',
+	async ({ page, hg }) => {
+		// Panels are placed by $.glue.popover.place_for(), which scores every
+		// candidate position with covering the selected object first - "no menu
+		// or interface shall interfere with page elements". The fold changes the
+		// panel's height, which is why fold() re-places on every toggle, and this
+		// is the tallest this panel gets: the assertion is made with the fold
+		// OPEN, which is the harder of the two cases.
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await select(page, a);
+		await propsBtn(page).click();
+		await expect(pop(page)).toBeVisible();
+		await openFold(page);
+
+		const panel = await pop(page).boundingBox();
+		const object = await byId(page, a).boundingBox();
+		const overlaps =
+			panel.x < object.x + object.width && object.x < panel.x + panel.width &&
+			panel.y < object.y + object.height && object.y < panel.y + panel.height;
+		expect(overlaps, 'the open fold put the panel over the object').toBe(false);
 	});
 
 test('uploading sets it as the object background, stored on the object',
@@ -273,19 +322,21 @@ test('an image object has the panel, minus the background section',
 		const p = page.locator('.glue-properties-popover');
 		// no background section: no colour button, no picture picker, no tile
 		// toggle, and none of its three number rows or its delete button
-		await expect(p.locator('.glue-background-btn')).toHaveCount(0);
+		await expect(p.locator('.glue-background-color')).toHaveCount(0);
+		await expect(p.locator('.glue-background-image')).toHaveCount(0);
 		await expect(p.locator('.glue-background-tile')).toHaveCount(0);
 		await expect(p.locator('.glue-background-pos')).toHaveCount(0);
 		await expect(p.locator('.glue-background-scale')).toHaveCount(0);
 		await expect(p.locator('.glue-popover-delete')).toHaveCount(0);
-		// the rest of the panel is there: the flip, the transparency, the reset
+		// what the class DOES get is the flip pair in the row - two actions, not
+		// five - and, in the fold, the transparency and the reset
+		await expect(p.locator('.glue-popover-icon')).toHaveCount(2);
 		await expect(flipV(page)).toBeVisible();
 		await expect(flipH(page)).toBeVisible();
+		await expect(p.locator('.glue-padding-row')).toHaveCount(0);
+		await openFold(page);
 		await expect(p.locator('.glue-opacity-row')).toBeVisible();
 		await expect(p.locator('.glue-popover-reset')).toBeVisible();
-		// and no padding either - that is the text module's own, and this is
-		// not a text object
-		await expect(p.locator('.glue-padding-row')).toHaveCount(0);
 	});
 
 test('the object serves its own background, and it survives a reload',
@@ -365,7 +416,7 @@ test('with an image, the panel opens onto the image it describes',
 
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		await expect(pop(page).locator('.glue-background-btn')).toHaveCount(3);
+		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(5);
 		await expect(pop(page).locator('.glue-background-tile')).toHaveCount(1);
 		// nothing stored about the tiling, so it is the renderer's own default
 		// - no-repeat - and the toggle is lit only when the image repeats
@@ -447,6 +498,7 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 		await select(page, a);
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
+		await openFold(page);
 
 		// an image nobody has scaled shows 100 - and nothing is stored, so a
 		// fresh object and an untouched one stay byte-identical
@@ -477,6 +529,7 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 		await select(page, a);
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
+		await openFold(page);
 		await scaleField(page).fill('0');
 		await scaleField(page).blur();
 		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
@@ -496,6 +549,9 @@ test('deleting it takes the image off the object', async ({ page, hg }) => {
 	await select(page, a);
 	await propsBtn(page).click();
 	await expect(pop(page)).toBeVisible();
+	// the delete is the fold's last row now, with the reset - the house style's
+	// one cost, and the reason this test has to go looking for it
+	await openFold(page);
 
 	await pop(page).locator('.glue-popover-delete').click();
 	await expect(pop(page)).toHaveCount(0);
@@ -526,6 +582,7 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 			.toHaveClass(/glue-btn-active/);
 		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
 			.toHaveValues(['30', '20']);
+		await openFold(page);
 
 		await pop(page).locator('.glue-popover-reset').click();
 		// only the delete button takes the image off; the panel stays open
@@ -622,6 +679,9 @@ test('transparency: the slider applies live, the field commits',
 		await select(page, a);
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
+		// the row is the fold's, like every other labelled control: it is in the
+		// DOM either way, but the field at the end of this test is typed into
+		await openFold(page);
 
 		const slider = pop(page).locator('.glue-opacity-row .glue-popover-slider');
 		const field = opacityField(page);
@@ -652,10 +712,11 @@ test('transparency: the slider applies live, the field commits',
 
 test('the one reset clears every section it owns, in one save',
 	async ({ page, hg }) => {
-		// The panel's footer runs each section's own reset in the order the
-		// sections were drawn, then saves once. An object with all four
-		// sections set - a text object with a background picture, padding, a
-		// flip and a dim - is the case that exercises all of them.
+		// The panel's reset - the fold's last row, beside the delete - runs each
+		// section's own reset in the order the sections were drawn, then saves
+		// once. An object with all four sections set - a text object with a
+		// background picture, padding, a flip and a dim - is the case that
+		// exercises all of them.
 		const a = hg.addObject('100000000001',
 			{ ...ATTRS, 'object-background-file': 'sample.png',
 				'object-background-mime': 'image/png',
@@ -673,6 +734,7 @@ test('the one reset clears every section it owns, in one save',
 		await select(page, a);
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
+		await openFold(page);
 
 		await pop(page).locator('.glue-popover-reset').click();
 
@@ -708,6 +770,10 @@ test('reset writes nothing at all on an object nobody has touched',
 		await select(page, a);
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
+		// the fold is opened before `before` is read, not after: opening it
+		// builds nothing and writes nothing, and reading the file with it open
+		// makes that part of what this test proves rather than an assumption
+		await openFold(page);
 
 		const before = hg.readObject('100000000001').attrs;
 		await pop(page).locator('.glue-popover-reset').click();

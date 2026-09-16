@@ -1,9 +1,15 @@
 // Spacing and alignment: line height, letter spacing, word spacing, the four
 // alignments and a reset. Four buttons once - three that had to be dragged,
 // where a click on the same button quietly meant "reset", and one that cycled
-// left -> centre -> right -> justify - then a panel of its own, and now the
+// left -> centre -> right -> justify - then a panel of its own, then the
 // advanced fold of the font panel, since it is the same subject and most
 // objects never touch it.
+//
+// The alignment is the part that left the fold again, on 2026-09-17: danja's
+// call that the font panel SHOWS the face, the size, the four styles with the
+// colour, and the four alignments, with everything else under "more knobs".
+// The four spacings and the shadow are still folded, which is what `pop` below
+// names - so the alignments are addressed on the panel, not in the fold.
 //
 // The units matter and are not arbitrary. The three spacings are written in
 // em, which is what the controls they replace wrote: it keeps them
@@ -25,16 +31,22 @@ const ATTRS = {
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
-const pop = (page) => page.locator('.glue-font-popover .glue-popover-advanced');
+const panel = (page) => page.locator('.glue-font-popover');
+const pop = (page) => panel(page).locator('.glue-popover-advanced');
 const rowField = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
 const rowSlider = (page, n) => pop(page).locator('.glue-popover-slider').nth(n);
-const alignBtn = (page, which) => pop(page).locator(`[data-align="${which}"]`);
+// out in the panel, not in the fold: the alignments are one of the six things
+// the font panel shows
+const alignBtn = (page, which) => panel(page).locator(`[data-align="${which}"]`);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
-// the rows in order: line, letter, word
-const LINE = 0, LETTER = 1, WORD = 2;
+// the rows in order, as fields in the fold: size, line, letter, word, shadow,
+// fade. The size is the fold's first row since 2026-09-17 - it is a value like
+// the rest of these, and the panel shows the three size buttons instead - so
+// every index here is one further down than it was.
+const LINE = 1, LETTER = 2, WORD = 3;
 
 async function open(page, id) {
 	const obj = byId(page, id);
@@ -64,10 +76,14 @@ test('the fold holds all of it, and the buttons it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		// line, letter, word - plus the text shadow's radius and fade
-		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(5);
-		await expect(pop(page).locator('.glue-align-btn')).toHaveCount(4);
+		// the size, line, letter, word - plus the text shadow's radius and fade
+		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(6);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
+		// and the alignments are NOT in here: they are one of the six things the
+		// panel shows, above the fold, so the count that used to be 4 here is 4
+		// on the panel and 0 in the fold
+		await expect(panel(page).locator('.glue-align-btn')).toHaveCount(4);
+		await expect(pop(page).locator('.glue-align-btn')).toHaveCount(0);
 
 		for (const gone of ['text-line-height', 'text-letter-spacing',
 			'text-word-spacing', 'text-align', 'text-spacing']) {
@@ -259,10 +275,12 @@ test('a click outside closes it, and Escape closes it', async ({ page, hg }) => 
 	await waitForEditor(page, 1);
 	await open(page, a);
 
+	// the panel itself, not the fold: `pop` names the fold, and the fold would
+	// be gone with the panel either way - an assertion that cannot fail
 	await page.mouse.click(30, 30);
-	await expect(pop(page)).toHaveCount(0);
+	await expect(panel(page)).toHaveCount(0);
 
 	await open(page, a);
 	await page.keyboard.press('Escape');
-	await expect(pop(page)).toHaveCount(0);
+	await expect(panel(page)).toHaveCount(0);
 });

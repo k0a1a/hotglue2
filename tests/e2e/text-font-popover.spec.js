@@ -1,7 +1,14 @@
-// The font popover: face, size and style in one panel, in place of the three
-// buttons that used to be here - one that cycled through faces a click at a
-// time, one that had to be dragged to change the size, and one that cycled
-// bold -> italic -> both -> normal.
+// The font popover: the type's sizes, styles and alignments in one panel, in
+// place of the three buttons that used to be here - one that cycled through
+// faces a click at a time, one that had to be dragged to change the size, and
+// one that cycled bold -> italic -> both -> normal.
+//
+// What the panel SHOWS since 2026-09-17 is four sizes as buttons (s, n, b, x),
+// the four styles with the colour beside them, and the four alignments; the
+// face, the exact size and everything else are under "more knobs". So `own`
+// below - the panel's own rows, outside the fold - is the three rows the panel
+// opens on, and the face, the size field and the slider are reached through
+// openFold.
 //
 // Two things about it are worth pinning down beyond "the controls work".
 //
@@ -30,7 +37,18 @@ const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 const pop = (page) => page.locator('.glue-font-popover');
 // the panel's own rows, not the ones inside the advanced fold
 const own = (page) => page.locator('.glue-font-popover > .glue-popover-row');
+const fold = (page) => pop(page).locator('.glue-popover-advanced');
+const sizeBtn = (page, which) => page.locator(`.glue-font-size-${which}`);
 const toggle = (page, which) => page.locator(`.glue-font-toggle-${which}`);
+
+// the face, the exact size and the rest of the panel live in the fold: a
+// control in there is in the DOM whether or not it is open, so counts and
+// classes read the same either way and it is clicking, filling and selecting
+// that need the way in
+async function openFold(page) {
+	await pop(page).locator('.glue-popover-disclosure').click();
+	await expect(fold(page)).toBeVisible();
+}
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 	getComputedStyle(document.getElementById(i))[p], [id, prop]);
 
@@ -52,11 +70,21 @@ test('one button opens the panel, and the three it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		await expect(page.locator('.glue-font-face')).toBeVisible();
-		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(1);
+		// the four sizes the panel opens on, and the styles and alignments
+		await expect(sizeBtn(page, 's')).toBeVisible();
+		await expect(sizeBtn(page, 'n')).toBeVisible();
+		await expect(sizeBtn(page, 'b')).toBeVisible();
+		await expect(sizeBtn(page, 'x')).toBeVisible();
 		await expect(page.locator('.glue-font-toggle')).toHaveCount(4);
-		// the reset lives in the fold, not among the rows above it: it clears
-		// the whole panel, which is more than these rows set
+		await expect(page.locator('.glue-align-btn')).toHaveCount(4);
+		// and no slider among the panel's own rows: the size is folded now
+		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
+		// the face and the exact size are in the fold, with the reset - which
+		// clears the whole panel, more than the rows above it set
+		await expect(fold(page)).toBeHidden();
+		await openFold(page);
+		await expect(page.locator('.glue-font-face')).toBeVisible();
+		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(6);
 		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
 
 		for (const gone of ['text-font-size', 'text-font-face', 'text-font-style']) {
@@ -89,7 +117,14 @@ test('it reads the object it was opened on', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	await expect(own(page).locator('.glue-popover-field')).toHaveValue('37');
+	await openFold(page);
+	await expect(fold(page).locator('.glue-popover-field').first()).toHaveValue('37');
+	// 37px is none of the four sizes the panel shows, so all four are unlit:
+	// the honest picture rather than rounding to the nearest
+	await expect(sizeBtn(page, 's')).not.toHaveClass(/glue-font-size-on/);
+	await expect(sizeBtn(page, 'n')).not.toHaveClass(/glue-font-size-on/);
+	await expect(sizeBtn(page, 'b')).not.toHaveClass(/glue-font-size-on/);
+	await expect(sizeBtn(page, 'x')).not.toHaveClass(/glue-font-size-on/);
 	await expect(toggle(page, 'bold')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'underline')).toHaveClass(/glue-font-toggle-on/);
 	await expect(toggle(page, 'italic')).not.toHaveClass(/glue-font-toggle-on/);
@@ -103,8 +138,9 @@ test('the size field and slider stay in step, and the field is not capped',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = own(page).locator('.glue-popover-field');
-		const slider = own(page).locator('.glue-popover-slider');
+		await openFold(page);
+		const field = fold(page).locator('.glue-popover-field').first();
+		const slider = fold(page).locator('.glue-popover-slider').first();
 
 		await field.fill('42');
 		await field.dispatchEvent('input');
@@ -131,7 +167,8 @@ test('a size change is stored, and keeps line-height in proportion',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		const field = own(page).locator('.glue-popover-field');
+		await openFold(page);
+		const field = fold(page).locator('.glue-popover-field').first();
 		await field.fill('30');
 		await field.dispatchEvent('input');
 		await field.dispatchEvent('change');
@@ -143,11 +180,49 @@ test('a size change is stored, and keeps line-height in proportion',
 			.toBe('60px');
 	});
 
+test('the four sizes set the size, light up, and keep line-height in step',
+	async ({ page, hg }) => {
+		// the panel opens on these rather than on the slider: most objects are
+		// set in one of four sizes, and the exact number is the fold's
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'text-font-size': '16px', 'text-line-height': '24px' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		// 16 is normal, so it is the one that is lit
+		await expect(sizeBtn(page, 'n')).toHaveClass(/glue-font-size-on/);
+		await expect(sizeBtn(page, 's')).not.toHaveClass(/glue-font-size-on/);
+		await expect(sizeBtn(page, 'b')).not.toHaveClass(/glue-font-size-on/);
+		await expect(sizeBtn(page, 'x')).not.toHaveClass(/glue-font-size-on/);
+
+		// the two ends of the scale: 8 and 32, with big now in between them
+		for (const [which, px] of [['s', 8], ['x', 32]]) {
+			await sizeBtn(page, which).click();
+			await expect.poll(() => cssOf(page, a, 'fontSize')).toBe(px+'px');
+			await expect.poll(() => hg.readObject('100000000001').attrs['text-font-size'])
+				.toBe(px+'px');
+			await expect(sizeBtn(page, which)).toHaveClass(/glue-font-size-on/);
+			await expect(sizeBtn(page, 'n')).not.toHaveClass(/glue-font-size-on/);
+			// the ratio in force was 1.5, and it holds, as it did through the
+			// drag control this replaced
+			await expect.poll(() => hg.readObject('100000000001').attrs['text-line-height'])
+				.toBe(Math.round(px*1.5)+'px');
+		}
+
+		// the slider in the fold is the same number seen the other way round
+		await openFold(page);
+		await expect(fold(page).locator('.glue-popover-field').first()).toHaveValue('32');
+	});
+
 test('the face dropdown lists the faces and applies one', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
+	// the dropdown is the fold's first row: selecting needs it open, since a
+	// hidden control has no box to act on
+	await openFold(page);
 
 	const select = page.locator('.glue-font-face');
 	const values = await select.evaluate((s) =>
@@ -300,7 +375,10 @@ test('the text shadow stores its ingredients and reaches the published page',
 		await pop(page).locator('.glue-popover-disclosure').click();
 
 		const fold = pop(page).locator('.glue-popover-advanced');
-		const radius = fold.locator('.glue-popover-field').nth(3);
+		// the fold's fields in order: size, line, letter, word, shadow, fade -
+		// the shadow's radius is the fifth, two places further down than it was
+		// before the size joined them (2026-09-17)
+		const radius = fold.locator('.glue-popover-field').nth(4);
 		await radius.fill('8');
 		await radius.dispatchEvent('input');
 		await radius.dispatchEvent('change');
@@ -329,7 +407,7 @@ test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 	await open(page, a);
 	await pop(page).locator('.glue-popover-disclosure').click();
 
-	const radius = pop(page).locator('.glue-popover-advanced .glue-popover-field').nth(3);
+	const radius = pop(page).locator('.glue-popover-advanced .glue-popover-field').nth(4);
 	await radius.fill('0');
 	await radius.dispatchEvent('input');
 	await radius.dispatchEvent('change');

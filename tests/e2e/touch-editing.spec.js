@@ -160,6 +160,13 @@ test('a finger drags the opacity slider in the properties panel',
 		await page.waitForTimeout(400);		// the menu fades in
 		await page.getByTitle('object properties').tap();
 		await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
+		// the row lives in the panel's one fold, and a folded row has no box to
+		// aim a finger at - so the disclosure is tapped open first (with a
+		// finger, like the rest of this test) and the slider measured after it,
+		// since opening the fold re-places the panel
+		await page.locator('.glue-properties-popover .glue-popover-disclosure').tap();
+		await expect(page.locator('.glue-properties-popover .glue-popover-advanced'))
+			.toBeVisible();
 
 		// named: the panel has an x, a y, a scale and a padding slider besides
 		const slider = page.locator('.glue-opacity-row .glue-popover-slider');
@@ -218,6 +225,10 @@ test('a finger drags the padding slider in the properties panel without scrollin
 		await page.getByTitle('object properties').tap();
 		const panel = page.locator('.glue-popover.glue-properties-popover');
 		await expect(panel).toBeVisible();
+		// the padding row is in the panel's fold; the disclosure is tapped open
+		// before anything is measured, because opening it re-places the panel
+		await panel.locator('.glue-popover-disclosure').tap();
+		await expect(panel.locator('.glue-popover-advanced')).toBeVisible();
 
 		const outerBefore = await page.evaluate((i) => {
 			const el = document.getElementById(i);

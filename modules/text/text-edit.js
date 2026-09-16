@@ -1405,6 +1405,17 @@ $.glue.live('.text', 'glue-resizestop', function(e) {
 // through the installed faces a click at a time, one that had to be dragged to
 // change the size, and one that cycled bold -> italic -> both -> normal.
 //
+// The panel is what the type IS, in the terms most objects are set in: four
+// sizes as buttons (small, normal, big, extra), then the four styles with the colour
+// beside them, then the four alignments. Everything else is under "more knobs",
+// which is the house style every panel follows now (js/edit.js, beside
+// icon_row()) - and here that is the rest of the type as well as the rest of
+// the panel: the face and the exact size are values, so they went in with the
+// spacings, the shadow and the reset on 2026-09-17, danja's call. The three
+// rows the panel shows are unlabelled (the style and align labels came off the
+// same day): every button in them is named in its tooltip and nowhere else,
+// which is the shape the house style asks for.
+//
 // SCOPE IS THE WHOLE OBJECT, like every other control in this menu: they all
 // read getComputedStyle(obj) and write obj.style.*. Per-selection styling is
 // the run-formatting strip above; the toggles here are two-state, because
@@ -1440,7 +1451,13 @@ function text_font_popover(obj)
 		$.glue.object.save(obj);
 	};
 
-	// --- row 1: face ------------------------------------------------------
+	// --- the face, and the size to the pixel ------------------------------
+	//
+	// Both are the fold's first two rows since 2026-09-17. The face was the
+	// panel's first row from the beginning - a list of the installed faces, each
+	// option set in its own typeface, which is the whole point of it - and the
+	// size slider was its second. What the panel shows instead is the three
+	// sizes above: the many faces and the exact number are the "more knobs".
 	var fonts = [];
 	var woff_fonts = [];
 	$.glue.text.get_fonts(fonts, woff_fonts);
@@ -1492,31 +1509,97 @@ function text_font_popover(obj)
 		$.glue.conf.text.last_font = this.value;
 		$.glue.backend({ method: 'page.set_last_font', font: this.value });
 	});
+	// the face row is built here and appended into the fold below: it is a
+	// value, and the fold is where this panel's values live now
 	var face_row = $.glue.popover.row(false);
 	face_row.appendChild(select);
-	pop.appendChild(face_row);
 
-	// --- row 2: size ------------------------------------------------------
+	// The one writer for the font size, whichever control asked for it: the
+	// three buttons above and the slider below are two views of one number and
+	// must not drift apart - and both hold line-height in step with it, as the
+	// old drag control did.
+	var set_size = function(px, commit) {
+		if (px < 1) {
+			return;
+		}
+		obj.style.fontSize = px+'px';
+		obj.style.lineHeight = (px*ratio)+'px';
+		if (commit) {
+			save();
+			$.glue.conf.text.last_font_size = obj.style.fontSize;
+			$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
+			$.glue.conf.text.last_line_height = obj.style.lineHeight;
+			$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
+		}
+		// the row says the same number the buttons do. set() writes the slider
+		// and the field without firing anything, so this cannot come back in
+		// through the row's own apply - and a size the slider cannot reach (300
+		// typed into the field) parks the slider at its end and keeps the
+		// number, exactly as it does when the field itself is typed into.
+		size_row.set(px);
+		sync_size();
+	};
+
+	// --- row 1: the four sizes --------------------------------------------
+	//
+	// Small, normal, big and extra, one click each, with the number in the
+	// tooltip. They are letters rather than drawings, like the style toggles
+	// under them, and each is set at the size it applies - the same joke as the
+	// T wearing its own effect. Danja's call, 2026-09-17: the sizes are what the
+	// panel opens on, and the face and the exact size slid under "more knobs"
+	// below them.
+	//
+	// Four rather than three as of the same day, which moved big down to 24: the
+	// row is a scale now - 8, 16, 24, 32 - rather than three islands with a jump
+	// between the last two, and the size the old row called big is the new one's
+	// extra.
+	//
+	// The one in force is lit. A size that is none of them - the slider in the
+	// fold sets one - leaves all four unlit, which is the honest picture rather
+	// than rounding to the nearest.
+	var size_buttons = [];
+	var size_preset_row = $.glue.popover.row(false);
+	[
+		['s', 8, 'small: 8px'],
+		['n', 16, 'normal: 16px'],
+		['b', 24, 'big: 24px'],
+		['x', 32, 'extra: 32px']
+	].forEach(function(s) {
+		var b = document.createElement('div');
+		b.className = 'glue-font-size glue-font-size-'+s[0];
+		b.textContent = s[0];
+		b.title = s[2];
+		b.dataset.size = s[1];
+		b.addEventListener('click', function() {
+			set_size(s[1], true);
+		});
+		size_buttons.push(b);
+		size_preset_row.appendChild(b);
+	});
+	var sync_size = function() {
+		var cur = parseInt(getComputedStyle(obj).fontSize, 10);
+		size_buttons.forEach(function(b) {
+			b.classList.toggle('glue-font-size-on',
+				parseInt(b.dataset.size, 10) == cur);
+		});
+	};
+	sync_size();
+	pop.appendChild(size_preset_row);
+
+	// --- the size, exactly -------------------------------------------------
+	//
+	// The slider and its field, which was the panel's second row until
+	// 2026-09-17: the three buttons above are what most objects want, and this
+	// is for the size that is not one of them. It is appended into the fold
+	// below, under the face.
 	var size_row = $.glue.popover.number_row('size', {
 		min: 8, max: 100, step: 1, value: size, unit: 'px',
 		apply: function(px, commit) {
-			if (px < 1) {
-				return;
-			}
-			obj.style.fontSize = px+'px';
-			obj.style.lineHeight = (px*ratio)+'px';
-			if (commit) {
-				save();
-				$.glue.conf.text.last_font_size = obj.style.fontSize;
-				$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
-				$.glue.conf.text.last_line_height = obj.style.lineHeight;
-				$.glue.backend({ method: 'page.set_last_line_height', height: obj.style.lineHeight });
-			}
+			set_size(px, commit);
 		}
 	});
-	pop.appendChild(size_row.row);
 
-	// --- row 3: style -----------------------------------------------------
+	// --- row 2: style -----------------------------------------------------
 	//
 	// Four independent toggles, any combination valid. Underline and
 	// strikethrough are the fiddly pair: they are ONE css property, so they
@@ -1552,7 +1635,10 @@ function text_font_popover(obj)
 		obj.style.textDecoration = parts.join(' ');
 	};
 
-	var style_row = $.glue.popover.row('style');
+	// unlabelled, with the size row above it and the align row below: the three
+	// rows the panel shows are buttons and nothing else (the labels came off on
+	// 2026-09-17), and each toggle is named in its own tooltip
+	var style_row = $.glue.popover.row(false);
 	var toggles = {};
 	[
 		['bold', 'bold', function() {
@@ -1598,7 +1684,66 @@ function text_font_popover(obj)
 
 	pop.appendChild(style_row);
 
-	// --- more knobs: spacing, alignment and a shadow ----------------------
+	// --- row 3: alignment -------------------------------------------------
+	//
+	// Out in the open with the style row above it since 2026-09-17 - danja's
+	// call, and the one part of the font panel that was still inside the fold:
+	// the four sizes, the four styles with the colour, and the four alignments
+	// are what the panel shows, and everything else is under "more knobs".
+	//
+	// Unlabelled, like the two rows above it: the labels came off the style and
+	// align rows the same day, and what the panel shows is now three rows of
+	// buttons and nothing else - the house style's shape, arrived at from the
+	// other end. Every icon in here is named in its tooltip, which is where the
+	// labels went.
+	//
+	// Four buttons rather than a cycle, so the one in force is visible
+	// without clicking through the others. Note computed text-align reads
+	// 'start' when nothing is set, which is left in a left-to-right page -
+	// treat it as left rather than as "none of them".
+	var align_row = $.glue.popover.row(false);
+	var align_buttons = [];
+	var sync_align = function() {
+		var cur = getComputedStyle(obj).textAlign;
+		if (cur == 'start') {
+			cur = 'left';
+		}
+		align_buttons.forEach(function(b) {
+			b.classList.toggle('glue-align-on', b.dataset.align == cur);
+		});
+	};
+	// The icon names are the SuperGlue set's, and two of them are swapped at
+	// source: align-left.svg draws lines CENTRED on a common axis, while
+	// align-center.svg draws them flush against a left margin rule. Mapped by
+	// what the artwork shows rather than by what the file is called - a
+	// button that says "centre" and looks like "left" is worse than an odd
+	// pairing in here. Fix the names upstream and this table follows.
+	[
+		['left', 'align-center', 'align left'],
+		['center', 'align-left', 'align centre'],
+		['right', 'align-right', 'align right'],
+		['justify', 'align-justify', 'justify']
+	].forEach(function(a) {
+		var b = $.glue.icon(a[1], a[2]);
+		b.classList.add('glue-align-btn');
+		// the toolbar's icons are 32px; in here they sit next to the font
+		// panel's 26px style toggles and should match those instead
+		b.style.width = '26px';
+		b.style.height = '26px';
+		b.dataset.align = a[0];
+		b.addEventListener('click', function() {
+			obj.style.textAlign = a[0];
+			sync_align();
+			save();
+		});
+		align_buttons.push(b);
+		align_row.appendChild(b);
+	});
+	sync_align();
+
+	pop.appendChild(align_row);
+
+	// --- more knobs: spacing and a shadow ---------------------------------
 	//
 	// A panel of its own until now, opened from a button of its own. It is
 	// the same subject - how the type sits - and most objects never touch it,
@@ -1607,6 +1752,11 @@ function text_font_popover(obj)
 	pop.appendChild(fold.toggle);
 	var adv = fold.body;
 	pop.appendChild(adv);
+
+	// the face and the size, first in the fold: built above, appended here,
+	// because the appends are what fix what the panel looks like
+	adv.appendChild(face_row);
+	adv.appendChild(size_row.row);
 
 	// em is relative to the object's own font size, so every read and write
 	// below goes through it
@@ -1666,55 +1816,6 @@ function text_font_popover(obj)
 		}
 	});
 	adv.appendChild(word.row);
-
-	// --- alignment --------------------------------------------------------
-	//
-	// Four buttons rather than a cycle, so the one in force is visible
-	// without clicking through the others. Note computed text-align reads
-	// 'start' when nothing is set, which is left in a left-to-right page -
-	// treat it as left rather than as "none of them".
-	var align_row = $.glue.popover.row('align');
-	var align_buttons = [];
-	var sync_align = function() {
-		var cur = getComputedStyle(obj).textAlign;
-		if (cur == 'start') {
-			cur = 'left';
-		}
-		align_buttons.forEach(function(b) {
-			b.classList.toggle('glue-align-on', b.dataset.align == cur);
-		});
-	};
-	// The icon names are the SuperGlue set's, and two of them are swapped at
-	// source: align-left.svg draws lines CENTRED on a common axis, while
-	// align-center.svg draws them flush against a left margin rule. Mapped by
-	// what the artwork shows rather than by what the file is called - a
-	// button that says "centre" and looks like "left" is worse than an odd
-	// pairing in here. Fix the names upstream and this table follows.
-	[
-		['left', 'align-center', 'align left'],
-		['center', 'align-left', 'align centre'],
-		['right', 'align-right', 'align right'],
-		['justify', 'align-justify', 'justify']
-	].forEach(function(a) {
-		var b = $.glue.icon(a[1], a[2]);
-		b.classList.add('glue-align-btn');
-		// the toolbar's icons are 32px; in here they sit next to the font
-		// panel's 26px style toggles and should match those instead
-		b.style.width = '26px';
-		b.style.height = '26px';
-		b.dataset.align = a[0];
-		b.addEventListener('click', function() {
-			obj.style.textAlign = a[0];
-			sync_align();
-			save();
-		});
-		align_buttons.push(b);
-		align_row.appendChild(b);
-	});
-	sync_align();
-
-	adv.appendChild(align_row);
-
 
 	// --- a halo behind the text ------------------------------------------
 	//
@@ -1815,6 +1916,7 @@ function text_font_popover(obj)
 			// every control now says something that is no longer true
 			var now = getComputedStyle(obj);
 			size_row.set(parseInt(now.fontSize, 10) || 16);
+			sync_size();
 			line.set(to_em(now.lineHeight, 1.2));
 			letter.set(to_em(now.letterSpacing, 0));
 			word.set(to_em(now.wordSpacing, 0));
