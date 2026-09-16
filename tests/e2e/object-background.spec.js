@@ -307,7 +307,7 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		// the panel is in the non-default state it was given, the position rows
 		// reading it back out of the stored attribute
 		await expect(pop(page).locator('.glue-background-repeat'))
-			.toHaveClass(/glue-font-toggle-on/);
+			.toHaveClass(/glue-btn-active/);
 		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
 			.toHaveValues(['30', '20']);
 
@@ -327,7 +327,7 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
 		// and the panel shows the defaults again
 		await expect(pop(page).locator('.glue-background-repeat'))
-			.not.toHaveClass(/glue-font-toggle-on/);
+			.not.toHaveClass(/glue-btn-active/);
 		await expect(scaleField(page)).toHaveValue('100');
 		// the two position rows are back at the corner with it
 		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))

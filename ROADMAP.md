@@ -535,8 +535,8 @@ Shipped 2026-09-15 — the page background's panel is the object's panel:
   and that closing the panel hands the object's own drag over again. There is still no
   page-background spec — the page's panel is untested.
 
-Shipped 2026-09-16 — the background's scroll toggle, and the icon set's first two-state
-pair converted (danja's drawing, `img/icons/background-scroll.svg`):
+Shipped 2026-09-16 — the background's scroll toggle, and both background panels' toggles
+onto the icon set (danja's drawings, `img/icons/background-scroll.svg` and `tile.svg`):
 
 - **"Background scrolls" left the page menu for the page background panel**, as a `scroll`
   row next to `tile`, and it is a toggle: on (the default) means the image scrolls with
@@ -557,6 +557,13 @@ pair converted (danja's drawing, `img/icons/background-scroll.svg`):
   down to 22px — the same trick, in the same place in `css/edit.css`, as
   `.glue-popover-color`. `#glue-menu-page-background-scroll` and the two PNGs are gone
   from `modules/page/`, so the PNG inventory below is one pair shorter.
+- **Then the tile toggle took `tile.svg`, in both background panels**, in that same shape:
+  one drawing, state in the frame, tooltip naming the state. Those two were the other kind
+  of conversion the set makes — a *drawn* glyph for a *typed* one: they were white squares
+  wearing the text glyph `▦` in `.glue-font-toggle`, so they were the set's unfinished
+  business rather than the PNG sweep's. `▦` survives in the two toggles this did not touch
+  (the grid panel's show and the image panel's decorative), and `.glue-background-repeat`
+  is now an icon button, which is what `object-background.spec.js` asserts its state on.
 - Not covered by a spec: the page background panel still has none.
 
 ---
@@ -613,7 +620,8 @@ pair converted (danja's drawing, `img/icons/background-scroll.svg`):
   (the Font panel), `padding`, `background-color-remove` (make background transparent),
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
   `clip` (state shown by the pressed-in frame), `page-background-image` (both background
-  buttons), `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
+  buttons), `tile` (the tile toggles in both background panels),
+  `change-layer` (the adjustments fold's button) with its `flip-h`/`flip-v`
   and `layer-top`/`layer-up`/`layer-down`/`layer-bottom`, the four `font-style-*` on the
   run-format strip, the four `align-*` inside the font panel's fold (still mapped by
   what the artwork shows — two names are swapped at source), `download`/`upload` (the

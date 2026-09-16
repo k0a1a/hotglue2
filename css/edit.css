@@ -1000,17 +1000,22 @@
 	width: 200px;
 }
 
-.glue-background-scroll {
-	/* the page background's scroll toggle: a panel control, so the panel's
+.glue-background-scroll,
+.glue-background-repeat {
+	/* the background panels' icon toggles: panel controls, so the panel's
 	   26px rather than the toolbar's 32, with the artwork coming down to
-	   match (same trick, same reason, as .glue-popover-color above). Its on
-	   state needs nothing here - glue-btn-active is the frame-thickens
+	   match (same trick, same reason, as .glue-popover-color above). Their on
+	   states need nothing here - glue-btn-active is the frame-thickens
 	   language the editor's other icon toggles use. */
 	flex: 0 0 auto;
 	cursor: pointer;
 }
 
-.glue-background-scroll::before {
+.glue-background-scroll::before,
+.glue-background-repeat::before {
+	/* 22px because the frame is what the box is sized against: a 26px button
+	   less the pressed-in 2px border leaves exactly this, so the art neither
+	   shrinks nor clips when the state changes. */
 	-webkit-mask-size: 22px 22px;
 	mask-size: 22px 22px;
 }

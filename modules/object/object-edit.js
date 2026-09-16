@@ -1007,18 +1007,27 @@ function object_background_popover(obj)
 	};
 
 	// --- tile or not ------------------------------------------------------
+	//
+	// The set's tile drawing on the panel's own scale, with its state in the
+	// frame (glue-btn-active) rather than in a second glyph: the same icon
+	// button the page's panel uses for its scroll row, and the reason the two
+	// panels still read as one panel with different plumbing underneath.
 	var repeat_row = $.glue.popover.row('tile');
-	var repeat = document.createElement('div');
-	repeat.className = 'glue-font-toggle glue-background-repeat';
-	repeat.textContent = '\u25a6';
-	repeat.title = 'repeat the image across the object';
+	var repeat = $.glue.icon('tile');
+	repeat.classList.add('glue-background-repeat');
+	// the toolbar's icons are 32px; the panel's own controls are 26
+	repeat.style.width = '26px';
+	repeat.style.height = '26px';
 	var sync_repeat = function() {
-		repeat.classList.toggle('glue-font-toggle-on',
-			getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1);
+		var tiled = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
+		repeat.classList.toggle('glue-btn-active', tiled);
+		repeat.title = tiled ?
+			'the image is tiled across the object - click to show it once' :
+			'the image is shown once - click to tile it across the object';
 	};
 	repeat.addEventListener('click', function() {
-		var on = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
-		obj.style.backgroundRepeat = on ? 'no-repeat' : 'repeat';
+		var tiled = getComputedStyle(obj).backgroundRepeat.indexOf('no-repeat') == -1;
+		obj.style.backgroundRepeat = tiled ? 'no-repeat' : 'repeat';
 		sync_repeat();
 		save();
 	});

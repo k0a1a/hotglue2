@@ -397,14 +397,23 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 
 		// --- tile or not ---------------------------------------------------
+		//
+		// The set's tile drawing, on the panel's own scale, with its state in
+		// the frame (glue-btn-active) rather than in a second glyph - the
+		// shape the scroll row below takes, and the object panel's own tile
+		// toggle takes with it.
 		var repeat_row = $.glue.popover.row('tile');
-		var repeat = document.createElement('div');
-		repeat.className = 'glue-font-toggle glue-background-repeat';
-		repeat.textContent = '\u25a6';
-		repeat.title = 'repeat the image across the page';
+		var repeat = $.glue.icon('tile');
+		repeat.classList.add('glue-background-repeat');
+		// the toolbar's icons are 32px; the panel's own controls are 26
+		repeat.style.width = '26px';
+		repeat.style.height = '26px';
 		var sync_repeat = function() {
-			repeat.classList.toggle('glue-font-toggle-on',
-				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
+			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
+			repeat.classList.toggle('glue-btn-active', tiled);
+			repeat.title = tiled ?
+				'the image is tiled across the page - click to show it once' :
+				'the image is shown once - click to tile it across the page';
 		};
 		repeat.addEventListener('click', function() {
 			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
