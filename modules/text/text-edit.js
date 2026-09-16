@@ -2135,49 +2135,18 @@ document.addEventListener('DOMContentLoaded', function() {
 			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		}
 	});
-	$.glue.contextmenu.register('text', 'text-source', elem, 5);
+	$.glue.contextmenu.register('text', 'text-source', elem, 3);
 
 
-	// the new line-art swatch glyph, through the mask pipeline like every
-	// other icon in the set
-	elem = $.glue.icon('color-swatch', 'change background color');
-	var colorpicker_shown = false;
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var col = getComputedStyle(obj).backgroundColor;
-		if (e.shiftKey) {
-			col = prompt('Enter background color (e.g. #ff0000 or rgb(255, 0, 0))', col);
-			if (!col) {
-				return;
-			}
-		}
-		$.glue.colorpicker.show(col, false, function(col) {
-			obj.style.backgroundColor = col;
-			// explicitly set the color for the textarea as changes to the parent object are not reflected while editing on Chrome 10.0.634.0 and below)
-			obj.querySelector(':scope > .glue-text-input').style.backgroundColor = col;
-		}, function (col) {
-			$.glue.object.save(obj);
-			colorpicker_shown = false;
-		}, obj);
-		colorpicker_shown = true;
-	});
-	elem.addEventListener('glue-deselect', function(e) {
-		// hide the colorpicker if we opened it
-		if (colorpicker_shown) {
-			$.glue.colorpicker.hide();
-			colorpicker_shown = false;
-		}
-	});
-	$.glue.contextmenu.register('text', 'text-background-color', elem, 1);
-
-	elem = $.glue.icon('background-color-remove', 'make background transparent');
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		obj.style.backgroundColor = 'transparent';
-		obj.querySelector(':scope > .glue-text-input').style.backgroundColor = 'transparent';
-		$.glue.object.save(obj);
-	});
-	$.glue.contextmenu.register('text', 'text-background-transparent', elem, 2);
+	// The text menu's own two background buttons - "change background color"
+	// and "make background transparent" - are gone. The object background
+	// panel took over what an object's background is: its colour button is
+	// this same picker onto obj.style.backgroundColor, which text_alter_save()
+	// stores as text-background-color, and the picker's alpha row taken to 0%
+	// stores 'transparent', the keyword the second button used to set outright
+	// (to_css() in js/edit.js keeps the keyword rather than writing rgba()
+	// zeroes). Two buttons, one panel button, nothing lost - and the textarea
+	// needs no syncing either: .glue-text-input is 'background: inherit'.
 
 
 	// --- font popover ----------------------------------------------------
@@ -2193,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		text_font_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-font', elem, 3);
+	$.glue.contextmenu.register('text', 'text-font', elem, 1);
 
 
 
@@ -2205,7 +2174,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		text_padding_popover($.glue.owner(this));
 		e.stopPropagation();
 	});
-	$.glue.contextmenu.register('text', 'text-text-padding', elem, 4);
+	$.glue.contextmenu.register('text', 'text-text-padding', elem, 2);
 
 	// semantic heading level: screen readers navigate pages by headings, so
 	// a text object can render as h1/h2/h3 (appearance stays the author's).

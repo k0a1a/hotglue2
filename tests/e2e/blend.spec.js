@@ -15,10 +15,17 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
+// The picker comes from the object background panel: the text menu's own
+// "change background color" went when the panel took the object's background
+// over (with it "make background transparent", which was this picker's alpha
+// row at 0%).
 async function openPicker(page, id) {
 	await byId(page, id).click();
 	await page.waitForTimeout(400);		// the menu fades in
-	await page.getByTitle('change background color').click();
+	// exact: getByTitle matches a substring, and "set object background
+	// image" is in the same panel
+	await page.getByTitle('object background', { exact: true }).click();
+	await page.getByTitle('set object background color', { exact: true }).click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 }
 

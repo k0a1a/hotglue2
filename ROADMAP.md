@@ -631,7 +631,8 @@ and `background-set.svg`):
   Danja's call: the object panel gets the page's panel minus the scroll toggle, its menu
   button takes `background-set` too, and it moves to the **left-most** position in the top
   row (`object-background` at prio 0, ahead of the text items' 1–5 and the adjustments'
-  7). `page-background-image` is what all that leaves behind: nothing in the tree
+  7 — *the text items are 1–3 as of the bullet below: their own two background buttons
+  went with them*). `page-background-image` is what all that leaves behind: nothing in the tree
   references it any more, and it stays in `img/icons/` for danja to keep or drop.
 - **Its two-state menu button went the way the page's went**, for the same reason as the
   page's: with no image the button *was* the file input, and only an object that already
@@ -708,8 +709,33 @@ and `background-set.svg`):
   menu comes up with its own items in it and no background button, and the text object on
   the same page still gets one — an absence alone would also be what a button that failed
   to render at all looks like.
+- **Then the text menu's own two background buttons went.** *"Remove
+  'change backgroud color' and 'make background transparent' buttons from top menu
+  (superseeded by 'objet background')"* — prio 1 and 2 of the top row, and the panel's one
+  colour button covers both. It is the same picker onto `obj.style.backgroundColor`, which
+  `text_alter_save()` stores as `text-background-color` — exactly what the first button set —
+  and "transparent" is that picker's alpha row taken to 0%: `to_css()` keeps the keyword
+  rather than writing `rgba()` zeroes, so what lands on the object is the same string the
+  second button wrote outright, and `object-edit.js` already reads that keyword as "cleared"
+  for the glow and shadow colours. The pair's only other machinery was setting the
+  `.glue-text-input` textarea's background alongside the object's own, an old Chrome
+  workaround; the textarea is `background: inherit` now, so the object's colour is enough.
+  The first button's shift-click `prompt()` for typing a colour as CSS rather than hex goes
+  with them — the picker's hex field is the typed path. The remaining text items renumbered
+  to 1–3 (font, padding, source) so the row reads as one sequence again.
+- **`background-color-remove.svg` loses its last wearer**, the third drawing to go quiet in
+  as many days: the make-transparent button was its only one. It stays in `img/icons/` like
+  the other two, and it ends the exception the icon inventory carried — "only the
+  make-transparent action keeps a glyph of its own" — there being no make-transparent action
+  left for a glyph to belong to.
+- **Two specs opened the picker through the text menu** and open it through the panel now:
+  `colorpicker.spec.js` (its `openPicker()`, and the placement test's button lookup) and
+  `blend.spec.js`. The picker is unchanged, only the address of its button — but both helpers
+  had to learn that a panel is *toggled* by its menu button (`popover.open()` closes what it
+  reopens) and is usually still standing from the previous open within one test.
 - Not covered by a spec: the page background panel still has none — the same gap as before,
-  and now the only one in either panel.
+  and now the only one in either panel. Neither of the two buttons that went had a spec;
+  what noticed was the pair of specs that reach the picker through them.
 
 ---
 
@@ -762,7 +788,7 @@ and `background-set.svg`):
   than line work, which turns to mush at 30px; `sheep-icon5` since its artwork grew a
   real eyelid — it blinks, see Done), `undo`, `redo`, `delete`, the padlock `lock`, the
   broken-link `object-link` and code-brackets `object-props`, `hyperlink`, `font-size`
-  (the Font panel), `padding`, `background-color-remove` (make background transparent),
+  (the Font panel), `padding`,
   `super-user` (the `</>` source toggle), `border-radius1` (the object's edge panel),
   `clip` (state shown by the pressed-in frame), `background-set` (both background
   buttons — the page's and the object's — danja's drawing, since 09-16),
@@ -782,8 +808,8 @@ and `background-set.svg`):
   `color-swatch` (which succeeded `color-quadrant`), and that is now every colour button
   without exception: the two background panels' took `background-color` for a day and gave
   it back on danja's call at the end of 09-16, since a colour button is a colour button
-  whatever the click does with the colour. Only the make-transparent action keeps a glyph
-  of its own.
+  whatever the click does with the colour. The make-transparent action, which alone kept a
+  glyph of its own, went the next day with the button that wore it.
 
   Judge new artwork by rendering its ALPHA at 30px, which is what a mask paints: the
   colour in the file never reaches the screen, so a black drawing and a white one look
@@ -829,9 +855,10 @@ and `background-set.svg`):
 
   Two of the SVGs have lost their last reference the same way, and are kept rather than
   deleted, like the PNGs: `page-background-image.svg` (the object's background button until
-  09-16) and `background-color.svg` (both background panels' colour button, worn for a day
-  before it took `color-swatch`). Neither is a placeholder and neither is broken; nothing
-  in the tree loads them.
+  09-16), `background-color.svg` (both background panels' colour button, worn for a day
+  before it took `color-swatch`) and `background-color-remove.svg` (the text menu's
+  make-background-transparent button, which went when the background panel took the colour
+  over). None is a placeholder and none is broken; nothing in the tree loads them.
 
   **Landmine, hit once already:** a relative `url()` inside a custom property resolves
   against the stylesheet that uses the `var()`, not the document — so `img/icons/x.svg`

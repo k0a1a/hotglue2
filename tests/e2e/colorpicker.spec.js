@@ -30,7 +30,13 @@ for (const [name, centered] of [['infinite', false], ['centered', true]]) {
 		await waitForEditor(page, 2);
 		await page.locator(`[id="${a}"]`).click();
 
-		const button = page.getByTitle(/background color/i).first();
+		// the button that opens the picker is the background panel's colour
+		// button, so it is the panel that has to be up first
+		const menu_btn = page.locator('#glue-contextmenu-object-background');
+		await expect(menu_btn).toBeVisible();
+		await page.waitForTimeout(400);		// the menu fades in
+		await menu_btn.click();
+		const button = page.locator('.glue-background-popover .glue-background-color');
 		const bb = await button.boundingBox();
 		await button.click();
 
@@ -74,6 +80,16 @@ for (const [name, centered] of [['infinite', false], ['centered', true]]) {
 const bgOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).backgroundColor, id);
 
+// The picker for an object's background is opened from the object background
+// panel now: the text menu's own "change background color" and "make
+// background transparent" went when the panel took them over (both were the
+// same picker - "transparent" is the alpha row at 0%). So: the menu button,
+// then the panel's colour button.
+//
+// The panel is toggled by its menu button (popover.open() closes what it
+// reopens), so it is opened only when it is not already up - these tests call
+// this helper more than once per test, and by then the panel is usually still
+// standing.
 async function openPicker(page, id) {
 	// only select if it is not selected already - a SECOND click on a text
 	// object is what puts it into edit mode, which is not what a test
@@ -82,7 +98,14 @@ async function openPicker(page, id) {
 	if (!(await obj.evaluate((e) => e.classList.contains('glue-selected')))) {
 		await obj.click();
 	}
-	await page.getByTitle(/background color/i).first().click();
+	const panel = page.locator('.glue-background-popover');
+	if (!(await panel.isVisible())) {
+		const btn = page.locator('#glue-contextmenu-object-background');
+		await expect(btn).toBeVisible();
+		await page.waitForTimeout(400);		// the menu fades in
+		await btn.click();
+	}
+	await panel.locator('.glue-background-color').click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 }
 

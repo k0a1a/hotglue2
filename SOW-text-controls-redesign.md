@@ -20,6 +20,10 @@ Decisions taken while building, so the record is not just the plan:
   `text-letter-spacing`, `text-word-spacing`, `text-align`) are gone from the menu. Left
   as their own buttons: padding, font colour, background colour, "make background
   transparent", link and source — thirteen buttons down to six.
+  *(Later still, "background color" and "make background transparent" went too — to the
+  object background panel's colour button, the redundancy this SOW spotted in the
+  transparency slider being exactly what removed them. What is left of the text menu's
+  own buttons is font, padding, source and heading.)*
 - **Alignment moved INTO the Spacing panel**, as four buttons rather than the old cycle,
   which was not in this SOW's sketch. Grouping it with spacing rather than leaving it
   outside is what makes the row short, and four buttons show which alignment is in force
