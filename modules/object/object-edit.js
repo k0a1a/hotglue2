@@ -1601,11 +1601,17 @@ function object_padding_section(body, obj, save)
 // Returns an object with the section's reset.
 function object_flip_section(icons, obj, save)
 {
-	// The artwork is flip-vertical.svg and flip-horizontal.svg - the words of
-	// the tooltips beside them, and danja's redraw of both (the set's
-	// flip-v/flip-h, which this called until 2026-09-16).
-	var flip_h = $.glue.popover.icon_button('flip-horizontal', 'flip horizontally');
-	var flip_v = $.glue.popover.icon_button('flip-vertical', 'flip vertically');
+	// The artwork is danja's pair of 2026-09-16 (the set's flip-v/flip-h, which
+	// this called until then), and the two files are named for the AXIS their
+	// dashed line draws - which is the opposite of the words in the tooltips
+	// beside them. flip-horizontal.svg draws a horizontal dashed line with the
+	// shape reflected above and below it, flip-vertical.svg a vertical one with
+	// the shape reflected left to right. So each button wears the file showing
+	// what its own click does, and the two names are swapped here rather than in
+	// the files - the same fitting-to-the-artwork the font panel's align buttons
+	// carry, two of whose four names are swapped at their own wiring.
+	var flip_h = $.glue.popover.icon_button('flip-vertical', 'flip horizontally');
+	var flip_v = $.glue.popover.icon_button('flip-horizontal', 'flip vertically');
 	var flip_sync = function() {
 		var axes = (typeof transform_flip_axes === 'function') ?
 			transform_flip_axes(obj) : { h: false, v: false };
@@ -1686,9 +1692,11 @@ function object_transparency_section(body, obj, save)
 //
 // The prompt asked both questions in one string - the address, a space, the
 // target - and its one line of help was the only thing that said so. Two rows
-// say it instead, and the address can be READ: a native box cannot be widened,
-// styled, or shown what the object already has, which is why editing an
-// existing link meant parsing it back out of the text you were given.
+// say it instead, one per question, and the address can be READ: a native box
+// cannot be widened, styled, or shown what the object already has, which is why
+// editing an existing link meant parsing it back out of the text you were
+// given. Both rows are out front; the target spent its first day in a fold and
+// is a row like the url's since 2026-09-17.
 //
 // What the prompt did that this does not lose. The link is not a dom
 // attribute: it is stored (object-link, object-target) and applied by the
@@ -1697,12 +1705,21 @@ function object_transparency_section(body, obj, save)
 // write. Those writes are not undoable - undo replays the dom, and a link
 // never appears in it. The prompt was not undoable either.
 //
-// Nothing is written until the field is committed: Enter, or clicking away.
-// That is the one place this panel differs from the ones beside it, which
-// apply while they are being dragged - a url is typed, and half a url is not a
-// value worth storing. Escape therefore drops what was typed since the last
-// commit, the way Escape on the prompt dropped everything; clicking away
-// commits, because the field blurs before the click lands.
+// Nothing is written until the field is committed, and there are two ways to
+// commit: Enter, or the panel closing. That is the one place this panel
+// differs from the ones beside it, which apply while they are being dragged -
+// a url is typed, and half a url is not a value worth storing. Escape drops
+// what was typed since the last commit, the way Escape on the prompt dropped
+// everything.
+//
+// Neither half is left to the browser, because closing REMOVES the field and
+// what that fires is not the same thing twice. Chromium fires change (and
+// blur) on a focused input it removes, so the close by itself stored whatever
+// was typed - including what Escape was meant to drop; Firefox fires neither,
+// so a url typed and then clicked away from was stored in Chromium and
+// silently dropped in Firefox. So: Escape marks the close as a discard, and
+// on_close does the committing, which is the single path every way out of
+// this panel goes through (js/edit.js close()).
 //
 // The button is vetoed for iframe and download objects (modules/iframe,
 // modules/download): an iframe is already somewhere, and a download is what
@@ -1715,6 +1732,8 @@ function object_link_popover(obj, data)
 	}
 	var link = data['object-link'] || '';
 	var target = data['object-target'] || '';
+	// Escape says the close that follows is a discard, not a commit
+	var discarding = false;
 
 	var url_row = $.glue.popover.row('link');
 	var url_input = document.createElement('input');
@@ -1726,24 +1745,20 @@ function object_link_popover(obj, data)
 	url_row.appendChild(url_input);
 	pop.appendChild(url_row);
 
-	// The target, folded away: _blank is the whole of it for almost everyone,
-	// and the row the button is named for should be the one you see. Every
-	// other fold in the editor is 'more knobs' - controls an object may never
-	// use - and this one is different: a target is STORED, so an object that
-	// has one must not have it hidden in a closed fold. The label says so,
-	// and is rewritten as the value is committed, so it can never stand there
-	// naming a target that has since been changed or taken off.
-	var fold = $.glue.popover.fold(pop, 'target');
-	var target_row = $.glue.popover.row(false);
+	// The target, out front beside the url. It was folded - as the one fold in
+	// the editor whose label named its contents rather than "more knobs" - on
+	// the reasoning that a target is STORED and must not be invisible; danja's
+	// call on 2026-09-17 is that the way to not hide it is not to fold it.
+	// Nothing else follows from that: the fold was one row and a click, and what
+	// it held is a value with a name, which is a row like the one above it.
+	var target_row = $.glue.popover.row('target');
 	var target_input = document.createElement('input');
 	target_input.type = 'text';
 	target_input.className = 'glue-popover-field glue-object-link-field';
 	target_input.value = target;
 	target_input.title = '_blank opens a new window; a frame name works too';
 	target_row.appendChild(target_input);
-	fold.body.appendChild(target_row);
-	pop.appendChild(fold.toggle);
-	pop.appendChild(fold.body);
+	pop.appendChild(target_row);
 
 	var footer = $.glue.popover.row(false);
 	var remove = $.glue.popover.delete('take the link off the object', function() {
@@ -1756,7 +1771,6 @@ function object_link_popover(obj, data)
 		url_input.value = '';
 		target_input.value = '';
 		sync();
-		fold_label();
 	});
 	footer.appendChild(remove);
 	pop.appendChild(footer);
@@ -1767,20 +1781,21 @@ function object_link_popover(obj, data)
 		remove.style.display = link ? '' : 'none';
 	};
 
-	// fold() owns the label and rewrites it on every toggle, so the disclosure
-	// is read back for the arrow it has just written and the value put after
-	// it - this listener is registered second on the same element and so runs
-	// after fold's own.
-	var fold_label = function() {
-		var disclosure = fold.toggle.querySelector('.glue-popover-disclosure');
-		disclosure.textContent = (fold.body.style.display == 'none' ?
-			'\u25b8' : '\u25be')+' target'+(target ? ': '+target : '');
-	};
-	fold.toggle.querySelector('.glue-popover-disclosure').addEventListener('click', fold_label);
-
 	var write = function() {
 		var url = url_input.value.trim();
 		var tgt = target_input.value.trim();
+		// Escape is on its way out and takes what was typed with it. The flag
+		// is read here rather than at the close because Chromium fires change
+		// when the field is removed, which is after the close has run.
+		if (discarding) {
+			return;
+		}
+		// a commit that would store what is already stored does nothing, which
+		// makes the second of two commits in one closing (this panel's own,
+		// then Chromium's on removal) a no-op
+		if (url === link && (url ? tgt : '') === target) {
+			return;
+		}
 		// an emptied field takes the link off, which is what an emptied
 		// prompt box did too
 		if (url) {
@@ -1801,7 +1816,6 @@ function object_link_popover(obj, data)
 		url_input.value = link;
 		target_input.value = target;
 		sync();
-		fold_label();
 	};
 
 	// Enter commits from either field - change would fire on blur anyway, but
@@ -1812,13 +1826,34 @@ function object_link_popover(obj, data)
 			write();
 		}
 	};
+	// Escape closes the panel from documentElement (js/edit.js), and this only
+	// tells the close below which of the two things it is doing. The flag is
+	// cleared on focus, which is the only way back into a field that is still
+	// there.
+	var on_escape = function(e) {
+		if (e.key == 'Escape') {
+			discarding = true;
+		}
+	};
+	var on_focus = function() {
+		discarding = false;
+	};
 	url_input.addEventListener('change', write);
 	target_input.addEventListener('change', write);
 	url_input.addEventListener('keydown', on_enter);
 	target_input.addEventListener('keydown', on_enter);
+	url_input.addEventListener('keydown', on_escape);
+	target_input.addEventListener('keydown', on_escape);
+	url_input.addEventListener('focus', on_focus);
+	target_input.addEventListener('focus', on_focus);
+
+	// Closing commits, whatever closed it - a click on the page, Escape (which
+	// has just said no to this), the object being deselected, another panel
+	// opening. on_close runs before the panel is removed, so the fields are
+	// still there to read.
+	pop.on_close = write;
 
 	sync();
-	fold_label();
 	$.glue.popover.show(pop);
 	url_input.focus();
 	// selected rather than just focused: a link is usually replaced whole,

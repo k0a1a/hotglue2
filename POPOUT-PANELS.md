@@ -141,13 +141,17 @@ is opened**, since a `display: none` fold contributes nothing to layout.
 **Two columns were considered and not built** (measured 2026-09-17, when the scrubs went
 in) — see the end of this section.
 
-A field that is wide **by nature** — a url, a sentence — says its own width, the same way
-the scrub's field says `calc(5ch + 20px)`: `.glue-object-link-field` is 240px and
-`.glue-image-alt-field` is 180, both overriding `.glue-popover-field`'s 44 with its
-`flex: 0 0 auto` kept. A
-content-sized panel does not otherwise give such a field any width to have: an empty
-`<input>` left to itself is the browser's own 150px (Chromium) or 143 (Firefox), which is not
-a url anybody reads. See the trap below for the shape that does *not* work.
+A field whose subject is words rather than a number says its own width, the same way the
+scrub's field says `calc(5ch + 20px)`: `.glue-object-link-field` (the link panel's url and
+target) is 150px and `.glue-image-alt-field` is 180, both overriding `.glue-popover-field`'s
+44 with its `flex: 0 0 auto` kept. A content-sized panel does not otherwise give such a field
+any width to have: an empty `<input>` left to itself is the browser's own 150px (Chromium) or
+143 (Firefox), and a panel sized by *that* is sized by a browser default. The link panel's
+150 is danja's number — *"link field width 150px"* — and it is a width those two fields
+declare rather than inherit, so the panel comes out at 203 in Chromium and 206 in Firefox
+instead of at whatever an empty box would have asked for. It was 240 for the afternoon of
+2026-09-17, which read a page with a path and a query whole but made the link panel the
+widest thing in the editor at 282. See the trap below for the shape that does *not* work.
 
 Pairing knob rows — x with y, top with bottom, letter with word — would halve the number of
 rows, and it is what "a denser reflow" in the scrubs' SOW meant. It was not built, and the
@@ -164,20 +168,24 @@ field rather than beside it, which is a different panel.
 |---|---|---|---|
 | object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v | x, y, scale, padding (text only), transparency, delete, reset |
 | page background | `page_background_popover()`, `modules/page/page-edit.js:387` | colour · picture · tile · scroll | x, y, scale, delete, reset |
-| font | `text_font_popover()`, `modules/text/text-edit.js:1431` | sizes s/n/b/x (8, 16, 24, 32) · four style toggles + colour · four alignments | face, exact size, three spacings, shadow + its colour, source note, reset |
+| font | `text_font_popover()`, `modules/text/text-edit.js:1436` | sizes s/n/b/x (8, 16, 24, 32) · four style toggles + colour · four alignments | face, exact size, three spacings, shadow + its colour, source note, reset |
 | edge | `object_edge_popover()`, `modules/object/object-edit.js:486` | style + colour · round · width | fade, glow, drop shadow, reset |
 | adjust (z-level) | `object_adjust_popover()`, `modules/object/object-edit.js:893` | four z buttons | nothing — an icon row and no fold |
-| object link | `object_link_popover()`, `modules/object/object-edit.js:1707` | the url | the target |
+| object link | `object_link_popover()`, `modules/object/object-edit.js:1727` | link · target (two labelled rows) | nothing — no acts, and the two rows are the panel |
 
 ### The exceptions, and why
 
-- **The object link panel's fold is not "more knobs"** and says so: `target: _blank`. A
-  target is a STORED value, and an object that has one must not have it invisible in a fold
-  named for knobs nobody may want. That is the one fold whose label names its contents.
+- **The object link panel has no fold, and no acts either.** It was the one panel whose fold
+  label named its contents (`target: _blank`) — a target is a STORED value and must not be
+  invisible in a fold named for knobs nobody may want — until danja's *"don't fold target in
+  link panel"* on 2026-09-17. A fold with one row in it was never hiding anything an author
+  would thank it for, and the panel is now the two rows the prompt's two questions deserve:
+  link, target, and the delete under them.
 - **The font panel keeps its face and its exact size out front**: they are values, so the
   rule would fold them, and a font panel that opens without a font is a worse panel.
-- **The adjust panel has no fold** — four acts and a reset is the whole panel. The
-  convention asks for no fold rather than an empty one.
+- **Two panels have no fold, and neither has an empty one.** The adjust panel is four acts
+  and a reset; the object link panel above is two rows and a delete. The convention asks for
+  no fold rather than for an empty one, and these are what that looks like.
 - **Two numeric controls keep their track** (`slider_row()`), and they are the only two.
   The colour picker's **alpha** is a range input: an alpha is a position on a bar, the bar is
   the picker's own drawing, and danja's call when the scrubs went in was to leave the picker
@@ -231,6 +239,19 @@ would mean inventing a glyph to justify a row.
   — a cancel that changes the object it was undoing. So the row tracks whether anything
   reached the file, and Escape commits only then. Both halves are measured in both engines;
   the typed-and-cancelled file is byte-identical.
+- **A panel that commits cannot leave the commit to blur.** The link panel stores nothing
+  until a field is finished with — Enter, or the panel closing — and its first version
+  explained itself with "clicking away commits, because the field blurs before the click
+  lands". Measured, that is not what happens: every close goes through
+  `$.glue.popover.close()`, which REMOVES the panel and the focused field in it, and removal
+  fires `change` and `blur` in Chromium and neither in Firefox. So Escape stored in Chromium
+  what it was meant to drop, and a url typed and then clicked away from was committed in
+  Chromium and silently dropped in Firefox — the same gesture, two different files. The panel
+  now says which of the two things a close is (`discarding`, set by the field's own Escape
+  `keydown`) and does the committing itself in `pop.on_close`, which `close()` calls before it
+  removes anything, so both fields are still there to read. One close can then commit twice —
+  the panel's own, then Chromium's on removal; the second is a no-op, because `write()`
+  returns early when the fields already say what is stored.
 - **`grab`/`grabbing` has to be a class, not `:active`.** The one-word way to write "the hand
   closes while you drag" is `.glue-popover-scrub:active { cursor: grabbing }`, and it is wrong
   in Firefox: measured, the cursor stayed `grab` through a whole drag there while Chromium
@@ -282,13 +303,25 @@ would mean inventing a glyph to justify a row.
 - **Icons are masks, and a mask reads alpha only.** Judge artwork by its alpha at 22px in a
   panel (30 in the toolbar); a mask that fails to load paints nothing while every test that
   only asks "is it visible" passes.
-- **A wide field is sized with `width`, not with `flex-basis`.** The intuitive move for a
-  field that should take a fixed share of a content-sized panel is `flex: 0 0 240px`, and it
-  is wrong in a way only one browser shows: measured, Chromium gives a 240px field in a
-  278px panel, and Firefox gives a 240px field in a **182px panel** — hanging out through the
-  panel's frame. The max-content width of a single-line flex container is pulled back down by
-  an item whose own content is narrower than its base size, and only Chromium lets the base
-  size win. `width: 240px` on a `flex: 0 0 auto` item agrees in both.
+- **An icon's file name is not the action's name.** Danja's `flip-horizontal.svg` and
+  `flip-vertical.svg` are named for the AXIS their dashed line draws — horizontal file, line
+  drawn left-to-right across the middle, shape reflected above and below it — which is the
+  opposite of the words in the tooltips beside them, since "flip horizontally" means the
+  left-to-right mirror (`scaleX(-1)`). So `object_flip_section()` asks for `flip-vertical`
+  for the horizontal act and `flip-horizontal` for the vertical one, and says so in a comment
+  there. Judge by the picture, not the file name: render both and look. The font panel's four
+  align buttons have carried a swapped pair the same way since they were drawn.
+- **A field in a content-sized panel is sized with `width`, not with `flex-basis`.** The
+  intuitive move is `flex: 0 0 <n>px` on the field, and it does not do the same thing in both
+  engines. Measured at 240, the width the link field had for an afternoon: Chromium gives a
+  240px field in a 278px panel, and Firefox a 240px field in a **182px panel** — out through
+  the panel's frame. The max-content width of a single-line flex container is pulled back down
+  by an item whose own content is narrower than its base size, and only Chromium lets the base
+  size win. At today's 150 the same pair, re-measured, disagrees more quietly: the field is
+  150 either way, but Chromium's panel is 203 with a 39px label column and Firefox's is
+  **195.5 with a 31.5px one** — the field's base size wins over the label's share of the row.
+  `width` on a `flex: 0 0 auto` item is the shape both engines agree on, and it is what
+  `.glue-object-link-field` does.
 - **`node tools/make-min.js`** after editing any of hotglue's own JS: `USE_MIN_FILES`
   defaults to true, so the `.min.js` copy is what a default install serves, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source.

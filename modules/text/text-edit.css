@@ -213,11 +213,18 @@
 
 /* .glue-link-popover has no rule: it pinned a 330px width until 2026-09-17, on
    the reasoning that a url is long and a field it cannot be read in is a field
-   people paste into blind. It is as wide as its content now, which for this
-   panel is the url field's own width (.glue-link-field, flex: 1 1 auto) - the
-   one panel where the content genuinely asks for room. */
+   people paste into blind. The panel that carries the link now is
+   .glue-object-link-popover - $.glue.popover's own rows, sized by
+   .glue-object-link-field in css/edit.css. The two rules below it here,
+   .glue-link-buttons and .glue-link-ok, dressed that panel's buttons and are
+   dead now for the same reason; they are left because nothing else has taken
+   their names. */
 
 .glue-link-field {
+	/* The url field of the TEXT EDITING STRIP's link row (text-edit.js). Not
+	   the panel's field, which is .glue-object-link-field: this one is docked
+	   to the object being edited and stretches to whatever the strip comes out
+	   at, so it has no width of its own. */
 	flex: 1 1 auto;
 	min-width: 0;
 	font-size: 11px;

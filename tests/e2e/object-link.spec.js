@@ -2,8 +2,17 @@
 //
 // This was a browser prompt() until 2026-09-16: one text box, both questions in
 // it (the address, a space, the target), and no way to see what the object
-// already had without reading it out of that string. The panel is two rows and
-// a delete instead, which is what these assert on.
+// already had without reading it out of that string. The panel is the two rows
+// those two questions deserve, and a delete, which is what these assert on. The
+// target spent its first day folded away - the one fold in the editor whose
+// label named its contents - and is a row beside the url since 2026-09-17, so
+// there is no disclosure in this panel for a test to open.
+//
+// The panel commits on Enter and on its way out, and drops what was typed on
+// Escape. Neither half of that is the browser's to do - removing a focused
+// field fires change in Chromium and nothing at all in Firefox - so both are
+// wired (object_link_popover) and pinned here, where the suite runs the two
+// engines that disagree.
 //
 // The link is NOT on the element. It is stored as object-link / object-target
 // and wrapped around the object by the renderer in VIEWING mode only
@@ -24,8 +33,9 @@ const attrs = (hg) => hg.readObject('100000000001').attrs;
 const panel = (page) => page.locator('.glue-object-link-popover');
 const urlField = (page) => panel(page).locator('.glue-object-link-field').first();
 const targetField = (page) => panel(page).locator('.glue-object-link-field').nth(1);
-const disclosure = (page) => panel(page).locator('.glue-popover-disclosure');
 const removeButton = (page) => panel(page).locator('.glue-popover-delete');
+// the row labels, in order: 'link' then 'target'
+const labels = (page) => panel(page).locator('.glue-popover-label');
 
 // Open the object's context menu and click the link icon. The button's tooltip
 // is 'make the object a link'; what it opens is a panel, and the panel is what
@@ -54,9 +64,12 @@ test('an object with no link gets one typed into the panel', async ({ page, hg }
 	// nothing to show and nothing to remove
 	expect(await urlField(page).inputValue()).toBe('');
 	await expect(removeButton(page)).toBeHidden();
-	// the target is folded away, with no value to name
-	await expect(disclosure(page)).toContainText('target');
-	await expect(disclosure(page)).not.toContainText(': ');
+	// both questions are out front, each in its own labelled row, and there is
+	// no fold for either of them to hide behind
+	await expect(labels(page)).toHaveText(['link', 'target']);
+	await expect(targetField(page)).toBeVisible();
+	expect(await targetField(page).inputValue()).toBe('');
+	expect(await panel(page).locator('.glue-popover-disclosure').count()).toBe(0);
 
 	await typeUrl(page, 'https://hotglue.me/');
 	await page.keyboard.press('Enter');
@@ -79,11 +92,12 @@ test('an existing link is shown, and taking it off takes the target too',
 
 		// the address can be READ, which is the whole reason for the panel
 		expect(await urlField(page).inputValue()).toBe('other-page');
+		// and the target is readable too, in a row of its own with its name on
+		// it - it must not go invisible, which was the whole reason it was
+		// folded, and the answer turned out to be not to fold it
 		expect(await targetField(page).inputValue()).toBe('_blank');
-		// a stored target is named in the fold's own label - every other fold
-		// in the editor holds controls an object may never use, this one holds
-		// something the object HAS, and it must not go invisible in there
-		await expect(disclosure(page)).toContainText('target: _blank');
+		await expect(labels(page).nth(1)).toHaveText('target');
+		await expect(targetField(page)).toBeVisible();
 
 		// Emptied by hand, one key at a time: ctrl+a is the editor's
 		// select-all-objects and calls preventDefault() on documentElement,
@@ -105,9 +119,8 @@ test('clicking away commits, Escape does not', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await openPanel(page, id);
 
-	// Escape closes the panel and drops what was typed: the field never
-	// blurs, so no change event fires. The prompt this replaced cancelled on
-	// Escape too.
+	// Escape closes the panel and drops what was typed. The prompt this
+	// replaced cancelled on Escape too.
 	await typeUrl(page, 'https://never-stored.test/');
 	await page.keyboard.press('Escape');
 	await expect(panel(page)).toHaveCount(0);
@@ -119,9 +132,11 @@ test('clicking away commits, Escape does not', async ({ page, hg }) => {
 	expect(await urlField(page).inputValue(),
 		'Escape stored what was typed in the field').toBe('');
 
-	// clicking away is the other half, and it is the opposite: the field
-	// blurs BEFORE the outside click lands, so change has already committed
-	// by the time the panel closes.
+	// clicking away is the other half, and it is the opposite: the panel
+	// commits on its way out, whatever closed it. This test is engine
+	// sensitive on purpose - removing a focused field fires change in
+	// Chromium and nothing at all in Firefox, so a panel that left the commit
+	// to the browser stored on Escape here and dropped the typed url there.
 	await typeUrl(page, 'https://stored.test/');
 	await page.mouse.click(10, 10);
 	await expect.poll(() => attrs(hg)['object-link']).toBe('https://stored.test/');

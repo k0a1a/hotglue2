@@ -1044,6 +1044,57 @@ npx playwright test --config tests/e2e/playwright.config.js \
   text-font-popover text-spacing-popover object-shape colorpicker blend rotate min-files
 ```
 
+Shipped 2026-09-17, later the same day — **three corrections to the day's panels**. Danja, in
+one line: *"link field width 150px, fix flip icons mismatch don't fold target in link panel"*.
+
+- **The link field is 150px** (`.glue-object-link-field`, css/edit.css) — down from the 240 the
+  same morning had argued for. 240 read a long url whole and made this the widest panel in the
+  editor, 282 against the font panel's 233, the edge's 177 and the properties' 172. At 150 the
+  panel is 203 in Chromium and 206 in Firefox, with the family. Both fields take it: the url,
+  and the target beside it.
+- **The flip icons were on the wrong buttons.** Danja's `flip-horizontal.svg` and
+  `flip-vertical.svg` are drawn by AXIS — the horizontal file is a horizontal dashed line with
+  the shape reflected above and below it — which is the opposite of what the tooltips beside
+  them say, since "flip horizontally" is the left-to-right mirror (`scaleX(-1)`). Each button
+  now wears the file showing what its own click does: `flip-vertical` for the horizontal act,
+  `flip-horizontal` for the vertical one. The files are his and were not touched; the mapping
+  is made where the buttons are built, the way the font panel's align buttons are mapped by
+  their artwork already (two of their four names are swapped there).
+- **The target row came out of the fold**, which leaves the object link panel with no fold at
+  all: two labelled rows and a delete. The fold had been the editor's one disclosure whose
+  label named its contents (`target: _blank`), on the reasoning that a stored target must not
+  be invisible in a fold named for knobs nobody may want. The better answer is that a one-row
+  fold was never hiding anything an author would thank it for, and the panel is now the two
+  rows the prompt's two questions deserved.
+- `object-link.spec.js` follows the panel: the disclosure locator is gone (there is none to
+  find), the rows are asserted by their labels, and both tests that read a target read it out
+  front. `POPOUT-PANELS.md`: the table row, the exceptions rewritten for a second foldless
+  panel, and a new trap — **an icon's file name is not the action's name**, so judge artwork by
+  rendering it.
+
+Found while verifying the three, and fixed in the same unit — **the link panel's commit rules
+were not the ones it claimed.** The panel stores on Enter and on closing, and drops
+what was typed on Escape; its comment explained the second and third as the browser's doing
+("clicking away commits, because the field blurs before the click lands"). Measured in both
+engines, closing REMOVES the field, and a removed field fires `change` and `blur` in Chromium
+and neither in Firefox: Escape stored what it was meant to drop in Chromium, and a url typed and
+then clicked away from was stored in Chromium and silently lost in Firefox — the same gesture,
+two different files, with the spec's own test of it (written in 89a3fa5, never run) failing in
+both engines. The panel now decides for itself: Escape marks the close a discard, `pop.on_close`
+does the committing for every other way out (`close()` calls it before removing anything, so the
+fields are still there to read), and a `write()` that would store what is already stored returns
+early — which is what makes Chromium's second, late commit on removal harmless. Four cases
+(typed-then-Escape, emptied-then-retyped-then-Escape, appended-then-Escape, appended-then-clicked-away)
+now land byte-identically in both engines, and the trap is in POPOUT-PANELS.md beside the scrub
+field's.
+
+**Not run** — the suite is danja's to run. Suggested:
+
+```
+npx playwright test --config tests/e2e/playwright.config.js \
+  object-link object-background rotate text-padding min-files
+```
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
