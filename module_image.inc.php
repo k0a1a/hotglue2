@@ -126,8 +126,8 @@ function image_alter_render_early($args)
 			elem_css($i, 'padding', '0px');
 			elem_css($i, 'border', '0px');
 			if (!empty($obj['image-background-position']) && $obj['image-background-position'] != '0px 0px' && $obj['image-background-position'] != '0% 0%') {
-				elem_css($elem, 'max-width', $obj['object-width']);
-				elem_css($elem, 'max-height', $obj['object-height']);
+				elem_css($elem, 'max-width', $obj['object-width'] ?? '');
+				elem_css($elem, 'max-height', $obj['object-height'] ?? '');
 				elem_css($elem, 'overflow', 'hidden');
 				// assume px
 				$a = expl(' ', $obj['image-background-position']);
@@ -455,6 +455,7 @@ function image_resize($args)
 		return response('Unsupported source file format '.quot($obj['image-file']), 500);
 	}
 	if ($orig === false) {
+		log_user_issue('gd', 'could not load image '.$obj['image-file']);
 		return response('Error loading source file '.quot($obj['image-file']), 500);
 	}
 	// get source file dimensions
@@ -462,6 +463,7 @@ function image_resize($args)
 	// create resized image
 	if (($resized = @imagecreatetruecolor($width, $height)) === false) {
 		@imagedestroy($orig);
+		log_user_issue('gd', 'could not create resized image (GD)');
 		return response('Error creating the resized image', 500);
 	}
 	// preserve any alpha channel
@@ -471,6 +473,7 @@ function image_resize($args)
 	if (!@imagecopyresampled($resized, $orig, 0, 0, 0, 0, $width, $height, $orig_size[0], $orig_size[1])) {
 		@imagedestroy($resized);
 		@imagedestroy($orig);
+		log_user_issue('gd', 'could not resize image '.$obj['image-file']);
 		return response('Error resizing the source image', 500);
 	}
 	// setup destination filename
@@ -495,6 +498,7 @@ function image_resize($args)
 	@imagedestroy($resized);
 	@imagedestroy($orig);
 	if (!$ret) {
+		log_user_issue('gd', 'could not save resized image '.basename($fn));
 		return response('Error saving the resized image', 500);
 	} else {
 		log_msg('info', 'image_resize: created a resized image of '.quot($obj['name']).' -> '.quot(basename($fn)));

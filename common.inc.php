@@ -60,6 +60,7 @@ function cache_output($category, $name, $out)
 	if (!file_put_contents($f, $out)) {
 		umask($m);
 		log_msg('error', 'common: error writing cache file '.quot($f));
+		log_user_issue('save', 'cache write failed: '.$f);
 		return false;
 	}
 	umask($m);
@@ -309,6 +310,35 @@ function log_auth_failure($site, $user, $reason)
 	    : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '?');
 	@error_log(date('c') . ' site=' . $site . ' user=' . $user . ' ip=' . $ip . ' reason="' . $reason . '"' . "\n",
 		3, '/var/www-hotglue/logs/auth-failures.log');
+}
+
+/**
+ *	log a USER-FACING editor failure (save, upload, GD) for the health panel
+ *
+ *	These are the failures users hit before they email the admin: writes
+ *	that fail (disk full, perms), uploads that can't be moved, images that
+ *	GD can't process. Site attribution is derived from the content path
+ *	(usr/<letter>/<user>/content). Append-only,
+ *	/var/www-hotglue/logs/user-issues.log — parsed by stats-collect.php
+ *	for the dashboard's User Issues block and the health alerter.
+ *
+ *	@param string $type short class: save, upload, gd
+ *	@param string $detail what failed, no credentials
+ */
+function log_user_issue($type, $detail)
+{
+	$site = '?';
+	if (defined('CONTENT_DIR')) {
+		$cd = realpath(CONTENT_DIR);
+		if ($cd === false) $cd = (string)CONTENT_DIR;
+		if (preg_match('#/usr/[a-z0-9]/[^/]+/content$#i', $cd, $m)) {
+			$site = basename(dirname($cd));
+		}
+	}
+	$ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR']
+	    : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '?');
+	@error_log(date('c') . ' site=' . $site . ' type=' . $type . ' ip=' . $ip . ' detail="' . $detail . '"' . "\n",
+		3, '/var/www-hotglue/logs/user-issues.log');
 }
 
 /**
@@ -757,6 +787,7 @@ function upload_file($fn, $page, $orig_fn = '', &$existed = false)
 		if (!@move_uploaded_file($fn, $d.'/'.$f)) {
 			umask($m);
 			log_msg('error', 'common: error moving uploaded file to '.quot($d.'/'.$f));
+			log_user_issue('upload', 'could not move uploaded file to '.$d.'/'.$f);
 			// not sure if we ought to remove the file in /tmp here (probably not)
 			return false;
 		} else {

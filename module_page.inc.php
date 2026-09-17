@@ -226,6 +226,7 @@ function page_set_grid($args)
 	$m = umask(0111);
 	if (!@file_put_contents(CONTENT_DIR.'/grid', $x.' '.$y)) {
 		umask($m);
+		log_user_issue('save', 'could not save grid');
 		return response('Error saving to global grid file', 500);
 	} else {
 		umask($m);

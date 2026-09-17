@@ -1275,6 +1275,7 @@ function set_startpage($args)
 	$m = umask(0111);
 	if (@file_put_contents(CONTENT_DIR.'/startpage', $args['page']) === false) {
 		umask($m);
+		log_user_issue('save', 'could not save startpage');
 		return response('Error setting start page', 500);
 	} else {
 		umask($m);
@@ -1341,6 +1342,7 @@ function snapshot($args)
 			$m = umask(0111);
 			if (!@file_put_contents($dest.'/'.$f, $s)) {
 				log_msg('error', 'snapshot: error writing to '.quot($dest.'/'.$f). ', skipping file');
+				log_user_issue('save', 'snapshot write failed: '.$dest.'/'.$f);
 			} else {
 				log_msg('debug', 'snapshot: copied the content of symlink '.quot($args['page'].'.'.$f));
 			}
