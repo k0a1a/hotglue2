@@ -584,10 +584,12 @@ document.addEventListener('DOMContentLoaded', function() {
 				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-image-position': at.x+'px '+at.y+'px' });
 			}
 		};
-		// The slider range is a drag length, not a limit: the field keeps the real
+		// The min and max are a drag length, not a limit: the field keeps the real
 		// number however far the drag went (see $.glue.popover.number_row).
 		var x_row = $.glue.popover.number_row('x', {
-			min: -500, max: 500, step: 1, unit: 'px',
+			// coarse: a page position wants a finer hand than the default drag
+			// gives - span/200 would move the picture 5px per pixel of drag
+			min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 			value: at.x,
 			apply: function(v, commit) {
 				at.x = v;
@@ -598,7 +600,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 		var y_row = $.glue.popover.number_row('y', {
-			min: -500, max: 500, step: 1, unit: 'px',
+			// coarse: as x above
+			min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 			value: at.y,
 			apply: function(v, commit) {
 				at.y = v;
@@ -702,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// page_background_popover)
 
 	// grid: the button opens a panel - a show/hide toggle, and x/y size
-	// sliders that are interlocked by default (set one, both move) until
+	// rows that are interlocked by default (set one, both move) until
 	// unlocked. The size is remembered per page (page-grid-x/y on the page
 	// pseudo-object); the old drag-on-the-button gesture is gone.
 	var grid_btn;
@@ -714,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		var clamp = function(v) {
 			return Math.max(10, Math.min(500, Math.round(v)));
 		};
-		// redraw the grid on every change so it moves with the sliders;
+		// redraw the grid on every change so it moves with the rows;
 		// the backend write only happens on commit
 		var redraw = function() {
 			$.glue.grid.update(true);

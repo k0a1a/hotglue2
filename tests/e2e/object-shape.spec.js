@@ -66,22 +66,23 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 
 	// two on the panel itself - round and width, the numbers the style and the
 	// colour above them act on - and the fade is not one of them any more
-	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-slider'))
+	await expect(pop(page).locator(':scope > .glue-popover-scrub'))
 		.toHaveCount(2);
-	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-slider'))
+	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-scrub'))
 		.toHaveCount(7);	// the fade, the glow and the drop shadow
 	// and the reset is in the fold with them, not under the rows above it
 	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-reset'))
 		.toHaveCount(0);
 	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-reset'))
 		.toHaveCount(1);
-	// the sliders reach "fully round" and no further: half the shorter side
-	// of the object as it is actually drawn, padding and selection border
-	// included, which is not the same as the width and height it stores
+	// the rows reach "fully round" and no further: half the shorter side of the
+	// object as it is actually drawn, padding and selection border included,
+	// which is not the same as the width and height it stores. The max is on the
+	// row's field - it is the length of the DRAG since 2026-09-17, not a cap on
+	// what may be typed, but it is the same number a slider's max was.
 	const half = await byId(page, a).evaluate((e) =>
 		Math.round(Math.min(e.offsetWidth, e.offsetHeight)/2));
-	expect(await pop(page).locator('.glue-popover-slider').first()
-		.getAttribute('max')).toBe(String(half));
+	expect(await field(page, 0).getAttribute('max')).toBe(String(half));
 });
 
 test('it opens beside the object, not over it', async ({ page, hg }) => {
@@ -351,7 +352,7 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page)).toBeVisible();
 		// the fade, the glow (spread + strength) and the drop shadow's
 		// distance, angle, blur and spread
-		await expect(advanced(page).locator('.glue-popover-slider')).toHaveCount(7);
+		await expect(advanced(page).locator('.glue-popover-scrub')).toHaveCount(7);
 	});
 
 test('the four face controls sit in a 2x2 grid, not four rows',

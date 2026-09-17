@@ -314,13 +314,13 @@ function object_properties_modal_show(obj, data) {
 // Both are stored in PX. A percentage would keep the shape through a resize -
 // 50% is a pill, or an ellipse on a box that is not square - but hotglue
 // stores lengths in px everywhere else, and someone who rounded a corner by
-// 8px wants 8px whatever the object is resized to. The slider reaches "fully
-// round" anyway, because its maximum is half the object's shorter side.
+// 8px wants 8px whatever the object is resized to. The drag reaches "fully
+// round" anyway, because the row's maximum is half the object's shorter side.
 //
 // The fade is applied here as a custom property plus a class, and drawn by
 // .glue-edge-fade in css/main.css - the object file stores the number only.
 // See object_render_object() in module_object.inc.php for why. It fades all
-// four edges evenly; the slider's maximum is half the shorter side, which is
+// four edges evenly; the row's maximum is half the shorter side, which is
 // where the fade meets itself in the middle.
 //
 
@@ -1255,10 +1255,12 @@ function object_background_section(pop, icons, body, obj, save)
 	var write_at = function() {
 		obj.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
 	};
-	// The slider range is a drag length, not a limit: the field keeps the real
+	// The min and max are a drag length, not a limit: the field keeps the real
 	// number however far the drag went (see $.glue.popover.number_row).
 	var x_row = $.glue.popover.number_row('x', {
-		min: -500, max: 500, step: 1, unit: 'px',
+		// coarse: a page position wants a finer hand than the default drag
+		// gives - span/200 would move the picture 5px per pixel of drag
+		min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 		value: at.x,
 		apply: function(v, commit) {
 			at.x = v;
@@ -1269,7 +1271,8 @@ function object_background_section(pop, icons, body, obj, save)
 		}
 	});
 	var y_row = $.glue.popover.number_row('y', {
-		min: -500, max: 500, step: 1, unit: 'px',
+		// coarse: as x above
+		min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 		value: at.y,
 		apply: function(v, commit) {
 			at.y = v;

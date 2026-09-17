@@ -77,14 +77,16 @@ test('one button opens the panel, and the three it replaced are gone',
 		await expect(sizeBtn(page, 'x')).toBeVisible();
 		await expect(page.locator('.glue-font-toggle')).toHaveCount(4);
 		await expect(page.locator('.glue-align-btn')).toHaveCount(4);
-		// and no slider among the panel's own rows: the size is folded now
+		// and no track among the panel's own rows: the size is folded now, and
+		// the six knobs in the fold are scrubs - rows you drag, not sliders
 		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
 		// the face and the exact size are in the fold, with the reset - which
 		// clears the whole panel, more than the rows above it set
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
 		await expect(page.locator('.glue-font-face')).toBeVisible();
-		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(6);
+		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(6);
+		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
 
 		for (const gone of ['text-font-size', 'text-font-face', 'text-font-style']) {
@@ -131,29 +133,96 @@ test('it reads the object it was opened on', async ({ page, hg }) => {
 	await expect(toggle(page, 'strike')).not.toHaveClass(/glue-font-toggle-on/);
 });
 
-test('the size field and slider stay in step, and the field is not capped',
+test('the size field takes a value past its drag range', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+
+	await openFold(page);
+	const field = fold(page).locator('.glue-popover-field').first();
+
+	await field.fill('42');
+	await field.dispatchEvent('input');
+	await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('42px');
+
+	// Display type runs past the end of any sensible drag range. The row's
+	// max is 100 - it is what the DRAG stops at, and the browser's own
+	// steppers with it - and the field keeps the real number. Until
+	// 2026-09-17 this asserted that the slider parked at 100 while the field
+	// said 300; there is no slider to park now, so what is asserted is the
+	// half that still exists: the range is the row's, the value is the field's.
+	await field.fill('300');
+	await field.dispatchEvent('input');
+	await expect(field).toHaveValue('300');
+	await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('300px');
+	expect(await field.getAttribute('max')).toBe('100');
+});
+
+test('the row shows its arrow, and Escape takes a typed value back',
 	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', ATTRS, 'A');
+		// The two halves of a scrub that the pointer cannot demonstrate: the
+		// ↔ glyph, which is the affordance on a touch screen where there is
+		// no hover to change a cursor, and the Escape every field is expected
+		// to have. The drag itself is text-spacing-popover.spec.js's; this is
+		// what the row looks like and what a key press does to it.
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'text-letter-spacing': '0em' }, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await open(page, a);
-
 		await openFold(page);
-		const field = fold(page).locator('.glue-popover-field').first();
-		const slider = fold(page).locator('.glue-popover-slider').first();
 
-		await field.fill('42');
-		await field.dispatchEvent('input');
-		await expect(slider).toHaveValue('42');
-		await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('42px');
+		const row = fold(page).locator('.glue-popover-scrub')
+			.filter({ has: page.locator('.glue-popover-label:text-is("letter")') });
+		const field = row.locator('.glue-popover-field');
+		const stored = () => hg.readObject('100000000001').attrs['text-letter-spacing'];
 
-		// display type runs past the end of any sensible drag range: the
-		// slider parks at its maximum and the field keeps the real number
-		await field.fill('300');
+		// one arrow per knob row, between the field and the unit, and a
+		// numeric keyboard when a finger taps the field
+		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(6);
+		await expect(row.locator('.glue-popover-scrub-arrow')).toHaveText('↔');
+		await expect(field).toHaveAttribute('inputmode', 'decimal');
+		expect(await row.evaluate((e) => getComputedStyle(e).cursor),
+			'the row does not read as a handle').toBe('grab');
+
+		// typing applies live, so the object moves as the number is typed...
+		await field.fill('0.15');
 		await field.dispatchEvent('input');
-		await expect(slider).toHaveValue('100');
-		await expect(field).toHaveValue('300');
-		await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('300px');
+		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('0.15em');
+		// ...and Escape puts it back. Nothing was stored - typing alone never
+		// stores - so there is nothing to store back, and the file keeps the
+		// value it had rather than gaining the default of an attribute it
+		// never had.
+		await page.keyboard.press('Escape');
+		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('normal');
+		await expect(field).toHaveValue('0.00');
+		expect(stored(), 'the cancel wrote to the file').toBe('0em');
+		// the panel is still open: that Escape was the field's, not its
+		await expect(pop(page)).toBeVisible();
+
+		// A value that HAS been stored is the other case. Escape takes it back
+		// on disk as well, because an editor showing 0 while the file says 0.2
+		// is the editor lying about the page.
+		await field.fill('0.2');
+		await field.dispatchEvent('input');
+		await page.keyboard.press('Enter');
+		await expect.poll(stored).toBe('0.2em');
+		await page.keyboard.press('Escape');
+		await expect(field).toHaveValue('0.00');
+		await expect.poll(stored).toBe('0em');
+
+		// the third way in: the arrow keys nudge by one step. The editor has
+		// its own arrow-key nudge - it moves the selected object - and the
+		// field has to win that while the caret is in it.
+		const pos = byId(page, a);
+		const left = await pos.evaluate((e) => e.style.left);
+		const was = await field.inputValue();
+		await field.click();
+		await page.keyboard.press('ArrowUp');
+		await expect(field).not.toHaveValue(was);
+		expect(await pos.evaluate((e) => e.style.left),
+			'the object moved while a number was being nudged').toBe(left);
 	});
 
 test('a size change is stored, and keeps line-height in proportion',

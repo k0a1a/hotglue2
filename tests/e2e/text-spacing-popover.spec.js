@@ -34,7 +34,9 @@ const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 const panel = (page) => page.locator('.glue-font-popover');
 const pop = (page) => panel(page).locator('.glue-popover-advanced');
 const rowField = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
-const rowSlider = (page, n) => pop(page).locator('.glue-popover-slider').nth(n);
+// one row by the label it wears, for the tests that drag rather than type
+const row = (page, name) => pop(page).locator('.glue-popover-scrub')
+	.filter({ has: page.locator(`.glue-popover-label:text-is("${name}")`) });
 // out in the panel, not in the fold: the alignments are one of the six things
 // the font panel shows
 const alignBtn = (page, which) => panel(page).locator(`[data-align="${which}"]`);
@@ -69,6 +71,20 @@ async function setRow(page, n, value) {
 	await field.dispatchEvent('change');
 }
 
+// Drag a knob sideways, which is what the row is for. Grab the ROW and not the
+// field: the whole row is the handle (POPOUT-PANELS.md), and a drag on the
+// label has to work as well as one on the number. dx in px, positive = larger.
+async function scrub(page, which, dx) {
+	const box = await which.boundingBox();
+	const y = box.y + box.height/2;
+	const x = box.x + box.width/2;
+	await page.mouse.move(x, y);
+	await page.mouse.down();
+	await page.mouse.move(x + dx/2, y, { steps: 4 });
+	await page.mouse.move(x + dx, y, { steps: 4 });
+	await page.mouse.up();
+}
+
 test('the fold holds all of it, and the buttons it replaced are gone',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'A');
@@ -76,8 +92,10 @@ test('the fold holds all of it, and the buttons it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		// the size, line, letter, word - plus the text shadow's radius and fade
-		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(6);
+		// the size, line, letter, word - plus the text shadow's radius and fade,
+		// six knobs and no tracks among them any more
+		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(6);
+		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 		// and the alignments are NOT in here: they are one of the six things the
 		// panel shows, above the fold, so the count that used to be 4 here is 4
@@ -152,30 +170,62 @@ test('negative letter spacing is allowed', async ({ page, hg }) => {
 	await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('-1px');
 });
 
-test('the field is not capped by its slider', async ({ page, hg }) => {
+test('the field is not capped by its drag range', async ({ page, hg }) => {
+	// the row's min and max are what a DRAG traverses, not what may be stored:
+	// display type runs past any sensible drag range, and the field keeps the
+	// real number. It read "not capped by its slider" until 2026-09-17, when
+	// the slider became the drag.
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
 
 	await setRow(page, LINE, 8);
-	await expect(rowSlider(page, LINE)).toHaveValue('3');
 	await expect(rowField(page, LINE)).toHaveValue('8.00');
 	await expect.poll(() => cssOf(page, a, 'lineHeight')).toBe('160px');
 });
 
-test('the slider and the field stay in step', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await open(page, a);
+test('a drag on a row scrubs the value, and the drag is what stores it',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
 
-	const slider = rowSlider(page, WORD);
-	await slider.fill('1.2');
-	await slider.dispatchEvent('input');
-	await expect(rowField(page, WORD)).toHaveValue('1.20');
-	await expect.poll(() => cssOf(page, a, 'wordSpacing')).toBe('24px');
-});
+		// word spacing is one of the two `fine` rows: its declared range is
+		// -0.2 to 2, so the drag is span/600 = 0.00366em per pixel, snapped to
+		// the row's own step of 0.01. 60px of drag is 0.22em - and 0.22em of
+		// 20px type is 4.4px, which is what the object should be showing.
+		await expect(rowField(page, WORD)).toHaveValue('0.00');
+		await scrub(page, row(page, 'word'), 60);
+
+		await expect(rowField(page, WORD)).toHaveValue('0.22');
+		await expect.poll(() => cssOf(page, a, 'wordSpacing')).toBe('4.4px');
+		// the pointerup is the commit, the way the change event was on the
+		// slider: live while dragging, stored when the drag ends
+		await expect.poll(() => attrs(hg)['text-word-spacing']).toBe('0.22em');
+	});
+
+test('a press that does not move is a click, and changes nothing',
+	async ({ page, hg }) => {
+		// the row is the handle for a drag AND a text field to type in, so a
+		// press has to stay a press until it has actually travelled - or the
+		// click someone meant for the caret would edit the value under them.
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+
+		const field = rowField(page, WORD);
+		await scrub(page, row(page, 'word'), 3);		// under the 4px threshold
+		await expect(field).toHaveValue('0.00');
+		expect(attrs(hg)['text-word-spacing']).toBe(undefined);
+
+		// and the click that follows still focuses the field, so typing works
+		await row(page, 'word').click();
+		expect(await page.evaluate(() => document.activeElement.className))
+			.toContain('glue-popover-field');
+	});
 
 test('the four alignment buttons set alignment, and show which one is on',
 	async ({ page, hg }) => {

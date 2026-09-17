@@ -632,11 +632,16 @@ function text_strip_build() {
 	text_strip_face = face;
 
 	// --- row 2: size slider + manual entry ---------------------------------
-	// The slider is a quick tool (8-100px, like the font popover's); the
-	// field is the precise one, and can say values the slider cannot. Both
-	// act on the same snapshot, taken on mousedown before either steals
-	// focus, and both commit the way the popover's row does: live on input,
-	// caret restored where the formatting is on change.
+	// The slider is a quick tool (8-100px, the range the font popover's size
+	// row carries too); the field is the precise one, and can say values the
+	// slider cannot. Both act on the same snapshot, taken on mousedown before
+	// either steals focus, and both commit the way the popover's rows do: live
+	// on input, caret restored where the formatting is on change.
+	//
+	// This is one of the two tracks left in the editor, with the colour
+	// picker's alpha, and it is here for the same reason: a docked strip is as
+	// wide as the object, so there IS width for a track to fill, and the size
+	// is being set while looking at the text rather than at a number.
 	var row2 = document.createElement('div');
 	row2.className = 'glue-text-strip-row';
 	var slider = document.createElement('input');
@@ -1794,7 +1799,11 @@ function text_font_popover(obj)
 	adv.appendChild(line.row);
 
 	var letter = $.glue.popover.number_row('letter', {
-		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em',
+		// fine: the declared range is a fence around the useful one. Nobody
+		// sets a whole em of letter spacing; the band anyone uses is about an
+		// eighth of this, and at the default drag that eighth would be a 25px
+		// gesture - the row would be all threshold and no travel.
+		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em', fine: true,
 		value: to_em(cs.letterSpacing, 0),
 		apply: function(v, commit) {
 			obj.style.letterSpacing = v+'em';
@@ -1806,7 +1815,8 @@ function text_font_popover(obj)
 	adv.appendChild(letter.row);
 
 	var word = $.glue.popover.number_row('word', {
-		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em',
+		// fine: as letter above, whose range this one is the wider half of
+		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em', fine: true,
 		value: to_em(cs.wordSpacing, 0),
 		apply: function(v, commit) {
 			obj.style.wordSpacing = v+'em';

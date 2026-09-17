@@ -13,11 +13,13 @@
 // The drag-only controls work too now: the shared drag primitive
 // ($.glue.slider) listens for pointer events, the buttons set
 // touch-action: none on themselves, and a finger drags them exactly like a
-// mouse. The transparency control that used to be one of those drag buttons
-// is a plain range input in the object properties panel now, which a finger
-// drags with no gesture layer of its own - as is the padding, which was a
-// drag-with-shift gesture on a menu button before it became the panel's own
-// row. The last tests are those drags.
+// mouse. Two kinds of numeric control used to be drags and became range
+// inputs a finger could drag with no gesture layer of its own - transparency,
+// and the padding that was a drag-with-shift gesture on a menu button. Both
+// are scrub rows since 2026-09-17, which puts them back on $.glue.slider,
+// with touch-action: pan-y rather than none so the fold they sit in can still
+// be scrolled. The last tests are those two rows under a finger, which is
+// where that choice is actually tested.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -144,14 +146,20 @@ test('dragging an unselected object selects it', async ({ page, hg, browserName 
 	await expect(page.locator('.glue-contextmenu-left').first()).toBeVisible();
 });
 
-test('a finger drags the opacity slider in the properties panel',
+test('a finger scrubs the opacity row in the properties panel, and the page stays put',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
-		// the transparency button used to be a drag button itself; it is a
-		// range input in the object properties panel now (the adjustments
-		// popout until 2026-09-16), so the touch story is the browser's own
-		// slider: no gesture layer, no touch-action, a finger just drags it
+		// the transparency button used to be a drag button itself, then a range
+		// input in the object properties panel (the adjustments popout until
+		// 2026-09-16), and it is a scrub row since 2026-09-17: not a native
+		// slider any more but the editor's own drag, so this now tests the first
+		// of the two things a scrub has to get right under a finger. The row
+		// carries touch-action: pan-y - NOT none - so the fold it sits in can
+		// still be scrolled, while a sideways finger drag is still ours to read;
+		// the scrollY assertion at the end says the two did not get in each
+		// other's way. The second thing is the trailing click, and that is the
+		// "still selected" assertion.
 		const a = hg.addObject('100000000001', ATTRS, 'hello');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -162,29 +170,29 @@ test('a finger drags the opacity slider in the properties panel',
 		await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
 		// the row lives in the panel's one fold, and a folded row has no box to
 		// aim a finger at - so the disclosure is tapped open first (with a
-		// finger, like the rest of this test) and the slider measured after it,
+		// finger, like the rest of this test) and the row measured after it,
 		// since opening the fold re-places the panel
 		await page.locator('.glue-properties-popover .glue-popover-disclosure').tap();
 		await expect(page.locator('.glue-properties-popover .glue-popover-advanced'))
 			.toBeVisible();
 
-		// named: the panel has an x, a y, a scale and a padding slider besides
-		const slider = page.locator('.glue-opacity-row .glue-popover-slider');
-		const box = await slider.boundingBox();
+		// named: the panel has an x, a y, a scale and a padding row besides
+		const row = page.locator('.glue-opacity-row');
+		const box = await row.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
 			type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
 		});
-		// the thumb sits at 100 (the right end); drag it to a third of the
-		// way along the track
-		await touch('touchStart', box.x + box.width - 3, box.y + box.height/2);
-		for (let i = 1; i <= 8; i++) {
-			await touch('touchMove', box.x + box.width/3 + i, box.y + box.height/2);
+		// the object is opaque, so the drag goes LEFT: 60px at span/200 = half a
+		// percent a pixel is 30% off it. Not to an exact per-pixel value - the
+		// gesture is the test's, the arithmetic is the editor's - which is why
+		// the opacity below is only read to sit somewhere between the two ends.
+		await touch('touchStart', box.x + box.width/2, box.y + box.height/2);
+		for (let i = 1; i <= 12; i++) {
+			await touch('touchMove', box.x + box.width/2 - i*5, box.y + box.height/2);
 		}
 		await touch('touchEnd');
 
-		// the object is dimmed - not to an exact per-pixel value, a native
-		// slider's thumb geometry is the browser's, not the test's
 		const opacity = await page.evaluate((i) =>
 			parseFloat(getComputedStyle(document.getElementById(i)).opacity), a);
 		expect(opacity).toBeLessThan(1);
@@ -198,15 +206,17 @@ test('a finger drags the opacity slider in the properties panel',
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a finger drags the padding slider in the properties panel without scrolling the page',
+test('a finger scrubs the padding row in the properties panel without scrolling the page',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		// the padding button used to be a drag target itself, then a button
 		// opening a panel of its own (the way the transparency button became a
 		// slider in the adjustment popout), and it is a section of the object
-		// properties panel now. Its slider is a native range input: no gesture
-		// layer, no touch-action, a finger just drags it
+		// properties panel now. Its row is a scrub since 2026-09-17 - the
+		// editor's own drag rather than a native range input - so this is the
+		// padding's turn at the two things a scrub owes a finger, the same two
+		// the opacity test above spells out.
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		// a second object far down the page, so the page genuinely can scroll
 		// - the scrollY assertion below only proves something if it could
@@ -234,18 +244,21 @@ test('a finger drags the padding slider in the properties panel without scrollin
 			const el = document.getElementById(i);
 			return el.offsetWidth+','+el.offsetHeight;
 		}, a);
-		// named: the panel has an x, a y, a scale and an opacity slider besides
-		const slider = panel.locator('.glue-padding-row .glue-popover-slider');
-		const box = await slider.boundingBox();
+		// named: the panel has an x, a y, a scale and an opacity row besides
+		const row = panel.locator('.glue-padding-row');
+		const box = await row.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
 		const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', {
 			type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
 		});
-		// the thumb starts where the current padding is; drag it rightward
-		// along the track - not to an exact per-pixel value, a native
-		// slider's thumb geometry is the browser's, not the test's
+		// the row opens at the current padding and drags to the right. The
+		// object is 250x120, so the padding's max is half the shorter side - 60 -
+		// and the drag is span/200 = 0.3px of padding a pixel of travel: 60px of
+		// finger is 18px of padding. Not to an exact per-pixel value - the
+		// gesture is the test's, the arithmetic is the editor's - so what is
+		// asserted below is that all four sides moved together, off the default.
 		await touch('touchStart', box.x + box.width/2, box.y + box.height/2);
-		for (let i = 1; i <= 8; i++) {
+		for (let i = 1; i <= 12; i++) {
 			await touch('touchMove', box.x + box.width/2 + i*5, box.y + box.height/2);
 		}
 		await touch('touchEnd');
@@ -282,8 +295,9 @@ test('a finger drags the padding slider in the properties panel without scrollin
 		// the finger let go over the panel, so the click that follows the
 		// gesture must not have deselected the object
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
-		// the page can scroll, so a scroll here would prove the slider's
-		// touch handling was missing
+		// the page can scroll, so a scroll here would prove the row's touch
+		// handling was missing - or that pan-y had been written as none, in
+		// which case the fold would refuse a finger's vertical drag instead
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 

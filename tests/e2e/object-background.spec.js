@@ -671,7 +671,7 @@ test('the flip toggles are independent, tracked, and round-trip',
 // --- the transparency -------------------------------------------------------
 //
 
-test('transparency: the slider applies live, the field commits',
+test('transparency: typing applies live, the change commits',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'A');
 		await page.goto(hg.editUrl());
@@ -680,29 +680,27 @@ test('transparency: the slider applies live, the field commits',
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
 		// the row is the fold's, like every other labelled control: it is in the
-		// DOM either way, but the field at the end of this test is typed into
+		// DOM either way, but a folded row has no box to aim at
 		await openFold(page);
 
-		const slider = pop(page).locator('.glue-opacity-row .glue-popover-slider');
+		// one control, not two: the row is a scrub since 2026-09-17 - a number
+		// you drag sideways or type into - so the slider whose live value this
+		// test used to move is gone, and the two halves of the contract (applies
+		// as you type, stores when you are done) are the field's input and change
 		const field = opacityField(page);
 
 		// the row opens at the object's current opacity
-		expect(await slider.inputValue()).toBe('100');
 		expect(await field.inputValue()).toBe('100');
 
-		// a slider move applies live (commit false)...
-		await slider.evaluate((el) => {
-			el.value = 30;
-			el.dispatchEvent(new Event('input', { bubbles: true }));
-		});
+		// an input applies live (commit false)...
+		await field.fill('30');
+		await field.dispatchEvent('input');
 		expect(await opacityOf(page, a)).toBe('0.3');
-		// ...and the change that ends the drag is what stores it
-		await slider.evaluate((el) => {
-			el.dispatchEvent(new Event('change', { bubbles: true }));
-		});
+		// ...and the change that ends the edit is what stores it
+		await field.dispatchEvent('change');
 		await expect.poll(() => attrs(hg)['object-opacity']).toBe('0.3');
 
-		// the field does the same for a typed value
+		// and the same contract for a value typed properly and confirmed
 		await field.fill('60');
 		await field.press('Enter');
 		expect(await opacityOf(page, a)).toBe('0.6');

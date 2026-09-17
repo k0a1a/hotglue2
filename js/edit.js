@@ -227,6 +227,22 @@ $.glue.popover = function()
 {
 	var GAP = 10;
 	var open_panel = false;
+	// Set by a control whose drag has actually moved, and read by the click
+	// handler below: see swallow_next_click().
+	var swallow_click = false;
+
+	// What follows a number field: em, px, %, or the × of a line-height
+	// multiple. Two rows build one - the scrub and the slider - so it is here
+	// rather than written twice.
+	var append_unit = function(row, unit) {
+		if (!unit) {
+			return;
+		}
+		var u = document.createElement('div');
+		u.className = 'glue-popover-unit';
+		u.textContent = unit;
+		row.appendChild(u);
+	};
 
 	return {
 		// w, h .. the popover's size in px
@@ -491,9 +507,9 @@ $.glue.popover = function()
 		//     since a spec locating .glue-popover-advanced inside a panel
 		//     should find exactly one, and never a fold named for its
 		//     contents;
-		//   * every slider and every field goes inside that fold, however
-		//     central it is to the panel: the icons are what the panel looks
-		//     like from outside, the fold is what it turns into when you work;
+		//   * every value goes inside that fold, however central it is to the
+		//     panel: the icons are what the panel looks like from outside, the
+		//     fold is what it turns into when you work;
 		//   * the delete and the reset are the fold's last row, not a footer
 		//     under the panel;
 		//   * a panel with nothing to fold has an icon row and no fold at all,
@@ -525,10 +541,13 @@ $.glue.popover = function()
 			return b;
 		},
 		// A slider paired with a number field for the same value, kept in
-		// step. Lives here rather than in the module that first needed it,
-		// because the panels are meant to be each other's twins: the font
-		// size, the three text spacings and the colour picker's alpha are all
-		// the same control and should not drift apart.
+		// step. This was every knob in the editor until 2026-09-17, when the
+		// panels' numeric rows became scrubs (number_row below); it survives
+		// for the ONE row that still wants a track - the colour picker's
+		// alpha, which is a percentage judged by eye rather than by number,
+		// and which sits in a wrapper of the picker's own size with width to
+		// fill. The other slider in the editor is the text strip's size, built
+		// inline in modules/text/text-edit.js because it is not a panel row.
 		//
 		// The FIELD is deliberately not capped by the slider: display type
 		// runs past the end of any sensible drag range, and so does the odd
@@ -541,7 +560,7 @@ $.glue.popover = function()
 		// returns { row: element, set: function(value) } - set() is for
 		// whoever changes the value behind the row's back (a reset button, a
 		// colour arriving from somewhere else)
-		number_row: function(label, opts) {
+		slider_row: function(label, opts) {
 			var row = $.glue.popover.row(label);
 			var decimals = opts.decimals || 0;
 			var fmt = function(v) {
@@ -594,12 +613,7 @@ $.glue.popover = function()
 
 			row.appendChild(range);
 			row.appendChild(field);
-			if (opts.unit) {
-				var u = document.createElement('div');
-				u.className = 'glue-popover-unit';
-				u.textContent = opts.unit;
-				row.appendChild(u);
-			}
+			append_unit(row, opts.unit);
 			return {
 				row: row,
 				set: function(v) {
@@ -607,6 +621,227 @@ $.glue.popover = function()
 					field.value = fmt(v);
 				}
 			};
+		},
+		// A knob: a label, a number field, the scrub's arrow and a unit, with
+		// the FIELD as the whole control. Drag it sideways to scrub the value,
+		// type into it for an exact one, or nudge it a step at a time with the
+		// browser's own steppers (which on a phone are the adjustment a finger
+		// gets, so they stay). No track.
+		//
+		// The track was the least precise way to set most of these values - a
+		// slider spread letter-spacing's entire useful band over 15px - and it
+		// cost the panel its width and half its height. Scrubbing keeps what
+		// the track was actually for, which is feeling the value change.
+		//
+		// The row reads `label [ 24 ↔ ] px`, and the arrow is the one part of
+		// that which works where there is no pointer to change: on glass there
+		// is no hover, so the control has to SAY what it can do as well as do
+		// it. It is a sibling of the field rather than something drawn inside
+		// it, so it takes none of the digits' width.
+		//
+		// The drag is $.glue.slider, the same mechanics as every other drag in
+		// the editor, so pointer, touch and pen behave alike. Its contract asks
+		// the trigger for touch-action; the row answers pan-y rather than none
+		// (css/edit.css), because unlike the object drags this one lives inside
+		// a fold that scrolls.
+		//
+		// THE RANGE AND THE FIELD ARE STILL TWO DIFFERENT THINGS, as they were
+		// when the slider carried the range: min/max are what a DRAG traverses,
+		// and a typed value is not capped by them. The type goes past 100px and
+		// the field keeps the real number; the attributes are on the field
+		// because the field is now what the drag moves.
+		//
+		// opts .. as slider_row, plus:
+		//         fine - three times finer than the default drag, for a row
+		//                whose declared range is much wider than the band
+		//                anyone uses (letter and word spacing: an eighth of
+		//                theirs is the whole useful range, and at the default
+		//                that eighth would be a 25px gesture);
+		//         coarse - two and a half times coarser, for a row that is a
+		//                fence rather than a range (x and y: ±500 is the size
+		//                of a page, and 5px of object per pixel of drag is
+		//                twitchy);
+		//         sensitivity - the number itself, in value per pixel of drag,
+		//                for anything that needs its own
+		number_row: function(label, opts) {
+			var row = $.glue.popover.row(label);
+			// the class carries the drag: cursor and touch-action in css/edit.css
+			row.classList.add('glue-popover-scrub');
+			var decimals = opts.decimals || 0;
+			var fmt = function(v) {
+				return decimals ? v.toFixed(decimals) : String(Math.round(v));
+			};
+			var clamp = function(v) {
+				return Math.max(opts.min, Math.min(opts.max, v));
+			};
+
+			var field = document.createElement('input');
+			field.type = 'number';
+			field.className = 'glue-popover-field';
+			field.min = opts.min;
+			field.max = opts.max;
+			field.step = opts.step;
+			field.value = fmt(opts.value);
+			// A phone's keyboard is the only way into a field with no steppers
+			// to press and no hover to scrub with, so it asks for the numeric
+			// one. type=number already implies it on some keyboards; saying so
+			// is free and the minus sign and the point have to be there.
+			field.setAttribute('inputmode', 'decimal');
+
+			// How much value one pixel of drag is worth. The default crosses
+			// the row's whole declared range in 200px, which is one comfortable
+			// gesture; the two departures from it are argued at each call site
+			// and named in opts above.
+			var span = opts.max - opts.min;
+			var sens = opts.sensitivity ||
+				span / (opts.fine ? 600 : (opts.coarse ? 500 : 200));
+
+			// The step's own precision, so that a snapped value is a number the
+			// row can actually show: 0.01 steps must not land on 0.30000000000000004.
+			var step_dp = (String(opts.step).split('.')[1] || '').length;
+			var snap = function(v) {
+				return parseFloat((Math.round(v / opts.step) * opts.step)
+					.toFixed(Math.max(step_dp, decimals)));
+			};
+
+			// A press is not a drag until it has moved this far, so that a click
+			// meant for the caret - or a finger that lands and lifts - cannot
+			// change the value. The drag is measured from where it STARTED, so
+			// once it is armed the value catches up with the whole distance.
+			var MOVED = 4;
+
+			// Whether anything has reached the FILE since the caret arrived.
+			// Escape puts the value back either way, but only a row that has
+			// already stored something has something to store back: see below.
+			var committed = false;
+
+			row.addEventListener('pointerdown', function(e) {
+				if (e.button) {
+					return;			// the primary button or a finger
+				}
+				var start = parseFloat(field.value);
+				if (isNaN(start)) {
+					start = opts.value;
+				}
+				var armed = false;
+				$.glue.slider(e, function(dx) {
+					if (!armed) {
+						if (Math.abs(dx) < MOVED) {
+							return;
+						}
+						armed = true;
+						// The hand closes for the length of the drag. A class
+						// and not :active, which is the one-word way to say it:
+						// measured in both engines, Firefox does not activate
+						// an element whose pointerdown was prevented, and every
+						// drag in this editor prevents it.
+						row.classList.add('glue-popover-scrub-dragging');
+					}
+					var v = snap(clamp(start + dx*sens));
+					field.value = fmt(v);
+					opts.apply(v, false);
+				}, function() {
+					row.classList.remove('glue-popover-scrub-dragging');
+					if (!armed) {
+						return;		// nothing moved: this was a click
+					}
+					// The drag is over, so the click it is about to send is not
+					// one anybody made: it lands wherever the pointer was
+					// released, which for a sideways drag is usually outside the
+					// panel, and would close it mid-fiddle.
+					$.glue.popover.swallow_next_click();
+					committed = true;
+					opts.apply(parseFloat(field.value), true);
+				});
+			});
+
+			// Typing. The FIELD is not capped by min/max, here or anywhere: it
+			// reports every keystroke live and tidies to the row's precision
+			// once it is settled.
+			field.addEventListener('input', function() {
+				var v = parseFloat(this.value);
+				if (isNaN(v)) {
+					return;
+				}
+				opts.apply(v, false);
+			});
+			field.addEventListener('change', function() {
+				var v = parseFloat(this.value);
+				if (isNaN(v)) {
+					this.value = fmt(opts.value);
+					return;
+				}
+				this.value = fmt(v);
+				committed = true;
+				opts.apply(v, true);
+			});
+
+			// Escape takes the value back to what it was when the caret
+			// arrived. Typing applies live, so a cancel has to put the OBJECT
+			// back as well as the field.
+			//
+			// It stores the taken-back value only if this row has already
+			// stored something - a change event, or a drag that finished and
+			// saved (which is why the pre-edit value is taken at focus rather
+			// than at the first keystroke). Putting 0.15 on disk and then
+			// showing 0 is the editor lying about the page; but a plain
+			// typed-and-cancelled row was never on disk in the first place, and
+			// committing there would write the default a MISSING attribute
+			// already means - the cancel changing the object it was undoing.
+			var pre_edit = null;
+			field.addEventListener('focus', function() {
+				pre_edit = parseFloat(field.value);
+				committed = false;
+			});
+			field.addEventListener('keydown', function(e) {
+				if (e.key != 'Escape' || pre_edit === null || !isFinite(pre_edit)
+						|| field.value === fmt(pre_edit)) {
+					// Nothing to take back: this Escape is the panel's, and
+					// closes it. So Escape means what it means in a field
+					// anywhere else - the first press undoes the edit, the
+					// second closes the thing the field is in.
+					return;
+				}
+				// The panel's own Escape is a keydown on documentElement in the
+				// bubble phase, so stopping it here is enough to keep the panel
+				// open and let the row finish the edit it was cancelling.
+				e.stopPropagation();
+				field.value = fmt(pre_edit);
+				opts.apply(pre_edit, committed);
+			});
+
+			row.title = 'drag sideways to change, or type a number';
+			row.appendChild(field);
+			// What the row can do, drawn: see the header. css/edit.css sizes it
+			// so it sits in the row without reaching into the field's digits.
+			var arrow = document.createElement('div');
+			arrow.className = 'glue-popover-scrub-arrow';
+			arrow.textContent = '↔';
+			row.appendChild(arrow);
+			append_unit(row, opts.unit);
+			return {
+				row: row,
+				set: function(v) {
+					field.value = fmt(v);
+				}
+			};
+		},
+		// A control whose drag has actually moved calls this as it finishes: the
+		// click the drag itself is about to deliver is not a click anybody made.
+		swallow_next_click: function() {
+			swallow_click = true;
+		},
+		// Read and cleared by the click handler below - not by controls.
+		take_swallowed_click: function() {
+			var had = swallow_click;
+			swallow_click = false;
+			return had;
+		},
+		// A new gesture means the previous drag's click never arrived (a drag
+		// released off the window sends none), and the flag must not lie in wait
+		// for a click somebody makes later.
+		clear_swallowed_click: function() {
+			swallow_click = false;
 		}
 	};
 }();
@@ -616,6 +851,22 @@ $.glue.popover = function()
 // Capture phase for the click, so it closes even when something else stops
 // the event.
 document.documentElement.addEventListener('click', function(e) {
+	// A scrub that ends outside the panel sends its trailing click to the
+	// pointerdown and the pointerup's nearest common ancestor - out here - and
+	// that click would close the panel the scrub was made in. The control
+	// raised the flag as its drag ended; this is the one click it describes.
+	if ($.glue.popover.take_swallowed_click()) {
+		// Leaving the panel alone is not enough. The click's target is wherever
+		// the pointer happened to be released - release over the page and it is
+		// a click on the page, which the editor reads as "deselect" (the
+		// delegated click handlers in glue.js, bubble phase, on document).
+		// Deselecting fires glue-deselect, which closes the panel by the other
+		// door and drops the selection the scrub was being made on. So the
+		// click stops here: nothing it lands on is being clicked by anyone.
+		e.stopPropagation();
+		e.preventDefault();
+		return;
+	}
 	var pop = $.glue.popover.current();
 	if (!pop) {
 		return;
@@ -634,6 +885,12 @@ document.documentElement.addEventListener('click', function(e) {
 	if (!pop.contains(e.target) && !e.target.closest('.picker_wrapper')) {
 		$.glue.popover.close();
 	}
+}, true);
+
+// A gesture anywhere starts a new account of what is being dragged, so the
+// swallowed click a previous drag was waiting for is no longer coming.
+document.documentElement.addEventListener('pointerdown', function() {
+	$.glue.popover.clear_swallowed_click();
 }, true);
 
 document.documentElement.addEventListener('keydown', function(e) {
@@ -762,12 +1019,16 @@ $.glue.colorpicker = function()
 		anchor.style.top = at.y+'px';
 	};
 
-	// The transparency row: a plain slider and a number field, in place of
+	// The transparency row: a slider and a number field, in place of
 	// vanilla-picker's alpha bar. The bar was a gradient from the colour to a
 	// checkerboard with a handle somewhere along it - it showed the effect
-	// but not the value, and there was no way to type one. This is the same
-	// control as the font panel's size and the spacing panel's rows, which is
-	// the point: one kind of slider in the editor, not one per panel.
+	// but not the value, and there was no way to type one.
+	//
+	// This is the ONE numeric row in the editor that still has a track, since
+	// the panels' knobs became scrubs on 2026-09-17: it is a wash judged by
+	// eye, and it sits in a wrapper of the picker's own size with width for
+	// the track to fill - neither of which is true of a knob inside a panel.
+	// So it is $.glue.popover.slider_row.
 	//
 	// Percent rather than 0-1: a hundredth is the finest anyone means, and
 	// "50%" needs no explaining.
@@ -830,7 +1091,11 @@ $.glue.colorpicker = function()
 		if (stale) {
 			stale.remove();
 		}
-		alpha_row = $.glue.popover.number_row('alpha', {
+		// slider_row, not number_row: this is the one numeric row in the editor
+		// that keeps its track. The alpha is a wash judged by eye, and the row
+		// has width to fill - it is inside the picker's own wrapper - where a
+		// panel's knob has only its own 52px field. See $.glue.popover above.
+		alpha_row = $.glue.popover.slider_row('alpha', {
 			min: 0, max: 100, step: 1, unit: '%',
 			value: Math.round(picker.color.rgba[3]*100),
 			apply: function(pct) {
