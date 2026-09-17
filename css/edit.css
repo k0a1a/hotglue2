@@ -727,15 +727,29 @@
 
 
 .glue-object-link-field {
-	/* The url and target fields of the object link panel. Sized by the row
-	   rather than by a number: what is left after the label, whatever the
-	   label's length, so the address is read whole however long it is. The
-	   flex-basis of 0 is what makes the field take the remainder - the
-	   number field it shares .glue-popover-field with is three digits wide
-	   on purpose, and would leave this one at 44px. */
-	flex: 1 1 0;
-	width: auto;
-	min-width: 0;
+	/* The url and target fields of the object link panel, and the same shape
+	   .glue-image-alt-field has above: .glue-popover-field's flex: 0 0 auto
+	   kept, with only the width overridden - 240 here, 180 there.
+
+	   It was sized by the row's remainder until 2026-09-17, when the panels
+	   stopped pinning widths (see .glue-popover above). A remainder needs
+	   something to be a remainder OF: with the panel content-sized and the
+	   field on flex-basis 0, the panel fell back to the BROWSER's own width for
+	   an empty <input> - 150px in Chromium, 143 in Firefox - which is a url
+	   nobody can read, in the panel that exists to make one readable.
+
+	   A number is the fix, and putting it on flex-basis is NOT: measured in
+	   both browsers, flex: 0 0 240px leaves Firefox with a 240px field inside a
+	   182px panel, hanging out through the frame. This is CSS Flexbox's
+	   intrinsic sizing - the max-content width of a single-line container is
+	   pulled back down by an item whose own content is narrower than its base
+	   size, and only Chrome lets the base size win. Width on a flex: 0 0 auto
+	   item is the shape that agrees in both.
+
+	   240px reads a real url whole: a bare domain is 90px at this font size, a
+	   page with a path and a query 190. Only a deep path runs past it, and the
+	   field scrolls. */
+	width: 240px;
 }
 
 .glue-popover-unit {

@@ -68,6 +68,13 @@ Height was always the content's. Note the consequence of the width being the con
 panel that opens on its icon row is the width of that row, and **gets wider when the fold
 is opened**, since a `display: none` fold contributes nothing to layout.
 
+A field that is wide **by nature** — a url, a sentence — says its own width, the same way
+the slider says 80: `.glue-object-link-field` is 240px and `.glue-image-alt-field` is 180,
+both overriding `.glue-popover-field`'s 44 with its `flex: 0 0 auto` kept. A content-sized
+panel does not otherwise give such a field any width to have: an empty `<input>` left to
+itself is the browser's own 150px (Chromium) or 143 (Firefox), which is not a url anybody
+reads. See the trap below for the shape that does *not* work.
+
 ## The panels, as they stand
 
 | panel | built by | shows | folds |
@@ -130,6 +137,13 @@ would mean inventing a glyph to justify a row.
 - **Icons are masks, and a mask reads alpha only.** Judge artwork by its alpha at 22px in a
   panel (30 in the toolbar); a mask that fails to load paints nothing while every test that
   only asks "is it visible" passes.
+- **A wide field is sized with `width`, not with `flex-basis`.** The intuitive move for a
+  field that should take a fixed share of a content-sized panel is `flex: 0 0 240px`, and it
+  is wrong in a way only one browser shows: measured, Chromium gives a 240px field in a
+  278px panel, and Firefox gives a 240px field in a **182px panel** — hanging out through the
+  panel's frame. The max-content width of a single-line flex container is pulled back down by
+  an item whose own content is narrower than its base size, and only Chromium lets the base
+  size win. `width: 240px` on a `flex: 0 0 auto` item agrees in both.
 - **`node tools/make-min.js`** after editing any of hotglue's own JS: `USE_MIN_FILES`
   defaults to true, so the `.min.js` copy is what a default install serves, and
   `tests/e2e/min-files.spec.js` fails when a copy falls behind its source.
