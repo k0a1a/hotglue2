@@ -722,11 +722,18 @@
 	   label. The cursor is on the row for the same reason: it says the row
 	   can be dragged at all, and it covers the label.
 
-	   grab/grabbing, not ew-resize. The double arrow is the more conventional
-	   scrub cursor, but the component's spec asks for the hand
+	   grab/grabbing for the row, and ew-resize on the field itself. The hand
+	   is the component's spec, danja's call in it
 	   (SOW-scrubby-number-component.md: "the grabbing hand is fine and
-	   arguably friendlier; use the grab/grabbing pair as specified"), and the
-	   hand is the one that also reads as a grab on the row's own ↔ glyph.
+	   arguably friendlier; use the grab/grabbing pair as specified"), and it
+	   is on the row because the row is what a hand grabs - the label and the
+	   unit are furniture that says "this whole line is the control". The field
+	   is not furniture: it is the thing that moves sideways, and the double
+	   arrow is the conventional cursor for exactly that. Danja asked for it
+	   there on 2026-09-17 - "when hovering over number input change cursor to
+	   ew-resize" - which is what the SOW's "more conventional" line was
+	   offering. The glyph's own zone is inside the field and takes the
+	   field's cursor, so the row's one drawn affordance and its cursor agree.
 
 	   pan-y, NOT none. Every other drag in the editor sets touch-action:
 	   none, because nothing scrolls under it and the browser must not claim
@@ -743,11 +750,19 @@
 	touch-action: pan-y;
 }
 
-.glue-popover-scrub.glue-popover-scrub-dragging {
-	/* the hand closes for the length of the drag, and the way back is the
+.glue-popover-scrub.glue-popover-scrub-dragging,
+.glue-popover-scrub.glue-popover-scrub-dragging .glue-popover-field {
+	/* The hand closes for the length of the drag, and the way back is the
 	   pointer coming up. Set from the row's own drag (js/edit.js) once the
 	   press has travelled far enough to be one - so a click into the field
-	   does not flash a closed hand. */
+	   does not flash a closed hand.
+
+	   The FIELD is named here as well, and not only because the two rules
+	   would otherwise tie on specificity: the drag starts on the field and
+	   usually stays there, so without it the ew-resize above is what a scrub
+	   would wear for its whole length. Held is what the row says while a
+	   value is being dragged, wherever on the row the pointer happens to be;
+	   ew-resize is what it says while the pointer is only passing over. */
 	cursor: grabbing;
 }
 
@@ -792,8 +807,10 @@
 	   Nothing in this is layout: the room they had is the padding above. */
 	appearance: textfield;
 	-moz-appearance: textfield;
-	/* the row's cursor, not the browser's I-beam: the field is the handle */
-	cursor: inherit;
+	/* Not the browser's I-beam either - the field does not want a text cursor,
+	   it wants the one that says sideways. See the row's own rule above for
+	   why the hand is on the row and the double arrow here. */
+	cursor: ew-resize;
 }
 
 .glue-popover-scrub .glue-popover-field::-webkit-outer-spin-button,

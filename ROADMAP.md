@@ -1199,6 +1199,45 @@ npx playwright test --config tests/e2e/playwright.config.js \
   text-font-popover text-spacing-popover object-shape object-properties min-files
 ```
 
+Same day, once more — **the cursor over the field says sideways**. Danja, one line: *"when
+howering over number input change cursor to ew-resize."*
+
+- **Two cursors, on two elements.** The row keeps the hand it has had since `0f86d0b` — the
+  component SOW's `grab`, closing to `grabbing` for the length of a drag — and the *field*
+  now wears `ew-resize`. It was `cursor: inherit` before, i.e. it wore the hand like the
+  label and the unit; the field is the one part of the row that is not furniture, it is the
+  thing that moves sideways, and his line is the same thing the SOW offered when it called
+  the double arrow "the more conventional scrub cursor" and chose the hand for the row.
+  Measured at rest in both engines, identical: row `grab`, label `grab`, box `grab`, **field
+  `ew-resize`**, unit `grab`.
+- **The glyph's zone takes the field's cursor, not the row's.** The arrow is drawn inside the
+  field's right end and is `pointer-events: none`, so the strip it occupies is the field as
+  far as the pointer is concerned — `elementFromPoint` at 95% of the field's width (inside the
+  arrow's `right: 4px; width: 12px`) hits that row's `<input>`, and the cursor computed there
+  is `ew-resize`. The row's one drawn affordance and the cursor over it agree.
+- **The closed hand still wins for the whole drag, the field included.** The dragging rule is
+  now a selector list that names `.glue-popover-scrub .glue-popover-field` explicitly — not
+  only because the two rules would otherwise tie on specificity, but because a scrub starts
+  on the field and usually stays there, so without it `ew-resize` is what a drag would wear
+  for its entire length. Measured mid-drag (press held, 30px travelled): `grabbing` on the
+  row, the label, the box, **the field**, the arrow's strip and the unit, Chromium and Firefox
+  both. The incidental 30px drag moved letter-spacing 0.06 in both — Firefox's `0.12` is
+  Chromium's `0.06` already written to the object file, which is the sensitivity agreeing
+  rather than differing.
+- **CSS only, and no min file follows from it.** No JS was touched — the dragging class is
+  still set by the row's own drag handler — and `css/edit.css` is served straight
+  (`controller.inc.php:100`) with no minified copy to rebuild; `tools/make-min.js` takes `.js`
+  only. Two rules changed: the field's `cursor`, and the dragging pair, which is now a
+  selector list. The file's comments carry the reasoning, including that the hand is on the
+  row because the label and the unit are furniture.
+
+**Not run** — the suite is danja's to run. Suggested:
+
+```
+npx playwright test --config tests/e2e/playwright.config.js \
+  text-font-popover text-spacing-popover object-properties
+```
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)

@@ -73,10 +73,16 @@ either way, and there is no fourth element in the row: what the steppers did sur
 ArrowUp/ArrowDown in a `type=number` field, which costs no panel width and is the keyboard's
 way in, and a phone gets the drag it wanted plus the numeric keyboard (`inputmode="decimal"`)
 for typing. A press on the glyph goes through it to the field below (`pointer-events: none`),
-so the right end of the field is still the field. The cursor over the row is the grabbing
-hand — `grab`, closing to `grabbing` for the length of a drag — rather than the more
-conventional `ew-resize`: danja's call in the component's SOW, and the hand reads with the
-glyph.
+so the right end of the field is still the field.
+
+**Two cursors, since 2026-09-17.** The **row** wears the grabbing hand — `grab`, closing to
+`grabbing` for the whole length of a drag, the field included even though the field has a
+cursor of its own — which is danja's call in the component's SOW. The **field** wears
+`ew-resize`, the conventional cursor for a sideways drag, which he asked for by name the same
+day: *"when howering over number input change cursor to ew-resize."* So the hand says the
+whole line is one control (its original argument: a label that does nothing when dragged
+reads as a label) and the double arrow says what the control does. The glyph's own zone is
+inside the field, so the row's one drawn affordance and the cursor over it agree.
 
 Both spellings of the stepper removal are load-bearing, and each engine listens to only one of
 them. Measured 2026-09-17 on three 200px number inputs, hovered: Chromium keeps its ▲▼ with
