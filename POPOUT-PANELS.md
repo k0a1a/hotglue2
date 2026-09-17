@@ -48,7 +48,9 @@ A panel's numbers — the font size, the spacings, the corner's round, the glow'
 paddings, the transparency — are **scrubs** since 2026-09-17: first as
 `SOW-scrubby-numbers.md` built them, then in the shape the day's second SOW
 (`SOW-scrubby-number-component.md`) named. That second one is the specification; it is what
-the row below is built to.
+the row below is built to, with one exception since 2026-09-17: it expects the browser's own
+steppers to stay as "additional width", and danja had them taken out and the `↔` put in their
+place instead.
 
 ```
 label        [  24 ↔ ]  px        <- the row IS the handle: drag it sideways
@@ -56,19 +58,32 @@ label        [  24 ↔ ]  px        <- the row IS the handle: drag it sideways
 
 Three ways in, and the row is all three: **drag it sideways** (the whole row, not just the
 field), **type into the field** (Enter or blur stores it, Escape takes it back), or **nudge**
-it a step at a time with the up/down keys or the browser's own steppers — which are what a
-finger gets, and stay for that reason. While a drag is running, **Shift coarsens it and
+it a step at a time with the up/down keys. While a drag is running, **Shift coarsens it and
 Alt/Cmd refines it**, four either way, read from the move event rather than taken at the
 press so either key can be pressed or let go in the middle of a drag. (On a Linux desktop
 that moves windows with Alt+drag the window manager may eat that press before the page sees
 it; Shift and a Mac's Cmd are unaffected.)
 
 The `↔` is the affordance, and the only one that survives on glass: nothing hovers on a touch
-screen, so the row has to say what it can do as well as do it. It is a sibling of the field
-rather than anything drawn inside it, so it costs the digits no width. The cursor over the
-row is the grabbing hand — `grab`, closing to `grabbing` for the length of a drag — rather
-than the more conventional `ew-resize`: danja's call in the component's SOW, and the hand
-reads with the glyph.
+screen, so the row has to say what it can do as well as do it. It is drawn **inside the
+field's right end**, on a 16px right padding the field keeps for it — where the browser's own
+steppers used to be, until danja had them taken out on 2026-09-17 ("number input should not
+have up/down arrows, instead the ↔ should take that place"). So it costs the digits nothing
+either way, and there is no fourth element in the row: what the steppers did survives as
+ArrowUp/ArrowDown in a `type=number` field, which costs no panel width and is the keyboard's
+way in, and a phone gets the drag it wanted plus the numeric keyboard (`inputmode="decimal"`)
+for typing. A press on the glyph goes through it to the field below (`pointer-events: none`),
+so the right end of the field is still the field. The cursor over the row is the grabbing
+hand — `grab`, closing to `grabbing` for the length of a drag — rather than the more
+conventional `ew-resize`: danja's call in the component's SOW, and the hand reads with the
+glyph.
+
+Both spellings of the stepper removal are load-bearing, and each engine listens to only one of
+them. Measured 2026-09-17 on three 200px number inputs, hovered: Chromium keeps its ▲▼ with
+`appearance: textfield` alone and drops them only with the `::-webkit-inner-spin-button` /
+`::-webkit-outer-spin-button` pair, while Firefox ignores those pseudo-elements outright and
+drops them with `appearance: textfield`. Neither is a fallback for the other; delete either
+one and one engine has the buttons back.
 
 **Escape belongs to the field before it belongs to the panel.** The first press takes the
 value back to what it was when the caret arrived and leaves the panel open; the second, with
@@ -126,23 +141,35 @@ the picker because it is vanilla-picker's own drawing, the strip because it is n
 
 A panel is **as wide and as tall as its content**. No panel pins a width. What a panel with
 knobs comes out at is therefore its widest row, and for a number row that is the scrub:
-**`label + 7 + field + 7 + ↔ + 7 + unit`** — about 124px for a short label and 143 for
-`padding`. The field is `calc(5ch + 20px)` and the arrow a flat 12; the unit is 16.
+**`label + 7 + [field ↔] + 7 + unit`** — about 105px for a short label
+(`letter`: 24 + 7 + 51 + 7 + 16). The field is `calc(5ch + 20px)` and the arrow a flat 12,
+drawn *inside* the field and not beside it; the unit is 16. Until 2026-09-17 the arrow was a
+fourth item in the row, which cost it a 12px box and a 7px gap on top: the same row was 124
+measured, and that is the 19 the panels did **not** get back — every panel that holds a knob
+is decided by something wider (the properties panel by its icon row, the font panel by its
+face `<select>`), and the three that were measured came out identical to the pixel before and
+after: font 233×401, properties 172×335, edge 177×399 in Chromium.
 
 `ch` and not a number, for the field: it follows the font, and the two engines disagree about
 an `<input>`'s own width by a third. Measured 2026-09-17 at the panel's 11px sans-serif, `ch`
 is 6.1px in Chromium and 6.3 in Firefox, so the field is 50.6 there and 51.5 here; the widest
 value any row emits is the signed hundredth the two em spacings produce, `-0.05`, at 25.1px
-and 25.4px. Five ch is five characters of digit room — the arrow and the browser's steppers
-are *additional* width, never taken out of it — and the 20 buys the steppers (16px of them in
-Firefox, drawn over the field in Chromium) and the hairline border. Narrowing the field until
-`-0.05` clipped put the floor at 44px in Chromium and 48 in Firefox, so this clears it in
-both. The 20 is the one number to change if the knobs want to be tighter or looser.
+and 25.4px. Five ch is five characters of digit room, and the 20 is what makes the content
+box exactly that: 16 is the right padding, which is the arrow's room, and 4 is the UA's 2px
+inset border, which nothing here styles away (the field has no border rule of its own, here
+or in `edit.css`'s base `.glue-popover-field`). The field's own box is therefore unchanged by
+the arrow moving in: measured after, 50.58×16 in Chromium and 51.5×20 in Firefox, with the
+content box 30.58 and 31.5 — 5ch to the hundredth in both — and `-0.05` fitting with about 5px
+to spare, where a typed 300.00 overflows and scrolls within the field rather than pushing the
+glyph aside. The 20 is the one number to change if the knobs want to be tighter or looser;
+the 16 inside it is the room the arrow and the old steppers both lived in.
 
-**The arrow did not widen a single panel.** Measured with the folds open, before and after:
-font 233×401, properties 172×335, edge 177×399 — unchanged, because a knob row at
-`label + 100` still comes in under whatever already decided each panel (the icon row's 158,
-the font panel's face `<select>` at 219). `max-width: calc(100vw - 16px)` keeps a naturally
+**The arrow has never widened a single panel, and taking the steppers out did not narrow
+one.** Measured with the folds open, before and after each move: font 233×401,
+properties 172×335, edge 177×399 — the same three numbers when the arrow arrived as a sibling
+in 0f86d0b and again when it moved inside the field and the steppers went, because a knob row
+at `label + 100` comes in under whatever already decided each panel (the icon row's 158, the
+font panel's face `<select>` at 219). `max-width: calc(100vw - 16px)` keeps a naturally
 wide row (a url field) from pushing a panel off a narrow viewport, and the tall folds carry
 `max-height: 42vh; overflow-y: auto`.
 
@@ -245,8 +272,10 @@ would mean inventing a glyph to justify a row.
 - **`min` and `max` on a scrub's field are the LENGTH OF THE DRAG, not a limit.** A typed
   value is kept however far past them it is (display type at 300px in a row that drags to
   100), which is the same contract the field had when a slider sat beside it. The attributes
-  are on the field because the browser's own steppers honour them and because that is where
-  a test looks — not because anything clamps the typed path.
+  are on the field because the field is what the drag moves, because ArrowUp/ArrowDown in a
+  `type=number` field step by `step` within them — the keyboard's nudge, and all that is left
+  of the steppers — and because that is where a test looks; not because anything clamps the
+  typed path.
 - **Escape in a scrub field is the field's, and the commit it does is conditional.** The
   panel closes on `keydown` at `documentElement` in the bubble phase, so the field's own
   handler stops the event to cancel an edit — and must NOT stop it when there is nothing to

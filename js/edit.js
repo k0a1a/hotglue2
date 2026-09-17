@@ -622,22 +622,36 @@ $.glue.popover = function()
 				}
 			};
 		},
-		// A knob: a label, a number field, the scrub's arrow and a unit, with
-		// the FIELD as the whole control. Drag it sideways to scrub the value,
-		// type into it for an exact one, or nudge it a step at a time with the
-		// browser's own steppers (which on a phone are the adjustment a finger
-		// gets, so they stay). No track.
+		// A knob: a label, a number field with the scrub's arrow in its own
+		// right-hand end, and a unit, with the FIELD as the whole control.
+		// Drag it sideways to scrub the value, type into it for an exact one,
+		// or nudge it a step with the arrow keys. No track.
 		//
 		// The track was the least precise way to set most of these values - a
 		// slider spread letter-spacing's entire useful band over 15px - and it
 		// cost the panel its width and half its height. Scrubbing keeps what
 		// the track was actually for, which is feeling the value change.
 		//
-		// The row reads `label [ 24 ↔ ] px`, and the arrow is the one part of
-		// that which works where there is no pointer to change: on glass there
-		// is no hover, so the control has to SAY what it can do as well as do
-		// it. It is a sibling of the field rather than something drawn inside
-		// it, so it takes none of the digits' width.
+		// The row reads `label [ 24 ↔ ] px` - the SOW's own picture, brackets
+		// and all, since the arrow moved inside the field on 2026-09-17:
+		// danja, "number input should not have up/down arrows, instead the ↔
+		// should take that place". The browser's steppers are hidden in
+		// css/edit.css and the arrow is drawn in the room the field keeps for
+		// them, so the row comes out a glyph and a gap narrower than it was
+		// (105 measured against 124) while the panels that hold one do not
+		// change at all. The digits keep their five ch either way: the arrow
+		// is ADDITIONAL width, and the room it uses is room no digit was
+		// ever in.
+		//
+		// The arrow is the one part of the row that works where there is no
+		// pointer to change: on glass there is no hover, so the control has to
+		// SAY what it can do as well as do it.
+		//
+		// What the steppers did is still there for a keyboard - type=number
+		// steps on ArrowUp and ArrowDown - and typing is what a phone gets
+		// (inputmode, below), with the drag itself as the adjustment a finger
+		// wants. The buttons were the one way in that cost panel width, and
+		// they were never on glass anyway.
 		//
 		// The drag is $.glue.slider, the same mechanics as every other drag in
 		// the editor, so pointer, touch and pen behave alike. Its contract asks
@@ -856,13 +870,20 @@ $.glue.popover = function()
 			});
 
 			row.title = 'drag sideways to change, or type a number';
-			row.appendChild(field);
-			// What the row can do, drawn: see the header. css/edit.css sizes it
-			// so it sits in the row without reaching into the field's digits.
+			// What the row can do, drawn, and in the field rather than beside
+			// it: the field keeps a right padding for the arrow (css/edit.css)
+			// and the arrow is positioned in it. The box is what makes that
+			// sayable - an input cannot hold a child - and it hugs the field
+			// rather than being laid out inside the row, so the arrow's room
+			// is the field's room and the row's gaps stay the row's.
+			var box = document.createElement('div');
+			box.className = 'glue-popover-scrub-box';
+			box.appendChild(field);
 			var arrow = document.createElement('div');
 			arrow.className = 'glue-popover-scrub-arrow';
 			arrow.textContent = '↔';
-			row.appendChild(arrow);
+			box.appendChild(arrow);
+			row.appendChild(box);
 			append_unit(row, opts.unit);
 			return {
 				row: row,

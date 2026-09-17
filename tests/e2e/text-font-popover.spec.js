@@ -147,8 +147,8 @@ test('the size field takes a value past its drag range', async ({ page, hg }) =>
 	await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('42px');
 
 	// Display type runs past the end of any sensible drag range. The row's
-	// max is 100 - it is what the DRAG stops at, and the browser's own
-	// steppers with it - and the field keeps the real number. Until
+	// max is 100 - it is what the DRAG stops at, and ArrowUp/Down in the
+	// field with it - and the field keeps the real number. Until
 	// 2026-09-17 this asserted that the slider parked at 100 while the field
 	// said 300; there is no slider to park now, so what is asserted is the
 	// half that still exists: the range is the row's, the value is the field's.
@@ -253,7 +253,8 @@ test('the row shows its arrow, and Escape takes a typed value back',
 		const field = row.locator('.glue-popover-field');
 		const stored = () => hg.readObject('100000000001').attrs['text-letter-spacing'];
 
-		// one arrow per knob row, between the field and the unit, and a
+		// one arrow per knob row, drawn inside the field's own right end
+		// since 2026-09-17 (where the browser's steppers used to be), and a
 		// numeric keyboard when a finger taps the field
 		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(6);
 		await expect(row.locator('.glue-popover-scrub-arrow')).toHaveText('↔');

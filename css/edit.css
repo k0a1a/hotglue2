@@ -758,17 +758,63 @@
 	   why every other width here is a number).
 
 	   Measured 2026-09-17, 11px sans-serif: ch is 6.1px in Chromium, 6.3 in
-	   Firefox, and the widest value any row emits is the signed hundredth the
-	   two em spacings produce, -0.05, at 25.1px and 25.4px. Five ch is five
-	   characters of digit room - the arrow and the browser's steppers are
-	   ADDITIONAL width, not taken out of it - and 20px buys the steppers
-	   (16px of them in Firefox, drawn over the field in Chromium) and the
-	   hairline border. The floor is real: measured by narrowing the field
-	   until -0.05 clipped, Chromium needs 44px and Firefox 48px, and this
-	   comes out at about 51 in both. */
+	   Firefox, the box comes out at 50.6 and 51.5, and the widest value any
+	   row emits is the signed hundredth the two em spacings produce, -0.05,
+	   at 25.1px and 25.4px. Five ch is five characters of digit room, and
+	   the 20 is what makes the content box exactly that: 16 of it is the
+	   padding below, and 4 is the UA's 2px inset border, which neither
+	   engine styles away here.
+
+	   The 16 is where the browser's steppers were. They are gone - danja,
+	   2026-09-17, "number input should not have up/down arrows, instead the
+	   ↔ should take that place" - and the arrow is drawn on that padding
+	   (.glue-popover-scrub-arrow, below). So the FIELD's own box did not
+	   change by a pixel, and the digits lost nothing they had. In Firefox
+	   the pair took 18px out of the content box, which is this room to the
+	   pixel: measured, the same field reports 32px of usable text with the
+	   spinners off and 14 with them back - and 47.5 inside the border less
+	   those 18 is the 30 that field reported before any of this. In Chromium
+	   they are drawn inside the field's right end instead (its clientWidth
+	   is the padding box either way, 47, so there is nothing to subtract),
+	   which is the same corner the arrow now occupies. Five ch is what is
+	   left in both engines, and -0.05 still fits with 5px to spare. */
 	width: calc(5ch + 20px);
+	padding-right: 16px;
+	/* The browser's steppers, off - and BOTH spellings, because each engine
+	   listens to only one. Measured 2026-09-17, three 200px number inputs
+	   hovered side by side: Chromium keeps its ▲▼ with `appearance:
+	   textfield` alone (dark ink 4676, against a plain field's 4651 - the
+	   same buttons) and drops them with the pseudo-element rule below (4225,
+	   and none in the picture), while Firefox ignores the pseudo-elements
+	   outright and drops them with this (usable text 174px to 192). So
+	   neither rule here is a fallback; take either one away and one engine
+	   has the buttons back. -moz-appearance is what Firefox before 80 reads.
+	   Nothing in this is layout: the room they had is the padding above. */
+	appearance: textfield;
+	-moz-appearance: textfield;
 	/* the row's cursor, not the browser's I-beam: the field is the handle */
 	cursor: inherit;
+}
+
+.glue-popover-scrub .glue-popover-field::-webkit-outer-spin-button,
+.glue-popover-scrub .glue-popover-field::-webkit-inner-spin-button {
+	/* Chromium's half of the above. The buttons are elements of their own,
+	   which the field's own appearance does not reach, and the margin is
+	   part of them: zeroing the appearance alone leaves the box they sat in. */
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.glue-popover-scrub-box {
+	/* The field and its own arrow as one item of the row, so that what
+	   follows - the gap, the unit - is laid out from the FIELD's edge rather
+	   than from the far side of a glyph that belongs to the field. No size
+	   of its own: the box is the field, which is what makes `right` on the
+	   arrow below mean "this far into the field". */
+	position: relative;
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
 }
 
 .glue-popover-scrub-arrow {
@@ -776,13 +822,31 @@
 	   remark on the field rather than as another control (.glue-popover-label
 	   is #666), and the only affordance that survives on a touch screen,
 	   where nothing hovers. Fixed width with the glyph centred, so equal rows
-	   in one fold keep their fields in one column. */
+	   in one fold keep their fields in one column.
+
+	   Drawn inside the field's right end, on the 16px of padding it keeps
+	   there - the room the browser's steppers had until 2026-09-17 - and 4px
+	   in from the field's outer edge, which centres a 12px glyph in that
+	   room with 2px either side of it (the 2px inset border is outside
+	   both). The digits cannot reach it: an input's text scrolls within its
+	   content box, and the content box ends where this padding starts.
+
+	   pointer-events: none, so the glyph is a remark and not a target: a
+	   press on it goes through to the field underneath, which puts the caret
+	   at the end of the number - and the drag is the ROW's handler either
+	   way, so nothing is lost by not being hittable. */
+	position: absolute;
+	right: 4px;
+	top: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
 	color: #999;
-	flex: 0 0 auto;
 	width: 12px;
 	font-size: 11px;
 	line-height: 1;
-	text-align: center;
 }
 
 @media (pointer: coarse) {

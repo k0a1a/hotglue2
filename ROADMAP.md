@@ -1141,6 +1141,64 @@ npx playwright test --config tests/e2e/playwright.config.js \
   text-padding min-files
 ```
 
+Same day, after that — **the steppers out of the scrub field and the `↔` in their place**.
+Danja, one line: *"number input should not have up/down arrows, instead the ↔ should take that
+place."*
+
+- **The arrow moved inside the field**, from a fourth item in the row (where `0f86d0b` put it)
+  into the field's own right end — the SOW's picture, `[ 24 ↔ ]`, brackets and all, which the
+  build had been approximating from the outside. A `position: relative` box around the field
+  and the glyph (an input cannot hold a child) and the field keeps a `padding-right: 16px` for
+  it; `js/edit.js` builds both, `css/edit.css` sizes both.
+- **The field's own box did not change by a pixel** — 50.58×16 in Chromium and 51.5×20 in
+  Firefox before and after, because the 16px was already inside it: that is where the
+  steppers were, 18px of Firefox's content box (measured: the same field reports 32px of
+  usable text with the spinners off and 14 with them back, and 47.5 inside the border less
+  those 18 is the 30 it reported before any of this) and painted over the right end in
+  Chromium. The content box now comes out at exactly 5ch in both (30.58 and 31.5 measured, `ch`
+  being 6.1 and 6.3), `-0.05` still fits with ~5px to spare, and a typed 300.00 overflows and
+  scrolls within the field (scrollWidth 50 against clientWidth 47 in Chromium, 35 against 32
+  in Firefox) instead of pushing the glyph aside.
+- **The row lost a whole item**: `label + 7 + [field ↔] + 7 + unit`, measured children 24+51+16
+  and two 7px gaps = 105, where the same row measured 124 with the arrow beside the field — the
+  arrow's 12 and the gap before it, gone. Every panel that holds a knob is still decided by
+  something wider, and the three that were measured came out identical to the pixel: font
+  233×401, properties 172×335, edge 177×399.
+- **What the steppers did is not lost.** `type=number` still steps on ArrowUp/ArrowDown —
+  measured, 0.10 plus two presses at step 0.01 is 0.12, applied live — which is the keyboard's
+  nudge, costs no panel width, and is what the SOW's "keyboard nudge when focused" asked for;
+  a phone gets the drag it wanted and `inputmode="decimal"` for typing. The glyph itself is a
+  remark and not a target: `pointer-events: none`, so a press on it lands on the field
+  underneath (checked with `elementFromPoint` in both engines, and a drag started on the glyph
+  scrubs exactly as one started on the field, 40px → 0.08 either way).
+- **Both spellings of the removal are load-bearing, and each engine listens to only one.**
+  Measured on three 200px number inputs hovered side by side: Chromium keeps its ▲▼ with
+  `appearance: textfield` alone (dark ink 4676 against a plain field's 4651 — the same buttons)
+  and drops them only with the `::-webkit-inner-spin-button` / `::-webkit-outer-spin-button`
+  pair (4225, and none in the picture), while Firefox ignores those pseudo-elements outright
+  and drops them with `appearance: textfield` (usable text 174px → 192). Neither rule is a
+  fallback for the other: take either away and one engine has the buttons back. The earlier
+  reasoning — that the steppers stay because on a phone they are the adjustment a finger gets —
+  is overturned by his call, and the row's header comment says so rather than being quietly
+  rewritten.
+- `text-font-popover.spec.js`'s comment about where the arrow sits ("between the field and the
+  unit") now says where it is; its assertions were already right. `POPOUT-PANELS.md`: the row
+  picture, the size arithmetic (5ch + 20 = 5ch of digits + 16 of arrow room + the UA's 2px inset
+  border either side), the `min`/`max` trap, and the note that this is the SOW's one deliberate
+  exception.
+
+Probed in both engines, identically: the arrow's box inside the field (left 34.6/35.5, right 4,
+vertically centred), the content box 5ch to the hundredth, `-0.05` fitting and 300 scrolling,
+the press landing on the field, ArrowUp stepping, drags from the row and from the glyph, and
+the three panels' widths unchanged.
+
+**Not run** — the suite is danja's to run. Suggested:
+
+```
+npx playwright test --config tests/e2e/playwright.config.js \
+  text-font-popover text-spacing-popover object-shape object-properties min-files
+```
+
 ---
 
 ## Bigger initiatives (need their own SOW when picked up)
