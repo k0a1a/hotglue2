@@ -284,6 +284,34 @@ if (!function_exists('generateHash')) {
 }
 
 /**
+ *	audit-log a REAL auth failure (credentials were supplied, check failed)
+ *
+ *	Deliberately logs site/user/ip but NEVER the password — plaintext
+ *	credentials in logs are a hard no (see the 2026-06 outage postmortem).
+ *	The no-credentials case (a browser's normal first request before the
+ *	401 challenge) is not a failure and is not logged here. Append-only,
+ *	/var/www-hotglue/logs/auth-failures.log — watch growth with logrotate.
+ *
+ *	@param string $site site owner (AUTH_USER of the site being edited)
+ *	@param string $user supplied username
+ *	@param string $reason short reason, no credentials
+ */
+function log_auth_failure($site, $user, $reason)
+{
+	// is_auth() can run more than once per request (page + edit-object
+	// checks); log each failure reason once per request.
+	static $logged = array();
+	$key = $site . '|' . $user . '|' . $reason;
+	if (isset($logged[$key])) return;
+	$logged[$key] = true;
+
+	$ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR']
+	    : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '?');
+	@error_log(date('c') . ' site=' . $site . ' user=' . $user . ' ip=' . $ip . ' reason="' . $reason . '"' . "\n",
+		3, '/var/www-hotglue/logs/auth-failures.log');
+}
+
+/**
  *	check if the user is authenticated or not
  *
  *	@return true if authenticated, false if not
@@ -303,11 +331,12 @@ function is_auth()
 		}
 		if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 			if ($_SERVER['PHP_AUTH_USER'] == AUTH_USER && $_SERVER['PHP_AUTH_PW'] == AUTH_PASSWORD) {
-        //error_log("DEBUG AUTH: user=".$_SERVER['PHP_AUTH_USER']." pw=".$_SERVER['PHP_AUTH_PW']." expected_user=".AUTH_USER." expected_pw=".AUTH_PASSWORD);
 				log_msg('debug', 'common: auth success (auth_method basic)');
 				return true;
 			} else {
 				log_msg('info', 'common: auth failure (auth_method basic)');
+				log_auth_failure(AUTH_USER, $_SERVER['PHP_AUTH_USER'],
+					($_SERVER['PHP_AUTH_USER'] != AUTH_USER) ? 'user is not site owner' : 'wrong password');
 				return false;
 			}
 		} else {
@@ -361,6 +390,7 @@ function is_auth()
         // AUTH_USER comes from this site's user-config.inc.php, so it IS the owner.
         if ($user !== strtolower(AUTH_USER)) {
                 log_msg('info', 'common: auth failure (db) - user != site owner ('.$user.' != '.AUTH_USER.')');
+                log_auth_failure(strtolower(AUTH_USER), $user, 'user is not site owner');
                 return false;
         }
 
@@ -383,6 +413,7 @@ function is_auth()
         //        "SELECT Password FROM {$db_table_prefix}Users WHERE Username_Clean = '".$u."' AND Active = 1 LIMIT 1"));
         if (!$row) {
                 log_msg('info', 'common: auth failure (db) - no active user '.$u);
+                log_auth_failure(strtolower(AUTH_USER), $user, 'no active user in DB');
                 return false;
         }
 
@@ -394,6 +425,8 @@ function is_auth()
                 $ok = true;
                 log_msg('debug', 'common: auth success (db - file fallback)');
         }
+
+        if (!$ok) log_auth_failure(strtolower(AUTH_USER), $user, 'wrong password');
 
         log_msg($ok ? 'debug' : 'info', 'common: auth '.($ok ? 'success' : 'failure').' (auth_method db)');
         return $ok;
