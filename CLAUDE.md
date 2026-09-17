@@ -76,6 +76,8 @@ Two contracts to know before touching this code:
 - `$.glue.object.save()` serializes DOM objects to literal HTML strings that are the **on-disk storage format** for every existing page — changing serialization risks corrupting stored pages.
 - `$.glue.owner(elem[, obj])`, a WeakMap-backed getter/setter set once in `edit.js`, is read at ~50 call sites across ~15 module files — an undocumented but load-bearing convention (replaces the old jQuery `.data('owner', obj)`).
 
+The panels that open beside an object (object properties, font, edge, link, page background) all follow one shape — an icon row of *acts* over one "more knobs" fold holding the *values* — which is written down in `POPOUT-PANELS.md`, along with the parts that build it, which panels are deliberately not on it, and the traps. Read that before adding or reshaping a panel.
+
 ## Additional Notes
 
 - The Docker setup is located in the `docker/` directory. Use `docker-compose up -d` to start the container, then follow `docker/INSTALL.md` (the image clones the app from GitHub into a named volume rather than bind-mounting the local checkout, so it's a deployment setup, not a live-reload dev environment for this source tree).

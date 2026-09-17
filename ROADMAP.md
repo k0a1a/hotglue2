@@ -938,6 +938,15 @@ written it down and no other panel followed it. It is now the house style, state
   `fold()` already re-places the panel on every toggle for exactly this kind of reason, so it
   re-anchors rather than jumping. And the link panels are now as wide as a url field rather than
   as wide as someone once decided a url field should be.
+- **And the panel wears the menu's own frame** — *"make popout element have 1px black border, no
+  shadow, and 80% transparance of the backgound (trying to tie popout with the main menu
+  elements)"*. Which is what `.glue-btn-icon` and the context menu items wear already: 1px of
+  black over `rgba(255, 255, 255, 0.8)` — the panel had the colour picker's chrome until then
+  (`#f2f2f2`, the hairline drawn as a 1px shadow spread, and a soft drop shadow). **Two things
+  still wear that older chrome and were left**: the picker itself, which is vanilla-picker's own
+  drawing and restyled in this file only where it has to be, and the text editing strip that
+  docks to a text object while it is edited — not a popout, so not this call. Say the word and
+  either follows.
 - **Object properties is an icon row and one fold.** The row is the five danja named — set the
   colour, set the picture, tile it, flip horizontally, flip vertically — and the fold holds
   the background's x, y and scale, the padding, the transparency, then the delete and reset as
