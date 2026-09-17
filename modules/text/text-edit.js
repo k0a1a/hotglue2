@@ -1783,7 +1783,11 @@ function text_font_popover(obj)
 	var cs = getComputedStyle(obj);
 
 	var line = $.glue.popover.number_row('line', {
-		min: 0.5, max: 3, step: 0.05, decimals: 2, unit: '\u00d7',
+		// hard floor at 0: a line-height of -1em is not a tight leading, it is
+		// an invalid declaration the browser drops, so the object would render
+		// at its default while the file kept the number. The ceiling is the
+		// usual fence - the drag stops at 3, typing 8 is a real line-height
+		min: 0.5, max: 3, step: 0.05, decimals: 2, unit: '\u00d7', hard: [0, null],
 		value: to_em(cs.lineHeight, 1.2),
 		apply: function(v, commit) {
 			obj.style.lineHeight = v+'em';
@@ -1856,7 +1860,11 @@ function text_font_popover(obj)
 	};
 
 	var shadow_radius = $.glue.popover.number_row('shadow', {
-		min: 0, max: 40, step: 0.5, decimals: 1, unit: 'px',
+		// hard floor: a blur radius is a magnitude, and the writer reads
+		// anything at or below zero as "no shadow" - so a typed -5 would take
+		// the shadow off and leave -5 in the field saying why. 40 is a fence
+		// (a 200px shadow is a shadow), the floor is the meaning
+		min: 0, max: 40, step: 0.5, decimals: 1, unit: 'px', hard: [0, null],
 		value: shadow.radius,
 		apply: function(px, commit) {
 			shadow.radius = px;
@@ -1866,7 +1874,11 @@ function text_font_popover(obj)
 	adv.appendChild(shadow_radius.row);
 
 	var shadow_alpha = $.glue.popover.number_row('fade', {
-		min: 0, max: 100, step: 1, unit: '%',
+		// hard both ends: this is a percentage of opacity, and one of the three
+		// rows in the editor whose number goes into the file as it was typed.
+		// 150% reaches the object as --glue-shadow-alpha: 150 and the page as
+		// whatever the colour function makes of it
+		min: 0, max: 100, step: 1, unit: '%', hard: [0, 100],
 		value: shadow.alpha,
 		apply: function(pct, commit) {
 			shadow.alpha = pct;

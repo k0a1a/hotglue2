@@ -57,7 +57,11 @@ label        [  24 ↔ ]  px        <- the row IS the handle: drag it sideways
 Three ways in, and the row is all three: **drag it sideways** (the whole row, not just the
 field), **type into the field** (Enter or blur stores it, Escape takes it back), or **nudge**
 it a step at a time with the up/down keys or the browser's own steppers — which are what a
-finger gets, and stay for that reason.
+finger gets, and stay for that reason. While a drag is running, **Shift coarsens it and
+Alt/Cmd refines it**, four either way, read from the move event rather than taken at the
+press so either key can be pressed or let go in the middle of a drag. (On a Linux desktop
+that moves windows with Alt+drag the window manager may eat that press before the page sees
+it; Shift and a Mac's Cmd are unaffected.)
 
 The `↔` is the affordance, and the only one that survives on glass: nothing hovers on a touch
 screen, so the row has to say what it can do as well as do it. It is a sibling of the field
@@ -83,6 +87,22 @@ always had, so every call site was already right. `opts` is `min`, `max`, `step`
   where the default would move a picture 5px per pixel of drag): the opposite.
 - neither — the derived default, `span / 200`: one comfortable gesture crosses the declared
   range, snapped to the row's own `step`.
+- `hard` — `[lo, hi]`, either end `null`: the range the value can **mean**, which typed input
+  is clamped to. `min`/`max` is what a drag traverses and is deliberately not a cap on typing
+  — display type at 300px in a row that drags to 100, asserted in
+  text-font-popover.spec.js — but the object's opacity is the case that made this an option.
+  That row divides by a hundred and puts the result straight into the element, and CSS
+  **clamps** an opacity outside 0..1 rather than throwing the declaration away, while the
+  number itself is what is stored. Measured in both engines: a typed -50 leaves
+  `opacity: -0.5` on the object — so it goes invisible — and `object-opacity: -0.5` in the
+  object file, and a typed 150 leaves 1.5 in both while the page renders 1. The panel showed
+  the number that was typed and the file kept a number opacity cannot take. The rounds,
+  fades, widths, blurs, paddings and the text shadow's radius take `[0, null]` (a magnitude,
+  where a negative is what the setter silently reads as "none"), the three alphas take
+  `[0, 100]`, and the four padding rows take `[0, max]` because their `apply` already clamps
+  to that — saying it as well is what makes the FIELD show the padding the object has rather
+  than the number that was typed into it. Clamped on commit only: clamping while the digits
+  are being typed would fight the typist, and the value is settled by then.
 
 `slider_row(label, opts)` is the old body, kept for the two numeric controls that still want
 a **track** rather than a scrub, and it should stay at two: the colour picker's alpha (a

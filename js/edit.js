@@ -663,6 +663,12 @@ $.glue.popover = function()
 		//                twitchy);
 		//         sensitivity - the number itself, in value per pixel of drag,
 		//                for anything that needs its own
+		//         hard - [lo, hi], either end null: the range the value can
+		//                MEAN, which typed input is clamped to. Most rows have
+		//                none, because min/max is what a drag traverses and not
+		//                a cap on typing; a magnitude or a percentage does have
+		//                one, and a typed -20 border width or 150% opacity is
+		//                not a value the object can hold
 		number_row: function(label, opts) {
 			var row = $.glue.popover.row(label);
 			// the class carries the drag: cursor and touch-action in css/edit.css
@@ -673,6 +679,40 @@ $.glue.popover = function()
 			};
 			var clamp = function(v) {
 				return Math.max(opts.min, Math.min(opts.max, v));
+			};
+			// What the value can mean, as opposed to what the drag traverses.
+			// Three rows in the editor put a typed percentage straight into a
+			// style - the object's opacity, the glow's and the text shadow's
+			// alpha - and the page renders 150% or -20% as 1 or 0 while the
+			// object FILE keeps the number it was given; the rest are
+			// magnitudes whose setters quietly read a negative as "none". In
+			// both cases the field would then show a number the object does not
+			// have, so a row that declares a hard range clamps the commit.
+			var hard = opts.hard || null;
+			var hard_clamp = function(v) {
+				if (!hard) {
+					return v;
+				}
+				if (hard[0] !== null && hard[0] !== undefined && v < hard[0]) {
+					return hard[0];
+				}
+				if (hard[1] !== null && hard[1] !== undefined && v > hard[1]) {
+					return hard[1];
+				}
+				return v;
+			};
+			// Shift coarsens the drag and Alt - Cmd on a Mac - refines it, read
+			// from the move event rather than from the press, so either key can
+			// be pressed or let go in the middle of a drag. Four either way, on
+			// top of whatever sensitivity the row asked for.
+			var mod = function(e) {
+				if (e && e.shiftKey) {
+					return 4;
+				}
+				if (e && (e.altKey || e.metaKey)) {
+					return 1/4;
+				}
+				return 1;
 			};
 
 			var field = document.createElement('input');
@@ -724,7 +764,7 @@ $.glue.popover = function()
 					start = opts.value;
 				}
 				var armed = false;
-				$.glue.slider(e, function(dx) {
+				$.glue.slider(e, function(dx, dy, ev) {
 					if (!armed) {
 						if (Math.abs(dx) < MOVED) {
 							return;
@@ -737,7 +777,7 @@ $.glue.popover = function()
 						// drag in this editor prevents it.
 						row.classList.add('glue-popover-scrub-dragging');
 					}
-					var v = snap(clamp(start + dx*sens));
+					var v = snap(clamp(hard_clamp(start + dx*sens*mod(ev))));
 					field.value = fmt(v);
 					opts.apply(v, false);
 				}, function() {
@@ -771,6 +811,11 @@ $.glue.popover = function()
 					this.value = fmt(opts.value);
 					return;
 				}
+				// Only here, not on input: clamping while the digits are being
+				// typed would fight the typist, and the value is settled by the
+				// time this fires, so this is where the row can afford to
+				// disagree with what the object can hold.
+				v = hard_clamp(v);
 				this.value = fmt(v);
 				committed = true;
 				opts.apply(v, true);

@@ -159,6 +159,81 @@ test('the size field takes a value past its drag range', async ({ page, hg }) =>
 	expect(await field.getAttribute('max')).toBe('100');
 });
 
+test('a typed value is clamped to what its row can MEAN, and what each key does to a drag',
+	async ({ page, hg }) => {
+		// The test above is the half of the range where a typed value runs past
+		// min/max and is kept - min/max is what a DRAG traverses. This is the
+		// other half: a magnitude or a percentage has a range it means, and a
+		// typed value outside it is not the object's value but a number the
+		// file would keep while the page rendered something else. Read off the
+		// object file, because that is where the disagreement lands.
+		const a = hg.addObject('100000000001',
+			{ ...ATTRS, 'text-shadow-radius': '8' }, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await openFold(page);
+
+		const knob = (label) => fold(page).locator('.glue-popover-scrub')
+			.filter({ has: page.locator(`.glue-popover-label:text-is("${label}")`) });
+		const commit = async (label, value) => {
+			const f = knob(label).locator('.glue-popover-field');
+			await f.fill(String(value));
+			await f.dispatchEvent('input');
+			await f.dispatchEvent('change');
+			return f.inputValue();
+		};
+		const attrs = () => hg.readObject('100000000001').attrs;
+
+		// a line-height of -2 is a declaration the browser drops: the object
+		// would render at its default while the file kept the number
+		expect(await commit('line', -2)).toBe('0.00');
+		await expect.poll(() => cssOf(page, a, 'lineHeight')).toBe('0em');
+
+		// the shadow radius goes through a writer that reads anything at or
+		// below zero as "no shadow", so -5 used to take the shadow off and
+		// leave -5 in the field as the reason it had gone
+		expect(await commit('shadow', -5)).toBe('0.0');
+		await expect.poll(() => attrs()['text-shadow-radius']).toBe(undefined);
+
+		// a percentage of opacity is the case the clamp was added for: the file
+		// used to keep whatever was typed - 150 - while the page clamped it, so
+		// neither the panel nor the object file said what the shadow was doing
+		await commit('shadow', 8);
+		expect(await commit('fade', 150)).toBe('100');
+		await expect.poll(() => attrs()['text-shadow-alpha']).toBe('100');
+		expect(await commit('fade', -20)).toBe('0');
+
+		// a row with no hard range still keeps whatever is typed into it, which
+		// is what stops this being a cap on every row: letter-spacing is signed
+		expect(await commit('letter', -0.05)).toBe('-0.05');
+		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('-0.05em');
+
+		// Shift coarsens the drag and Alt refines it, four either way, read
+		// from the move event so either key can be pressed mid-drag. Letter
+		// spacing drags at 1.2em per 600px, so 40px is 0.08 by hand.
+		const drag = async (dx, modifier) => {
+			await commit('letter', 0);
+			const box = await knob('letter').boundingBox();
+			const y = box.y + box.height/2;
+			const x = box.x + box.width/2;
+			if (modifier) await page.keyboard.down(modifier);
+			await page.mouse.move(x, y);
+			await page.mouse.down();
+			await page.mouse.move(x + dx/2, y, { steps: 4 });
+			await page.mouse.move(x + dx, y, { steps: 4 });
+			await page.mouse.up();
+			if (modifier) await page.keyboard.up(modifier);
+			return knob('letter').locator('.glue-popover-field').inputValue();
+		};
+		expect(await drag(40)).toBe('0.08');
+		expect(await drag(40, 'Shift')).toBe('0.32');
+		expect(await drag(40, 'Alt')).toBe('0.02');
+		// and Control is not a modifier: the pair is Shift and Alt/Cmd, and a
+		// key that is not one of them must leave the drag alone
+		expect(await drag(40, 'Control')).toBe('0.08');
+	});
+
 test('the row shows its arrow, and Escape takes a typed value back',
 	async ({ page, hg }) => {
 		// The two halves of a scrub that the pointer cannot demonstrate: the

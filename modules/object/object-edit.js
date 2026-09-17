@@ -495,7 +495,11 @@ function object_edge_popover(obj)
 	};
 
 	var radius = $.glue.popover.number_row('round', {
-		min: 0, max: max, step: 1, unit: 'px',
+		// hard floor at 0: a radius is a magnitude, and the setter reads
+		// anything else as "no radius" - so -20 was taking the corner off the
+		// object and leaving -20 in the field as the reason. The ceiling is the
+		// object's own half-size, which is a fence rather than a meaning
+		min: 0, max: max, step: 1, unit: 'px', hard: [0, null],
 		value: object_edge_radius(obj),
 		apply: function(px, commit) {
 			obj.style.borderRadius = (0 < px) ? px+'px' : '';
@@ -512,7 +516,9 @@ function object_edge_popover(obj)
 	// of this function, into the fold, because the appends are what fix the
 	// panel's order and the fold is built below.
 	var fade = $.glue.popover.number_row('fade', {
-		min: 0, max: max, step: 1, unit: 'px',
+		// hard floor at 0, as round above: a fade is a length, and the setter
+		// takes a negative as "no fade" rather than as a soft edge
+		min: 0, max: max, step: 1, unit: 'px', hard: [0, null],
 		value: object_edge_fade(obj),
 		apply: function(px, commit) {
 			object_set_fade(obj, px);
@@ -525,7 +531,10 @@ function object_edge_popover(obj)
 	// A border of the object's own, which only became possible when the
 	// editor's selection stopped being a border on this same element.
 	var border = $.glue.popover.number_row('width', {
-		min: 0, max: 40, step: 1, unit: 'px',
+		// hard floor at 0: a border-width of -3px is an invalid declaration the
+		// browser drops, so the object would show no border at all while the
+		// field said -3. 40 is where the drag stops, which is not a meaning
+		min: 0, max: 40, step: 1, unit: 'px', hard: [0, null],
 		value: object_edge_border(obj),
 		apply: function(px, commit) {
 			object_set_border(obj, px);
@@ -625,7 +634,10 @@ function object_edge_popover(obj)
 	var spread = $.glue.popover.number_row('glow', {
 		// the halo's blur radius, in px; a tenth of a px is finer than the
 		// eye can judge, but it keeps the step that found the values it did
-		min: 0, max: 100, step: 0.1, decimals: 1, unit: 'px',
+		// hard floor at 0: it is a radius, and a negative one is what the
+		// apply below turns into "no glow" - so the row would be showing the
+		// number that took the glow off
+		min: 0, max: 100, step: 0.1, decimals: 1, unit: 'px', hard: [0, null],
 		value: glow.on ? glow.spread : 0,
 		apply: function(pct, commit) {
 			glow.spread = pct;
@@ -644,7 +656,10 @@ function object_edge_popover(obj)
 	adv.appendChild(spread.row);
 
 	var strength = $.glue.popover.number_row('opacity', {
-		min: 0, max: 100, step: 1, unit: '%',
+		// hard both ends: a percentage of opacity, so 150 is not a stronger
+		// glow - it is a number the object file would keep and the page would
+		// clamp, and this is one of the three rows that reach the file as typed
+		min: 0, max: 100, step: 1, unit: '%', hard: [0, 100],
 		value: glow.alpha,
 		apply: function(pct, commit) {
 			glow.alpha = pct;
@@ -815,7 +830,10 @@ function object_edge_popover(obj)
 	adv.appendChild(angle.row);
 
 	var blur = $.glue.popover.number_row('blur', {
-		min: 0, max: 100, step: 1, unit: 'px',
+		// hard floor at 0: a blur radius, and the shadow is drawn without one
+		// below that. Distance and spread are NOT floored - both are signed in
+		// CSS, and a shadow up and to the left is what a negative distance is
+		min: 0, max: 100, step: 1, unit: 'px', hard: [0, null],
 		value: drop.blur,
 		apply: function(px, commit) {
 			drop.blur = px;
@@ -1506,7 +1524,10 @@ function object_padding_section(body, obj, save)
 	// one value for all four sides. Starts at the left padding, and shows
 	// what a drag would set all four to rather than chasing the knobs.
 	var all = $.glue.popover.number_row('padding', {
-		min: 0, max: max, step: 1, unit: 'px',
+		// hard both ends, because the apply below already clamps to exactly
+		// this - saying it here as well is what makes the FIELD show the
+		// padding the object has, rather than the number that was typed into it
+		min: 0, max: max, step: 1, unit: 'px', hard: [0, max],
 		value: pad.left,
 		apply: function(v, commit) {
 			pad.left = pad.right = pad.top = pad.bottom =
@@ -1533,7 +1554,8 @@ function object_padding_section(body, obj, save)
 	// name of its own.
 	var knob = function(label, name) {
 		var row = $.glue.popover.number_row(label, {
-			min: 0, max: max, step: 1, unit: 'px',
+			// hard both ends, as the padding row above and for its reason
+			min: 0, max: max, step: 1, unit: 'px', hard: [0, max],
 			value: pad[name],
 			apply: function(v, commit) {
 				pad[name] = Math.max(0, Math.min(max, Math.round(v)));
@@ -1662,7 +1684,14 @@ function object_flip_section(icons, obj, save)
 function object_transparency_section(body, obj, save)
 {
 	var opacity = $.glue.popover.number_row('opacity', {
-		min: 0, max: 100, step: 1, unit: '%',
+		// THE row the hard range was added for. opacity is 0 to 1 in CSS, and
+		// out of range here is not a declaration the browser throws away - it
+		// CLAMPS it and keeps the number. Measured in both engines: a typed -50
+		// leaves "opacity: -0.5" on the element, so the object goes invisible,
+		// and object-opacity: -0.5 in the FILE; 150 leaves 1.5 in both while
+		// the page renders 1. So the panel showed the number that was typed
+		// and the file kept a number opacity cannot take
+		min: 0, max: 100, step: 1, unit: '%', hard: [0, 100],
 		value: object_transparency_percent(obj),
 		apply: function(pct, commit) {
 			obj.style.opacity = pct/100;
