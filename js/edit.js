@@ -809,6 +809,20 @@ $.glue.popover = function()
 				});
 			});
 
+			// A click anywhere on the row is a click on the control: it puts
+			// the caret in the field, so the typing that follows goes
+			// somewhere. The row stretches to the panel's width, which is set
+			// by its widest row, so the clickable stretch past the field is
+			// real - and a click there would focus nothing at all. Only a
+			// press that never armed gets here: a real drag's trailing click
+			// was swallowed above (swallow_next_click stops it at the
+			// documentElement listener).
+			row.addEventListener('click', function() {
+				if (document.activeElement !== field) {
+					field.focus();
+				}
+			});
+
 			// Typing. The FIELD is not capped by min/max, here or anywhere: it
 			// reports every keystroke live and tidies to the row's precision
 			// once it is settled.
@@ -938,10 +952,18 @@ document.documentElement.addEventListener('click', function(e) {
 		return;
 	}
 	// A panel can name an element that counts as part of it for this purpose.
-	// The background panel's armed move mode does: its whole point is that you
-	// drag the object itself, and a pointerup on the object still sends a
-	// click - which would close the panel and end the mode after every single
-	// drag. Only that panel sets this, and only while armed.
+	// Two do. The background panel's armed move mode does: its whole point is
+	// that you drag the object itself, and a pointerup on the object still
+	// sends a click - which would close the panel and end the mode after every
+	// single drag. Only while armed, there.
+	//
+	// The text panel does, for its whole life, and for the opposite reason: a
+	// text object is edited in place, so the click that lands on the object is
+	// the click that starts the editing and puts a caret in the text - the
+	// panel is that editing's toolbar, and it would close on the way in if the
+	// object did not count as part of it. A text object is also the one object
+	// whose own content the panel must be told about, since clicking a word to
+	// select it must not read as a click outside the panel.
 	if (pop.keep_open_target && pop.keep_open_target.contains(e.target)) {
 		return;
 	}

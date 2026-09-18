@@ -100,10 +100,76 @@
    What it comes out at is its widest row - the fold's number rows, at a slider
    of 80px. */
 
-.glue-font-face {
+.glue-font-face-box {
+	/* the custom face dropdown (2026-09-18): the button the panel shows
+	   and the list it opens. relative is what the list hangs off - the
+	   list overlays the rows below rather than pushing them, so the panel
+	   does not jump when the dropdown opens. */
+	position: relative;
 	width: 100%;
-	font-size: 11px;
+}
+
+.glue-font-face-btn {
+	/* the closed dropdown: the current face's name, set in that face, in
+	   a frame like the fields' own. A button rather than a div so the
+	   Escape it answers has somewhere to land. */
+	width: 100%;
 	box-sizing: border-box;
+	padding: 2px 4px;
+	font-size: 11px;
+	text-align: left;
+	border: 1px solid #999;
+	background: #fff;
+	color: #444;
+	cursor: pointer;
+}
+
+.glue-font-face-list {
+	/* the open list: the two group headings and the options, each set in
+	   the face it names. Hangs over whatever rows sit below the face row
+	   (the disclosure, the fold), so it is absolute and above them, and
+	   it caps at 40vh with a scroll like the fold does - a page with many
+	   faces must not push the list off the bottom. */
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	z-index: 1;
+	max-height: 40vh;
+	overflow-y: auto;
+	border: 1px solid #999;
+	background: #fff;
+	box-shadow: 0 0 6px 1px rgba(0, 0, 0, 0.3);
+}
+
+.glue-font-face-list.glue-font-face-open {
+	display: block;
+}
+
+.glue-font-face-group {
+	/* "your fonts" / "fonts" - the select's optgroup headings, kept */
+	padding: 3px 6px 1px;
+	font-size: 10px;
+	font-style: italic;
+	color: #888;
+}
+
+.glue-font-face-opt {
+	padding: 3px 6px;
+	font-size: 11px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.glue-font-face-opt:hover {
+	background: #dde9ff;
+}
+
+.glue-font-face-on {
+	/* the face the object is set to - the list's own mark, since there is
+	   no select to show it */
+	background: #eef4ff;
 }
 
 .glue-font-size {
@@ -221,12 +287,17 @@
    their names. */
 
 .glue-link-field {
-	/* The url field of the TEXT EDITING STRIP's link row (text-edit.js). Not
-	   the panel's field, which is .glue-object-link-field: this one is docked
-	   to the object being edited and stretches to whatever the strip comes out
-	   at, so it has no width of its own. */
-	flex: 1 1 auto;
-	min-width: 0;
+	/* The url field of the text panel's link row (text-edit.js,
+	   text_panel_link_build). Not the object panel's field, which is
+	   .glue-object-link-field: this one used to be docked to the object being
+	   edited and stretched to whatever the strip came out at. It is a row of a
+	   panel now, so it is sized the way the panel's other fields are - a
+	   width of its own rather than a share of the row - and 150px is what the
+	   object link panel's field settled on (2026-09-17, the same reasoning:
+	   wide enough to read a url in, narrow enough to leave the button its
+	   room). */
+	width: 150px;
+	flex: 0 0 auto;
 	font-size: 11px;
 	box-sizing: border-box;
 }
@@ -247,57 +318,45 @@
 	margin-left: auto;
 }
 
-/* --- run formatting strip ------------------------------------------------ */
+/* --- the text panel's run half ------------------------------------------- */
 
-.glue-text-strip {
-	/* page-space toolbar docked below the text object while it is edited
-	   WYSIWYG (placed by text_strip_position() in text-edit.js). Two rows:
-	   the toggles, colour and face on the first, the size slider with its
-	   manual entry on the second. The panels' chrome - picker grey, hairline,
-	   soft shadow - and a z-index between the resize handles (300) and the
-	   popovers (450), css/edit.css. */
-	position: absolute;
-	z-index: 350;
-	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
-	padding: 3px;
-	background: #f2f2f2;
-	box-shadow: 0 0 0 1px silver, 0 0 10px 1px rgba(0, 0, 0, 0.4);
-	-webkit-user-select: none;
-	user-select: none;
-}
-
-.glue-text-strip-row {
-	/* one line of the strip; the rows stretch to the strip's width, so the
-	   slider's flex:1 has real room to fill */
+.glue-text-strip-link {
+	/* The link row of the text panel's run half: the url field and the button
+	   that acts on the selection, under the face and the size. The panel's
+	   last row, and in the open since 2026-09-18 - the run half has no fold -
+	   so it carries no margin of its own: the row above it has one, and the
+	   popover's own padding ends the panel. A plain div rather than a
+	   $.glue.popover.row() - it has no label, and the button's wording is its
+	   own - so its layout lives here. The class still says "text strip"
+	   because it is the same row the strip docked, and it is what the specs
+	   locate it by. */
 	display: flex;
 	align-items: center;
-	gap: 3px;
-}
-
-.glue-text-strip .glue-btn-icon::before {
-	/* the icons are shrunk to 26px inline (like the align buttons), so the
-	   glyph comes down from 30 to match - the .glue-align-btn precedent */
-	-webkit-mask-size: 22px 22px;
-	mask-size: 22px 22px;
-}
-
-.glue-text-size-slider {
-	/* the size slider on the strip's second row: the popover slider's look
-	   (square thumb included), flexing to fill the row beside the field */
-	width: 110px;
-	flex: 1 1 auto;
+	gap: 7px;
 }
 
 .glue-text-face {
-	/* the strip's face dropdown: the size field's 11px look, but a select
-	   needs room for the longest face name */
-	width: 110px;
-	flex: 0 0 auto;
+	/* the run half's face dropdown: still a native select (the run half
+	   has no sample for a hover to drive, and a custom list's keyboard
+	   story is not written yet), wearing the look the object half's
+	   select wore before it became a custom dropdown */
+	width: 100%;
 	font-size: 11px;
 	box-sizing: border-box;
+}
+
+.glue-font-preview {
+	/* "Hi" set in the face the dropdown is showing - or, while its list is
+	   open, the face the pointer is over - at the sizes row's right end
+	   (moved up from the style row and grown on 2026-09-18, danja's call:
+	   the top row is where a demonstration of the type belongs). 24px is
+	   the row's own scale - the four size buttons are 26px boxes - and a
+	   face at the panel's 11px is not much of a demonstration. line-height
+	   1 so the row does not grow past the buttons. */
+	margin-left: auto;
+	font-size: 24px;
+	line-height: 1;
+	white-space: nowrap;
 }
 
 .glue-font-note {

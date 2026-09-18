@@ -5,10 +5,10 @@
 //
 // What the panel SHOWS since 2026-09-17 is four sizes as buttons (s, n, b, x),
 // the four styles with the colour beside them, and the four alignments; the
-// face, the exact size and everything else are under "more knobs". So `own`
-// below - the panel's own rows, outside the fold - is the three rows the panel
-// opens on, and the face, the size field and the slider are reached through
-// openFold.
+// face came back out above the fold on 2026-09-18, and the exact size and
+// everything else stay under "more knobs". So `own` below - the panel's own
+// rows, outside the fold - is the three rows the panel opens on plus the
+// face, and the size field and the slider are reached through openFold.
 //
 // Two things about it are worth pinning down beyond "the controls work".
 //
@@ -41,10 +41,10 @@ const fold = (page) => pop(page).locator('.glue-popover-advanced');
 const sizeBtn = (page, which) => page.locator(`.glue-font-size-${which}`);
 const toggle = (page, which) => page.locator(`.glue-font-toggle-${which}`);
 
-// the face, the exact size and the rest of the panel live in the fold: a
-// control in there is in the DOM whether or not it is open, so counts and
-// classes read the same either way and it is clicking, filling and selecting
-// that need the way in
+// the exact size and the rest of the panel live in the fold (the face moved
+// out above it on 2026-09-18): a control in there is in the DOM whether or
+// not it is open, so counts and classes read the same either way and it is
+// clicking, filling and selecting that need the way in
 async function openFold(page) {
 	await pop(page).locator('.glue-popover-disclosure').click();
 	await expect(fold(page)).toBeVisible();
@@ -80,11 +80,12 @@ test('one button opens the panel, and the three it replaced are gone',
 		// and no track among the panel's own rows: the size is folded now, and
 		// the six knobs in the fold are scrubs - rows you drag, not sliders
 		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
-		// the face and the exact size are in the fold, with the reset - which
-		// clears the whole panel, more than the rows above it set
+		// the face is out in the open above the fold (2026-09-18); the exact
+		// size and the reset are in the fold - the reset clears the whole
+		// panel, more than the rows above it set
+		await expect(page.locator('.glue-font-face-btn')).toBeVisible();
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
-		await expect(page.locator('.glue-font-face')).toBeVisible();
 		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(6);
 		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
@@ -365,25 +366,40 @@ test('the face dropdown lists the faces and applies one', async ({ page, hg }) =
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
-	// the dropdown is the fold's first row: selecting needs it open, since a
-	// hidden control has no box to act on
-	await openFold(page);
-
-	const select = page.locator('.glue-font-face');
-	const values = await select.evaluate((s) =>
-		[...s.querySelectorAll('option')].map((o) => o.value));
+	// the dropdown is a custom list (2026-09-18): the button opens it, and
+	// the list is what the hover sample hangs off - a native select's list
+	// is the OS's own and reports no option the pointer is over
+	await page.locator('.glue-font-face-btn').click();
+	const list = page.locator('.glue-font-face-list');
+	await expect(list).toBeVisible();
+	const opts = list.locator('.glue-font-face-opt');
+	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
 	expect(values.length, 'no faces were offered at all').toBeGreaterThan(1);
 	// each name is written in its own face - the point of the list
-	expect(await select.evaluate((s) => {
-		const o = s.querySelectorAll('option')[1];
-		return o.style.fontFamily === o.value;
-	}), 'the options are not set in the face they name').toBe(true);
+	expect(await opts.first().evaluate((o) => o.style.fontFamily === o.dataset.value),
+		'the options are not set in the face they name').toBe(true);
+	// and every displayed name is 24 characters or fewer - the value it
+	// writes is still the full family string (danja's call, 2026-09-18)
+	expect(await opts.evaluateAll((os) =>
+		Math.max(...os.map((o) => o.textContent.length))))
+		.toBeLessThanOrEqual(24);
 
 	const pick = values[values.length - 1];
-	await select.selectOption(pick);
+	const pick_opt = opts.nth(values.length - 1);
+	// the hover alone already wears the face in the sample, before
+	// anything is picked - the point of the custom list
+	await pick_opt.hover();
+	await expect.poll(() => page.evaluate(() =>
+		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
+		.toBe(pick);
+	await pick_opt.click();
 	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(pick);
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
 		.toBeTruthy();
+	// the sample keeps the picked face once the list has closed
+	await expect.poll(() => page.evaluate(() =>
+		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
+		.toBe(pick);
 });
 
 test('bold and italic are independent, and combinable', async ({ page, hg }) => {
@@ -564,12 +580,11 @@ test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 test('the fold says where new fonts come from', async ({ page, hg }) => {
 	// the dropdown lists what is installed; uploading is site-wide and lives
 	// in site settings, which is not somewhere anyone would think to look
-	// from here
+	// from here. The note sits under the face, out in the open.
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
-	await pop(page).locator('.glue-popover-disclosure').click();
 
 	const link = pop(page).locator('.glue-font-note a');
 	await expect(link).toHaveText('site settings');

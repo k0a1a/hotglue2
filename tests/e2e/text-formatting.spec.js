@@ -189,9 +189,9 @@ test('the face dropdown writes a font-family span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
 	await startEditing(page, a);
 	await select(page, a, 'world');
-	// the option's label is the face name without its CSS quotes; the stored
-	// value is the family string from the .glue-font rule, quotes included
-	await page.locator('.glue-text-face').selectOption({ label: 'Courier New, Courier, monospace' });
+	// by value: the option's label is the family string cut to 24 characters
+	// (2026-09-18), and the value is the full name the span stores
+	await page.locator('.glue-text-face').selectOption('Courier New, Courier, monospace');
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('hello <span style="font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
@@ -204,7 +204,7 @@ test('a face picked after a size joins the same span', async ({ page, hg }) => {
 	await sizeField(page).click();
 	await page.keyboard.type('24');
 	await page.keyboard.press('Enter');
-	await page.locator('.glue-text-face').selectOption({ label: 'Courier New, Courier, monospace' });
+	await page.locator('.glue-text-face').selectOption('Courier New, Courier, monospace');
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('hello <span style="font-size: 24px; ' +
 		'font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');

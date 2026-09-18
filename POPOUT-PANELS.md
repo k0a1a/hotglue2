@@ -125,11 +125,10 @@ always had, so every call site was already right. `opts` is `min`, `max`, `step`
   than the number that was typed into it. Clamped on commit only: clamping while the digits
   are being typed would fight the typist, and the value is settled by then.
 
-`slider_row(label, opts)` is the old body, kept for the two numeric controls that still want
-a **track** rather than a scrub, and it should stay at two: the colour picker's alpha (a
-slider is what an alpha is, and the picker is vanilla-picker's own drawing) and the text
-editing strip's inline slider (a docked strip is as wide as the object, so a track costs it
-nothing). See the exceptions below.
+`slider_row(label, opts)` is the old body, kept for the one numeric control that still wants
+a **track** rather than a scrub: the colour picker's alpha (a slider is what an alpha is,
+and the picker is vanilla-picker's own drawing). The strip's inline slider went with the
+strip: the run half's size is a scrub now. See the exceptions below.
 
 `fold(pop, label)` is unchanged and does the work: it returns `{toggle, body}`, both of
 which the caller appends, and it re-places the panel on every toggle. It has no
@@ -139,9 +138,9 @@ open-by-default and does not need one.
 
 Every panel wears the menu elements' frame, so a panel and the menu that opened it read as
 one family: `border: 1px solid #000` over `rgba(255, 255, 255, 0.8)`, no shadow. The colour
-picker, and the text editing strip that docks to a text object, still wear the older
-chrome (`#f2f2f2`, a silver hairline drawn as a 1px shadow spread, and a drop shadow) —
-the picker because it is vanilla-picker's own drawing, the strip because it is not a popout.
+picker still wears the older chrome (`#f2f2f2`, a silver hairline drawn as a 1px shadow
+spread, and a drop shadow) — it is vanilla-picker's own drawing. The strip that once wore
+it too is gone: run formatting lives in the font panel now.
 
 ### Size
 
@@ -221,7 +220,7 @@ field rather than beside it, which is a different panel.
 |---|---|---|---|
 | object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v | x, y, scale, padding (text only), transparency, delete, reset |
 | page background | `page_background_popover()`, `modules/page/page-edit.js:387` | colour · picture · tile · scroll | x, y, scale, delete, reset |
-| font | `text_font_popover()`, `modules/text/text-edit.js:1436` | sizes s/n/b/x (8, 16, 24, 32) · four style toggles + colour · four alignments | face, exact size, three spacings, shadow + its colour, source note, reset |
+| font | `text_panel_object_build()` / `text_panel_selection_build()`, `modules/text/text-edit.js` | object mode: sizes s/n/b/x (8, 16, 24, 32) · style toggles + colour · alignments · face (a custom dropdown whose hovered options preview in the "Hi" sample) + fonts note. run mode: B/I/U/S + colour · face · run size · link, all in the open | exact size, three spacings, shadow + its colour, reset — object mode only; the run half has no fold |
 | edge | `object_edge_popover()`, `modules/object/object-edit.js:486` | style + colour · round · width | fade, glow, drop shadow, reset |
 | adjust (z-level) | `object_adjust_popover()`, `modules/object/object-edit.js:893` | four z buttons | nothing — an icon row and no fold |
 | object link | `object_link_popover()`, `modules/object/object-edit.js:1727` | link · target (two labelled rows) | nothing — no acts, and the two rows are the panel |
@@ -234,18 +233,20 @@ field rather than beside it, which is a different panel.
   link panel"* on 2026-09-17. A fold with one row in it was never hiding anything an author
   would thank it for, and the panel is now the two rows the prompt's two questions deserve:
   link, target, and the delete under them.
-- **The font panel keeps its face and its exact size out front**: they are values, so the
-  rule would fold them, and a font panel that opens without a font is a worse panel.
+- **The font panel keeps its face out front**, above the fold: it is a value, so the rule
+  would fold it, and a font panel that opens without a font is a worse panel. It spent
+  2026-09-17 under "more knobs" and came back out the next day (danja's call). The exact
+  size stays folded — the four size buttons are what most objects want, and the number is
+  for the rest.
 - **Two panels have no fold, and neither has an empty one.** The adjust panel is four acts
   and a reset; the object link panel above is two rows and a delete. The convention asks for
   no fold rather than for an empty one, and these are what that looks like.
-- **Two numeric controls keep their track** (`slider_row()`), and they are the only two.
-  The colour picker's **alpha** is a range input: an alpha is a position on a bar, the bar is
-  the picker's own drawing, and danja's call when the scrubs went in was to leave the picker
-  exactly as it was. The **text editing strip**'s inline slider is the other: the strip is
-  docked to the object and as wide as it, so a track costs the width nothing, and it is being
-  dragged while the text is being looked at rather than in a panel with other knobs beside
-  it. Everything else in the editor that is a number is a scrub.
+- **One numeric control keeps its track** (`slider_row()`), and it is the only one: the
+  colour picker's **alpha**. An alpha is a position on a bar, the bar is the picker's own
+  drawing, and danja's call when the scrubs went in was to leave the picker exactly as it
+  was. The text editing strip's slider-plus-field pair was the other; it became the run
+  half's size scrub when the strip became the panel. Everything else in the editor that is
+  a number is a scrub.
 
 ### Panels deliberately left as they are
 
