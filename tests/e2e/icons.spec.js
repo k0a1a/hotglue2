@@ -1,6 +1,6 @@
-// The SuperGlue SVG icon set (img/icons, generated from the upstream artwork
-// by tools/prep-icons.js) is arriving in batches over several weeks, so these
-// tests are aimed at the ways adding one goes wrong quietly.
+// The SuperGlue SVG icon set (img/icons). Maintained DIRECTLY since
+// 2026-09-21 - the upstream artwork and tools/prep-icons.js are retired - so
+// these tests are aimed at the ways adding one goes wrong quietly.
 //
 // A button built by $.glue.icon() is a <div> with a background colour and the
 // SVG as a CSS mask. If the mask never loads - a typo in the name, a file that
@@ -316,7 +316,7 @@ test('the sheep blink actually fires', async ({ page, hg }) => {
 
 test('the generated icon files are well-formed and stripped', async () => {
 	const files = fs.readdirSync(ICON_DIR).filter((f) => f.endsWith('.svg'));
-	expect(files.length, 'img/icons is empty - run tools/prep-icons.js').toBeGreaterThan(0);
+	expect(files.length, 'img/icons is empty').toBeGreaterThan(0);
 
 	const problems = [];
 	for (const f of files) {
@@ -324,7 +324,7 @@ test('the generated icon files are well-formed and stripped', async () => {
 		if (!/^<svg[\s>]/.test(s.trim())) problems.push(`${f}: does not start with <svg`);
 		if (!/viewBox=/.test(s)) problems.push(`${f}: no viewBox, so it will not scale to the mask`);
 		if (/<metadata|rdf:RDF|<sodipodi:|<inkscape:/i.test(s)) {
-			problems.push(`${f}: still carries Inkscape metadata - regenerate with tools/prep-icons.js`);
+			problems.push(`${f}: still carries Inkscape metadata - hand-strip it to the set's form`);
 		}
 		// a mask reads alpha only, but a stray <image> or <script> would mean
 		// the strip let through something that is not line art

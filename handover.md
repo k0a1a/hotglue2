@@ -46,12 +46,18 @@ and `LOG_LEVEL=debug` before hotglue loads. It never touches real content, real
 credentials, or a running dev server. `content-e2e/log.txt` is the debugging tool of
 choice — it has resolved more than one dead end in a single line.
 
-Two loops that are easy to forget:
+One loop that is easy to forget:
 
 ```bash
 node tools/make-min.js js/edit.js      # after editing ANY of hotglue's own js
-node tools/prep-icons.js ../superglue-ng/documentation/UI-icons-SVG-nobg img/icons
 ```
+
+`img/icons/` is maintained DIRECTLY since 2026-09-21 (danja's call) — the upstream
+artwork directory and `tools/prep-icons.js` are retired, and an icon is edited as the
+stripped mask file the editor serves. `tests/e2e/icons.spec.js` guards the files' form
+(well-formed, no Inkscape metadata, no scripts) — a hand-edited icon must keep to it:
+start with `<svg`, carry a `viewBox`, no inkscape/sodipodi attrs, and remember a mask
+reads ALPHA only, so the drawing must be opaque where it should show.
 
 `USE_MIN_FILES` defaults to **true**, so the `.min.js` copy is what a default install
 serves. A fix that forgets the copy ships nothing while the source, the suite and any
@@ -117,9 +123,10 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
 
 - **A Playwright suite from nothing**: 250 tests two days ago, **446 now**, 25 spec
   files, both engines. It has found real bugs on almost every feature it touched.
-- **The SuperGlue icon set, first batch**: `tools/prep-icons.js` regenerates `img/icons/`
-  from the upstream artwork (54 icons, 206K → 38K) and honours its `extra/` folder of
-  redraws. Fifteen icons are wired.
+- **The SuperGlue icon set, first batch**: `tools/prep-icons.js` regenerated `img/icons/`
+  from the upstream artwork (54 icons, 206K → 38K) and honoured its `extra/` folder of
+  redraws. Fifteen icons are wired. *(The pipeline is retired 2026-09-21 — see "Working
+  on it" above — the set is maintained directly now.)*
 - **Free rotation** on Moveable's handle, off the right edge, snapping to 15° with shift
   for any angle — and the chrome (menus, handles) now stays aligned to the object through
   turning, resizing and undoing.

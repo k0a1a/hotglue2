@@ -135,11 +135,15 @@ Shipped 2026-08-22:
 
 Shipped 2026-08-23 — a day on the editor's own chrome:
 
-- **The SuperGlue icon set, first batch wired.** `tools/prep-icons.js` regenerates
-  `img/icons/` from the upstream artwork and honours its `extra/` folder of redraws;
+- **The SuperGlue icon set, first batch wired.** `tools/prep-icons.js` regenerated
+  `img/icons/` from the upstream artwork and honoured its `extra/` folder of redraws;
   `$.glue.icon()` builds a button from one by name. Ten are in use, and the text menu is
-  now almost entirely SVG. Details, including the licence question that still blocks
-  release, under *Icon set refresh* below.
+  now almost entirely SVG. *(Retired 2026-09-21, danja's call: `img/icons/` is maintained
+  directly, the upstream directory is out of the workflow - a 2026-09-21 regeneration
+  against it emptied the masks, converting its white strokes to "none" by the
+  white-is-the-hole rule - and the tool is kept as the historical record of the strip.)*
+  Details, including the licence question that still blocks release, under *Icon set
+  refresh* below.
 - **Free object rotation** — Moveable's rotation handle, hung off the right edge (the
   top is where the menu is), snapping to 15° by default with shift releasing it to any
   angle: the opposite of the usual binding, on the grounds that a heading accidentally

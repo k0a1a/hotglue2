@@ -2,18 +2,16 @@
 /*
  * Prepare the SuperGlue SVG icon set for use as CSS mask images.
  *
- * The source files come out of Inkscape carrying RDF metadata, a namedview,
- * and a pile of inkscape:/sodipodi: attributes -- around 85% of each file by
- * weight, none of which a mask ever reads. This strips them and drops the
- * icon_ prefix, so the editor JS can name an icon by what it is:
- *
- *   node tools/prep-icons.js ../superglue-ng/documentation/UI-icons-SVG-nobg img/icons
- *
- * An "extra" subdirectory of the source, if there is one, is converted after
- * the rest and REPLACES same-named icons - that is what upstream uses it for.
- *
- * Re-run it whenever the upstream set changes; img/icons is generated, and
- * hand-editing anything in it will be overwritten.
+ * RETIRED 2026-09-21 (danja's call): img/icons/ is maintained directly now,
+ * and the upstream artwork directory this used to read from is no longer
+ * part of the workflow. The tool is kept as the historical record of how
+ * the set was stripped - the rule that mattered most was the colour one:
+ * every visible colour became black (masks read alpha only), EXCEPT white
+ * and near-white, which became "none" - white was the "hole" colour an
+ * artist fills where the chrome behind the glyph should show. Hand-editing
+ * an icon in img/icons/ must keep to the same form the tool produced:
+ * a single <svg> with a viewBox, no Inkscape metadata, no ids, black
+ * opaque drawing on transparent.
  */
 
 var fs = require('fs');
