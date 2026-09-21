@@ -18,8 +18,8 @@ written; what shipped follows it with the deviations listed under "As built".
   translucent fill through). The "Typeface" sample shows the CENTRED face, always.
 - Spin inputs: wheel (native), mouse/pen drag (pointer events, snap disabled while the
   pointer drives, window listeners rather than pointer capture so the release lands
-  cleanly), and ArrowUp / ArrowDown (the button's arrows open the reel for keyboard
-  users; the reel steps one row). A press that never moves changes nothing.
+  cleanly), and ArrowUp / ArrowDown while the wheel has focus. A press that never moves
+  changes nothing.
 - Snap and settle: the JS snaps to the nearest row on release and applies the centered face on
   `scrollend` (a 180ms scroll-debounce stands in for engines without it — old mobile Safari).
   Apply-on-settle, never per passing row; the settle is idempotent via the current-face guard,
