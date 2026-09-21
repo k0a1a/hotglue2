@@ -98,12 +98,11 @@ async function openFold(page) {
 	await expect(panel(page).locator('.glue-popover-advanced')).toBeVisible();
 }
 
-// the roller (2026-09-21): always present in the panel, wheel spins it to
-// the needle's row, the settle applies it to the current target
-// (click-to-pick is gone; selection = whatever lands in the centre)
+// the roller (2026-09-21): always present in the panel, the row clicked
+// is the face applied - no scrolling, so a pick beyond the window is a
+// programmatic click (the press's snapshot discipline does not apply, and
+// the apply falls back to the cached run, the old selectOption path)
 async function pickFace(page, needle) {
-	// the wheel is always present in the panel - the button that opened it
-	// is gone, so the pick is just a spin to the needle's row
 	const reel = page.locator('.glue-font-face-list');
 	await expect(reel).toBeVisible();
 	const idx = await reel.evaluate((list, n) => {
@@ -114,21 +113,10 @@ async function pickFace(page, needle) {
 		return -1;
 	}, needle);
 	expect(idx, `no face row contains ${JSON.stringify(needle)}`).toBeGreaterThan(-1);
-	const box = await reel.boundingBox();
-	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
-	for (let i = 0; i < 60; i++) {
-		const d = await reel.evaluate((list, j) => {
-			const r = list.querySelectorAll('.glue-font-face-opt')[j];
-			const lc = list.getBoundingClientRect();
-			const rc = r.getBoundingClientRect();
-			return (rc.top + rc.height/2) - (lc.top + list.clientHeight/2);
-		}, idx);
-		if (Math.abs(d) <= 1) break;
-		await page.mouse.wheel(0, d);
-		await page.waitForTimeout(80);	// snap + settle
-	}
 	const value = await reel.locator('.glue-font-face-opt').nth(idx)
 		.getAttribute('data-value');
+	await reel.locator('.glue-font-face-opt').nth(idx)
+		.evaluate((o) => o.click());
 	await expect.poll(() => reel.locator('.glue-font-face-on')
 		.getAttribute('data-value')).toBe(value);
 }

@@ -1577,7 +1577,6 @@ function text_panel_build(pop, obj)
 			face_list.insertBefore(face_list.lastChild,
 				face_list.querySelector('.glue-font-face-opt'));
 		}
-		face_preview.style.fontFamily = name;
 		if (changed) {
 			// the drum follows the face wherever it changed from: the
 			// synthesis above, or the target retargeting. Instant - the
@@ -1627,9 +1626,13 @@ function text_panel_build(pop, obj)
 		// the name of a face, set in that face - the point of the list
 		o.style.fontFamily = name;
 		o.textContent = text_face_name(name.replace(/["\']/g, ''));
-		// no handlers at all: the wheel is positional - the row that sits
-		// in the centre band is the selection, and nothing a pointer does
-		// to a row changes that except spinning the drum
+		// the click IS the interaction (2026-09-21, danja's call): the row
+		// clicked is the face applied, and the wheel follows it into the
+		// centre. No scrolling - the rows reachable are the ones in the
+		// window, and the window moves with the selection.
+		o.addEventListener('click', function() {
+			face_picked(name);
+		});
 		parent.appendChild(o);
 		return o;
 	};
@@ -1667,34 +1670,12 @@ function text_panel_build(pop, obj)
 	face_pad_bottom.className = 'glue-font-face-pad';
 	face_list.appendChild(face_pad_bottom);
 
-	// --- the reel: spin, snap, settle --------------------------------------
-	//
-	// A scroll container with y-proximity snapping. Whatever row stops in
-	// the centre is the selection, applied once the spin settles - never
-	// per passing row, so a fast spin past twenty faces does not restyle
-	// the text twenty times. Everything below is the machinery for that.
-
-	// the row whose centre is nearest the scrollport's centre. Rows are
-	// measured with getBoundingClientRect deltas - offsetTop would be
-	// relative to the box, not the list.
-	var face_reel_center_hit = function() {
-		var rows = face_list.querySelectorAll('.glue-font-face-opt');
-		var list_top = face_list.getBoundingClientRect().top;
-		var view_center = face_list.scrollTop + face_list.clientHeight / 2;
-		var best = null;
-		[].forEach.call(rows, function(r) {
-			var box = r.getBoundingClientRect();
-			var center = (box.top - list_top - face_list.clientTop) +
-				face_list.scrollTop + box.height / 2;
-			var off = center - view_center;
-			if (!best || Math.abs(off) < Math.abs(best.offset)) {
-				best = { name: r.dataset.value, offset: off, row: r };
-			}
-		});
-		return best;
-	};
-
-	// instant recentre on a named face (open, retarget, synthesis)
+	// instant recentre on a named face (open, retarget, synthesis, and the
+	// follow after a click). Rows are measured with getBoundingClientRect
+	// deltas - offsetTop would be relative to the box, not the list. The
+	// container is overflow:hidden, but a scrollTop write still moves it;
+	// no listener reacts to the scroll, which is what keeps the apply the
+	// click's own work.
 	var face_reel_center = function(name) {
 		var rows = face_list.querySelectorAll('.glue-font-face-opt');
 		var hit = null;
@@ -1716,81 +1697,43 @@ function text_panel_build(pop, obj)
 			center - face_list.clientHeight / 2));
 	};
 
-	// the apply-on-settle: whatever row is centred becomes the face. The
-	// face_current guard makes it idempotent, so the scrollend from a
-	// settle-snap and from the user's own scroll are the same event - with
-	// one exception: a run whose spans wear different faces is MIXED, and
-	// re-picking the face it already reports is not a no-op (the apply is
-	// what clears the odd faces out).
-	var face_reel_mixed = function(name) {
-		if (!run_active() || !text_strip_render) {
-			return false;
-		}
-		var r = text_strip_range_for();
-		if (!r || r.collapsed) {
-			return false;
-		}
-		var root = r.commonAncestorContainer;
-		if (root.nodeType == 3) {
-			root = root.parentElement;
-		}
-		var walk = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT,
-			function(n) {
-				// intersectsNode rather than the legacy containsNode, which
-				// newer Chromium has removed. A span merely touching the
-				// range's edge counts as intersecting - the apply's own
-				// extraction then leaves it alone, so a false positive is
-				// a redundant apply, never a wrong one.
-				return (r.intersectsNode(n) && n.tagName == 'SPAN' &&
-					n.style.fontFamily && n.style.fontFamily !== name) ?
-					NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-			});
-		return !!walk.nextNode();
-	};
-	var face_reel_settle = function() {
-		var hit = face_reel_center_hit();
-		if (!hit) {
+	// --- the wheel: click, apply, follow ------------------------------------
+	//
+	// No scrolling at all (2026-09-21, danja's call): the rows in the 50px
+	// window are clicked, the click applies the face, and the wheel
+	// recentres so the applied row is the middle one. The recentre is the
+	// only scrollTop writer in here, and there is no scroll listener to
+	// react to it - the apply is the click's own work, never a settle's.
+	//
+	// Hovering the wheel hands it the keyboard: the arrows scroll the drum
+	// one row at a time while the pointer is over it, without applying
+	// (2026-09-21, danja's call - only the click applies).
+	face_list.addEventListener('mouseenter', function() {
+		face_list.focus();
+	});
+	face_list.addEventListener('keydown', function(e) {
+		if (e.key != 'ArrowDown' && e.key != 'ArrowUp') {
 			return;
 		}
-		if (hit.name === face_current && !face_reel_mixed(hit.name)) {
-			return;
-		}
-		if (hit.name === '' && !run_active() && !obj.style.fontFamily) {
-			// the default row centred over an object that has no explicit
-			// face: clearing is a no-op - without this, opening the reel
-			// would fire a pointless save
-			return;
-		}
-		face_picked(hit.name);
-	};
-
-	// the end of a mouse drag: align to the nearest row and settle. A drag
-	// that lands dead-centre produced no scroll, so no scrollend - the
-	// direct settle call is the only thing that would ever apply it.
-	var face_reel_snap = function() {
-		var hit = face_reel_center_hit();
-		if (!hit) {
-			return;
-		}
-		if (Math.abs(hit.offset) <= 1) {
-			face_reel_settle();
-			return;
-		}
-		face_list.scrollTo({
-			top: face_list.scrollTop + hit.offset,
-			behavior: 'smooth'
-		});
-	};
-
-	// keyboard: step one row, clamped at the ends - pressing past an end
-	// scrolls to the same position, so no scroll fires, so no settle, so
-	// nothing applies: the hard end, by construction
-	var face_reel_step = function(dir) {
+		e.preventDefault();
+		e.stopPropagation();
 		var rows = face_list.querySelectorAll('.glue-font-face-opt');
-		var hit = face_reel_center_hit();
-		var idx = hit ? [].indexOf.call(rows, hit.row) : 0;
-		var target = Math.max(0, Math.min(rows.length - 1, idx + dir));
 		var list_top = face_list.getBoundingClientRect().top;
+		var view_center = face_list.scrollTop + face_list.clientHeight / 2;
+		var idx = 0;
+		var best = null;
+		[].forEach.call(rows, function(r, i) {
+			var box = r.getBoundingClientRect();
+			var center = (box.top - list_top - face_list.clientTop) +
+				face_list.scrollTop + box.height / 2;
+			var off = Math.abs(center - view_center);
+			if (best === null || off < best) {
+				best = off;
+				idx = i;
+			}
+		});
+		var target = Math.max(0, Math.min(rows.length - 1,
+			idx + (e.key == 'ArrowDown' ? 1 : -1)));
 		var box = rows[target].getBoundingClientRect();
 		var center = (box.top - list_top - face_list.clientTop) +
 			face_list.scrollTop + box.height / 2;
@@ -1800,71 +1743,51 @@ function text_panel_build(pop, obj)
 				center - face_list.clientHeight / 2)),
 			behavior: 'smooth'
 		});
-	};
-
-	// a wheel spins the reel natively; the snapshot is refreshed so the
-	// settle applies to the run the author last had selected (the press
-	// that opened the reel collapsed the live selection)
-	face_list.addEventListener('wheel', function() {
-		face_snap();
-	}, { passive: true });
-
-	if ('onscrollend' in face_list) {
-		face_list.addEventListener('scrollend', face_reel_settle);
-	} else {
-		// engines without scrollend (old mobile Safari): 180ms of scroll
-		// quiet is a settle
-		var reel_scroll_timer = null;
-		face_list.addEventListener('scroll', function() {
-			clearTimeout(reel_scroll_timer);
-			reel_scroll_timer = setTimeout(face_reel_settle, 180);
-		});
-	}
-
-	// the arrow keys step; Escape closes back to the button - the panel's
-	// own Escape is on documentElement, bubble phase, so stopping it here
-	// keeps the panel open (the button's precedent)
-	face_list.addEventListener('keydown', function(e) {
-		if (e.key == 'ArrowDown' || e.key == 'ArrowUp') {
-			e.preventDefault();
-			e.stopPropagation();
-			face_snap();
-			face_reel_step(e.key == 'ArrowDown' ? 1 : -1);
-		}
 	});
 
-	// a mouse/pen drag spins the drum by hand: the scrollTop follows the
-	// pointer (reversed - grab the drum and pull). Snap is disabled while
-	// the pointer drives, so the browser does not fight the drag; it is
-	// restored on release, which snaps. Touch is not handled here at all:
-	// touch-action: pan-y makes the reel's native scroll own the gesture
-	// (momentum included) and the Moveable filter keeps the object out of
-	// it. Listeners on window rather than pointer capture - capture would
-	// retarget pointerover and freeze the rows' hover.
+	// The press on a row collapses the live selection, so the snapshot is
+	// taken on pointerdown before the click - the run the click was made on
+	// is the one the apply wraps.
 	var reel_drag = null;
 	face_list.addEventListener('pointerdown', function(e) {
 		face_snap();
-		if (e.pointerType == 'touch') {
-			return;
-		}
-		face_list.focus();
 		reel_drag = { y: e.clientY, top: face_list.scrollTop };
-		face_list.style.scrollSnapType = 'none';
 		var move = function(ev) {
 			var dy = reel_drag.y - ev.clientY;
-			face_list.scrollTop = reel_drag.top + dy;
+			face_list.scrollTop = Math.max(0, Math.min(
+				face_list.scrollHeight - face_list.clientHeight,
+				reel_drag.top + dy));
 			reel_drag.y = ev.clientY;
 			reel_drag.top = face_list.scrollTop;
 		};
-		var up = function(ev) {
+		var up = function() {
 			window.removeEventListener('pointermove', move);
 			window.removeEventListener('pointerup', up);
 			window.removeEventListener('pointercancel', up);
-			face_list.style.scrollSnapType = '';
-			// the wheel is positional: a release always snaps to the
-			// nearest row - a press that never moved changes nothing, and
-			// no row is clickable by design
-			face_reel_snap();
+			// the release snaps to the nearest row - the drum never rests
+			// between rows - but does NOT apply: only a click applies
+			var rows = face_list.querySelectorAll('.glue-font-face-opt');
+			var list_top = face_list.getBoundingClientRect().top;
+			var view_center = face_list.scrollTop +
+				face_list.clientHeight / 2;
+			var best = null;
+			[].forEach.call(rows, function(r) {
+				var box = r.getBoundingClientRect();
+				var center = (box.top - list_top - face_list.clientTop) +
+					face_list.scrollTop + box.height / 2;
+				var off = center - view_center;
+				if (!best || Math.abs(off) < Math.abs(best)) {
+					best = off;
+				}
+			});
+			if (best !== null) {
+				face_list.scrollTo({
+					top: Math.max(0, Math.min(
+						face_list.scrollHeight - face_list.clientHeight,
+						face_list.scrollTop + best)),
+					behavior: 'smooth'
+				});
+			}
 			reel_drag = null;
 		};
 		window.addEventListener('pointermove', move);
@@ -1973,19 +1896,6 @@ function text_panel_build(pop, obj)
 	size_preset_row.addEventListener('mousedown', function() {
 		text_strip_snapshot = text_strip_range_for();
 	});
-
-	// The face sample, at the right end of the sizes row: "Typeface" set in
-	// whatever face the dropdown is showing, or - while its list is open -
-	// whatever face the pointer is over, which is the point of the custom
-	// dropdown above. It sits in the top row since 2026-09-18 (danja's
-	// call): it moved up from the style row and grew, because the top row
-	// is where a demonstration of the type belongs. It said "Hi" until
-	// 2026-09-21, when "Typeface" named the thing being demonstrated.
-	var face_preview = document.createElement('div');
-	face_preview.className = 'glue-font-preview';
-	face_preview.textContent = 'Typeface';
-	face_preview.style.fontFamily = cur_face;
-	size_preset_row.appendChild(face_preview);
 
 	pop.appendChild(size_preset_row);
 

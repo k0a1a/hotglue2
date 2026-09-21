@@ -385,49 +385,16 @@ async function openReel(page) {
 	// off
 	await expect(reel(page)).toBeVisible();
 }
-// the distance from opts[idx]'s centre to the reel's centre, in page px
-const rowGap = (page, idx) => reel(page).evaluate((list, i) => {
-	const r = list.querySelectorAll('.glue-font-face-opt')[i];
-	const lc = list.getBoundingClientRect();
-	const rc = r.getBoundingClientRect();
-	return (rc.top + rc.height/2) - (lc.top + list.clientHeight/2);
-}, idx);
-async function wheelToIndex(page, idx) {
-	const box = await reel(page).boundingBox();
-	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
-	for (let i = 0; i < 60; i++) {
-		const d = await rowGap(page, idx);
-		if (Math.abs(d) <= 1) break;
-		await page.mouse.wheel(0, d);
-		await page.waitForTimeout(80);	// snap + settle
-	}
-	await expect.poll(async () => Math.abs(await rowGap(page, idx))).toBeLessThan(1.5);
-}
-async function wheelTo(page, needle) {
-	const idx = await reel(page).evaluate((list, n) => {
-		const rows = list.querySelectorAll('.glue-font-face-opt');
-		for (let i = 0; i < rows.length; i++) {
-			if (rows[i].textContent.includes(n)) return i;
-		}
-		return -1;
-	}, needle);
-	expect(idx, `no face row contains ${JSON.stringify(needle)}`).toBeGreaterThan(-1);
-	await wheelToIndex(page, idx);
-	const value = await reel(page).locator('.glue-font-face-opt').nth(idx)
-		.getAttribute('data-value');
-	await expect.poll(() => onValue(page)).toBe(value);
-}
-
-test('the roller lists the faces compactly, opens centred, and applies a settle',
+test('the roller lists the faces compactly, opens centred, and applies on click',
 	async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
 	await openReel(page);
-	// compact - three rows, not the 40vh dropdown it replaced
+	// compact - a 50px window, not the 40vh dropdown it replaced
 	const h = (await reel(page).boundingBox()).height;
-	expect(h, 'the roller is not compact').toBeLessThanOrEqual(80);
+	expect(h, 'the roller is not compact').toBeLessThanOrEqual(60);
 	const opts = reel(page).locator('.glue-font-face-opt');
 	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
 	expect(values.length, 'no faces were offered at all').toBeGreaterThan(1);
@@ -447,75 +414,31 @@ test('the roller lists the faces compactly, opens centred, and applies a settle'
 		const rc = on.getBoundingClientRect();
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
 	})).toBeLessThan(2);
-	// the sample wears the centred face - the wheel is positional, so the
-	// pointer has no say; the settle is what moves the sample
-	await wheelToIndex(page, values.length - 1);
-	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[values.length - 1]);
+	// the click applies the row and the wheel follows it into the centre
+	// (2026-09-21, danja's call: no scrolling - the click is the whole
+	// interaction, and nothing applies without one)
+	const onIdx = values.indexOf(await onValue(page));
+	await opts.nth(onIdx + 1).click();
+	await expect.poll(() => onValue(page)).toBe(values[onIdx + 1]);
+	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[onIdx + 1]);
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
 		.toBeTruthy();
-	await expect.poll(() => page.evaluate(() =>
-		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
-		.toBe(values[values.length - 1]);
-	// the roller is part of the panel - nothing opened it, nothing closes
-	// it
-	await expect(reel(page)).toBeVisible();
-});
-
-test('a wheel spin applies the face it settles on, and the ends stop hard',
-	async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await open(page, a);
-	await openReel(page);
-	const opts = reel(page).locator('.glue-font-face-opt');
-	const last = await opts.last().getAttribute('data-value');
-	await wheelToIndex(page, (await opts.count()) - 1);
-	await expect.poll(() => onValue(page)).toBe(last);
-	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(last);
-	// at the hard end: the scroll is bottomed (within a rounding pixel -
-	// the group headers are not multiples of the 22px rows), and more
-	// wheel changes nothing - no wrap-around
-	await expect.poll(() => reel(page).evaluate((l) =>
-		l.scrollHeight - l.clientHeight - l.scrollTop)).toBeLessThan(2);
-	const box = await reel(page).boundingBox();
-	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
-	await page.mouse.wheel(0, 400);
-	await page.waitForTimeout(120);
-	await expect.poll(() => onValue(page)).toBe(last);
-});
-
-test('a mouse drag spins the reel and snaps to the nearest face', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', ATTRS, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await open(page, a);
-	await openReel(page);
-	const opts = reel(page).locator('.glue-font-face-opt');
-	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
-	await wheelToIndex(page, 3);
-	await expect.poll(() => onValue(page)).toBe(values[3]);
-	// drag DOWN 30px: row 3 moves 30 below centre, row 2 lands 8 above -
-	// the previous face is the nearest, and the release snaps to it
-	const box = await reel(page).boundingBox();
-	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
-	await page.mouse.down();
-	await page.mouse.move(box.x + box.width/2, box.y + box.height/2 + 30, { steps: 5 });
-	await page.mouse.up();
-	await expect.poll(() => onValue(page)).toBe(values[2]);
-	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[2]);
-	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
-		.toBeTruthy();
-	// the snap is precise: the on-row's centre is the reel's centre
 	await expect.poll(() => reel(page).evaluate((list) => {
 		const on = list.querySelector('.glue-font-face-on');
 		const lc = list.getBoundingClientRect();
 		const rc = on.getBoundingClientRect();
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
-	})).toBeLessThan(1.5);
+	})).toBeLessThan(2);
+	// and a spin of the mouse wheel changes NOTHING - there is no wheel
+	// scrolling
+	const box = await reel(page).boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	await page.mouse.wheel(0, 400);
+	await page.waitForTimeout(120);
+	await expect.poll(() => onValue(page)).toBe(values[onIdx + 1]);
 });
 
-test('arrow keys step one face at a time, and Escape closes back to the button',
+test('a drag moves the drum without applying - only the click applies',
 	async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
@@ -525,15 +448,59 @@ test('arrow keys step one face at a time, and Escape closes back to the button',
 	const opts = reel(page).locator('.glue-font-face-opt');
 	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
 	const onIdx = values.indexOf(await onValue(page));
-	await reel(page).evaluate((l) => l.focus());
-	await page.keyboard.press('ArrowDown');
-	await expect.poll(() => onValue(page)).toBe(values[onIdx + 1]);
-	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[onIdx + 1]);
-	await page.keyboard.press('ArrowUp');
+	const before = await reel(page).evaluate((l) => l.scrollTop);
+	// drag down 40px: the drum follows the pointer
+	const box = await reel(page).boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2 + 40, { steps: 5 });
+	await page.mouse.up();
+	await page.waitForTimeout(200);		// the release snap settles
+	// the drum follows the pointer: dragging down walks toward the
+	// earlier rows, so the scrollTop goes down with the finger
+	expect(await reel(page).evaluate((l) => l.scrollTop),
+		'the drum did not move').toBeLessThan(before);
+	// nothing applied - the on-row is unchanged, the object untouched
 	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
-	// Escape closes the panel - the wheel has nothing of its own to close
-	await page.keyboard.press('Escape');
-	await expect(pop(page)).toBeHidden();
+	expect(hg.readObject('100000000001').attrs['text-font-family']).toBe(undefined);
+	// and the drum rests on a row, never between rows - the row is just
+	// not the applied one (nothing applied)
+	await expect.poll(() => reel(page).evaluate((l) => {
+		const rows = l.querySelectorAll('.glue-font-face-opt');
+		const lc = l.getBoundingClientRect();
+		let min = Infinity;
+		rows.forEach((r) => {
+			const rc = r.getBoundingClientRect();
+			min = Math.min(min, Math.abs((rc.top + rc.height/2) -
+				(lc.top + l.clientHeight/2)));
+		});
+		return min;
+	})).toBeLessThan(2);
+});
+
+test('the arrows scroll the drum while the pointer is over it, without applying',
+	async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openReel(page);
+	const opts = reel(page).locator('.glue-font-face-opt');
+	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
+	const onIdx = values.indexOf(await onValue(page));
+	const before = await reel(page).evaluate((l) => l.scrollTop);
+	// hovering hands the wheel the keyboard - no click needed
+	await reel(page).hover();
+	await page.keyboard.press('ArrowDown');
+	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
+		.not.toBe(before);
+	// the scroll does not apply: the on-row and the object are untouched
+	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
+	expect(hg.readObject('100000000001').attrs['text-font-family']).toBe(undefined);
+	// ArrowUp walks back
+	await page.keyboard.press('ArrowUp');
+	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
+		.toBe(before);
 });
 
 test('the open roller never covers the styled object', async ({ page, hg }) => {

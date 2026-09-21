@@ -119,52 +119,29 @@
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-	position: relative;		/* the band and the veil pin to it */
-	height: 66px;
-	overflow-y: auto;
-	overscroll-behavior-y: contain;
-	scroll-snap-type: y proximity;
-	touch-action: pan-y;
-	/* the wheel has no scrollbar - an iOS picker never shows one, and the
-	   veil would half-hide it anyway; wheel, drag and arrows all work
-	   without it */
-	scrollbar-width: none;
+	position: relative;		/* the veil pins to it */
+	height: 50px;
+	overflow: hidden;		/* no wheel and no scrollbar - the drag is
+	                           the way around the drum, the click is the
+	                           pick, and the wheel follows the selection */
+	/* the drag needs the whole vertical gesture: none, not pan-y - a pan
+	   would let the page steal what the drum wants */
+	touch-action: none;
 	border: 1px solid #999;
 	background: #fff;
 	cursor: grab;
 }
 
-.glue-font-face-list::-webkit-scrollbar {
-	display: none;
+.glue-font-face-list:active {
+	cursor: grabbing;
 }
 
-
-.glue-font-face-list::before {
-	/* the centre slot's highlight band, pinned while the content scrolls:
-	   the list is positioned, so it is the containing block and an
-	   absolutely-placed pseudo does not scroll with the rows. Negative
-	   z-index keeps it behind the rows but above the list's own
-	   background. The hairline edges are what make it read as a wheel's
-	   selection window rather than a dropdown row. */
-	content: '';
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 50%;
-	height: 22px;
-	margin-top: -11px;
-	border-top: 1px solid #bbb;
-	border-bottom: 1px solid #bbb;
-	background: #eef4ff;
-	z-index: -1;
-	pointer-events: none;
-}
 
 .glue-font-face-list::after {
-	/* the drum's edge fade: the peeking neighbours read dimmed. A veil
-	   rather than mask-image - a mask would fade the list's own
-	   background too and let the popover's translucent background ghost
-	   through the edges. */
+	/* the wheel's whole look: a gradient veil dimming the rows toward the
+	   edges. A veil rather than mask-image - a mask would fade the list's
+	   own background too and let the popover's translucent background
+	   ghost through the edges. */
 	content: '';
 	position: absolute;
 	inset: 0;
@@ -179,12 +156,10 @@
 }
 
 .glue-font-face-pad {
-	/* the spacer at each end of the reel: (66 - 22) / 2, so the FIRST
-	   and LAST rows can reach the centre exactly at scrollTop 0 and at
-	   the bottom - hard ends, but ends that still centre. Content, not
-	   padding: scroll-container padding-bottom has engine bug history.
-	   Not a snap candidate (snap-align initial value is none). */
-	height: 22px;
+	/* the spacer at each end of the reel: (50 - 22) / 2, so the FIRST
+	   and LAST rows can reach the centre exactly. Content, not padding:
+	   scroll-container padding-bottom has engine bug history. */
+	height: 14px;
 }
 
 .glue-font-face-group {
@@ -198,9 +173,9 @@
 }
 
 .glue-font-face-opt {
-	/* the roller's row, pinned so the geometry is exact: pad 3 + line 16
-	   + pad 3. Centre-aligned to the scrollport, which is what makes the
-	   row that stops in the middle the selected one. */
+	/* the wheel's row, pinned so the geometry is exact: pad 3 + line 16
+	   + pad 3. The row is dragged and clicked, never "pointed at" - the
+	   grabbing hand comes down from the list. */
 	height: 22px;
 	box-sizing: border-box;
 	padding: 3px 6px;
@@ -208,15 +183,11 @@
 	line-height: 16px;
 	white-space: nowrap;
 	overflow: hidden;
-	scroll-snap-align: center;
-	cursor: grab;
 }
 
 .glue-font-face-on {
-	/* the face the object is set to - the list's own mark, since there is
-	   no select to show it. No hover rule exists anywhere in the wheel: a
-	   dropdown highlights under the pointer, a picker does not - the
-	   centre band is the one and only highlight. */
+	/* the face in force, centred by the recentre. The click applies and
+	   the wheel follows, so the applied row is always the middle one. */
 	background: #eef4ff;
 }
 
@@ -364,20 +335,6 @@
 	gap: 7px;
 }
 
-.glue-font-preview {
-	/* "Typeface" set in the face the dropdown is showing - or, while its
-	   list is open, the face the pointer is over - at the sizes row's
-	   right end (moved up from the style row and grown on 2026-09-18,
-	   danja's call: the top row is where a demonstration of the type
-	   belongs). 24px is the row's own scale - the four size buttons are
-	   26px boxes - and a face at the panel's 11px is not much of a
-	   demonstration. line-height 1 so the row does not grow past the
-	   buttons. */
-	margin-left: auto;
-	font-size: 24px;
-	line-height: 1;
-	white-space: nowrap;
-}
 
 .glue-font-note {
 	/* where the faces in the dropdown come from */

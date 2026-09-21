@@ -5,28 +5,22 @@ written; what shipped follows it with the deviations listed under "As built".
 
 ## As built (2026-09-21)
 
-- The face wheel (`.glue-font-face-list`) is a 66px scrollport — three 22px rows — ALWAYS
-  present in the panel, in-flow in the face row (the button that once opened it is gone,
-  danja's call, 2026-09-21), with
-  `scroll-snap-type: y proximity`, `overscroll-behavior-y: contain` (hard ends) and
-  `touch-action: pan-y` (touch spins it natively, momentum included). The wheel is
-  POSITIONAL: the fixed centre band (a pinned highlight with hairline edges) is the
-  selection window, whatever row sits in it is the selection, and nothing the pointer
-  does to a row changes that — no row hover, no click-to-select, no scrollbar (an iOS
-  picker has none). A veil gradient at the edges dims the peeking neighbors (a veil, not
-  mask-image — a mask would fade the list's own background and ghost the popover's
-  translucent fill through). The "Typeface" sample shows the CENTRED face, always.
-- Spin inputs: wheel (native), mouse/pen drag (pointer events, snap disabled while the
-  pointer drives, window listeners rather than pointer capture so the release lands
-  cleanly), and ArrowUp / ArrowDown while the wheel has focus. A press that never moves
-  changes nothing.
-- Snap and settle: the JS snaps to the nearest row on release and applies the centered face on
-  `scrollend` (a 180ms scroll-debounce stands in for engines without it — old mobile Safari).
-  Apply-on-settle, never per passing row; the settle is idempotent via the current-face guard,
-  with one exception — re-picking the face a MIXED run already reports is not a no-op, because
-  the apply is what clears the odd faces out (`face_reel_mixed`).
+- The face wheel (`.glue-font-face-list`) is a 50px window — two rows and two peeks —
+  ALWAYS present in the panel, in-flow in the face row (the button that once opened it is
+  gone, danja's call, 2026-09-21). Its whole look is a gradient veil dimming the rows
+  toward the edges — no centre band, no scrollbar, no preview sample.
+- The interactions, danja's calls the same day: **the drag is the way around the drum**
+  (pointer events move the scrollTop; the release snaps to the nearest row; touch-action
+  none so a finger owns the gesture), **the click is the pick** — nothing applies without
+  one, and the wheel follows the applied row into the centre — and **hovering hands the
+  wheel the keyboard**: while the pointer is over it, ArrowUp/ArrowDown scroll one row at
+  a time, without applying. The mouse wheel scrolls nothing, and the cursor is the
+  grabbing hand, closing while the drum is dragged.
+- A pick wraps the run's span or writes the object's style, exactly as the dropdown did —
+  a click always applies, so re-picking the face a MIXED run reports clears the odd faces
+  out by construction (the old `face_reel_mixed` guard died with the settle).
 - Open-centered on the current face, instant (no spin); the drum follows the face when the
-  target retargets. First/last rows reach the center exactly via two spacer pads (content,
+  target retargets. First/last rows reach the centre exactly via two spacer pads (content,
   not container padding — engine bug history). There is nothing to dismiss — the wheel is
   part of the panel, and Escape closes the panel itself.
 - Deviations from the brief: make-min, not a terser build (the project has no build step);
