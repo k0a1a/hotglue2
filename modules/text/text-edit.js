@@ -1358,6 +1358,35 @@ function text_panel_build(pop, obj)
 		}
 		return text_panel_mode() == 'selection';
 	};
+	// A run-level style would beat the object's own for its text: the
+	// object-wide value is what the whole object wears, so the run spans'
+	// own copies come off when the object branch writes. The content is
+	// edited the way stop_editing edits it - the editing render directly
+	// (committed by stop_editing), or the source string, re-rendered and
+	// saved.
+	var object_clear_runs = function(prop, commit) {
+		var render = obj.querySelector(':scope > .glue-text-render');
+		var input = obj.querySelector(':scope > .glue-text-input');
+		if (!render || !input) {
+			return;
+		}
+		if (render.isContentEditable) {
+			text_strip_clear_inner(render, prop);
+			return;
+		}
+		var probe = document.createElement('div');
+		probe.innerHTML = input.value;
+		text_strip_clear_inner(probe, prop);
+		if (probe.innerHTML !== input.value) {
+			input.value = probe.innerHTML;
+			render.innerHTML = $.glue.text.render_content(input.value, obj.id);
+			if (commit) {
+				$.glue.backend({ method: 'glue.update_object',
+					name: obj.id, content: input.value });
+			}
+		}
+	};
+
 	// The link row is the run's own - except that a caret inside an
 	// existing link is also its target (editing or removing that link), so
 	// it stays alive for that one collapsed case.
@@ -1500,6 +1529,7 @@ function text_panel_build(pop, obj)
 				text_strip_restore(text_strip_render, text_strip_snapshot);
 				text_strip_snapshot = null;
 			} else {
+				object_clear_runs('color', true);
 				save();
 				sync();
 			}
@@ -1613,6 +1643,7 @@ function text_panel_build(pop, obj)
 			}
 		} else {
 			obj.style.fontFamily = name;
+			object_clear_runs('fontFamily', true);
 			save();
 			if (name !== '') {
 				// remembered as the default for newly created text objects,
@@ -1831,6 +1862,7 @@ function text_panel_build(pop, obj)
 		}
 		obj.style.fontSize = px+'px';
 		obj.style.lineHeight = (px*ratio)+'px';
+		object_clear_runs('fontSize', commit);
 		if (commit) {
 			save();
 			$.glue.conf.text.last_font_size = obj.style.fontSize;
@@ -2063,6 +2095,7 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.lineHeight = v+'em';
+			object_clear_runs('lineHeight', commit);
 			if (commit) {
 				save();
 				// the old line-height control remembered this site-wide for
@@ -2092,6 +2125,7 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.letterSpacing = v+'em';
+			object_clear_runs('letterSpacing', commit);
 			if (commit) {
 				save();
 			}
@@ -2114,6 +2148,7 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.wordSpacing = v+'em';
+			object_clear_runs('wordSpacing', commit);
 			if (commit) {
 				save();
 			}
@@ -2166,6 +2201,7 @@ function text_panel_build(pop, obj)
 			obj.style.setProperty('--glue-shadow-color', shadow.color);
 			obj.classList.add('glue-text-shadow');
 		}
+		object_clear_runs('textShadow', commit);
 		if (commit) {
 			save();
 		}

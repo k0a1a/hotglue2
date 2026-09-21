@@ -558,6 +558,26 @@ test('the open roller never covers the styled object', async ({ page, hg }) => {
 	expect(overlaps, 'the roller is sitting on top of the styled object').toBe(false);
 });
 
+test('an object-wide size takes the run sizes off', async ({ page, hg }) => {
+	// a run's own size span would beat the object's size for its text -
+	// the object-wide size is what the whole object wears, so the spans'
+	// sizes come off, and the change is persisted in the content
+	const a = hg.addObject('100000000001', ATTRS,
+		'hello <span style="font-size: 16px;">world</span>');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await sizeBtn(page, 'x').click();
+	await expect.poll(() => cssOf(page, a, 'fontSize')).toBe('48px');
+	await expect.poll(() => hg.readObject('100000000001').content)
+		.toBe('hello world');
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-size'])
+		.toBe('48px');
+	// the size span is gone from the page too
+	expect(await page.evaluate((i) =>
+		document.querySelector(`[id="${i}"] .glue-text-render span`), a)).toBeNull();
+});
+
 test('bold and italic are independent, and combinable', async ({ page, hg }) => {
 	// they used to be one button cycling bold -> italic -> both -> normal
 	const a = hg.addObject('100000000001', ATTRS, 'A');
