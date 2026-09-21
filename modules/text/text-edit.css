@@ -100,37 +100,14 @@
    What it comes out at is its widest row - the fold's number rows, at a slider
    of 80px. */
 
-.glue-font-face-box {
-	/* the custom face dropdown (2026-09-18): the button the panel shows
-	   and the list it opens. relative is what the list hangs off - the
-	   list overlays the rows below rather than pushing them, so the panel
-	   does not jump when the dropdown opens. */
-	position: relative;
-	width: 100%;
-}
 
-.glue-font-face-btn {
-	/* the closed dropdown: the current face's name, set in that face, in
-	   a frame like the fields' own. A button rather than a div so the
-	   Escape it answers has somewhere to land. */
-	width: 100%;
-	box-sizing: border-box;
-	padding: 2px 4px;
-	font-size: 11px;
-	text-align: left;
-	border: 1px solid #999;
-	background: #fff;
-	color: #444;
-	cursor: pointer;
-}
 
 .glue-font-face-list {
 	/* the roller (2026-09-21, SOW-font-roller-picker): a fixed 66px
 	   scrollport - three rows of 22px - where the CENTER row is the
-	   selection. Hangs over whatever rows sit below the face row (the
-	   disclosure, the fold), so it is absolute and above them; compact
-	   rather than the 40vh dropdown it replaced, which is the point: a
-	   control that does not eclipse the styled object.
+	   selection. Since 2026-09-21 it is ALWAYS present (danja's call):
+	   the button that opened it is gone, and the wheel sits in-flow in
+	   the face row - an iOS picker wheel, not a dropdown.
 	   overscroll-behavior: contain is the hard end - a wheel or pan at
 	   either end of the drum stops there instead of chaining to the page.
 	   scroll-snap proximity rather than mandatory: mandatory would fight
@@ -139,12 +116,10 @@
 	   pointer drives it - the JS owns the final snap. touch-action pan-y
 	   hands the vertical gesture to the reel's native scroll, which is
 	   what gives touch its momentum for free. */
-	display: none;
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 100%;
-	z-index: 1;
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	position: relative;		/* the band and the veil pin to it */
 	height: 66px;
 	overflow-y: auto;
 	overscroll-behavior-y: contain;
@@ -156,7 +131,6 @@
 	scrollbar-width: none;
 	border: 1px solid #999;
 	background: #fff;
-	box-shadow: 0 0 6px 1px rgba(0, 0, 0, 0.3);
 	cursor: grab;
 }
 
@@ -164,9 +138,6 @@
 	display: none;
 }
 
-.glue-font-face-list.glue-font-face-open {
-	display: block;
-}
 
 .glue-font-face-list::before {
 	/* the centre slot's highlight band, pinned while the content scrolls:

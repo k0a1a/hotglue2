@@ -549,9 +549,7 @@ var text_strip_link_sync = null;   // keeps the link row in step with the select
 var text_strip_link_reset = null;  // empties the link row's fields
 var text_panel_mode_now = null;    // 'object' | 'selection' - what the panel targets
 var text_panel_sync_fn = null;     // the build's sync closure, while the panel is built
-var text_face_box = null;          // the face dropdown's box, while the panel is built
-var text_face_list_el = null;      // its option list
-var text_face_close = null;        // closes that list, restoring the sample
+var text_face_recenter = null;     // centres the wheel once the panel is attached
 
 // A face name as it appears in a dropdown option: cut to 24 characters. A
 // composite like "Verdana, Geneva, Tahoma, sans-serif" reads as a sentence
@@ -1190,9 +1188,7 @@ function text_panel_state_clear() {
 	text_strip_link_reset = null;
 	text_panel_mode_now = null;
 	text_panel_sync_fn = null;
-	text_face_box = null;
-	text_face_list_el = null;
-	text_face_close = null;
+	text_face_recenter = null;
 }
 
 // Open the panel on obj, or rebuild the one already open on it. open() itself
@@ -1207,6 +1203,9 @@ function text_panel_open(obj) {
 			pop.classList.contains('glue-font-popover')) {
 		text_panel_rebuild(pop, obj);
 		$.glue.popover.place(pop, $.glue.popover.pointer());
+		if (text_face_recenter) {
+			text_face_recenter();
+		}
 		return;
 	}
 	pop = $.glue.popover.open(obj, 'glue-font-popover');
@@ -1222,6 +1221,9 @@ function text_panel_open(obj) {
 	pop.on_close = text_panel_state_clear;
 	text_panel_rebuild(pop, obj);
 	$.glue.popover.show(pop);
+	if (text_face_recenter) {
+		text_face_recenter();
+	}
 }
 
 // The menu button's toggle: open if closed, close if open, which is what every
@@ -1286,17 +1288,6 @@ document.addEventListener('selectionchange', function() {
 	text_panel_mode_now = text_panel_mode();
 	if (text_panel_sync_fn) {
 		text_panel_sync_fn();
-	}
-});
-
-// A click anywhere outside the face dropdown closes its list: the click
-// inside the panel that is not on the face control. Registered once, like
-// the selectionchange listener above - text_face_box is only non-null while
-// the panel is built, and state_clear lets go of it, so the listener is
-// quiet whenever no face list exists.
-document.addEventListener('click', function(e) {
-	if (text_face_box && !text_face_box.contains(e.target) && text_face_close) {
-		text_face_close();
 	}
 });
 
@@ -1535,97 +1526,40 @@ function text_panel_build(pop, obj)
 	var woff_fonts = [];
 	$.glue.text.get_fonts(fonts, woff_fonts);
 	var cur_face = cs.fontFamily;
-	// the face the sample returns to when the pointer leaves the list
-	var face_current = cur_face;
+	// null until the first face_show, so that show always counts as a
+	// change and the reel's first centre lands on the face in force
+	var face_current = null;
 
-	// The roller is a scroll container with y-proximity snapping; the
-	// snap makes the rows land centred, the JS reads which one that is
-	// and applies it on settle. The list keeps the select's two group
-	// headings and its option-set-in-its-own-face convention, and the
-	// names are cut to 24 characters (text_face_name) exactly as the
-	// select's were. The viewport is focusable, so the arrow keys have
-	// somewhere to land.
-	var face_box = document.createElement('div');
-	face_box.className = 'glue-font-face-box';
-	var face_btn = document.createElement('button');
-	face_btn.type = 'button';
-	face_btn.className = 'glue-font-face-btn';
-	face_box.appendChild(face_btn);
+	// The roller is ALWAYS present in the panel since 2026-09-21 (danja's
+	// call) - the button that opened it is gone, and the wheel sits
+	// in-flow in the face row: a scroll container with y-proximity
+	// snapping, where the snap makes the rows land centred, the JS reads
+	// which one that is and applies it on settle. The list keeps the
+	// select's two group headings and its option-set-in-its-own-face
+	// convention, and the names are cut to 24 characters (text_face_name)
+	// exactly as the select's were. The viewport is focusable, so the
+	// arrow keys have somewhere to land.
 	var face_list = document.createElement('div');
 	face_list.className = 'glue-font-face-list';
 	face_list.setAttribute('tabindex', '0');
-	face_box.appendChild(face_list);
-	text_face_box = face_box;
-	text_face_list_el = face_list;
 	// the end spacer: (66 - 22) / 2, so the first row can reach the centre
 	var face_pad_top = document.createElement('div');
 	face_pad_top.className = 'glue-font-face-pad';
 	face_list.appendChild(face_pad_top);
 
-	var face_close = function() {
-		face_list.classList.remove('glue-font-face-open');
-		face_preview.style.fontFamily = face_current;
-	};
-	text_face_close = face_close;
 	// the range the roller acts on: refreshed on every interaction, but
-	// never DEGRADED - the press that opened the reel collapses the live
-	// selection, and a collapsed live range must not replace the run the
-	// snapshot still holds
+	// never DEGRADED - the press that collapses the live selection must
+	// not replace the run the snapshot still holds
 	var face_snap = function() {
 		var r = text_strip_range_for();
 		if (r && !r.collapsed) {
 			text_strip_snapshot = r;
 		}
 	};
-	face_btn.addEventListener('click', function(e) {
-		e.stopPropagation();
-		if (face_list.classList.contains('glue-font-face-open')) {
-			face_close();
-		} else {
-			face_reel_open();
-		}
-	});
-	// Escape closes the list, not the panel: the panel's own Escape is a
-	// keydown on documentElement in the bubble phase, so stopping it here
-	// is enough (the precedent is the scrub field's Escape). The arrows
-	// open for the keyboard - the editor's object-nudge arrows must not
-	// leak into the page.
-	face_btn.addEventListener('keydown', function(e) {
-		if (e.key == 'Escape' && face_list.classList.contains('glue-font-face-open')) {
-			e.stopPropagation();
-			face_close();
-			face_btn.focus();
-		}
-		if (e.key == 'ArrowDown' || e.key == 'ArrowUp') {
-			e.preventDefault();
-			e.stopPropagation();
-			face_snap();
-			if (!face_list.classList.contains('glue-font-face-open')) {
-				face_reel_open();
-			}
-			face_list.focus();
-			face_reel_step(e.key == 'ArrowDown' ? 1 : -1);
-		}
-	});
-	// the press that opens the dropdown also collapses the selection: the
-	// range is taken on mousedown, before the click opens anything
-	face_btn.addEventListener('mousedown', function() {
-		face_snap();
-	});
 
 	var face_show = function(name) {
 		var changed = name !== face_current;
 		face_current = name;
-		if (name === '') {
-			// the inherited face, named by what it is
-			var inh = (getComputedStyle(obj).fontFamily || '').split(',')[0]
-				.trim().replace(/["']/g, '');
-			face_btn.style.fontFamily = '';
-			face_btn.textContent = inh || 'default';
-		} else {
-			face_btn.style.fontFamily = name;
-			face_btn.textContent = text_face_name(name.replace(/["\']/g, ''));
-		}
 		var found = false;
 		[].forEach.call(face_list.querySelectorAll('.glue-font-face-opt'), function(o) {
 			if (o.dataset.value === name) {
@@ -1644,10 +1578,10 @@ function text_panel_build(pop, obj)
 				face_list.querySelector('.glue-font-face-opt'));
 		}
 		face_preview.style.fontFamily = name;
-		if (changed && face_list.classList.contains('glue-font-face-open')) {
+		if (changed) {
 			// the drum follows the face wherever it changed from: the
-			// synthesis above, or the target retargeting mid-open. Instant
-			// - the drum must not visibly spin for a face it already wears.
+			// synthesis above, or the target retargeting. Instant - the
+			// drum must not visibly spin for a face it already wears.
 			face_reel_center(name);
 		}
 	};
@@ -1740,15 +1674,6 @@ function text_panel_build(pop, obj)
 	// per passing row, so a fast spin past twenty faces does not restyle
 	// the text twenty times. Everything below is the machinery for that.
 
-	// open and, once the list is laid out, centre the current face -
-	// instantly, no spin
-	var face_reel_open = function() {
-		face_list.classList.add('glue-font-face-open');
-		requestAnimationFrame(function() {
-			face_reel_center(face_current);
-		});
-	};
-
 	// the row whose centre is nearest the scrollport's centre. Rows are
 	// measured with getBoundingClientRect deltas - offsetTop would be
 	// relative to the box, not the list.
@@ -1823,9 +1748,6 @@ function text_panel_build(pop, obj)
 		return !!walk.nextNode();
 	};
 	var face_reel_settle = function() {
-		if (!face_list.classList.contains('glue-font-face-open')) {
-			return;
-		}
 		var hit = face_reel_center_hit();
 		if (!hit) {
 			return;
@@ -1909,12 +1831,6 @@ function text_panel_build(pop, obj)
 			face_snap();
 			face_reel_step(e.key == 'ArrowDown' ? 1 : -1);
 		}
-		if (e.key == 'Escape') {
-			e.preventDefault();
-			e.stopPropagation();
-			face_close();
-			face_btn.focus();
-		}
 	});
 
 	// a mouse/pen drag spins the drum by hand: the scrollTop follows the
@@ -1961,9 +1877,10 @@ function text_panel_build(pop, obj)
 	// which is built further down
 
 	// the face row is built here and appended into the open above the fold
-	// (see the fold block below): the appends are what fix where a row sits
+	// (see the fold block below): the appends are what fix where a row
+	// sits, and the wheel IS the row
 	var face_row = $.glue.popover.row(false);
-	face_row.appendChild(face_box);
+	face_row.appendChild(face_list);
 
 	// The one writer for the font size, whichever control asked for it: the
 	// four buttons and the fold's scrub are two views of one number and
@@ -2563,6 +2480,13 @@ function text_panel_build(pop, obj)
 		sync_align();
 	};
 	text_panel_sync_fn = sync;
+	// the wheel's first centre must wait for the panel to be in the
+	// document - the build's own sync ran against an unattached list, so
+	// its geometry was all zeros. text_panel_open calls this right after
+	// show() attaches the popover.
+	text_face_recenter = function() {
+		face_reel_center(face_current);
+	};
 	sync();
 }
 

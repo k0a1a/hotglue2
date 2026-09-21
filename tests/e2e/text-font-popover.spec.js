@@ -85,10 +85,11 @@ test('one button opens the panel, and the three it replaced are gone',
 		// and no track among the panel's own rows: the size is folded now, and
 		// the six knobs in the fold are scrubs - rows you drag, not sliders
 		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
-		// the face is out in the open above the fold (2026-09-18); the exact
-		// size and the reset are in the fold - the reset clears the whole
-		// panel, more than the rows above it set
-		await expect(page.locator('.glue-font-face-btn')).toBeVisible();
+		// the face wheel is out in the open above the fold (the button that
+		// opened it is gone, 2026-09-21); the exact size and the reset are
+		// in the fold - the reset clears the whole panel, more than the rows
+		// above it set
+		await expect(page.locator('.glue-font-face-list')).toBeVisible();
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
 		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(6);
@@ -379,8 +380,10 @@ test('the four sizes set the size, light up, and keep line-height in step',
 const reel = (page) => page.locator('.glue-font-face-list');
 const onValue = (page) => page.locator('.glue-font-face-on').getAttribute('data-value');
 async function openReel(page) {
-	await page.locator('.glue-font-face-btn').click();
-	await expect(reel(page)).toHaveClass(/glue-font-face-open/);
+	// the wheel is ALWAYS present in the panel (2026-09-21, danja's call) -
+	// nothing opens it; this is just the visibility contract the tests hang
+	// off
+	await expect(reel(page)).toBeVisible();
 }
 // the distance from opts[idx]'s centre to the reel's centre, in page px
 const rowGap = (page, idx) => reel(page).evaluate((list, i) => {
@@ -453,8 +456,9 @@ test('the roller lists the faces compactly, opens centred, and applies a settle'
 	await expect.poll(() => page.evaluate(() =>
 		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
 		.toBe(values[values.length - 1]);
-	// the roller STAYS OPEN - spinning on is the point of a drum
-	await expect(reel(page)).toHaveClass(/glue-font-face-open/);
+	// the roller is part of the panel - nothing opened it, nothing closes
+	// it
+	await expect(reel(page)).toBeVisible();
 });
 
 test('a wheel spin applies the face it settles on, and the ends stop hard',
@@ -469,10 +473,11 @@ test('a wheel spin applies the face it settles on, and the ends stop hard',
 	await wheelToIndex(page, (await opts.count()) - 1);
 	await expect.poll(() => onValue(page)).toBe(last);
 	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(last);
-	// at the hard end: the scroll is bottomed, and more wheel changes
-	// nothing - no wrap-around
+	// at the hard end: the scroll is bottomed (within a rounding pixel -
+	// the group headers are not multiples of the 22px rows), and more
+	// wheel changes nothing - no wrap-around
 	await expect.poll(() => reel(page).evaluate((l) =>
-		l.scrollHeight - l.clientHeight - l.scrollTop)).toBeLessThan(1);
+		l.scrollHeight - l.clientHeight - l.scrollTop)).toBeLessThan(2);
 	const box = await reel(page).boundingBox();
 	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
 	await page.mouse.wheel(0, 400);
@@ -526,11 +531,9 @@ test('arrow keys step one face at a time, and Escape closes back to the button',
 	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[onIdx + 1]);
 	await page.keyboard.press('ArrowUp');
 	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
-	// Escape closes the reel back to the button; the panel stays
+	// Escape closes the panel - the wheel has nothing of its own to close
 	await page.keyboard.press('Escape');
-	await expect(reel(page)).not.toHaveClass(/glue-font-face-open/);
-	await expect(page.locator('.glue-font-face-btn')).toBeFocused();
-	await expect(pop(page)).toBeVisible();
+	await expect(pop(page)).toBeHidden();
 });
 
 test('the open roller never covers the styled object', async ({ page, hg }) => {

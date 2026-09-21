@@ -98,14 +98,14 @@ async function openFold(page) {
 	await expect(panel(page).locator('.glue-popover-advanced')).toBeVisible();
 }
 
-// the roller (2026-09-21): the button opens it, wheel spins it to the
-// needle's row, the settle applies it to the current target (click-to-pick
-// is gone; selection = whatever lands in the centre, and the roller stays
-// open)
+// the roller (2026-09-21): always present in the panel, wheel spins it to
+// the needle's row, the settle applies it to the current target
+// (click-to-pick is gone; selection = whatever lands in the centre)
 async function pickFace(page, needle) {
-	await panel(page).locator('.glue-font-face-btn').click();
+	// the wheel is always present in the panel - the button that opened it
+	// is gone, so the pick is just a spin to the needle's row
 	const reel = page.locator('.glue-font-face-list');
-	await expect(reel).toHaveClass(/glue-font-face-open/);
+	await expect(reel).toBeVisible();
 	const idx = await reel.evaluate((list, n) => {
 		const rows = list.querySelectorAll('.glue-font-face-opt');
 		for (let i = 0; i < rows.length; i++) {
@@ -152,7 +152,7 @@ test('the panel is the editing surface\'s toolbar, and Escape closes it',
 	}
 	await expect(panel(page).locator('.glue-font-size-s')).toBeVisible();
 	await expect(panel(page).locator('.glue-align-btn')).toHaveCount(4);
-	await expect(panel(page).locator('.glue-font-face-btn')).toBeVisible();
+	await expect(panel(page).locator('.glue-font-face-list')).toBeVisible();
 	await expect(linkRow(page)).toBeVisible();
 	await expect(linkRow(page)).toHaveClass(/glue-popover-disabled/);
 	await expect(alignRow(page)).not.toHaveClass(/glue-popover-disabled/);
@@ -251,9 +251,9 @@ test('the face roller writes a font-family span', async ({ page, hg }) => {
 	// the row's label is the family string cut to 24 characters
 	// (2026-09-18), and the value is the full name the span stores
 	await pickFace(page, 'Courier New');
-	// the roller stays open after the settle - spinning on is the point
-	await expect(panel(page).locator('.glue-font-face-list'))
-		.toHaveClass(/glue-font-face-open/);
+	// the roller is part of the panel - nothing opened it, nothing closes
+	// it
+	await expect(panel(page).locator('.glue-font-face-list')).toBeVisible();
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('hello <span style="font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');

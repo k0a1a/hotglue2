@@ -5,7 +5,9 @@ written; what shipped follows it with the deviations listed under "As built".
 
 ## As built (2026-09-21)
 
-- The face dropdown (`.glue-font-face-list`) is a 66px scrollport — three 22px rows — with
+- The face wheel (`.glue-font-face-list`) is a 66px scrollport — three 22px rows — ALWAYS
+  present in the panel, in-flow in the face row (the button that once opened it is gone,
+  danja's call, 2026-09-21), with
   `scroll-snap-type: y proximity`, `overscroll-behavior-y: contain` (hard ends) and
   `touch-action: pan-y` (touch spins it natively, momentum included). The wheel is
   POSITIONAL: the fixed centre band (a pinned highlight with hairline edges) is the
@@ -24,9 +26,9 @@ written; what shipped follows it with the deviations listed under "As built".
   with one exception — re-picking the face a MIXED run already reports is not a no-op, because
   the apply is what clears the odd faces out (`face_reel_mixed`).
 - Open-centered on the current face, instant (no spin); the drum follows the face when the
-  target retargets mid-open. First/last rows reach the center exactly via two spacer pads
-  (content, not container padding — engine bug history). The roller stays open after a pick;
-  dismissal is click-away / Escape.
+  target retargets. First/last rows reach the center exactly via two spacer pads (content,
+  not container padding — engine bug history). There is nothing to dismiss — the wheel is
+  part of the panel, and Escape closes the panel itself.
 - Deviations from the brief: make-min, not a terser build (the project has no build step);
   mouse drag has no momentum/fling (touch's native scroll provides it); the drum shows three
   full rows rather than partial peeks — the veil supplies the dimming the brief asked for.
