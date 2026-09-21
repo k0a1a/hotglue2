@@ -1489,7 +1489,7 @@ function text_panel_build(pop, obj)
 
 	// The face dropdown is a custom list since 2026-09-18 rather than a
 	// native <select>: the native one's list is the OS's own, and the
-	// panel's "Hi" sample is for the pointer - the OS's list reports no
+	// panel's "Typeface" sample is for the pointer - the OS's list reports no
 	// option the pointer happens to be over. The list keeps the select's
 	// two group headings and its option-set-in-its-own-face convention,
 	// and the names are cut to 24 characters (text_face_name) exactly as
@@ -1705,21 +1705,22 @@ function text_panel_build(pop, obj)
 	// panel opens on, and the face and the exact size slid under "more knobs"
 	// below them.
 	//
-	// Four rather than three as of the same day, which moved big down to 24: the
-	// row is a scale now - 8, 16, 24, 32 - rather than three islands with a jump
-	// between the last two, and the size the old row called big is the new one's
-	// extra.
+	// Four rather than three as of the same day, and the whole scale moved
+	// up on 2026-09-21 (danja's call) - small 14, normal 24, big 32, extra
+	// 48. The row is a scale rather than three islands with a jump between
+	// the last two, and the size the old row called big is the new one's
+	// normal.
 	//
-	// The one in force is lit. A size that is none of them - the slider in the
+	// The one in force is lit. A size that is none of them - the scrub in the
 	// fold sets one - leaves all four unlit, which is the honest picture rather
 	// than rounding to the nearest.
 	var size_buttons = [];
 	var size_preset_row = $.glue.popover.row(false);
 	[
-		['s', 8, 'small: 8px'],
-		['n', 16, 'normal: 16px'],
-		['b', 24, 'big: 24px'],
-		['x', 32, 'extra: 32px']
+		['s', 14, 'small: 14px'],
+		['n', 24, 'normal: 24px'],
+		['b', 32, 'big: 32px'],
+		['x', 48, 'extra: 48px']
 	].forEach(function(s) {
 		var b = document.createElement('div');
 		b.className = 'glue-font-size glue-font-size-'+s[0];
@@ -1746,15 +1747,16 @@ function text_panel_build(pop, obj)
 		text_strip_snapshot = text_strip_range_for();
 	});
 
-	// The face sample, at the right end of the sizes row: "Hi" set in
+	// The face sample, at the right end of the sizes row: "Typeface" set in
 	// whatever face the dropdown is showing, or - while its list is open -
 	// whatever face the pointer is over, which is the point of the custom
 	// dropdown above. It sits in the top row since 2026-09-18 (danja's
 	// call): it moved up from the style row and grew, because the top row
-	// is where a demonstration of the type belongs.
+	// is where a demonstration of the type belongs. It said "Hi" until
+	// 2026-09-21, when "Typeface" named the thing being demonstrated.
 	var face_preview = document.createElement('div');
 	face_preview.className = 'glue-font-preview';
-	face_preview.textContent = 'Hi';
+	face_preview.textContent = 'Typeface';
 	face_preview.style.fontFamily = cur_face;
 	size_preset_row.appendChild(face_preview);
 

@@ -5,7 +5,7 @@
 //
 // What the panel SHOWS since 2026-09-18 is ONE editor for both targets: the
 // four acts as icons with the colour beside them, four sizes as buttons
-// (s, n, b, x) with the Hi sample, and the four alignments; the face and the
+// (s, n, b, x) with the Typeface sample, and the four alignments; the face and the
 // link row follow, and the exact size, the spacings, the shadow and the
 // reset stay under "more knobs". So `own` below - the panel's own rows,
 // outside the fold - is what the panel opens on, and the size field and the
@@ -338,22 +338,23 @@ test('a size change is stored, and keeps line-height in proportion',
 
 test('the four sizes set the size, light up, and keep line-height in step',
 	async ({ page, hg }) => {
-		// the panel opens on these rather than on the slider: most objects are
-		// set in one of four sizes, and the exact number is the fold's
+		// the panel opens on these rather than on the scrub: most objects
+		// are set in one of four sizes, and the exact number is the fold's
 		const a = hg.addObject('100000000001',
-			{ ...ATTRS, 'text-font-size': '16px', 'text-line-height': '24px' }, 'A');
+			{ ...ATTRS, 'text-font-size': '24px', 'text-line-height': '36px' }, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		// 16 is normal, so it is the one that is lit
+		// 24 is normal, so it is the one that is lit
 		await expect(sizeBtn(page, 'n')).toHaveClass(/glue-font-size-on/);
 		await expect(sizeBtn(page, 's')).not.toHaveClass(/glue-font-size-on/);
 		await expect(sizeBtn(page, 'b')).not.toHaveClass(/glue-font-size-on/);
 		await expect(sizeBtn(page, 'x')).not.toHaveClass(/glue-font-size-on/);
 
-		// the two ends of the scale: 8 and 32, with big now in between them
-		for (const [which, px] of [['s', 8], ['x', 32]]) {
+		// the two ends of the scale: 14 and 48, with big and normal between
+		// them (2026-09-21, danja's call)
+		for (const [which, px] of [['s', 14], ['x', 48]]) {
 			await sizeBtn(page, which).click();
 			await expect.poll(() => cssOf(page, a, 'fontSize')).toBe(px+'px');
 			await expect.poll(() => hg.readObject('100000000001').attrs['text-font-size'])
@@ -366,9 +367,9 @@ test('the four sizes set the size, light up, and keep line-height in step',
 				.toBe(Math.round(px*1.5)+'px');
 		}
 
-		// the slider in the fold is the same number seen the other way round
+		// the scrub in the fold is the same number seen the other way round
 		await openFold(page);
-		await expect(fold(page).locator('.glue-popover-field').first()).toHaveValue('32');
+		await expect(fold(page).locator('.glue-popover-field').first()).toHaveValue('48');
 	});
 
 test('the face dropdown lists the faces and applies one', async ({ page, hg }) => {

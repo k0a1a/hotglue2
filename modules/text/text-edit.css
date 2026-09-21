@@ -191,7 +191,7 @@
 }
 
 .glue-font-size-s {
-	font-size: 11px;
+	font-size: 12px;
 }
 
 .glue-font-size-n {
@@ -199,11 +199,11 @@
 }
 
 .glue-font-size-b {
-	font-size: 18px;
+	font-size: 19px;
 }
 
 .glue-font-size-x {
-	font-size: 21px;
+	font-size: 22px;
 }
 
 .glue-font-size-on {
@@ -336,13 +336,14 @@
 }
 
 .glue-font-preview {
-	/* "Hi" set in the face the dropdown is showing - or, while its list is
-	   open, the face the pointer is over - at the sizes row's right end
-	   (moved up from the style row and grown on 2026-09-18, danja's call:
-	   the top row is where a demonstration of the type belongs). 24px is
-	   the row's own scale - the four size buttons are 26px boxes - and a
-	   face at the panel's 11px is not much of a demonstration. line-height
-	   1 so the row does not grow past the buttons. */
+	/* "Typeface" set in the face the dropdown is showing - or, while its
+	   list is open, the face the pointer is over - at the sizes row's
+	   right end (moved up from the style row and grown on 2026-09-18,
+	   danja's call: the top row is where a demonstration of the type
+	   belongs). 24px is the row's own scale - the four size buttons are
+	   26px boxes - and a face at the panel's 11px is not much of a
+	   demonstration. line-height 1 so the row does not grow past the
+	   buttons. */
 	margin-left: auto;
 	font-size: 24px;
 	line-height: 1;
