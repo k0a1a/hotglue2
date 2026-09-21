@@ -150,10 +150,18 @@
 	overscroll-behavior-y: contain;
 	scroll-snap-type: y proximity;
 	touch-action: pan-y;
+	/* the wheel has no scrollbar - an iOS picker never shows one, and the
+	   veil would half-hide it anyway; wheel, drag and arrows all work
+	   without it */
+	scrollbar-width: none;
 	border: 1px solid #999;
 	background: #fff;
 	box-shadow: 0 0 6px 1px rgba(0, 0, 0, 0.3);
 	cursor: grab;
+}
+
+.glue-font-face-list::-webkit-scrollbar {
+	display: none;
 }
 
 .glue-font-face-list.glue-font-face-open {
@@ -165,7 +173,8 @@
 	   the list is positioned, so it is the containing block and an
 	   absolutely-placed pseudo does not scroll with the rows. Negative
 	   z-index keeps it behind the rows but above the list's own
-	   background. */
+	   background. The hairline edges are what make it read as a wheel's
+	   selection window rather than a dropdown row. */
 	content: '';
 	position: absolute;
 	left: 0;
@@ -173,6 +182,8 @@
 	top: 50%;
 	height: 22px;
 	margin-top: -11px;
+	border-top: 1px solid #bbb;
+	border-bottom: 1px solid #bbb;
 	background: #eef4ff;
 	z-index: -1;
 	pointer-events: none;
@@ -230,13 +241,11 @@
 	cursor: grab;
 }
 
-.glue-font-face-opt:hover {
-	background: #dde9ff;
-}
-
 .glue-font-face-on {
 	/* the face the object is set to - the list's own mark, since there is
-	   no select to show it */
+	   no select to show it. No hover rule exists anywhere in the wheel: a
+	   dropdown highlights under the pointer, a picker does not - the
+	   centre band is the one and only highlight. */
 	background: #eef4ff;
 }
 

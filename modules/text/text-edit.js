@@ -1577,11 +1577,6 @@ function text_panel_build(pop, obj)
 			text_strip_snapshot = r;
 		}
 	};
-	// the pointer leaving the list puts the sample back on the chosen
-	// face, until it hovers an option again
-	face_list.addEventListener('mouseleave', function() {
-		face_preview.style.fontFamily = face_current;
-	});
 	face_btn.addEventListener('click', function(e) {
 		e.stopPropagation();
 		if (face_list.classList.contains('glue-font-face-open')) {
@@ -1698,13 +1693,9 @@ function text_panel_build(pop, obj)
 		// the name of a face, set in that face - the point of the list
 		o.style.fontFamily = name;
 		o.textContent = text_face_name(name.replace(/["\']/g, ''));
-		// the hover is what the sample is for: it wears the face the
-		// pointer is over before anything is picked. There is no click
-		// handler - the roller's selection is whatever row lands in the
-		// centre, applied when the spin settles.
-		o.addEventListener('mouseenter', function() {
-			face_preview.style.fontFamily = name;
-		});
+		// no handlers at all: the wheel is positional - the row that sits
+		// in the centre band is the selection, and nothing a pointer does
+		// to a row changes that except spinning the drum
 		parent.appendChild(o);
 		return o;
 	};
@@ -1941,11 +1932,10 @@ function text_panel_build(pop, obj)
 			return;
 		}
 		face_list.focus();
-		reel_drag = { y: e.clientY, top: face_list.scrollTop, moved: 0 };
+		reel_drag = { y: e.clientY, top: face_list.scrollTop };
 		face_list.style.scrollSnapType = 'none';
 		var move = function(ev) {
 			var dy = reel_drag.y - ev.clientY;
-			reel_drag.moved += Math.abs(dy);
 			face_list.scrollTop = reel_drag.top + dy;
 			reel_drag.y = ev.clientY;
 			reel_drag.top = face_list.scrollTop;
@@ -1955,25 +1945,10 @@ function text_panel_build(pop, obj)
 			window.removeEventListener('pointerup', up);
 			window.removeEventListener('pointercancel', up);
 			face_list.style.scrollSnapType = '';
-			var at = document.elementFromPoint(ev.clientX, ev.clientY);
-			if (reel_drag.moved < 4 && at && at.closest &&
-					at.closest('.glue-font-face-opt')) {
-				// a tap on a row jumps it in - the old click-a-row muscle
-				// memory, kept
-				var r = at.closest('.glue-font-face-opt');
-				var list_top = face_list.getBoundingClientRect().top;
-				var box = r.getBoundingClientRect();
-				var center = (box.top - list_top - face_list.clientTop) +
-					face_list.scrollTop + box.height / 2;
-				face_list.scrollTo({
-					top: Math.max(0, Math.min(
-						face_list.scrollHeight - face_list.clientHeight,
-						center - face_list.clientHeight / 2)),
-					behavior: 'smooth'
-				});
-			} else {
-				face_reel_snap();
-			}
+			// the wheel is positional: a release always snaps to the
+			// nearest row - a press that never moved changes nothing, and
+			// no row is clickable by design
+			face_reel_snap();
 			reel_drag = null;
 		};
 		window.addEventListener('pointermove', move);

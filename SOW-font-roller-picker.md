@@ -7,14 +7,17 @@ written; what shipped follows it with the deviations listed under "As built".
 
 - The face dropdown (`.glue-font-face-list`) is a 66px scrollport — three 22px rows — with
   `scroll-snap-type: y proximity`, `overscroll-behavior-y: contain` (hard ends) and
-  `touch-action: pan-y` (touch spins it natively, momentum included). The centered row is the
-  selection; a pinned highlight band marks the center slot, and a veil gradient at the edges
-  dims the peeking neighbors (a veil, not mask-image — a mask would fade the list's own
-  background and ghost the popover's translucent fill through).
-- Spin inputs: wheel (native), mouse/pen drag (pointer events, snap disabled while the pointer
-  drives, window listeners rather than pointer capture so row hover survives), and ArrowUp /
-  ArrowDown (the button's arrows open the reel for keyboard users; the reel steps one row).
-  A press under 4px on a row jumps it to the center — the old click-a-row muscle memory kept.
+  `touch-action: pan-y` (touch spins it natively, momentum included). The wheel is
+  POSITIONAL: the fixed centre band (a pinned highlight with hairline edges) is the
+  selection window, whatever row sits in it is the selection, and nothing the pointer
+  does to a row changes that — no row hover, no click-to-select, no scrollbar (an iOS
+  picker has none). A veil gradient at the edges dims the peeking neighbors (a veil, not
+  mask-image — a mask would fade the list's own background and ghost the popover's
+  translucent fill through). The "Typeface" sample shows the CENTRED face, always.
+- Spin inputs: wheel (native), mouse/pen drag (pointer events, snap disabled while the
+  pointer drives, window listeners rather than pointer capture so the release lands
+  cleanly), and ArrowUp / ArrowDown (the button's arrows open the reel for keyboard
+  users; the reel steps one row). A press that never moves changes nothing.
 - Snap and settle: the JS snaps to the nearest row on release and applies the centered face on
   `scrollend` (a 180ms scroll-debounce stands in for engines without it — old mobile Safari).
   Apply-on-settle, never per passing row; the settle is idempotent via the current-face guard,
@@ -23,8 +26,7 @@ written; what shipped follows it with the deviations listed under "As built".
 - Open-centered on the current face, instant (no spin); the drum follows the face when the
   target retargets mid-open. First/last rows reach the center exactly via two spacer pads
   (content, not container padding — engine bug history). The roller stays open after a pick;
-  dismissal is click-away / Escape. The "Typeface" sample follows the hovered row and falls
-  back to the centered face.
+  dismissal is click-away / Escape.
 - Deviations from the brief: make-min, not a terser build (the project has no build step);
   mouse drag has no momentum/fling (touch's native scroll provides it); the drum shows three
   full rows rather than partial peeks — the veil supplies the dimming the brief asked for.

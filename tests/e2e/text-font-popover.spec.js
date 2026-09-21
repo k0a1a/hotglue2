@@ -444,23 +444,15 @@ test('the roller lists the faces compactly, opens centred, and applies a settle'
 		const rc = on.getBoundingClientRect();
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
 	})).toBeLessThan(2);
-	// the hover alone already wears the face in the sample - the sample
-	// is what the drum's hover is for
-	const onIdx = values.indexOf(await onValue(page));
-	await opts.nth(onIdx + 1).hover();
-	await expect.poll(() => page.evaluate(() =>
-		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
-		.toBe(values[onIdx + 1]);
-	// leaving the reel puts the sample back on the centred face
-	await page.locator('.glue-font-face-btn').hover();
-	await expect.poll(() => page.evaluate(() =>
-		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
-		.toBe(values[onIdx]);
-	// a wheel spin to the last face settles it on the object
+	// the sample wears the centred face - the wheel is positional, so the
+	// pointer has no say; the settle is what moves the sample
 	await wheelToIndex(page, values.length - 1);
 	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[values.length - 1]);
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
 		.toBeTruthy();
+	await expect.poll(() => page.evaluate(() =>
+		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
+		.toBe(values[values.length - 1]);
 	// the roller STAYS OPEN - spinning on is the point of a drum
 	await expect(reel(page)).toHaveClass(/glue-font-face-open/);
 });
