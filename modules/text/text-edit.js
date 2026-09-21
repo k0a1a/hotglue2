@@ -880,6 +880,7 @@ function text_strip_apply_size(render, px) {
 	var sp = document.createElement('span');
 	sp.style.fontSize = px + 'px';
 	sp.appendChild(range.extractContents());
+	text_strip_clear_inner(sp, 'fontSize');
 	range.insertNode(sp);
 	text_strip_snapshot = (function() {
 		var r = document.createRange();
@@ -896,6 +897,25 @@ function text_strip_span_styled(inner) {
 		inner.style.fontFamily || inner.style.lineHeight ||
 		inner.style.letterSpacing || inner.style.wordSpacing ||
 		inner.style.textShadow);
+}
+
+// The selection's own spans carry their own values of `prop`, and an inner
+// value would win inside the wrapper an apply just put around them - two
+// words with different faces selected together would keep both faces and
+// the new one would show on neither. So the value being applied now clears
+// its own property on the spans inside the wrapper; a span that also
+// carries other styles keeps those, and one left with nothing is
+// unwrapped.
+function text_strip_clear_inner(container, prop) {
+	container.querySelectorAll('span').forEach(function(inner) {
+		if (!inner.style[prop]) {
+			return;
+		}
+		inner.style[prop] = '';
+		if (!inner.getAttribute('style')) {
+			inner.replaceWith(...inner.childNodes);
+		}
+	});
 }
 
 // One apply for every run-level style that lives on the styled span: the
@@ -934,6 +954,7 @@ function text_strip_apply_style(render, prop, value) {
 	var sp = document.createElement('span');
 	sp.style[prop] = value;
 	sp.appendChild(range.extractContents());
+	text_strip_clear_inner(sp, prop);
 	range.insertNode(sp);
 	text_strip_snapshot = (function() {
 		var r = document.createRange();
@@ -1036,6 +1057,7 @@ function text_strip_apply_face(render, face) {
 	var sp = document.createElement('span');
 	sp.style.fontFamily = face;
 	sp.appendChild(range.extractContents());
+	text_strip_clear_inner(sp, 'fontFamily');
 	range.insertNode(sp);
 	text_strip_snapshot = (function() {
 		var r = document.createRange();
@@ -1085,6 +1107,7 @@ function text_strip_apply_color(render, col) {
 	var sp = document.createElement('span');
 	sp.style.color = col;
 	sp.appendChild(range.extractContents());
+	text_strip_clear_inner(sp, 'color');
 	range.insertNode(sp);
 	text_strip_snapshot = (function() {
 		var r = document.createRange();

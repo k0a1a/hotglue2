@@ -383,6 +383,39 @@ test('the shadow wraps the selected run', async ({ page, hg }) => {
 		.toContain('6px');
 });
 
+test('a face applied over differently-faced words takes them both',
+	async ({ page, hg }) => {
+	// the wrapper alone cannot beat the words' own spans - their faces
+	// would win inside it and the pick would change nothing. The apply
+	// clears the face on the spans it wraps; their other styles stay.
+	const a = await add(page, hg,
+		'hello <span style="font-family: \'Courier New\', Courier, monospace;">big</span> ' +
+		'<span style="font-family: Georgia, serif; font-size: 24px;">world</span>');
+	await openPanel(page, a);
+	// select across both words: the helper finds one text node, so the
+	// range is built by hand from the first styled word to the last
+	await page.evaluate((i) => {
+		const render = document.querySelector(`[id="${i}"] > .glue-text-render`);
+		const walker = document.createTreeWalker(render, NodeFilter.SHOW_TEXT);
+		const nodes = [];
+		let n;
+		while ((n = walker.nextNode())) nodes.push(n);
+		const r = document.createRange();
+		r.setStart(nodes[1], 0);			// 'big'
+		r.setEnd(nodes[3], nodes[3].data.length);	// 'world'
+		const s = window.getSelection();
+		s.removeAllRanges();
+		s.addRange(r);
+	}, a);
+	await pickFace(page, 'Courier New');
+	await finish(page, a);
+	// the wrapper wears the new face; the size on the second word's span
+	// stays, and the two old faces are gone
+	await expect.poll(() => stored(hg)).toBe(
+		'hello <span style="font-family: &quot;Courier New&quot;, Courier, monospace;">big ' +
+		'<span style="font-size: 24px;">world</span></span>');
+});
+
 test('formatting survives reload and renders on the published page', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <b>world</b>');
 	await openPanel(page, a);
