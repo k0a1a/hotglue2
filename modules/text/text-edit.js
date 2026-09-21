@@ -770,9 +770,12 @@ function text_strip_range_for() {
 }
 
 // focus the render if needed, then install the range as THE selection and as
-// the cache (so the size field can act on the result of a toggle later)
-function text_strip_restore(render, r) {
-	if (document.activeElement !== render) {
+// the cache (so the size field can act on the result of a toggle later).
+// keep_focus is for the roller's keyboard settles: the range is reinstalled
+// so the next arrow step reads it, but focus stays on the reel so the
+// arrows keep working.
+function text_strip_restore(render, r, keep_focus) {
+	if (!keep_focus && document.activeElement !== render) {
 		render.focus();
 	}
 	var sel = window.getSelection();
@@ -875,6 +878,7 @@ function text_strip_apply_size(render, px) {
 		range.toString() === inner.textContent && inner.textContent !== '';
 	if (covering) {
 		inner.style.fontSize = px + 'px';        // live update, no nesting
+		text_strip_clear_inner(inner, 'fontSize');
 		return;
 	}
 	var sp = document.createElement('span');
@@ -939,12 +943,14 @@ function text_strip_apply_style(render, prop, value) {
 	if (covering) {
 		if (value === '') {
 			inner.style[prop] = '';
+			text_strip_clear_inner(inner, prop);
 			if (!inner.getAttribute('style')) {
 				// nothing left but the tag itself: unwrap it
 				inner.replaceWith(...inner.childNodes);
 			}
 		} else {
 			inner.style[prop] = value;              // join the styled span
+			text_strip_clear_inner(inner, prop);
 		}
 		return;
 	}
@@ -1029,13 +1035,27 @@ function text_strip_apply_face(render, face) {
 	if (face === '') {
 		if (covering) {
 			// the whole run is the one styled span: drop only the face
-			// from it - a size or colour on the same span stays
+			// from it - a size or colour on the same span stays. The
+			// unwrap moves the range's nodes, and the browser collapses a
+			// range whose home is being pulled out from under it: aim the
+			// snapshot at a FRESH range over the same text first, so the
+			// commit's restore still has a live one.
+			var s0 = { node: range.startContainer, off: range.startOffset };
+			var e0 = { node: range.endContainer, off: range.endOffset };
 			inner.style.fontFamily = '';
 			if (!inner.getAttribute('style')) {
 				// nothing left but the tag itself: unwrap it
 				inner.replaceWith(...inner.childNodes);
 			}
+			var r0 = document.createRange();
+			r0.setStart(s0.node, s0.off);
+			r0.setEnd(e0.node, e0.off);
+			text_strip_snapshot = r0;
 		} else {
+			// extractContents collapses the range it was made from, and the
+			// spans it unwraps move the text: capture the endpoints first
+			var s1 = { node: range.startContainer, off: range.startOffset };
+			var e1 = { node: range.endContainer, off: range.endOffset };
 			var frag = range.extractContents();
 			var changed = false;
 			frag.querySelectorAll('span').forEach(function(sp) {
@@ -1047,11 +1067,16 @@ function text_strip_apply_face(render, face) {
 			if (changed) {
 				range.insertNode(frag);
 			}
+			var r1 = document.createRange();
+			r1.setStart(s1.node, s1.off);
+			r1.setEnd(e1.node, e1.off);
+			text_strip_snapshot = r1;
 		}
 		return;
 	}
 	if (covering) {
 		inner.style.fontFamily = face;              // join the styled span
+		text_strip_clear_inner(inner, 'fontFamily');
 		return;
 	}
 	var sp = document.createElement('span');
@@ -1102,6 +1127,7 @@ function text_strip_apply_color(render, col) {
 		range.toString() === inner.textContent && inner.textContent !== '';
 	if (covering) {
 		inner.style.color = col;                    // join the styled span
+		text_strip_clear_inner(inner, 'color');
 		return;
 	}
 	var sp = document.createElement('span');
@@ -1499,10 +1525,12 @@ function text_panel_build(pop, obj)
 	// installed faces, each option set in its own typeface, which is the whole
 	// point of it. It slid under "more knobs" with the exact size on
 	// 2026-09-17, and came back out above the fold the next day (danja's
-	// call): a face is something most objects care about. The exact size
-	// stayed in the fold - it is what the four size buttons cannot reach.
-	// The dropdown became a custom list the same day, so the sample can
-	// follow the pointer over its options (below).
+	// call): a face is something most objects care about. The dropdown
+	// became a custom list the same day, so the sample can follow the
+	// pointer over its options, and that list became a ROLLER on
+	// 2026-09-21 (SOW-font-roller-picker.md): a three-row drum whose
+	// centred row is the selection, spun by wheel, drag and arrow keys
+	// and applied when it settles.
 	var fonts = [];
 	var woff_fonts = [];
 	$.glue.text.get_fonts(fonts, woff_fonts);
@@ -1510,15 +1538,13 @@ function text_panel_build(pop, obj)
 	// the face the sample returns to when the pointer leaves the list
 	var face_current = cur_face;
 
-	// The face dropdown is a custom list since 2026-09-18 rather than a
-	// native <select>: the native one's list is the OS's own, and the
-	// panel's "Typeface" sample is for the pointer - the OS's list reports no
-	// option the pointer happens to be over. The list keeps the select's
-	// two group headings and its option-set-in-its-own-face convention,
-	// and the names are cut to 24 characters (text_face_name) exactly as
-	// the select's were. It is mouse-only for now: no arrow-key walking
-	// (the button is not a focus target in the list's keyboard story), and
-	// Escape closes it while focus is on the button.
+	// The roller is a scroll container with y-proximity snapping; the
+	// snap makes the rows land centred, the JS reads which one that is
+	// and applies it on settle. The list keeps the select's two group
+	// headings and its option-set-in-its-own-face convention, and the
+	// names are cut to 24 characters (text_face_name) exactly as the
+	// select's were. The viewport is focusable, so the arrow keys have
+	// somewhere to land.
 	var face_box = document.createElement('div');
 	face_box.className = 'glue-font-face-box';
 	var face_btn = document.createElement('button');
@@ -1527,15 +1553,30 @@ function text_panel_build(pop, obj)
 	face_box.appendChild(face_btn);
 	var face_list = document.createElement('div');
 	face_list.className = 'glue-font-face-list';
+	face_list.setAttribute('tabindex', '0');
 	face_box.appendChild(face_list);
 	text_face_box = face_box;
 	text_face_list_el = face_list;
+	// the end spacer: (66 - 22) / 2, so the first row can reach the centre
+	var face_pad_top = document.createElement('div');
+	face_pad_top.className = 'glue-font-face-pad';
+	face_list.appendChild(face_pad_top);
 
 	var face_close = function() {
 		face_list.classList.remove('glue-font-face-open');
 		face_preview.style.fontFamily = face_current;
 	};
 	text_face_close = face_close;
+	// the range the roller acts on: refreshed on every interaction, but
+	// never DEGRADED - the press that opened the reel collapses the live
+	// selection, and a collapsed live range must not replace the run the
+	// snapshot still holds
+	var face_snap = function() {
+		var r = text_strip_range_for();
+		if (r && !r.collapsed) {
+			text_strip_snapshot = r;
+		}
+	};
 	// the pointer leaving the list puts the sample back on the chosen
 	// face, until it hovers an option again
 	face_list.addEventListener('mouseleave', function() {
@@ -1546,26 +1587,39 @@ function text_panel_build(pop, obj)
 		if (face_list.classList.contains('glue-font-face-open')) {
 			face_close();
 		} else {
-			face_list.classList.add('glue-font-face-open');
+			face_reel_open();
 		}
 	});
 	// Escape closes the list, not the panel: the panel's own Escape is a
 	// keydown on documentElement in the bubble phase, so stopping it here
-	// is enough (the precedent is the scrub field's Escape).
+	// is enough (the precedent is the scrub field's Escape). The arrows
+	// open for the keyboard - the editor's object-nudge arrows must not
+	// leak into the page.
 	face_btn.addEventListener('keydown', function(e) {
 		if (e.key == 'Escape' && face_list.classList.contains('glue-font-face-open')) {
 			e.stopPropagation();
 			face_close();
 			face_btn.focus();
 		}
+		if (e.key == 'ArrowDown' || e.key == 'ArrowUp') {
+			e.preventDefault();
+			e.stopPropagation();
+			face_snap();
+			if (!face_list.classList.contains('glue-font-face-open')) {
+				face_reel_open();
+			}
+			face_list.focus();
+			face_reel_step(e.key == 'ArrowDown' ? 1 : -1);
+		}
 	});
 	// the press that opens the dropdown also collapses the selection: the
 	// range is taken on mousedown, before the click opens anything
 	face_btn.addEventListener('mousedown', function() {
-		text_strip_snapshot = text_strip_range_for();
+		face_snap();
 	});
 
 	var face_show = function(name) {
+		var changed = name !== face_current;
 		face_current = name;
 		if (name === '') {
 			// the inherited face, named by what it is
@@ -1587,16 +1641,26 @@ function text_panel_build(pop, obj)
 		if (name && !found) {
 			// a face that is not one of the offered ones (an inherited
 			// default, or one that has since been removed): offer it first,
-			// so the list never misreports what is on screen
+			// so the list never misreports what is on screen. The new row
+			// goes after the leading pad and before the first option -
+			// lastChild is the trailing pad once the pads exist.
 			face_option(face_list, name);
-			face_list.insertBefore(face_list.lastChild, face_list.firstChild);
+			face_list.insertBefore(face_list.lastChild,
+				face_list.querySelector('.glue-font-face-opt'));
 		}
 		face_preview.style.fontFamily = name;
+		if (changed && face_list.classList.contains('glue-font-face-open')) {
+			// the drum follows the face wherever it changed from: the
+			// synthesis above, or the target retargeting mid-open. Instant
+			// - the drum must not visibly spin for a face it already wears.
+			face_reel_center(name);
+		}
 	};
 
-	// a pick: the run gets the face wrapped on its styled span, the object
-	// gets it written into its style - and '' takes either back to the
-	// inherited face
+	// the roller's pick: the run gets the face wrapped on its styled span,
+	// the object gets it written into its style - and '' takes either back
+	// to the inherited face. The roller STAYS OPEN - dismissal is
+	// click-away or Escape, and spinning on is the point of a drum.
 	var face_picked = function(name) {
 		if (run_active()) {
 			if (text_strip_render) {
@@ -1604,9 +1668,12 @@ function text_panel_build(pop, obj)
 					text_strip_snapshot = text_strip_range_for();
 				}
 				text_strip_apply_face(text_strip_render, name);
-				// commit: put the caret back where the formatting is
+				// commit: put the caret back where the formatting is -
+				// except when the settle came from the arrow keys, which
+				// must keep focus on the reel to step again
 				if (text_strip_snapshot) {
-					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_restore(text_strip_render, text_strip_snapshot,
+						document.activeElement === face_list);
 					text_strip_snapshot = null;
 				}
 			}
@@ -1621,7 +1688,6 @@ function text_panel_build(pop, obj)
 			}
 		}
 		face_show(name);
-		face_close();
 		sync();
 	};
 
@@ -1633,12 +1699,11 @@ function text_panel_build(pop, obj)
 		o.style.fontFamily = name;
 		o.textContent = text_face_name(name.replace(/["\']/g, ''));
 		// the hover is what the sample is for: it wears the face the
-		// pointer is over before anything is picked
+		// pointer is over before anything is picked. There is no click
+		// handler - the roller's selection is whatever row lands in the
+		// centre, applied when the spin settles.
 		o.addEventListener('mouseenter', function() {
 			face_preview.style.fontFamily = name;
-		});
-		o.addEventListener('click', function() {
-			face_picked(name);
 		});
 		parent.appendChild(o);
 		return o;
@@ -1671,6 +1736,251 @@ function text_panel_build(pop, obj)
 			face_option(face_list, f);
 		});
 	});
+	// the trailing pad, closing the drum: the last row centres exactly at
+	// the bottom of the scroll
+	var face_pad_bottom = document.createElement('div');
+	face_pad_bottom.className = 'glue-font-face-pad';
+	face_list.appendChild(face_pad_bottom);
+
+	// --- the reel: spin, snap, settle --------------------------------------
+	//
+	// A scroll container with y-proximity snapping. Whatever row stops in
+	// the centre is the selection, applied once the spin settles - never
+	// per passing row, so a fast spin past twenty faces does not restyle
+	// the text twenty times. Everything below is the machinery for that.
+
+	// open and, once the list is laid out, centre the current face -
+	// instantly, no spin
+	var face_reel_open = function() {
+		face_list.classList.add('glue-font-face-open');
+		requestAnimationFrame(function() {
+			face_reel_center(face_current);
+		});
+	};
+
+	// the row whose centre is nearest the scrollport's centre. Rows are
+	// measured with getBoundingClientRect deltas - offsetTop would be
+	// relative to the box, not the list.
+	var face_reel_center_hit = function() {
+		var rows = face_list.querySelectorAll('.glue-font-face-opt');
+		var list_top = face_list.getBoundingClientRect().top;
+		var view_center = face_list.scrollTop + face_list.clientHeight / 2;
+		var best = null;
+		[].forEach.call(rows, function(r) {
+			var box = r.getBoundingClientRect();
+			var center = (box.top - list_top - face_list.clientTop) +
+				face_list.scrollTop + box.height / 2;
+			var off = center - view_center;
+			if (!best || Math.abs(off) < Math.abs(best.offset)) {
+				best = { name: r.dataset.value, offset: off, row: r };
+			}
+		});
+		return best;
+	};
+
+	// instant recentre on a named face (open, retarget, synthesis)
+	var face_reel_center = function(name) {
+		var rows = face_list.querySelectorAll('.glue-font-face-opt');
+		var hit = null;
+		[].forEach.call(rows, function(r) {
+			if (r.dataset.value === name) {
+				hit = r;
+			}
+		});
+		if (!hit) {
+			face_list.scrollTop = 0;
+			return;
+		}
+		var list_top = face_list.getBoundingClientRect().top;
+		var box = hit.getBoundingClientRect();
+		var center = (box.top - list_top - face_list.clientTop) +
+			face_list.scrollTop + box.height / 2;
+		face_list.scrollTop = Math.max(0, Math.min(
+			face_list.scrollHeight - face_list.clientHeight,
+			center - face_list.clientHeight / 2));
+	};
+
+	// the apply-on-settle: whatever row is centred becomes the face. The
+	// face_current guard makes it idempotent, so the scrollend from a
+	// settle-snap and from the user's own scroll are the same event - with
+	// one exception: a run whose spans wear different faces is MIXED, and
+	// re-picking the face it already reports is not a no-op (the apply is
+	// what clears the odd faces out).
+	var face_reel_mixed = function(name) {
+		if (!run_active() || !text_strip_render) {
+			return false;
+		}
+		var r = text_strip_range_for();
+		if (!r || r.collapsed) {
+			return false;
+		}
+		var root = r.commonAncestorContainer;
+		if (root.nodeType == 3) {
+			root = root.parentElement;
+		}
+		var walk = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT,
+			function(n) {
+				// intersectsNode rather than the legacy containsNode, which
+				// newer Chromium has removed. A span merely touching the
+				// range's edge counts as intersecting - the apply's own
+				// extraction then leaves it alone, so a false positive is
+				// a redundant apply, never a wrong one.
+				return (r.intersectsNode(n) && n.tagName == 'SPAN' &&
+					n.style.fontFamily && n.style.fontFamily !== name) ?
+					NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+			});
+		return !!walk.nextNode();
+	};
+	var face_reel_settle = function() {
+		if (!face_list.classList.contains('glue-font-face-open')) {
+			return;
+		}
+		var hit = face_reel_center_hit();
+		if (!hit) {
+			return;
+		}
+		if (hit.name === face_current && !face_reel_mixed(hit.name)) {
+			return;
+		}
+		if (hit.name === '' && !run_active() && !obj.style.fontFamily) {
+			// the default row centred over an object that has no explicit
+			// face: clearing is a no-op - without this, opening the reel
+			// would fire a pointless save
+			return;
+		}
+		face_picked(hit.name);
+	};
+
+	// the end of a mouse drag: align to the nearest row and settle. A drag
+	// that lands dead-centre produced no scroll, so no scrollend - the
+	// direct settle call is the only thing that would ever apply it.
+	var face_reel_snap = function() {
+		var hit = face_reel_center_hit();
+		if (!hit) {
+			return;
+		}
+		if (Math.abs(hit.offset) <= 1) {
+			face_reel_settle();
+			return;
+		}
+		face_list.scrollTo({
+			top: face_list.scrollTop + hit.offset,
+			behavior: 'smooth'
+		});
+	};
+
+	// keyboard: step one row, clamped at the ends - pressing past an end
+	// scrolls to the same position, so no scroll fires, so no settle, so
+	// nothing applies: the hard end, by construction
+	var face_reel_step = function(dir) {
+		var rows = face_list.querySelectorAll('.glue-font-face-opt');
+		var hit = face_reel_center_hit();
+		var idx = hit ? [].indexOf.call(rows, hit.row) : 0;
+		var target = Math.max(0, Math.min(rows.length - 1, idx + dir));
+		var list_top = face_list.getBoundingClientRect().top;
+		var box = rows[target].getBoundingClientRect();
+		var center = (box.top - list_top - face_list.clientTop) +
+			face_list.scrollTop + box.height / 2;
+		face_list.scrollTo({
+			top: Math.max(0, Math.min(
+				face_list.scrollHeight - face_list.clientHeight,
+				center - face_list.clientHeight / 2)),
+			behavior: 'smooth'
+		});
+	};
+
+	// a wheel spins the reel natively; the snapshot is refreshed so the
+	// settle applies to the run the author last had selected (the press
+	// that opened the reel collapsed the live selection)
+	face_list.addEventListener('wheel', function() {
+		face_snap();
+	}, { passive: true });
+
+	if ('onscrollend' in face_list) {
+		face_list.addEventListener('scrollend', face_reel_settle);
+	} else {
+		// engines without scrollend (old mobile Safari): 180ms of scroll
+		// quiet is a settle
+		var reel_scroll_timer = null;
+		face_list.addEventListener('scroll', function() {
+			clearTimeout(reel_scroll_timer);
+			reel_scroll_timer = setTimeout(face_reel_settle, 180);
+		});
+	}
+
+	// the arrow keys step; Escape closes back to the button - the panel's
+	// own Escape is on documentElement, bubble phase, so stopping it here
+	// keeps the panel open (the button's precedent)
+	face_list.addEventListener('keydown', function(e) {
+		if (e.key == 'ArrowDown' || e.key == 'ArrowUp') {
+			e.preventDefault();
+			e.stopPropagation();
+			face_snap();
+			face_reel_step(e.key == 'ArrowDown' ? 1 : -1);
+		}
+		if (e.key == 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			face_close();
+			face_btn.focus();
+		}
+	});
+
+	// a mouse/pen drag spins the drum by hand: the scrollTop follows the
+	// pointer (reversed - grab the drum and pull). Snap is disabled while
+	// the pointer drives, so the browser does not fight the drag; it is
+	// restored on release, which snaps. Touch is not handled here at all:
+	// touch-action: pan-y makes the reel's native scroll own the gesture
+	// (momentum included) and the Moveable filter keeps the object out of
+	// it. Listeners on window rather than pointer capture - capture would
+	// retarget pointerover and freeze the rows' hover.
+	var reel_drag = null;
+	face_list.addEventListener('pointerdown', function(e) {
+		face_snap();
+		if (e.pointerType == 'touch') {
+			return;
+		}
+		face_list.focus();
+		reel_drag = { y: e.clientY, top: face_list.scrollTop, moved: 0 };
+		face_list.style.scrollSnapType = 'none';
+		var move = function(ev) {
+			var dy = reel_drag.y - ev.clientY;
+			reel_drag.moved += Math.abs(dy);
+			face_list.scrollTop = reel_drag.top + dy;
+			reel_drag.y = ev.clientY;
+			reel_drag.top = face_list.scrollTop;
+		};
+		var up = function(ev) {
+			window.removeEventListener('pointermove', move);
+			window.removeEventListener('pointerup', up);
+			window.removeEventListener('pointercancel', up);
+			face_list.style.scrollSnapType = '';
+			var at = document.elementFromPoint(ev.clientX, ev.clientY);
+			if (reel_drag.moved < 4 && at && at.closest &&
+					at.closest('.glue-font-face-opt')) {
+				// a tap on a row jumps it in - the old click-a-row muscle
+				// memory, kept
+				var r = at.closest('.glue-font-face-opt');
+				var list_top = face_list.getBoundingClientRect().top;
+				var box = r.getBoundingClientRect();
+				var center = (box.top - list_top - face_list.clientTop) +
+					face_list.scrollTop + box.height / 2;
+				face_list.scrollTo({
+					top: Math.max(0, Math.min(
+						face_list.scrollHeight - face_list.clientHeight,
+						center - face_list.clientHeight / 2)),
+					behavior: 'smooth'
+				});
+			} else {
+				face_reel_snap();
+			}
+			reel_drag = null;
+		};
+		window.addEventListener('pointermove', move);
+		window.addEventListener('pointerup', up);
+		window.addEventListener('pointercancel', up);
+	});
+
 	// the build's own sync names the button and lights the current face,
 	// once the rest of the panel exists - face_show touches the preview,
 	// which is built further down

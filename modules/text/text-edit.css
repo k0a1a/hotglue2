@@ -125,41 +125,109 @@
 }
 
 .glue-font-face-list {
-	/* the open list: the two group headings and the options, each set in
-	   the face it names. Hangs over whatever rows sit below the face row
-	   (the disclosure, the fold), so it is absolute and above them, and
-	   it caps at 40vh with a scroll like the fold does - a page with many
-	   faces must not push the list off the bottom. */
+	/* the roller (2026-09-21, SOW-font-roller-picker): a fixed 66px
+	   scrollport - three rows of 22px - where the CENTER row is the
+	   selection. Hangs over whatever rows sit below the face row (the
+	   disclosure, the fold), so it is absolute and above them; compact
+	   rather than the 40vh dropdown it replaced, which is the point: a
+	   control that does not eclipse the styled object.
+	   overscroll-behavior: contain is the hard end - a wheel or pan at
+	   either end of the drum stops there instead of chaining to the page.
+	   scroll-snap proximity rather than mandatory: mandatory would fight
+	   the mouse drag's own scrollTop writes (the browser snapping on
+	   every assignment), while proximity leaves the drum free while the
+	   pointer drives it - the JS owns the final snap. touch-action pan-y
+	   hands the vertical gesture to the reel's native scroll, which is
+	   what gives touch its momentum for free. */
 	display: none;
 	position: absolute;
 	left: 0;
 	right: 0;
 	top: 100%;
 	z-index: 1;
-	max-height: 40vh;
+	height: 66px;
 	overflow-y: auto;
+	overscroll-behavior-y: contain;
+	scroll-snap-type: y proximity;
+	touch-action: pan-y;
 	border: 1px solid #999;
 	background: #fff;
 	box-shadow: 0 0 6px 1px rgba(0, 0, 0, 0.3);
+	cursor: grab;
 }
 
 .glue-font-face-list.glue-font-face-open {
 	display: block;
 }
 
+.glue-font-face-list::before {
+	/* the centre slot's highlight band, pinned while the content scrolls:
+	   the list is positioned, so it is the containing block and an
+	   absolutely-placed pseudo does not scroll with the rows. Negative
+	   z-index keeps it behind the rows but above the list's own
+	   background. */
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: 22px;
+	margin-top: -11px;
+	background: #eef4ff;
+	z-index: -1;
+	pointer-events: none;
+}
+
+.glue-font-face-list::after {
+	/* the drum's edge fade: the peeking neighbours read dimmed. A veil
+	   rather than mask-image - a mask would fade the list's own
+	   background too and let the popover's translucent background ghost
+	   through the edges. */
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		rgba(255, 255, 255, 0.95) 0,
+		rgba(255, 255, 255, 0.55) 16%,
+		rgba(255, 255, 255, 0)    38%,
+		rgba(255, 255, 255, 0)    62%,
+		rgba(255, 255, 255, 0.55) 84%,
+		rgba(255, 255, 255, 0.95) 100%);
+	pointer-events: none;
+}
+
+.glue-font-face-pad {
+	/* the spacer at each end of the reel: (66 - 22) / 2, so the FIRST
+	   and LAST rows can reach the centre exactly at scrollTop 0 and at
+	   the bottom - hard ends, but ends that still centre. Content, not
+	   padding: scroll-container padding-bottom has engine bug history.
+	   Not a snap candidate (snap-align initial value is none). */
+	height: 22px;
+}
+
 .glue-font-face-group {
-	/* "your fonts" / "fonts" - the select's optgroup headings, kept */
+	/* "your fonts" / "fonts" - the select's optgroup headings, kept.
+	   A divider, never the selection, never a snap point. */
 	padding: 3px 6px 1px;
 	font-size: 10px;
 	font-style: italic;
 	color: #888;
+	scroll-snap-align: none;
 }
 
 .glue-font-face-opt {
+	/* the roller's row, pinned so the geometry is exact: pad 3 + line 16
+	   + pad 3. Centre-aligned to the scrollport, which is what makes the
+	   row that stops in the middle the selected one. */
+	height: 22px;
+	box-sizing: border-box;
 	padding: 3px 6px;
 	font-size: 11px;
+	line-height: 16px;
 	white-space: nowrap;
-	cursor: pointer;
+	overflow: hidden;
+	scroll-snap-align: center;
+	cursor: grab;
 }
 
 .glue-font-face-opt:hover {

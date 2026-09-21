@@ -304,6 +304,12 @@ Shipped 2026-09-18/21 — the text panel, one editor for both targets:
   `run_active()` honours the per-press range snapshot — the press that collapses the
   live selection still acts on the run it was made on, and the snapshot is let go of
   when the op commits.
+- **The face dropdown became a roller** (2026-09-21, SOW-font-roller-picker): a 66px
+  three-row drum where the centred row is the selection, spun by wheel, drag and arrow
+  keys, snapped on release and applied on settle — compact enough to never cover the
+  styled object (the codex the SOW exists for). A "Typeface" sample follows the hovered
+  row; the drum stays open after a pick. `tests/e2e/text-font-popover.spec.js` gained
+  the suite's first wheel-based tests.
 
 Shipped 2026-08-24 — text, one run at a time:
 

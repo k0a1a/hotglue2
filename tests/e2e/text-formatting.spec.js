@@ -98,14 +98,39 @@ async function openFold(page) {
 	await expect(panel(page).locator('.glue-popover-advanced')).toBeVisible();
 }
 
-// the custom face dropdown: the button opens the list, the option is found
-// by a needle from its truncated label - the value is the family string
-// WITH its CSS quotes ("Courier New", ...), which no attribute selector
-// should have to spell out
+// the roller (2026-09-21): the button opens it, wheel spins it to the
+// needle's row, the settle applies it to the current target (click-to-pick
+// is gone; selection = whatever lands in the centre, and the roller stays
+// open)
 async function pickFace(page, needle) {
 	await panel(page).locator('.glue-font-face-btn').click();
-	await page.locator('.glue-font-face-opt')
-		.filter({ hasText: needle }).first().click();
+	const reel = page.locator('.glue-font-face-list');
+	await expect(reel).toHaveClass(/glue-font-face-open/);
+	const idx = await reel.evaluate((list, n) => {
+		const rows = list.querySelectorAll('.glue-font-face-opt');
+		for (let i = 0; i < rows.length; i++) {
+			if (rows[i].textContent.includes(n)) return i;
+		}
+		return -1;
+	}, needle);
+	expect(idx, `no face row contains ${JSON.stringify(needle)}`).toBeGreaterThan(-1);
+	const box = await reel.boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	for (let i = 0; i < 60; i++) {
+		const d = await reel.evaluate((list, j) => {
+			const r = list.querySelectorAll('.glue-font-face-opt')[j];
+			const lc = list.getBoundingClientRect();
+			const rc = r.getBoundingClientRect();
+			return (rc.top + rc.height/2) - (lc.top + list.clientHeight/2);
+		}, idx);
+		if (Math.abs(d) <= 1) break;
+		await page.mouse.wheel(0, d);
+		await page.waitForTimeout(80);	// snap + settle
+	}
+	const value = await reel.locator('.glue-font-face-opt').nth(idx)
+		.getAttribute('data-value');
+	await expect.poll(() => reel.locator('.glue-font-face-on')
+		.getAttribute('data-value')).toBe(value);
 }
 
 async function add(page, hg, content, attrs) {
@@ -219,13 +244,16 @@ test('the size field writes a span, one span per run not per digit', async ({ pa
 		.toBe('hello <span style="font-size: 24px;">world</span>');
 });
 
-test('the face dropdown writes a font-family span', async ({ page, hg }) => {
+test('the face roller writes a font-family span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
 	await openPanel(page, a);
 	await select(page, a, 'world');
-	// by value: the option's label is the family string cut to 24 characters
+	// the row's label is the family string cut to 24 characters
 	// (2026-09-18), and the value is the full name the span stores
 	await pickFace(page, 'Courier New');
+	// the roller stays open after the settle - spinning on is the point
+	await expect(panel(page).locator('.glue-font-face-list'))
+		.toHaveClass(/glue-font-face-open/);
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('hello <span style="font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
@@ -246,17 +274,16 @@ test('a face picked after a size joins the same span', async ({ page, hg }) => {
 		'font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
 });
 
-test('the default option is the inherited font, and unwraps a run-level face',
+test('the default row is the inherited font, and unwraps a run-level face',
 	async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <span style="font-family: \'Courier New\', Courier, monospace;">world</span>');
 	await openPanel(page, a);
 	await select(page, a, 'world');
-	await panel(page).locator('.glue-font-face-btn').click();
-	// the option is named by what the run inherits (the page's font), not
-	// by the word "default"
+	// the row is named by what the run inherits (the page's font), not
+	// by the word "default" - it is in the DOM whether the roller is open
 	await expect(page.locator('.glue-font-face-opt[data-value=""]'))
 		.toContainText('Verdana');
-	await page.locator('.glue-font-face-opt[data-value=""]').click();
+	await pickFace(page, 'default');
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('hello world');
 });

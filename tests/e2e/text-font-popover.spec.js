@@ -372,18 +372,60 @@ test('the four sizes set the size, light up, and keep line-height in step',
 		await expect(fold(page).locator('.glue-popover-field').first()).toHaveValue('48');
 	});
 
-test('the face dropdown lists the faces and applies one', async ({ page, hg }) => {
+// The roller (2026-09-21, SOW-font-roller-picker): the suite's first wheel
+// usage. The drum spins natively on wheel; the snap lands a row centred and
+// the settle applies it. These helpers wheel until a row is centred and the
+// settle has landed on it.
+const reel = (page) => page.locator('.glue-font-face-list');
+const onValue = (page) => page.locator('.glue-font-face-on').getAttribute('data-value');
+async function openReel(page) {
+	await page.locator('.glue-font-face-btn').click();
+	await expect(reel(page)).toHaveClass(/glue-font-face-open/);
+}
+// the distance from opts[idx]'s centre to the reel's centre, in page px
+const rowGap = (page, idx) => reel(page).evaluate((list, i) => {
+	const r = list.querySelectorAll('.glue-font-face-opt')[i];
+	const lc = list.getBoundingClientRect();
+	const rc = r.getBoundingClientRect();
+	return (rc.top + rc.height/2) - (lc.top + list.clientHeight/2);
+}, idx);
+async function wheelToIndex(page, idx) {
+	const box = await reel(page).boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	for (let i = 0; i < 60; i++) {
+		const d = await rowGap(page, idx);
+		if (Math.abs(d) <= 1) break;
+		await page.mouse.wheel(0, d);
+		await page.waitForTimeout(80);	// snap + settle
+	}
+	await expect.poll(async () => Math.abs(await rowGap(page, idx))).toBeLessThan(1.5);
+}
+async function wheelTo(page, needle) {
+	const idx = await reel(page).evaluate((list, n) => {
+		const rows = list.querySelectorAll('.glue-font-face-opt');
+		for (let i = 0; i < rows.length; i++) {
+			if (rows[i].textContent.includes(n)) return i;
+		}
+		return -1;
+	}, needle);
+	expect(idx, `no face row contains ${JSON.stringify(needle)}`).toBeGreaterThan(-1);
+	await wheelToIndex(page, idx);
+	const value = await reel(page).locator('.glue-font-face-opt').nth(idx)
+		.getAttribute('data-value');
+	await expect.poll(() => onValue(page)).toBe(value);
+}
+
+test('the roller lists the faces compactly, opens centred, and applies a settle',
+	async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await open(page, a);
-	// the dropdown is a custom list (2026-09-18): the button opens it, and
-	// the list is what the hover sample hangs off - a native select's list
-	// is the OS's own and reports no option the pointer is over
-	await page.locator('.glue-font-face-btn').click();
-	const list = page.locator('.glue-font-face-list');
-	await expect(list).toBeVisible();
-	const opts = list.locator('.glue-font-face-opt');
+	await openReel(page);
+	// compact - three rows, not the 40vh dropdown it replaced
+	const h = (await reel(page).boundingBox()).height;
+	expect(h, 'the roller is not compact').toBeLessThanOrEqual(80);
+	const opts = reel(page).locator('.glue-font-face-opt');
 	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
 	expect(values.length, 'no faces were offered at all').toBeGreaterThan(1);
 	// each name is written in its own face - the point of the list
@@ -394,23 +436,124 @@ test('the face dropdown lists the faces and applies one', async ({ page, hg }) =
 	expect(await opts.evaluateAll((os) =>
 		Math.max(...os.map((o) => o.textContent.length))))
 		.toBeLessThanOrEqual(24);
-
-	const pick = values[values.length - 1];
-	const pick_opt = opts.nth(values.length - 1);
-	// the hover alone already wears the face in the sample, before
-	// anything is picked - the point of the custom list
-	await pick_opt.hover();
+	// it opens centred on the current face: the on-row's centre is the
+	// reel's centre
+	await expect.poll(() => reel(page).evaluate((list) => {
+		const on = list.querySelector('.glue-font-face-on');
+		const lc = list.getBoundingClientRect();
+		const rc = on.getBoundingClientRect();
+		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
+	})).toBeLessThan(2);
+	// the hover alone already wears the face in the sample - the sample
+	// is what the drum's hover is for
+	const onIdx = values.indexOf(await onValue(page));
+	await opts.nth(onIdx + 1).hover();
 	await expect.poll(() => page.evaluate(() =>
 		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
-		.toBe(pick);
-	await pick_opt.click();
-	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(pick);
+		.toBe(values[onIdx + 1]);
+	// leaving the reel puts the sample back on the centred face
+	await page.locator('.glue-font-face-btn').hover();
+	await expect.poll(() => page.evaluate(() =>
+		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
+		.toBe(values[onIdx]);
+	// a wheel spin to the last face settles it on the object
+	await wheelToIndex(page, values.length - 1);
+	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[values.length - 1]);
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
 		.toBeTruthy();
-	// the sample keeps the picked face once the list has closed
-	await expect.poll(() => page.evaluate(() =>
-		getComputedStyle(document.querySelector('.glue-font-preview')).fontFamily))
-		.toBe(pick);
+	// the roller STAYS OPEN - spinning on is the point of a drum
+	await expect(reel(page)).toHaveClass(/glue-font-face-open/);
+});
+
+test('a wheel spin applies the face it settles on, and the ends stop hard',
+	async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openReel(page);
+	const opts = reel(page).locator('.glue-font-face-opt');
+	const last = await opts.last().getAttribute('data-value');
+	await wheelToIndex(page, (await opts.count()) - 1);
+	await expect.poll(() => onValue(page)).toBe(last);
+	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(last);
+	// at the hard end: the scroll is bottomed, and more wheel changes
+	// nothing - no wrap-around
+	await expect.poll(() => reel(page).evaluate((l) =>
+		l.scrollHeight - l.clientHeight - l.scrollTop)).toBeLessThan(1);
+	const box = await reel(page).boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	await page.mouse.wheel(0, 400);
+	await page.waitForTimeout(120);
+	await expect.poll(() => onValue(page)).toBe(last);
+});
+
+test('a mouse drag spins the reel and snaps to the nearest face', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openReel(page);
+	const opts = reel(page).locator('.glue-font-face-opt');
+	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
+	await wheelToIndex(page, 3);
+	await expect.poll(() => onValue(page)).toBe(values[3]);
+	// drag DOWN 30px: row 3 moves 30 below centre, row 2 lands 8 above -
+	// the previous face is the nearest, and the release snaps to it
+	const box = await reel(page).boundingBox();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width/2, box.y + box.height/2 + 30, { steps: 5 });
+	await page.mouse.up();
+	await expect.poll(() => onValue(page)).toBe(values[2]);
+	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[2]);
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-font-family'])
+		.toBeTruthy();
+	// the snap is precise: the on-row's centre is the reel's centre
+	await expect.poll(() => reel(page).evaluate((list) => {
+		const on = list.querySelector('.glue-font-face-on');
+		const lc = list.getBoundingClientRect();
+		const rc = on.getBoundingClientRect();
+		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
+	})).toBeLessThan(1.5);
+});
+
+test('arrow keys step one face at a time, and Escape closes back to the button',
+	async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openReel(page);
+	const opts = reel(page).locator('.glue-font-face-opt');
+	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
+	const onIdx = values.indexOf(await onValue(page));
+	await reel(page).evaluate((l) => l.focus());
+	await page.keyboard.press('ArrowDown');
+	await expect.poll(() => onValue(page)).toBe(values[onIdx + 1]);
+	await expect.poll(() => cssOf(page, a, 'fontFamily')).toBe(values[onIdx + 1]);
+	await page.keyboard.press('ArrowUp');
+	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
+	// Escape closes the reel back to the button; the panel stays
+	await page.keyboard.press('Escape');
+	await expect(reel(page)).not.toHaveClass(/glue-font-face-open/);
+	await expect(page.locator('.glue-font-face-btn')).toBeFocused();
+	await expect(pop(page)).toBeVisible();
+});
+
+test('the open roller never covers the styled object', async ({ page, hg }) => {
+	// the codex this roller exists for: a compact control that does not
+	// eclipse the element it was called for
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openReel(page);
+	const o = await byId(page, a).boundingBox();
+	const r = await reel(page).boundingBox();
+	const overlaps = r.x < o.x + o.width && o.x < r.x + r.width &&
+		r.y < o.y + o.height && o.y < r.y + r.height;
+	expect(overlaps, 'the roller is sitting on top of the styled object').toBe(false);
 });
 
 test('bold and italic are independent, and combinable', async ({ page, hg }) => {
