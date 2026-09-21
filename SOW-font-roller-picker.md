@@ -24,10 +24,11 @@ written; what shipped follows it with the deviations listed under "As built".
   not container padding — engine bug history). There is nothing to dismiss — the wheel is
   part of the panel, and Escape closes the panel itself.
 - Deviations from the brief: make-min, not a terser build (the project has no build step);
-  mouse drag has no momentum/fling (touch's native scroll provides it); the drum shows three
-  full rows rather than partial peeks — the veil supplies the dimming the brief asked for.
-  Tests: the roller tests in `tests/e2e/text-font-popover.spec.js` (the suite's first wheel
-  usage) and the run-target tests in `tests/e2e/text-formatting.spec.js`.
+  mouse drag has no momentum/fling; the 50px window shows two rows and two peeks rather
+  than three full rows — the peeks are what the brief asked for, and the gradient veil
+  dims them.
+  Tests: the wheel tests in `tests/e2e/text-font-popover.spec.js` and the run-target tests
+  in `tests/e2e/text-formatting.spec.js`.
 
 ---
 
