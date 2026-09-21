@@ -407,13 +407,25 @@ test('the roller lists the faces compactly, opens centred, and applies on click'
 		Math.max(...os.map((o) => o.textContent.length))))
 		.toBeLessThanOrEqual(24);
 	// it opens centred on the current face: the on-row's centre is the
-	// reel's centre
+	// reel's centre (within the rounding the panel's fractional position
+	// forces)
 	await expect.poll(() => reel(page).evaluate((list) => {
 		const on = list.querySelector('.glue-font-face-on');
 		const lc = list.getBoundingClientRect();
 		const rc = on.getBoundingClientRect();
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
-	})).toBeLessThan(2);
+	})).toBeLessThan(3);
+	// the up-down affordance, drawn on the wheel's right end like the
+	// number rows' sideways one - and the vertical cursor to match
+	await expect(reel(page).locator('.glue-font-face-arrow')).toHaveText('\u2195');
+	expect(await reel(page).evaluate((l) => getComputedStyle(l).cursor))
+		.toBe('ns-resize');
+	// no headings and no default row: every row is a face (2026-09-21,
+	// danja's call)
+	expect(await reel(page).evaluate((l) =>
+		l.querySelectorAll('.glue-font-face-opt').length)).toBe(values.length);
+	expect(await reel(page).evaluate((l) =>
+		l.querySelectorAll('.glue-font-face-group').length)).toBe(0);
 	// the click applies the row and the wheel follows it into the centre
 	// (2026-09-21, danja's call: no scrolling - the click is the whole
 	// interaction, and nothing applies without one)
@@ -428,13 +440,17 @@ test('the roller lists the faces compactly, opens centred, and applies on click'
 		const lc = list.getBoundingClientRect();
 		const rc = on.getBoundingClientRect();
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
-	})).toBeLessThan(2);
-	// and a spin of the mouse wheel changes NOTHING - there is no wheel
-	// scrolling
+	})).toBeLessThan(3);
+	// the wheel scrolls the drum at HALF pace (2026-09-21, danja's call) -
+	// 400px of wheel is 200px of drum - and applies nothing
+	const wheelBefore = await reel(page).evaluate((l) => l.scrollTop);
 	const box = await reel(page).boundingBox();
 	await page.mouse.move(box.x + box.width/2, box.y + box.height/2);
 	await page.mouse.wheel(0, 400);
 	await page.waitForTimeout(120);
+	const moved = (await reel(page).evaluate((l) => l.scrollTop)) - wheelBefore;
+	expect(moved, 'the wheel did not scroll the drum').toBeGreaterThan(0);
+	expect(moved, 'the wheel was not slowed by 200%').toBeLessThanOrEqual(200);
 	await expect.poll(() => onValue(page)).toBe(values[onIdx + 1]);
 });
 
@@ -492,15 +508,39 @@ test('the arrows scroll the drum while the pointer is over it, without applying'
 	// hovering hands the wheel the keyboard - no click needed
 	await reel(page).hover();
 	await page.keyboard.press('ArrowDown');
+	// one full row - the rows are uniform 22px, within the rounding the
+	// panel's fractional position forces on the scroll positions
 	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
-		.not.toBe(before);
+		.toBeGreaterThan(before + 20);
+	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
+		.toBeLessThan(before + 24);
 	// the scroll does not apply: the on-row and the object are untouched
 	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
 	expect(hg.readObject('100000000001').attrs['text-font-family']).toBe(undefined);
 	// ArrowUp walks back
 	await page.keyboard.press('ArrowUp');
 	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
-		.toBe(before);
+		.toBeGreaterThan(before - 2);
+	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
+		.toBeLessThan(before + 2);
+});
+
+test('the page holds still while a popout is open', async ({ page, hg }) => {
+	// any popout locks the page's scroll - a wheel or a finger meant for
+	// the panel must not scroll the page under it (danja's call,
+	// 2026-09-21)
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	expect(await page.evaluate(() => getComputedStyle(document.body).overflow))
+		.toBe('visible');
+	await open(page, a);
+	expect(await page.evaluate(() => getComputedStyle(document.body).overflow))
+		.toBe('hidden');
+	await page.keyboard.press('Escape');
+	await expect(pop(page)).toBeHidden();
+	expect(await page.evaluate(() => getComputedStyle(document.body).overflow))
+		.toBe('visible');
 });
 
 test('the open roller never covers the styled object', async ({ page, hg }) => {

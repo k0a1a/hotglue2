@@ -1546,6 +1546,12 @@ function text_panel_build(pop, obj)
 	var face_pad_top = document.createElement('div');
 	face_pad_top.className = 'glue-font-face-pad';
 	face_list.appendChild(face_pad_top);
+	// the up-down affordance, the number rows' ↔ stood up: drawn on
+	// the wheel's right end, and the drag goes straight through it
+	var face_arrow = document.createElement('div');
+	face_arrow.className = 'glue-font-face-arrow';
+	face_arrow.textContent = '\u2195';
+	face_list.appendChild(face_arrow);
 
 	// the range the roller acts on: refreshed on every interaction, but
 	// never DEGRADED - the press that collapses the live selection must
@@ -1636,33 +1642,20 @@ function text_panel_build(pop, obj)
 		parent.appendChild(o);
 		return o;
 	};
-	// "default" first: the inherited face, for taking a run's own face
-	// back off - or clearing an object's. Named by the inherited family,
-	// so it never says just "default".
-	var face_default = face_option(face_list, '');
-	face_default.style.fontFamily = '';
-	face_default.textContent = 'default: ' +
-		((getComputedStyle(obj).fontFamily || '').split(',')[0]
-			.trim().replace(/["']/g, '') || 'inherited');
+	// the list is just the faces, no headings and no default row
+	// (2026-09-21, danja's call). Uploaded faces first - they are the ones
+	// the author went and added, and hunting for them in an alphabetical
+	// run of system faces is the thing the old cycling button was worst at.
 	var uploaded = [];
 	var installed = [];
 	fonts.forEach(function(f) {
 		(woff_fonts.indexOf(f) == -1 ? installed : uploaded).push(f);
 	});
-	// uploaded fonts first and named as such: they are the ones the author
-	// went and added, and hunting for them in an alphabetical run of system
-	// faces is the thing the old cycling button was worst at
-	[['your fonts', uploaded], ['fonts', installed]].forEach(function(g) {
-		if (!g[1].length) {
-			return;
-		}
-		var group = document.createElement('div');
-		group.className = 'glue-font-face-group';
-		group.textContent = g[0];
-		face_list.appendChild(group);
-		g[1].forEach(function(f) {
-			face_option(face_list, f);
-		});
+	uploaded.forEach(function(f) {
+		face_option(face_list, f);
+	});
+	installed.forEach(function(f) {
+		face_option(face_list, f);
 	});
 	// the trailing pad, closing the drum: the last row centres exactly at
 	// the bottom of the scroll
@@ -1694,7 +1687,7 @@ function text_panel_build(pop, obj)
 			face_list.scrollTop + box.height / 2;
 		face_list.scrollTop = Math.max(0, Math.min(
 			face_list.scrollHeight - face_list.clientHeight,
-			center - face_list.clientHeight / 2));
+			Math.round(center - face_list.clientHeight / 2)));
 	};
 
 	// --- the wheel: click, apply, follow ------------------------------------
@@ -1745,6 +1738,16 @@ function text_panel_build(pop, obj)
 		});
 	});
 
+	// The wheel scrolls the drum at HALF pace (2026-09-21, danja's call:
+	// re-enabled and slowed by 200%) - and like the drag, it applies
+	// nothing; only the click applies.
+	face_list.addEventListener('wheel', function(e) {
+		e.preventDefault();
+		face_list.scrollTop = Math.max(0, Math.min(
+			face_list.scrollHeight - face_list.clientHeight,
+			face_list.scrollTop + e.deltaY / 2));
+	}, { passive: false });
+
 	// The press on a row collapses the live selection, so the snapshot is
 	// taken on pointerdown before the click - the run the click was made on
 	// is the one the apply wraps.
@@ -1784,7 +1787,7 @@ function text_panel_build(pop, obj)
 				face_list.scrollTo({
 					top: Math.max(0, Math.min(
 						face_list.scrollHeight - face_list.clientHeight,
-						face_list.scrollTop + best)),
+						Math.round(face_list.scrollTop + best))),
 					behavior: 'smooth'
 				});
 			}
@@ -2329,6 +2332,11 @@ function text_panel_build(pop, obj)
 					face = c2.style.fontFamily;
 					break;
 				}
+			}
+			if (!face) {
+				// no span face: the run wears the inherited one, and with
+				// no default row that is what the wheel centres
+				face = getComputedStyle(obj).fontFamily;
 			}
 		} else {
 			face = getComputedStyle(obj).fontFamily;

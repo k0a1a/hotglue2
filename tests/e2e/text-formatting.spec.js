@@ -262,20 +262,6 @@ test('a face picked after a size joins the same span', async ({ page, hg }) => {
 		'font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
 });
 
-test('the default row is the inherited font, and unwraps a run-level face',
-	async ({ page, hg }) => {
-	const a = await add(page, hg, 'hello <span style="font-family: \'Courier New\', Courier, monospace;">world</span>');
-	await openPanel(page, a);
-	await select(page, a, 'world');
-	// the row is named by what the run inherits (the page's font), not
-	// by the word "default" - it is in the DOM whether the roller is open
-	await expect(page.locator('.glue-font-face-opt[data-value=""]'))
-		.toContainText('Verdana');
-	await pickFace(page, 'default');
-	await finish(page, a);
-	await expect.poll(() => stored(hg)).toBe('hello world');
-});
-
 test('the color button wraps the selection in a color span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
 	await openPanel(page, a);

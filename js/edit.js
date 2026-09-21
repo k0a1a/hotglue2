@@ -386,6 +386,10 @@ $.glue.popover = function()
 			pop.style.visibility = 'hidden';
 			document.body.appendChild(pop);
 			open_panel = pop;
+			// while a panel is open the page holds still: a wheel or a
+			// finger meant for the panel must not scroll the page under
+			// it (danja's call, 2026-09-21)
+			document.body.style.overflow = 'hidden';
 			$.glue.popover.place(pop, $.glue.popover.pointer());
 			pop.style.visibility = '';
 		},
@@ -403,6 +407,7 @@ $.glue.popover = function()
 				open_panel.remove();
 				open_panel = false;
 			}
+			document.body.style.overflow = '';
 		},
 		// what is open, or false - for the handlers below
 		current: function() {

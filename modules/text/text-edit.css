@@ -129,11 +129,22 @@
 	touch-action: none;
 	border: 1px solid #999;
 	background: #fff;
-	cursor: grab;
+	/* the vertical double arrow, the number rows' ew-resize stood up:
+	   the drum goes up and down, and the cursor says so */
+	cursor: ns-resize;
 }
 
-.glue-font-face-list:active {
-	cursor: grabbing;
+.glue-font-face-arrow {
+	/* the up-down affordance, drawn on the wheel's own right end exactly
+	   where the number rows draw their ↔ - and like that one, the
+	   drag goes straight through it */
+	position: absolute;
+	right: 3px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 11px;
+	color: #666;
+	pointer-events: none;
 }
 
 
@@ -162,15 +173,6 @@
 	height: 14px;
 }
 
-.glue-font-face-group {
-	/* "your fonts" / "fonts" - the select's optgroup headings, kept.
-	   A divider, never the selection, never a snap point. */
-	padding: 3px 6px 1px;
-	font-size: 10px;
-	font-style: italic;
-	color: #888;
-	scroll-snap-align: none;
-}
 
 .glue-font-face-opt {
 	/* the wheel's row, pinned so the geometry is exact: pad 3 + line 16
