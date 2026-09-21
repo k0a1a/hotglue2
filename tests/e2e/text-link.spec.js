@@ -1,4 +1,4 @@
-// Making text a link - the url field in the run-formatting strip.
+// Making text a link - the link row of the text panel.
 //
 // Text objects are edited WYSIWYG: the rendered div is contenteditable, so a
 // link shows as underlined text rather than as its markup. The source form is
@@ -6,8 +6,9 @@
 // assert on the stored content after leaving edit mode, which exercises the
 // whole chain rather than an intermediate.
 //
-// The strip's link row is ALWAYS visible while editing: a url field and one
-// button. No link under the selection - the button says 'make link' and wraps
+// The panel's link row is a url field and one button, and it is the run's
+// own: it grays out while nothing is selected, and comes alive when a run
+// is. No link under the selection - the button says 'make link' and wraps
 // the selected run; a link - it says 'remove link', the url pre-fills so
 // Enter edits the href, and the button unwraps. Whatever non-empty string is
 // typed becomes the href; no validation, no rewriting.
@@ -26,6 +27,8 @@ const ATTRS = {
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject('100000000001').content;
+const panel = (page) => page.locator('.glue-font-popover');
+const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 const linkRow = (page) => page.locator('.glue-text-strip-link');
 const urlField = (page) => linkRow(page).locator('.glue-link-field').first();
 const linkButton = (page) => linkRow(page).locator('button').first();
@@ -35,6 +38,16 @@ async function startEditing(page, id) {
 	await byId(page, id).click();
 	await expect.poll(() => page.evaluate((i) =>
 		document.querySelector(`[id="${i}"] > .glue-text-render`).isContentEditable, id)).toBe(true);
+}
+
+// editing first, then the panel from the menu - it is the WYSIWYG
+// surface's toolbar, and the link row lives in it
+async function openPanel(page, id) {
+	await startEditing(page, id);
+	await expect(fontBtn(page)).toBeVisible();
+	await page.waitForTimeout(400);		// the menu fades in
+	await fontBtn(page).click();
+	await expect(panel(page)).toBeVisible();
 }
 
 // Put the selection over a substring of the rendered text, the way dragging
@@ -71,21 +84,23 @@ async function finish(page, id) {
 	await page.evaluate((i) => window.$.glue.text.stop_editing(document.getElementById(i)), id);
 }
 
-test('the link row is part of the strip, under the size slider', async ({ page, hg }) => {
+test('the link row is part of the panel, and grays until a run is selected',
+	async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 
 	// no icon to press - the url field and its button are there from the
-	// moment editing starts, in the strip
+	// moment the panel opens; with nothing selected, the row is grayed
 	await expect(linkRow(page)).toBeVisible();
 	await expect(urlField(page)).toBeVisible();
 	await expect(linkButton(page)).toHaveText('make link');
-	// the row sits below the size slider
-	const slider = await page.locator('.glue-text-size-slider').boundingBox();
-	const r = await linkRow(page).boundingBox();
-	expect(r.y, 'the link row is not under the size slider').toBeGreaterThan(slider.y);
+	await expect(linkRow(page)).toHaveClass(/glue-popover-disabled/);
+
+	// a run selected inside the render brings it alive
+	await select(page, a, 'world');
+	await expect(linkRow(page)).not.toHaveClass(/glue-popover-disabled/);
 	// and no backdrop over the page
 	expect(await page.locator('.glue-modal-backdrop').count()).toBe(0);
 });
@@ -94,7 +109,7 @@ test('Enter wraps a selection in an anchor', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 
 	await typeInto(urlField(page), 'https://example.org/a?b=1&c=2');
@@ -110,7 +125,7 @@ test('the add-link button wraps a selection, and then offers remove',
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
-		await startEditing(page, a);
+		await openPanel(page, a);
 		await select(page, a, 'world');
 
 		await typeInto(urlField(page), 'https://example.org/');
@@ -147,7 +162,7 @@ test('whatever string is typed becomes the href', async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
-		await startEditing(page, a);
+		await openPanel(page, a);
 		await select(page, a, 'world');
 		await typeInto(urlField(page), typed);
 		await urlField(page).press('Enter');
@@ -160,7 +175,7 @@ test('a url containing quotes cannot break out of the href', async ({ page, hg }
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 
 	await typeInto(urlField(page), 'https://example.org/" onmouseover="alert(1)');
@@ -179,7 +194,7 @@ test('a selection inside a link pre-fills the url and offers remove',
 			'see <a href="https://old.example/">this</a> now');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
-		await startEditing(page, a);
+		await openPanel(page, a);
 		await select(page, a, 'this', true);		// cursor inside the link
 
 		// the selectionchange sync pre-fills the field and flips the button
@@ -194,7 +209,7 @@ test('a selection inside a link pre-fills the url and offers remove',
 		await expect.poll(() => stored(hg)).toBe('see <a href="https://new.example/">this</a> now');
 
 		// and the button takes it out again
-		await startEditing(page, a);
+		await openPanel(page, a);
 		await select(page, a, 'this', true);
 		await expect.poll(async () => urlField(page).inputValue()).toBe('https://new.example/');
 		await linkButton(page).click();
@@ -206,7 +221,7 @@ test('Escape empties the field without linking anything', async ({ page, hg }) =
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 
 	await typeInto(urlField(page), 'https://example.org');
@@ -221,7 +236,7 @@ test('the link renders on the published page', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	await typeInto(urlField(page), 'https://example.org/');
 	await urlField(page).press('Enter');
@@ -243,7 +258,7 @@ test('the canvas shortcuts leave a focused field alone', async ({ page, hg }) =>
 	const a = hg.addObject('100000000001', ATTRS, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 
 	await typeInto(urlField(page), 'https://example.org/a');

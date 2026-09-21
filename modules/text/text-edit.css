@@ -335,16 +335,6 @@
 	gap: 7px;
 }
 
-.glue-text-face {
-	/* the run half's face dropdown: still a native select (the run half
-	   has no sample for a hover to drive, and a custom list's keyboard
-	   story is not written yet), wearing the look the object half's
-	   select wore before it became a custom dropdown */
-	width: 100%;
-	font-size: 11px;
-	box-sizing: border-box;
-}
-
 .glue-font-preview {
 	/* "Hi" set in the face the dropdown is showing - or, while its list is
 	   open, the face the pointer is over - at the sizes row's right end

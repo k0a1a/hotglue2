@@ -545,65 +545,13 @@ var text_strip_obj = null;         // the .text object the panel belongs to
 var text_strip_render = null;      // its .glue-text-render
 var text_strip_range = null;       // last known selection inside the render (cloneRange)
 var text_strip_snapshot = null;    // range the face dropdown and size scrub act on
-var text_strip_btns = {};          // { b, i, u, s } -> button element
-var text_strip_face = null;        // the face dropdown
-var text_strip_face_default = null; // the dropdown's "inherited" option
 var text_strip_link_sync = null;   // keeps the link row in step with the selection
 var text_strip_link_reset = null;  // empties the link row's fields
-var text_panel_mode_now = null;    // 'object' | 'selection' - what the panel shows
-var text_panel_size_row = null;    // the run's size scrub, while in selection mode
-var text_face_box = null;          // the object half's face dropdown box, while built
+var text_panel_mode_now = null;    // 'object' | 'selection' - what the panel targets
+var text_panel_sync_fn = null;     // the build's sync closure, while the panel is built
+var text_face_box = null;          // the face dropdown's box, while the panel is built
 var text_face_list_el = null;      // its option list
 var text_face_close = null;        // closes that list, restoring the sample
-
-// --- the run half: what can be done to the selection ----------------------
-//
-// Built fresh every time the panel flips into selection mode, so there is
-// never a stale range closure. What the controls
-// do is what the strip's did: they act on text_strip_snapshot - taken before
-// the focus change that collapses the live selection - and every op restores
-// the caret where the formatting is.
-function text_panel_btns_build(icons) {
-	[
-		['b', 'font-style-bold', 'bold the selected text'],
-		['i', 'font-style-italic', 'italic the selected text'],
-		['u', 'font-style-underline', 'underline the selected text'],
-		['s', 'font-style-strikeout', 'strikethrough the selected text']
-	].forEach(function(t) {
-		var b = $.glue.popover.icon_button(t[1], t[2]);
-		b.dataset.fmt = t[0];
-		b.addEventListener('click', function() {
-			if (text_strip_render) {
-				text_strip_toggle(text_strip_render, t[0]);
-			}
-		});
-		text_strip_btns[t[0]] = b;
-		icons.appendChild(b);
-	});
-	// The picker the font popover's colour row uses, but for the selection: it
-	// wraps the run in a color span (or joins the styled span it is in), and
-	// opens showing the run's own colour. The picker takes focus, which
-	// collapses the selection - so the range is snapshotted on mousedown,
-	// before the click opens anything, like the size scrub and the face
-	// dropdown below.
-	var color_btn = $.glue.popover.color_button('color of the selected text',
-		text_strip_run_color,
-		function(col) {
-			if (text_strip_render) {
-				text_strip_apply_color(text_strip_render, col);
-			}
-		},
-		function(col) {
-			// commit: put the caret back where the formatting is
-			if (text_strip_render && text_strip_snapshot) {
-				text_strip_restore(text_strip_render, text_strip_snapshot);
-			}
-		});
-	color_btn.addEventListener('mousedown', function() {
-		text_strip_snapshot = text_strip_range_for();
-	});
-	icons.appendChild(color_btn);
-}
 
 // A face name as it appears in a dropdown option: cut to 24 characters. A
 // composite like "Verdana, Geneva, Tahoma, sans-serif" reads as a sentence
@@ -612,130 +560,6 @@ function text_panel_btns_build(icons) {
 // and it is what the dropdown writes: this is display only.
 function text_face_name(name) {
 	return name.length > 24 ? name.slice(0, 24) : name;
-}
-
-// The face dropdown, under the icon row: the same face list the font panel offers,
-// but for the selection. A pick wraps the run in a font-family span (or joins
-// the size span it is already in, so the two live on one span instead of one
-// per pick), and "default" unwraps it back to whatever the object inherits.
-function text_panel_face_build() {
-	var faces = [];
-	var woff_faces = [];
-	$.glue.text.get_fonts(faces, woff_faces);
-	var face = document.createElement('select');
-	face.className = 'glue-text-face';
-	face.title = 'font family of the selection';
-	var def = document.createElement('option');
-	def.value = '';
-	def.textContent = 'default';	// the inherited face, named by sync_state
-	face.appendChild(def);
-	text_strip_face_default = def;
-	var uploaded = [];
-	var installed = [];
-	faces.forEach(function(f) {
-		(woff_faces.indexOf(f) == -1 ? installed : uploaded).push(f);
-	});
-	[['your fonts', uploaded], ['fonts', installed]].forEach(function(g) {
-		if (!g[1].length) {
-			return;
-		}
-		var group = document.createElement('optgroup');
-		group.label = g[0];
-		g[1].forEach(function(f) {
-			var o = document.createElement('option');
-			o.value = f;
-			o.style.fontFamily = f;
-			o.textContent = text_face_name(f.replace(/["\']/g, ''));
-			group.appendChild(o);
-		});
-		face.appendChild(group);
-	});
-	// same snapshot-before-the-focus-change discipline as the size scrub
-	face.addEventListener('mousedown', function() {
-		text_strip_snapshot = text_strip_range_for();
-	});
-	face.addEventListener('focus', function() {
-		if (!text_strip_snapshot) {
-			text_strip_snapshot = text_strip_range_for();
-		}
-	});
-	face.addEventListener('change', function() {
-		if (!text_strip_render) {
-			return;
-		}
-		// a pick can reach change without the mousedown that snapshots the
-		// selection: the keyboard path in a real browser, or selectOption in
-		// a test - fall back to the last-known selection (the cache is kept
-		// current by the document selectionchange listener)
-		if (!text_strip_snapshot) {
-			text_strip_snapshot = text_strip_range_for();
-		}
-		text_strip_apply_face(text_strip_render, this.value);
-		// commit: put the caret back where the formatting is
-		if (text_strip_snapshot) {
-			text_strip_restore(text_strip_render, text_strip_snapshot);
-		}
-	});
-	text_strip_face = face;
-	var face_row = $.glue.popover.row(false);
-	face_row.appendChild(face);
-	return face_row;
-}
-
-// The run's size, as the panel's own scrub row: 1 to 100 is the drag's fence
-// and not a cap - typing 140 sets 140, which is what the strip's field took -
-// and it replaces the strip's slider-plus-field pair, which were two controls
-// for one number and could disagree about it. The row shows the run's own span
-// size if it has one, else the size the run is actually rendering at, so it is
-// never pointing at nothing.
-function text_panel_size_build() {
-	var render = text_strip_render;
-	var shown = 0;
-	var r = text_strip_range_for();
-	if (r && render) {
-		var node = r.startContainer;
-		var el = (node && node.nodeType == 3) ? node.parentElement : node;
-		for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
-			if (cur.tagName == 'SPAN' && cur.style.fontSize) {
-				shown = parseInt(cur.style.fontSize, 10) || 0;
-				break;
-			}
-		}
-	}
-	if (!shown) {
-		shown = parseInt(getComputedStyle(render).fontSize, 10) || 18;
-	}
-	var size_row = $.glue.popover.number_row('size', {
-		min: 1, max: 100, step: 1, unit: 'px', value: shown,
-		apply: function(px, commit) {
-			// NaN is an emptied field, and below 1px is not a size
-			if (!(px >= 1) || !text_strip_render) {
-				return;
-			}
-			// live while dragging and while typing; the caret goes back where
-			// the formatting is once the edit is settled
-			text_strip_apply_size(text_strip_render, px);
-			if (commit && text_strip_snapshot) {
-				text_strip_restore(text_strip_render, text_strip_snapshot);
-			}
-		}
-	});
-	// The row is the drag handle, and the press that starts a scrub takes focus
-	// and collapses the selection - so the range is taken on pointerdown,
-	// exactly as the strip's field took it on mousedown.
-	size_row.row.addEventListener('pointerdown', function() {
-		text_strip_snapshot = text_strip_range_for();
-	});
-	var field = size_row.row.querySelector('.glue-popover-field');
-	if (field) {
-		field.addEventListener('focus', function() {
-			// fallback for programmatic focus (selection may already have collapsed)
-			if (!text_strip_snapshot) {
-				text_strip_snapshot = text_strip_range_for();
-			}
-		});
-	}
-	return size_row;
 }
 
 // The link row, under the face and the size. The url field IS the
@@ -923,23 +747,6 @@ function text_panel_link_build() {
 	return link_row;
 }
 
-// The panel in selection mode: the icon row is the acts (the four toggles and
-// the colour), and the values sit out in the open under it - the face, the
-// run's size, the link row. No "more knobs" fold: those rows exist only while
-// a run is selected, and folding them would bury the panel's whole point under
-// a click that a moving selection undoes (danja's call, 2026-09-18). The
-// object half keeps its fold - there, the rare values are rare.
-function text_panel_selection_build(pop) {
-	var icons = $.glue.popover.icon_row();
-	pop.appendChild(icons);
-	text_panel_btns_build(icons);
-
-	pop.appendChild(text_panel_face_build());
-	text_panel_size_row = text_panel_size_build();
-	pop.appendChild(text_panel_size_row.row);
-	pop.appendChild(text_panel_link_build());
-}
-
 // live selection if it is inside the render, else the cached last-known
 // selection, validated against the live DOM
 function text_strip_range_for() {
@@ -1081,11 +888,103 @@ function text_strip_apply_size(render, px) {
 	})();
 }
 
-// is a span carrying a run-level style (any of the three the strip applies)?
-// All three applies share this test, so a run styled by one control and then
+// is a span carrying a run-level style (any of the seven the panel applies)?
+// All the applies share this test, so a run styled by one control and then
 // touched by another stays on a SINGLE span instead of nesting one per pick.
 function text_strip_span_styled(inner) {
-	return inner && (inner.style.color || inner.style.fontSize || inner.style.fontFamily);
+	return inner && (inner.style.color || inner.style.fontSize ||
+		inner.style.fontFamily || inner.style.lineHeight ||
+		inner.style.letterSpacing || inner.style.wordSpacing ||
+		inner.style.textShadow);
+}
+
+// One apply for every run-level style that lives on the styled span: the
+// spacings and the shadow. Same join-a-styled-span behaviour as size, face
+// and colour, and `value` is the literal style string the span stores.
+// '' removes the property, and a span that has nothing left is unwrapped -
+// the run's default is absence, like the object's.
+function text_strip_apply_style(render, prop, value) {
+	var range = text_strip_snapshot;
+	if (!range || range.collapsed || !render.contains(range.commonAncestorContainer)) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inner = el && el.closest ? el.closest('span') : null;
+	if (inner && !render.contains(inner)) {
+		inner = null;
+	}
+	var covering = text_strip_span_styled(inner) &&
+		range.toString() === inner.textContent && inner.textContent !== '';
+	if (covering) {
+		if (value === '') {
+			inner.style[prop] = '';
+			if (!inner.getAttribute('style')) {
+				// nothing left but the tag itself: unwrap it
+				inner.replaceWith(...inner.childNodes);
+			}
+		} else {
+			inner.style[prop] = value;              // join the styled span
+		}
+		return;
+	}
+	if (value === '') {
+		return;		// no covering span to clear, and nothing to write
+	}
+	var sp = document.createElement('span');
+	sp.style[prop] = value;
+	sp.appendChild(range.extractContents());
+	range.insertNode(sp);
+	text_strip_snapshot = (function() {
+		var r = document.createRange();
+		r.selectNodeContents(sp);
+		return r;
+	})();
+}
+
+// The run's shadow, as the object's shadow is stored: a radius, a strength
+// and a colour. The span carries the COMPOSED value - text-shadow with a
+// color-mix alpha - because a run has no css rule of its own to compose in
+// (the object's composition lives in css/main.css, .glue-text-shadow).
+// Parsing it back is this regex's job.
+function text_strip_run_shadow() {
+	var render = text_strip_render;
+	var range = text_strip_range_for();
+	if (!range || !render) {
+		return null;
+	}
+	var node = range.startContainer;
+	var el = (node && node.nodeType == 3) ? node.parentElement : node;
+	for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
+		if (cur.tagName == 'SPAN' && cur.style.textShadow) {
+			// the engines serialize the composed value their own way: the
+			// colour first with zero-padded offsets, or the offsets first;
+			// the colour as #000000 or rgb(0, 0, 0)
+			var m = cur.style.textShadow.match(
+				/^color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\) 0px 0px ([\d.]+)px$/) ||
+				cur.style.textShadow.match(
+				/^0 0 ([\d.]+)px color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\)$/);
+			if (m) {
+				return m[4] ? { radius: parseFloat(m[4]), color: m[1], alpha: parseFloat(m[2]) }
+					: { radius: parseFloat(m[1]), color: m[2], alpha: parseFloat(m[3]) };
+			}
+		}
+	}
+	return { radius: 0, color: '#000000', alpha: 80 };
+}
+
+// radius 0 takes the shadow off the run; anything above it writes the
+// composed value onto the run's span. The colour's own path raises a
+// zeroed radius to 6, exactly as the object's does - a colour with no
+// radius shows nothing, and giving it one is the honest reading of "I
+// picked a colour".
+function text_strip_apply_shadow(render, shadow) {
+	var value = '';
+	if (shadow.radius > 0) {
+		value = '0 0 ' + shadow.radius + 'px color-mix(in srgb, ' +
+			shadow.color + ' ' + shadow.alpha + '%, transparent)';
+	}
+	text_strip_apply_style(render, 'textShadow', value);
 }
 
 // face: string -> apply; '' -> clear (unwraps font-family spans fully inside
@@ -1194,12 +1093,12 @@ function text_strip_apply_color(render, col) {
 	})();
 }
 
-// --- the panel's life: open, flip, close -----------------------------------
+// --- the panel's life: open, sync, close -----------------------------------
 
-// Which half the panel should be showing right now. Only an edited render can
-// hold a run selection, and only a non-collapsed range counts as one: a caret
-// is not a selection, and with the caret on the object the object's own type
-// is what the panel is for.
+// What the panel's controls target right now. Only an edited render can
+// hold a run selection, and only a non-collapsed range counts as one: a
+// caret is not a selection, and with the caret on the object the object
+// itself is the target.
 function text_panel_mode() {
 	var render = text_strip_render;
 	if (!render || !render.isContentEditable || !text_strip_obj) {
@@ -1209,36 +1108,24 @@ function text_panel_mode() {
 	return (r && !r.collapsed) ? 'selection' : 'object';
 }
 
-// Fill the panel for the mode it should be in. The body is REBUILT rather than
-// shown and hidden: the two halves are wired to different targets (the
-// object's own style versus ranges in the render), and rebuilding is what
-// guarantees the flipped panel holds no closure, range or node from the half
-// it left.
+// Build the panel once. The body does not change with the target - every
+// control that can act on both retargets in place, and the three that
+// cannot (align and reset, the object's own; the link row, the run's) are
+// grayed by the sync - so a target flip costs nothing but a re-sync.
 function text_panel_rebuild(pop, obj) {
 	text_strip_obj = obj;
 	text_strip_render = obj.querySelector(':scope > .glue-text-render');
-	text_strip_btns = {};
-	text_strip_face = null;
-	text_strip_face_default = null;
-	text_panel_size_row = null;
 	text_strip_snapshot = null;
 	text_strip_link_sync = null;
 	text_strip_link_reset = null;
-	// the cached range is what decides the mode, so it is refreshed from the
-	// live selection first: a rebuild is no time to forget a selection the
-	// author is still holding
+	text_panel_sync_fn = null;
+	// the cached range is what decides the target, so it is refreshed from
+	// the live selection first: a rebuild is no time to forget a selection
+	// the author is still holding
 	text_strip_range_for();
 	text_panel_mode_now = text_panel_mode();
 	pop.innerHTML = '';
-	if (text_panel_mode_now == 'selection') {
-		text_panel_selection_build(pop);
-		text_strip_sync_state();
-		if (text_strip_link_sync) {
-			text_strip_link_sync();
-		}
-		return;
-	}
-	text_panel_object_build(pop, obj);
+	text_panel_build(pop, obj);
 }
 
 // Everything the panel was holding, let go of. A panel can close while the
@@ -1250,13 +1137,10 @@ function text_panel_state_clear() {
 	text_strip_render = null;
 	text_strip_range = null;
 	text_strip_snapshot = null;
-	text_strip_btns = {};
-	text_strip_face = null;
-	text_strip_face_default = null;
-	text_panel_size_row = null;
 	text_strip_link_sync = null;
 	text_strip_link_reset = null;
 	text_panel_mode_now = null;
+	text_panel_sync_fn = null;
 	text_face_box = null;
 	text_face_list_el = null;
 	text_face_close = null;
@@ -1321,67 +1205,11 @@ function text_panel_hide(elem) {
 // toggles reflect the run's EXPLICIT tags only. The walk stops at the render
 // div, so object-level inline styles (a bold OBJECT) live outside it and can
 // never light a toggle - computed styles are not consulted at all.
-function text_strip_sync_state() {
-	if (text_strip_face_default && text_strip_render) {
-		// name the "default" option by what it actually is: the font the
-		// run inherits from the object and the page
-		var inherited = getComputedStyle(text_strip_render).fontFamily || '';
-		var first = inherited.split(',')[0].trim().replace(/["']/g, '');
-		text_strip_face_default.textContent = first || 'default';
-	}
-	var render = text_strip_render;
-	var sel = window.getSelection();
-	var node = sel && sel.rangeCount ? sel.anchorNode : null;
-	var state = { b: false, i: false, u: false, s: false, size: '', face: '' };
-	if (node && render.contains(node)) {
-		var el = (node.nodeType == 3) ? node.parentElement : node;
-		for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
-			var tag = cur.tagName;
-			if (!state.b && (tag == 'B' || tag == 'STRONG')) {
-				state.b = true;
-			}
-			if (!state.i && (tag == 'I' || tag == 'EM')) {
-				state.i = true;
-			}
-			if (!state.u && tag == 'U') {
-				state.u = true;
-			}
-			if (!state.s && (tag == 'S' || tag == 'STRIKE' || tag == 'DEL')) {
-				state.s = true;
-			}
-			if (!state.size && tag == 'SPAN' && cur.style.fontSize) {
-				state.size = parseInt(cur.style.fontSize, 10) || '';
-			}
-			if (!state.face && tag == 'SPAN' && cur.style.fontFamily) {
-				state.face = cur.style.fontFamily;
-			}
-		}
-	}
-	['b', 'i', 'u', 's'].forEach(function(k) {
-		text_strip_btns[k].classList.toggle('glue-btn-active', state[k]);
-	});
-	// never overwrite a control while it is being interacted with
-	if (text_panel_size_row) {
-		var size_field = text_panel_size_row.row.querySelector('.glue-popover-field');
-		if (document.activeElement !== size_field) {
-			// no explicit run size: the row still shows the size the text is
-			// actually rendering at, so it is never pointing at nothing. A
-			// size its drag cannot reach parks the drag at the end and keeps
-			// the number, which is the scrub row's own rule.
-			text_panel_size_row.set(state.size ||
-				(parseInt(getComputedStyle(render).fontSize, 10) || 18));
-		}
-	}
-	if (document.activeElement !== text_strip_face) {
-		// a composite face (Verdana, Geneva, sans-serif) that is not one of
-		// the offered options leaves the dropdown at its default
-		text_strip_face.value = state.face;
-	}
-}
-
 // The panel follows the selection: a run selected inside the edited render
-// flips it to the run controls, losing the selection flips it back, and while
-// it is in run mode every caret move refreshes the toggles and the link row.
+// makes the panel's controls act on that run, losing the selection turns
+// them back on the whole object, and every caret move re-reads what the
+// controls should show. The sync itself is a closure in text_panel_build -
+// it is the one thing that knows every control the panel holds.
 //
 // A press on a panel control takes focus out of the render and collapses the
 // live selection, and that collapse must not read as "the author let go of the
@@ -1406,27 +1234,17 @@ document.addEventListener('selectionchange', function() {
 			text_strip_range = r.cloneRange();
 		}
 	}
-	if (text_panel_mode() != text_panel_mode_now) {
-		// the two modes are different panels in the same frame: the body is
-		// rebuilt, and since the size changes with it, it is re-placed (the
-		// fold toggle's precedent for a panel that changed height)
-		text_panel_rebuild(pop, text_strip_obj);
-		$.glue.popover.place(pop, $.glue.popover.pointer());
-		return;
-	}
-	if (text_panel_mode_now == 'selection') {
-		text_strip_sync_state();
-		if (text_strip_link_sync) {
-			text_strip_link_sync();
-		}
+	text_panel_mode_now = text_panel_mode();
+	if (text_panel_sync_fn) {
+		text_panel_sync_fn();
 	}
 });
 
 // A click anywhere outside the face dropdown closes its list: the click
 // inside the panel that is not on the face control. Registered once, like
 // the selectionchange listener above - text_face_box is only non-null while
-// the object half is built, and state_clear lets go of it, so the listener
-// is quiet whenever no face list exists.
+// the panel is built, and state_clear lets go of it, so the listener is
+// quiet whenever no face list exists.
 document.addEventListener('click', function(e) {
 	if (text_face_box && !text_face_box.contains(e.target) && text_face_close) {
 		text_face_close();
@@ -1434,31 +1252,34 @@ document.addEventListener('click', function(e) {
 });
 
 //
-// --- the object half of the panel: what the type IS -----------------------
+// --- the panel: one editor for the run and the object ----------------------
 //
-// Face, size and style in one panel, replacing three buttons: one that cycled
-// through the installed faces a click at a time, one that had to be dragged to
-// change the size, and one that cycled bold -> italic -> both -> normal.
+// Face, size, style, colour, spacings, shadow and a link, in one panel,
+// replacing three buttons: one that cycled through the installed faces a
+// click at a time, one that had to be dragged to change the size, and one
+// that cycled bold -> italic -> both -> normal.
 //
-// The panel is what the type IS, in the terms most objects are set in: four
-// sizes as buttons (small, normal, big, extra), then the four styles with the colour
-// beside them, then the four alignments, then the face with the note under it.
-// Everything else is under "more knobs", which is the house style every panel
-// follows now (js/edit.js, beside icon_row()) - and here that is the rest of
-// the type as well as the rest of the panel: the exact size, the spacings, the
-// shadow and the reset. The face went in there with them on 2026-09-17 and
-// came back out the next day (danja's call): a face is something most objects
-// care about. The three rows the panel opens on are unlabelled (the style and
-// align labels came off on 2026-09-17): every button in them is named in its
-// tooltip and nowhere else, which is the shape the house style asks for.
+// The panel acts on whatever is CURRENT: a non-collapsed selection inside
+// the edited render is the target, and the controls wrap tags and styled
+// spans in the render; nothing selected is a caret, and the controls write
+// the whole object's style (obj.style.*, stored as attributes). The body
+// does not change with the target - one control retargets in place, so a
+// flip is a re-sync, not a rebuild (danja's call, 2026-09-18, merging the
+// two halves the panel used to swap between).
 //
-// SCOPE IS THE WHOLE OBJECT, like every other control in this menu: they all
-// read getComputedStyle(obj) and write obj.style.*. The per-RUN half of the
-// same panel - B/I/U/S, colour, face, size and link for a selection inside the
-// editing render - is built by text_panel_selection_build above, and the two
-// are one panel whose body depends on the selection (text_panel_rebuild). The
-// toggles HERE are two-state, because with one object there is no third,
-// partial state to be in.
+// Three controls cannot retarget and gray out instead:
+//   * the alignments and the reset - the object's own (text-align is a
+//     block property, and a reset clears the object's attributes) - gray
+//     while a run is selected;
+//   * the link row - the run's own (it wraps a selection; the whole-object
+//     link is the object link panel) - grays while nothing is selected.
+//
+// The panel opens on the sizes (small, normal, big, extra), the styles with
+// the colour beside them, and the alignments, then the face with the note
+// under it, then the link row; everything else is under "more knobs", which
+// is the house style every panel follows now (js/edit.js, beside
+// icon_row()). The rows are unlabelled: every button in them is named in
+// its tooltip and nowhere else.
 //
 // The panel behaves like the colour picker: placed in the nearest free space
 // beside the object rather than over it, applied live so the judgement can be
@@ -1466,9 +1287,8 @@ document.addEventListener('click', function(e) {
 //
 
 // Fills an already-open panel whose body has been emptied: the `pop` comes
-// from text_panel_rebuild, which owns the open/show/close lifecycle and knows
-// which half to build.
-function text_panel_object_build(pop, obj)
+// from text_panel_rebuild, which owns the open/show/close lifecycle.
+function text_panel_build(pop, obj)
 {
 	var cs = getComputedStyle(obj);
 	var size = parseInt(cs.fontSize);
@@ -1485,6 +1305,170 @@ function text_panel_object_build(pop, obj)
 	var save = function() {
 		$.glue.object.save(obj);
 	};
+
+	// What a control acts on right now: the selected run, or the whole
+	// object. Every control that can act on both branches on this; the
+	// three that cannot are grayed by the sync. A press on a control
+	// snapshots the run before focus can collapse the live selection - the
+	// snapshot is the target while the press is in flight, and it is let
+	// go of when the op commits.
+	var run_active = function() {
+		if (text_strip_snapshot && !text_strip_snapshot.collapsed) {
+			return true;
+		}
+		return text_panel_mode() == 'selection';
+	};
+	// The link row is the run's own - except that a caret inside an
+	// existing link is also its target (editing or removing that link), so
+	// it stays alive for that one collapsed case.
+	var link_available = function() {
+		if (run_active()) {
+			return true;
+		}
+		var r = text_strip_range_for();
+		if (!r || !text_strip_render) {
+			return false;
+		}
+		var node = r.startContainer;
+		var el = node && node.nodeType == 3 ? node.parentElement : node;
+		return !!(el && el.closest && el.closest('a') &&
+			text_strip_render.contains(el.closest('a')));
+	};
+	// A row or button that exists but cannot act on the current target
+	// wears this (css/edit.css): the panel's gray-out.
+	var set_gray = function(el, gray) {
+		el.classList.toggle('glue-popover-disabled', gray);
+	};
+
+	// The size the text actually renders at: the run's own span size if it
+	// has one, else whatever it inherits - which for a caret is the
+	// object's own size. The spacings' em reads and the size row's display
+	// all go through it.
+	var effective_size = function() {
+		if (run_active() && text_strip_render) {
+			var r = text_strip_range_for();
+			var node = r && r.startContainer;
+			var el = (node && node.nodeType == 3) ? node.parentElement : node;
+			for (var cur = el; cur && cur !== text_strip_render;
+					cur = cur.parentElement) {
+				if (cur.tagName == 'SPAN' && cur.style.fontSize) {
+					return parseInt(cur.style.fontSize, 10) || 16;
+				}
+			}
+			return parseInt(getComputedStyle(text_strip_render).fontSize, 10) || 16;
+		}
+		return parseInt(getComputedStyle(obj).fontSize, 10) || 16;
+	};
+
+	// --- the acts: B/I/U/S and the colour ----------------------------------
+	//
+	// On the run they wrap/unwrap tags and a colour span in the render; on
+	// the object they write obj.style.* - the same four effects, stored
+	// wherever the target stores things.
+	var icons = $.glue.popover.icon_row();
+	pop.appendChild(icons);
+	var toggles = {};
+	var decoration = function() {
+		var d = getComputedStyle(obj).textDecorationLine ||
+			getComputedStyle(obj).textDecoration || '';
+		return {
+			underline: /underline/.test(d),
+			strike: /line-through/.test(d)
+		};
+	};
+	// the object's own toggle states - underline and strikethrough are ONE
+	// css property, so they are read and written together as a list
+	// rather than one overwriting the other
+	var state = { bold: false, italic: false, underline: false, strike: false };
+	var read_state_object = function() {
+		var w = parseInt(getComputedStyle(obj).fontWeight, 10);
+		var d = decoration();
+		state.bold = getComputedStyle(obj).fontWeight == 'bold' ||
+			(!isNaN(w) && 600 <= w);
+		state.italic = getComputedStyle(obj).fontStyle == 'italic';
+		state.underline = d.underline;
+		state.strike = d.strike;
+	};
+	var write_decoration = function() {
+		var parts = [];
+		if (state.underline) {
+			parts.push('underline');
+		}
+		if (state.strike) {
+			parts.push('line-through');
+		}
+		// empty string REMOVES the property, which is what makes the object
+		// file lose the attribute again (text_alter_save unsets what is not
+		// there); 'none' would be stored forever
+		obj.style.textDecoration = parts.join(' ');
+	};
+	[
+		['b', 'font-style-bold', 'bold', function() {
+			state.bold = !state.bold;
+			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
+		}],
+		['i', 'font-style-italic', 'italic', function() {
+			state.italic = !state.italic;
+			obj.style.fontStyle = state.italic ? 'italic' : 'normal';
+		}],
+		['u', 'font-style-underline', 'underline', function() {
+			state.underline = !state.underline;
+			write_decoration();
+		}],
+		['s', 'font-style-strikeout', 'strikethrough', function() {
+			state.strike = !state.strike;
+			write_decoration();
+		}]
+	].forEach(function(t) {
+		var b = $.glue.popover.icon_button(t[1], t[2]);
+		b.dataset.fmt = t[0];
+		b.addEventListener('click', function() {
+			if (run_active()) {
+				if (text_strip_render) {
+					text_strip_toggle(text_strip_render, t[0]);
+				}
+			} else {
+				t[3]();
+				save();
+				sync();
+			}
+		});
+		toggles[t[0]] = b;
+		icons.appendChild(b);
+	});
+	// The colour button, same branch: a run gets a colour span (and the
+	// caret back once the picker closes), the object gets obj.style.color.
+	// The picker takes focus, which collapses the selection - so the range
+	// is snapshotted on mousedown, before the click opens anything.
+	var color_btn = $.glue.popover.color_button('text colour',
+		function() {
+			return run_active() ? text_strip_run_color() :
+				getComputedStyle(obj).color;
+		},
+		function(col) {
+			if (run_active()) {
+				if (text_strip_render) {
+					text_strip_apply_color(text_strip_render, col);
+				}
+			} else {
+				obj.style.color = col;
+			}
+		},
+		function(col) {
+			if (run_active() && text_strip_render && text_strip_snapshot) {
+				// commit: put the caret back where the formatting is
+				text_strip_restore(text_strip_render, text_strip_snapshot);
+				text_strip_snapshot = null;
+			} else {
+				save();
+				sync();
+			}
+		});
+	color_btn.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	icons.appendChild(color_btn);
+	read_state_object();
 
 	// --- the face, and the size to the pixel ------------------------------
 	//
@@ -1552,27 +1536,70 @@ function text_panel_object_build(pop, obj)
 			face_btn.focus();
 		}
 	});
+	// the press that opens the dropdown also collapses the selection: the
+	// range is taken on mousedown, before the click opens anything
+	face_btn.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
 
 	var face_show = function(name) {
 		face_current = name;
-		face_btn.style.fontFamily = name;
-		face_btn.textContent = text_face_name(name.replace(/["\']/g, ''));
+		if (name === '') {
+			// the inherited face, named by what it is
+			var inh = (getComputedStyle(obj).fontFamily || '').split(',')[0]
+				.trim().replace(/["']/g, '');
+			face_btn.style.fontFamily = '';
+			face_btn.textContent = inh || 'default';
+		} else {
+			face_btn.style.fontFamily = name;
+			face_btn.textContent = text_face_name(name.replace(/["\']/g, ''));
+		}
+		var found = false;
 		[].forEach.call(face_list.querySelectorAll('.glue-font-face-opt'), function(o) {
+			if (o.dataset.value === name) {
+				found = true;
+			}
 			o.classList.toggle('glue-font-face-on', o.dataset.value === name);
 		});
+		if (name && !found) {
+			// a face that is not one of the offered ones (an inherited
+			// default, or one that has since been removed): offer it first,
+			// so the list never misreports what is on screen
+			face_option(face_list, name);
+			face_list.insertBefore(face_list.lastChild, face_list.firstChild);
+		}
+		face_preview.style.fontFamily = name;
 	};
 
-	// what the select's change event did: apply, remember, and the sample
-	// wears it
+	// a pick: the run gets the face wrapped on its styled span, the object
+	// gets it written into its style - and '' takes either back to the
+	// inherited face
 	var face_picked = function(name) {
-		obj.style.fontFamily = name;
-		save();
+		if (run_active()) {
+			if (text_strip_render) {
+				if (!text_strip_snapshot) {
+					text_strip_snapshot = text_strip_range_for();
+				}
+				text_strip_apply_face(text_strip_render, name);
+				// commit: put the caret back where the formatting is
+				if (text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+			}
+		} else {
+			obj.style.fontFamily = name;
+			save();
+			if (name !== '') {
+				// remembered as the default for newly created text objects,
+				// as the old face button did (page_set_last_font(), site-wide)
+				$.glue.conf.text.last_font = name;
+				$.glue.backend({ method: 'page.set_last_font', font: name });
+			}
+		}
 		face_show(name);
 		face_close();
-		// remembered as the default for newly created text objects, as the
-		// old face button did (page_set_last_font(), site-wide)
-		$.glue.conf.text.last_font = name;
-		$.glue.backend({ method: 'page.set_last_font', font: name });
+		sync();
 	};
 
 	var face_option = function(parent, name) {
@@ -1593,12 +1620,14 @@ function text_panel_object_build(pop, obj)
 		parent.appendChild(o);
 		return o;
 	};
-	// whatever the object is set to now goes first if it is not one of the
-	// offered faces (an inherited default, or a face that has since been
-	// removed), so the list never misreports what is on screen
-	if (fonts.indexOf(cur_face) == -1) {
-		face_option(face_list, cur_face);
-	}
+	// "default" first: the inherited face, for taking a run's own face
+	// back off - or clearing an object's. Named by the inherited family,
+	// so it never says just "default".
+	var face_default = face_option(face_list, '');
+	face_default.style.fontFamily = '';
+	face_default.textContent = 'default: ' +
+		((getComputedStyle(obj).fontFamily || '').split(',')[0]
+			.trim().replace(/["']/g, '') || 'inherited');
 	var uploaded = [];
 	var installed = [];
 	fonts.forEach(function(f) {
@@ -1619,7 +1648,9 @@ function text_panel_object_build(pop, obj)
 			face_option(face_list, f);
 		});
 	});
-	face_show(cur_face);
+	// the build's own sync names the button and lights the current face,
+	// once the rest of the panel exists - face_show touches the preview,
+	// which is built further down
 
 	// the face row is built here and appended into the open above the fold
 	// (see the fold block below): the appends are what fix where a row sits
@@ -1627,11 +1658,24 @@ function text_panel_object_build(pop, obj)
 	face_row.appendChild(face_box);
 
 	// The one writer for the font size, whichever control asked for it: the
-	// three buttons above and the slider below are two views of one number and
-	// must not drift apart - and both hold line-height in step with it, as the
-	// old drag control did.
+	// four buttons and the fold's scrub are two views of one number and
+	// must not drift apart. The run gets its size wrapped on a span; the
+	// object gets it written into its style - and holds line-height in
+	// step with it, as the old drag control did.
 	var set_size = function(px, commit) {
 		if (px < 1) {
+			return;
+		}
+		if (run_active()) {
+			if (text_strip_render) {
+				// live while dragging and while typing; the caret goes back
+				// where the formatting is once the edit is settled
+				text_strip_apply_size(text_strip_render, px);
+				if (commit && text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+			}
 			return;
 		}
 		obj.style.fontSize = px+'px';
@@ -1689,13 +1733,18 @@ function text_panel_object_build(pop, obj)
 		size_preset_row.appendChild(b);
 	});
 	var sync_size = function() {
-		var cur = parseInt(getComputedStyle(obj).fontSize, 10);
+		var cur = effective_size();
 		size_buttons.forEach(function(b) {
 			b.classList.toggle('glue-font-size-on',
 				parseInt(b.dataset.size, 10) == cur);
 		});
 	};
 	sync_size();
+	// the press that sets a run's size also collapses the selection: the
+	// range is taken on mousedown, like the size scrub's own
+	size_preset_row.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
 
 	// The face sample, at the right end of the sizes row: "Hi" set in
 	// whatever face the dropdown is showing, or - while its list is open -
@@ -1713,115 +1762,40 @@ function text_panel_object_build(pop, obj)
 
 	// --- the size, exactly -------------------------------------------------
 	//
-	// The slider and its field, which was the panel's second row until
-	// 2026-09-17: the four buttons above are what most objects want, and this
-	// is for the size that is not one of them. It is appended into the fold
-	// below.
+	// The scrub for the size that is not one of the four buttons above.
+	// It is appended into the fold below, and it retargets like the
+	// buttons: a run gets its size wrapped on a span, the object gets it
+	// written into its style.
 	var size_row = $.glue.popover.number_row('size', {
-		min: 8, max: 100, step: 1, value: size, unit: 'px',
+		min: 1, max: 100, step: 1, value: size, unit: 'px',
 		apply: function(px, commit) {
 			set_size(px, commit);
 		}
 	});
-
-	// --- row 2: style -----------------------------------------------------
-	//
-	// Four independent toggles, any combination valid. Underline and
-	// strikethrough are the fiddly pair: they are ONE css property, so they
-	// are read and written together as a list rather than one overwriting the
-	// other. Neither was stored at all before this panel - see
-	// text_alter_save() in module_text.inc.php.
-	var decoration = function() {
-		var d = cs.textDecorationLine || cs.textDecoration || '';
-		return {
-			underline: /underline/.test(d),
-			strike: /line-through/.test(d)
-		};
-	};
-	var weight = parseInt(cs.fontWeight, 10);
-	var state = {
-		bold: cs.fontWeight == 'bold' || (!isNaN(weight) && 600 <= weight),
-		italic: cs.fontStyle == 'italic',
-		underline: decoration().underline,
-		strike: decoration().strike
-	};
-
-	var write_decoration = function() {
-		var parts = [];
-		if (state.underline) {
-			parts.push('underline');
-		}
-		if (state.strike) {
-			parts.push('line-through');
-		}
-		// empty string REMOVES the property, which is what makes the object
-		// file lose the attribute again (text_alter_save unsets what is not
-		// there); 'none' would be stored forever
-		obj.style.textDecoration = parts.join(' ');
-	};
-
-	// unlabelled, with the size row above it and the align row below: the three
-	// rows the panel shows are buttons and nothing else (the labels came off on
-	// 2026-09-17), and each toggle is named in its own tooltip
-	var style_row = $.glue.popover.row(false);
-	var toggles = {};
-	[
-		['bold', 'bold', function() {
-			obj.style.fontWeight = state.bold ? 'bold' : 'normal';
-		}],
-		['italic', 'italic', function() {
-			obj.style.fontStyle = state.italic ? 'italic' : 'normal';
-		}],
-		['underline', 'underline', write_decoration],
-		['strike', 'strikethrough', write_decoration]
-	].forEach(function(t) {
-		var b = document.createElement('div');
-		b.className = 'glue-font-toggle glue-font-toggle-'+t[0];
-		// the button is a T wearing the effect it applies
-		b.textContent = 'T';
-		b.title = t[1];
-		b.dataset.style = t[0];
-		if (state[t[0]]) {
-			b.classList.add('glue-font-toggle-on');
-		}
-		b.addEventListener('click', function() {
-			state[t[0]] = !state[t[0]];
-			this.classList.toggle('glue-font-toggle-on', state[t[0]]);
-			t[2]();
-			save();
-		});
-		toggles[t[0]] = b;
-		style_row.appendChild(b);
+	// The row is the drag handle, and the press that starts a scrub takes
+	// focus and collapses the selection - so the range is taken on
+	// pointerdown, exactly as the strip's field took it on mousedown.
+	size_row.row.addEventListener('pointerdown', function() {
+		text_strip_snapshot = text_strip_range_for();
 	});
+	var size_field_probe = size_row.row.querySelector('.glue-popover-field');
+	if (size_field_probe) {
+		size_field_probe.addEventListener('focus', function() {
+			// fallback for programmatic focus (selection may already have collapsed)
+			if (!text_strip_snapshot) {
+				text_strip_snapshot = text_strip_range_for();
+			}
+		});
+	}
 
-	// The text's colour, on the same row: it belongs with how the type looks,
-	// and it was a button of its own in the menu until this panel existed.
-	style_row.appendChild($.glue.popover.color_button('text colour',
-		function() {
-			return getComputedStyle(obj).color;
-		},
-		function(col) {
-			obj.style.color = col;
-		},
-		function(col) {
-			save();
-		}));
+	// The styles and the colour live in the icon row at the top now - the
+	// same four effects, retargeted in place (2026-09-18, when the two
+	// halves became one panel).
 
-	pop.appendChild(style_row);
-
-	// --- row 3: alignment -------------------------------------------------
+	// --- the alignments ----------------------------------------------------
 	//
-	// Out in the open with the style row above it since 2026-09-17 - danja's
-	// call, and the one part of the font panel that was still inside the fold:
-	// the four sizes, the four styles with the colour, and the four alignments
-	// are what the panel shows, and everything else is under "more knobs".
-	//
-	// Unlabelled, like the two rows above it: the labels came off the style and
-	// align rows the same day, and what the panel shows is now three rows of
-	// buttons and nothing else - the house style's shape, arrived at from the
-	// other end. Every icon in here is named in its tooltip, which is where the
-	// labels went.
-	//
+	// The object's own: text-align is a block property, and a run span
+	// cannot carry it - so the sync grays the row while a run is selected.
 	// Four buttons rather than a cycle, so the one in force is visible
 	// without clicking through the others. Note computed text-align reads
 	// 'start' when nothing is set, which is left in a left-to-right page -
@@ -1883,6 +1857,16 @@ function text_panel_object_build(pop, obj)
 		'?pages">site settings</a>';
 	pop.appendChild(note);
 
+	// The link row, under the face and the size. The url field IS the
+	// control - there is nothing to press: the selection decides what the
+	// button does. No link under it, 'make link' wraps the selected run; a
+	// link, 'remove link' unwraps it, and the url pre-fills so Enter edits
+	// the href. It is the run's own row - the whole-object link is the
+	// object link panel's job - so the sync grays it while nothing is
+	// selected.
+	var link_row = text_panel_link_build();
+	pop.appendChild(link_row);
+
 	// --- more knobs: the exact size, spacing and a shadow -------------------
 	//
 	// A panel of its own until now, opened from a button of its own. It is
@@ -1899,11 +1883,11 @@ function text_panel_object_build(pop, obj)
 	// the appends are what fix what the panel looks like
 	adv.appendChild(size_row.row);
 
-	// em is relative to the object's own font size, so every read and write
-	// below goes through it
+	// em is relative to the size the text actually renders at: the run's
+	// own span size if it has one, the object's otherwise. Every read and
+	// write below goes through it.
 	var em = function() {
-		var v = parseFloat(getComputedStyle(obj).fontSize);
-		return (isNaN(v) || !v) ? 16 : v;
+		return effective_size();
 	};
 	// a computed length in px, as a multiple of the font size. 'normal' is
 	// what letter- and word-spacing report when nothing is set, and 0 is the
@@ -1926,6 +1910,16 @@ function text_panel_object_build(pop, obj)
 		min: 0.5, max: 3, step: 0.05, decimals: 2, unit: '\u00d7', hard: [0, null],
 		value: to_em(cs.lineHeight, 1.2),
 		apply: function(v, commit) {
+			if (run_active() && text_strip_render) {
+				// live while dragging and while typing; the caret goes back
+				// where the formatting is once the edit is settled
+				text_strip_apply_style(text_strip_render, 'lineHeight', v+'em');
+				if (commit && text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+				return;
+			}
 			obj.style.lineHeight = v+'em';
 			if (commit) {
 				save();
@@ -1946,6 +1940,15 @@ function text_panel_object_build(pop, obj)
 		min: -0.2, max: 1, step: 0.01, decimals: 2, unit: 'em', fine: true,
 		value: to_em(cs.letterSpacing, 0),
 		apply: function(v, commit) {
+			if (run_active() && text_strip_render) {
+				// a run at 0 wears its own explicit zero, like the object's
+				text_strip_apply_style(text_strip_render, 'letterSpacing', v+'em');
+				if (commit && text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+				return;
+			}
 			obj.style.letterSpacing = v+'em';
 			if (commit) {
 				save();
@@ -1959,6 +1962,15 @@ function text_panel_object_build(pop, obj)
 		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em', fine: true,
 		value: to_em(cs.wordSpacing, 0),
 		apply: function(v, commit) {
+			if (run_active() && text_strip_render) {
+				// a run at 0 wears its own explicit zero, like the object's
+				text_strip_apply_style(text_strip_render, 'wordSpacing', v+'em');
+				if (commit && text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+				return;
+			}
 			obj.style.wordSpacing = v+'em';
 			if (commit) {
 				save();
@@ -1971,14 +1983,36 @@ function text_panel_object_build(pop, obj)
 	//
 	// text-shadow with no offset: a glow around the letters rather than a
 	// shadow beside them. Same three ingredients as the object glow, and
-	// stored the same way - a radius, a strength and a colour, composed in
-	// css/main.css.
-	var shadow = {
-		radius: parseFloat(obj.style.getPropertyValue('--glue-shadow-radius')) || 0,
-		alpha: parseFloat(obj.style.getPropertyValue('--glue-shadow-alpha')) || 80,
-		color: obj.style.getPropertyValue('--glue-shadow-color').trim() || '#000000'
+	// the object stores them the same way - a radius, a strength and a
+	// colour, composed in css/main.css. A run's span carries the COMPOSED
+	// value instead (it has no rule of its own to compose in), and
+	// text_strip_run_shadow() parses it back.
+	var shadow = { radius: 0, color: '#000000', alpha: 80 };
+	var read_shadow = function() {
+		if (run_active() && text_strip_render) {
+			var s = text_strip_run_shadow();
+			shadow.radius = s ? s.radius : 0;
+			shadow.color = s ? s.color : '#000000';
+			shadow.alpha = s ? s.alpha : 80;
+			return;
+		}
+		shadow.radius = parseFloat(obj.style.getPropertyValue('--glue-shadow-radius')) || 0;
+		var a = parseFloat(obj.style.getPropertyValue('--glue-shadow-alpha'));
+		shadow.alpha = isNaN(a) ? 80 : a;
+		shadow.color = obj.style.getPropertyValue('--glue-shadow-color').trim() || '#000000';
 	};
+	read_shadow();
 	var write_shadow = function(commit) {
+		if (run_active()) {
+			if (text_strip_render) {
+				text_strip_apply_shadow(text_strip_render, shadow);
+				if (commit && text_strip_snapshot) {
+					text_strip_restore(text_strip_render, text_strip_snapshot);
+					text_strip_snapshot = null;
+				}
+			}
+			return;
+		}
 		if (shadow.radius <= 0) {
 			obj.style.removeProperty('--glue-shadow-radius');
 			obj.style.removeProperty('--glue-shadow-alpha');
@@ -2026,8 +2060,9 @@ function text_panel_object_build(pop, obj)
 	adv.appendChild(shadow_alpha.row);
 
 	var shadow_row = $.glue.popover.row('color');
-	shadow_row.appendChild($.glue.popover.color_button('shadow colour',
+	var shadow_color_btn = $.glue.popover.color_button('shadow colour',
 		function() {
+			read_shadow();
 			return shadow.color;
 		},
 		function(col) {
@@ -2040,15 +2075,36 @@ function text_panel_object_build(pop, obj)
 			write_shadow(false);
 		},
 		function(col) {
-			save();
-		}));
+			if (run_active() && text_strip_render && text_strip_snapshot) {
+				// commit: put the caret back where the formatting is
+				text_strip_restore(text_strip_render, text_strip_snapshot);
+				text_strip_snapshot = null;
+			} else {
+				save();
+				sync();
+			}
+		});
+	shadow_color_btn.addEventListener('mousedown', function() {
+		text_strip_snapshot = text_strip_range_for();
+	});
+	shadow_row.appendChild(shadow_color_btn);
 	adv.appendChild(shadow_row);
 
-	// One reset for the whole panel, in the fold: everything about the type,
-	// including what the rows above set. Clearing the properties rather than
-	// writing defaults into them is what makes the object file drop the
-	// attributes, so a reset object is byte-identical to one nobody ever
-	// touched.
+	// the press that starts a scrub takes focus and collapses the
+	// selection: the range is taken on pointerdown, for the run the rows
+	// will act on
+	[line, letter, word, shadow_radius, shadow_alpha].forEach(function(rw) {
+		rw.row.addEventListener('pointerdown', function() {
+			text_strip_snapshot = text_strip_range_for();
+		});
+	});
+
+	// One reset for the whole object, in the fold: everything about the
+	// type, including what the rows above set. The object's own - a run has
+	// no attribute set to clear - so the sync grays it while a run is
+	// selected. Clearing the properties rather than writing defaults into
+	// them is what makes the object file drop the attributes, so a reset
+	// object is byte-identical to one nobody ever touched.
 	var reset_row = $.glue.popover.row(false);
 	reset_row.appendChild($.glue.popover.reset(
 		'back to the default typeface, size, style, colour and spacing',
@@ -2061,39 +2117,141 @@ function text_panel_object_build(pop, obj)
 			shadow.radius = 0;
 			write_shadow(false);
 			save();
-
 			// every control now says something that is no longer true
-			var now = getComputedStyle(obj);
-			size_row.set(parseInt(now.fontSize, 10) || 16);
-			sync_size();
-			line.set(to_em(now.lineHeight, 1.2));
-			letter.set(to_em(now.letterSpacing, 0));
-			word.set(to_em(now.wordSpacing, 0));
-			sync_align();
-			shadow_radius.set(0);
-			var d = now.textDecorationLine || now.textDecoration || '';
-			var w = parseInt(now.fontWeight, 10);
-			state.bold = now.fontWeight == 'bold' || (!isNaN(w) && 600 <= w);
-			state.italic = now.fontStyle == 'italic';
-			state.underline = /underline/.test(d);
-			state.strike = /line-through/.test(d);
-			Object.keys(toggles).forEach(function(k) {
-				toggles[k].classList.toggle('glue-font-toggle-on', state[k]);
-			});
-			var found = false;
-			[].forEach.call(face_list.querySelectorAll('.glue-font-face-opt'), function(o) {
-				if (o.dataset.value === now.fontFamily) {
-					found = true;
-				}
-			});
-			if (!found) {
-				face_option(face_list, now.fontFamily);
-				face_list.insertBefore(face_list.lastChild, face_list.firstChild);
-			}
-			face_show(now.fontFamily);
-			face_preview.style.fontFamily = now.fontFamily;
+			sync();
 		}));
 	adv.appendChild(reset_row);
+
+	// --- sync: every control, in step with the target ----------------------
+	//
+	// The mode decides which reads everything makes - the run's explicit
+	// tags and spans, or the object's computed style - and which rows
+	// gray out. Called after the build and on every selectionchange; never
+	// overwrites a control that is being interacted with.
+	var sync = function() {
+		var run = run_active();
+		set_gray(align_row, run);
+		set_gray(reset_row, run);
+		set_gray(link_row, !link_available());
+
+		// the four toggles: the run's explicit tags, or the object's style
+		if (run) {
+			var sel = window.getSelection();
+			var node = sel && sel.rangeCount ? sel.anchorNode : null;
+			var st = { b: false, i: false, u: false, s: false };
+			if (node && text_strip_render && text_strip_render.contains(node)) {
+				var el = (node.nodeType == 3) ? node.parentElement : node;
+				for (var cur = el; cur && cur !== text_strip_render;
+						cur = cur.parentElement) {
+					var tag = cur.tagName;
+					if (!st.b && (tag == 'B' || tag == 'STRONG')) {
+						st.b = true;
+					}
+					if (!st.i && (tag == 'I' || tag == 'EM')) {
+						st.i = true;
+					}
+					if (!st.u && tag == 'U') {
+						st.u = true;
+					}
+					if (!st.s && (tag == 'S' || tag == 'STRIKE' || tag == 'DEL')) {
+						st.s = true;
+					}
+				}
+			}
+			toggles.b.classList.toggle('glue-btn-active', st.b);
+			toggles.i.classList.toggle('glue-btn-active', st.i);
+			toggles.u.classList.toggle('glue-btn-active', st.u);
+			toggles.s.classList.toggle('glue-btn-active', st.s);
+		} else {
+			read_state_object();
+			toggles.b.classList.toggle('glue-btn-active', state.bold);
+			toggles.i.classList.toggle('glue-btn-active', state.italic);
+			toggles.u.classList.toggle('glue-btn-active', state.underline);
+			toggles.s.classList.toggle('glue-btn-active', state.strike);
+		}
+
+		// the size, wherever it lives
+		var size_field = size_row.row.querySelector('.glue-popover-field');
+		if (document.activeElement !== size_field) {
+			size_row.set(effective_size());
+			sync_size();
+		}
+
+		// the face, wherever it lives: the run's own span face, or the
+		// object's ('' is the run's inherited face, which face_show names)
+		var face = '';
+		if (run) {
+			var r2 = text_strip_range_for();
+			var n2 = r2 && r2.startContainer;
+			var e2 = (n2 && n2.nodeType == 3) ? n2.parentElement : n2;
+			for (var c2 = e2; c2 && c2 !== text_strip_render;
+					c2 = c2.parentElement) {
+				if (c2.tagName == 'SPAN' && c2.style.fontFamily) {
+					face = c2.style.fontFamily;
+					break;
+				}
+			}
+		} else {
+			face = getComputedStyle(obj).fontFamily;
+		}
+		face_show(face);
+
+		// the spacings and the shadow, wherever they live. A run shows its
+		// span's own value, or what it renders at (the object's) - the row
+		// is never pointing at nothing.
+		var sp = function(prop) {
+			if (!run) {
+				return '';
+			}
+			var r3 = text_strip_range_for();
+			var n3 = r3 && r3.startContainer;
+			var e3 = (n3 && n3.nodeType == 3) ? n3.parentElement : n3;
+			for (var c3 = e3; c3 && c3 !== text_strip_render;
+					c3 = c3.parentElement) {
+				if (c3.tagName == 'SPAN' && c3.style[prop]) {
+					return c3.style[prop];
+				}
+			}
+			return '';
+		};
+		var line_field = line.row.querySelector('.glue-popover-field');
+		if (document.activeElement !== line_field) {
+			var lh = sp('lineHeight');
+			line.set(lh ? parseFloat(lh) :
+				to_em(getComputedStyle(text_strip_render || obj).lineHeight, 1.2));
+		}
+		var letter_field = letter.row.querySelector('.glue-popover-field');
+		if (document.activeElement !== letter_field) {
+			var ls = sp('letterSpacing');
+			letter.set(ls ? parseFloat(ls) :
+				to_em(getComputedStyle(text_strip_render || obj).letterSpacing, 0));
+		}
+		var word_field = word.row.querySelector('.glue-popover-field');
+		if (document.activeElement !== word_field) {
+			var ws = sp('wordSpacing');
+			word.set(ws ? parseFloat(ws) :
+				to_em(getComputedStyle(text_strip_render || obj).wordSpacing, 0));
+		}
+		read_shadow();
+		var sr_field = shadow_radius.row.querySelector('.glue-popover-field');
+		var sa_field = shadow_alpha.row.querySelector('.glue-popover-field');
+		if (document.activeElement !== sr_field) {
+			shadow_radius.set(shadow.radius);
+		}
+		if (document.activeElement !== sa_field) {
+			shadow_alpha.set(shadow.alpha);
+		}
+
+		// the link row follows the selection; grayed means there is none
+		if (link_available() && text_strip_link_sync) {
+			text_strip_link_sync();
+		}
+
+		// the alignments: the object's own, and only lit for it
+		sync_align();
+	};
+	text_panel_sync_fn = sync;
+	sync();
 }
 
 //
@@ -2303,8 +2461,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// --- the text panel ---------------------------------------------------
 	//
 	// One button in place of the three that used to be here (size, face,
-	// style). It opens the panel built by text_panel_object_build() /
-	// text_panel_selection_build() below, which looks and behaves like the
+	// style). It opens the panel built by text_panel_build() below, which
+	// looks and behaves like the colour picker: it goes in the nearest free
 	// colour picker: it goes in the nearest free space beside the object
 	// rather than over it ($.glue.popover), applies live, reads the object's
 	// current values when it opens, and closes on a click outside or Escape.

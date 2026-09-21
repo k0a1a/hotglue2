@@ -3,19 +3,21 @@
 // faces a click at a time, one that had to be dragged to change the size, and
 // one that cycled bold -> italic -> both -> normal.
 //
-// What the panel SHOWS since 2026-09-17 is four sizes as buttons (s, n, b, x),
-// the four styles with the colour beside them, and the four alignments; the
-// face came back out above the fold on 2026-09-18, and the exact size and
-// everything else stay under "more knobs". So `own` below - the panel's own
-// rows, outside the fold - is the three rows the panel opens on plus the
-// face, and the size field and the slider are reached through openFold.
+// What the panel SHOWS since 2026-09-18 is ONE editor for both targets: the
+// four acts as icons with the colour beside them, four sizes as buttons
+// (s, n, b, x) with the Hi sample, and the four alignments; the face and the
+// link row follow, and the exact size, the spacings, the shadow and the
+// reset stay under "more knobs". So `own` below - the panel's own rows,
+// outside the fold - is what the panel opens on, and the size field and the
+// scrubs are reached through openFold.
 //
 // Two things about it are worth pinning down beyond "the controls work".
 //
-// SCOPE IS THE WHOLE OBJECT. Every control in this menu styles the object, not
-// a selection, so the toggles are two-state: there is no partial state to be
-// in. If per-selection styling is ever built, these tests are what says what
-// the object-level behaviour was.
+// SCOPE HERE IS THE WHOLE OBJECT. These tests open the panel with nothing
+// selected - a caret - so every control targets the object and the toggles
+// are two-state: there is no third, partial state to be in. The run target
+// is text-formatting.spec.js's; what this file pins is the object-level
+// behaviour the run target reads through.
 //
 // UNDERLINE AND STRIKETHROUGH ARE ONE CSS PROPERTY, and nothing stored it
 // before this panel existed. hotglue's save maps a fixed list of properties to
@@ -39,7 +41,10 @@ const pop = (page) => page.locator('.glue-font-popover');
 const own = (page) => page.locator('.glue-font-popover > .glue-popover-row');
 const fold = (page) => pop(page).locator('.glue-popover-advanced');
 const sizeBtn = (page, which) => page.locator(`.glue-font-size-${which}`);
-const toggle = (page, which) => page.locator(`.glue-font-toggle-${which}`);
+// the panel's four acts, named by their short tooltips (they act on either
+// target, so "bold the selected text" would lie half the time)
+const toggle = (page, which) => pop(page)
+	.locator(`.glue-popover-icon[title="${which == 'strike' ? 'strikethrough' : which}"]`);
 
 // the exact size and the rest of the panel live in the fold (the face moved
 // out above it on 2026-09-18): a control in there is in the DOM whether or
@@ -75,7 +80,7 @@ test('one button opens the panel, and the three it replaced are gone',
 		await expect(sizeBtn(page, 'n')).toBeVisible();
 		await expect(sizeBtn(page, 'b')).toBeVisible();
 		await expect(sizeBtn(page, 'x')).toBeVisible();
-		await expect(page.locator('.glue-font-toggle')).toHaveCount(4);
+		await expect(pop(page).locator('.glue-popover-icon[data-fmt]')).toHaveCount(4);
 		await expect(page.locator('.glue-align-btn')).toHaveCount(4);
 		// and no track among the panel's own rows: the size is folded now, and
 		// the six knobs in the fold are scrubs - rows you drag, not sliders
@@ -128,10 +133,10 @@ test('it reads the object it was opened on', async ({ page, hg }) => {
 	await expect(sizeBtn(page, 'n')).not.toHaveClass(/glue-font-size-on/);
 	await expect(sizeBtn(page, 'b')).not.toHaveClass(/glue-font-size-on/);
 	await expect(sizeBtn(page, 'x')).not.toHaveClass(/glue-font-size-on/);
-	await expect(toggle(page, 'bold')).toHaveClass(/glue-font-toggle-on/);
-	await expect(toggle(page, 'underline')).toHaveClass(/glue-font-toggle-on/);
-	await expect(toggle(page, 'italic')).not.toHaveClass(/glue-font-toggle-on/);
-	await expect(toggle(page, 'strike')).not.toHaveClass(/glue-font-toggle-on/);
+	await expect(toggle(page, 'bold')).toHaveClass(/glue-btn-active/);
+	await expect(toggle(page, 'underline')).toHaveClass(/glue-btn-active/);
+	await expect(toggle(page, 'italic')).not.toHaveClass(/glue-btn-active/);
+	await expect(toggle(page, 'strike')).not.toHaveClass(/glue-btn-active/);
 });
 
 test('the size field takes a value past its drag range', async ({ page, hg }) => {
@@ -189,7 +194,8 @@ test('a typed value is clamped to what its row can MEAN, and what each key does 
 		// a line-height of -2 is a declaration the browser drops: the object
 		// would render at its default while the file kept the number
 		expect(await commit('line', -2)).toBe('0.00');
-		await expect.poll(() => cssOf(page, a, 'lineHeight')).toBe('0em');
+		// computed line-height is the resolved length: 0em comes back as 0px
+		await expect.poll(() => cssOf(page, a, 'lineHeight')).toBe('0px');
 
 		// the shadow radius goes through a writer that reads anything at or
 		// below zero as "no shadow", so -5 used to take the shadow off and
@@ -208,7 +214,9 @@ test('a typed value is clamped to what its row can MEAN, and what each key does 
 		// a row with no hard range still keeps whatever is typed into it, which
 		// is what stops this being a cap on every row: letter-spacing is signed
 		expect(await commit('letter', -0.05)).toBe('-0.05');
-		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('-0.05em');
+		// computed letter-spacing is the resolved length: -0.05em of the
+		// object's 18px is -0.9px
+		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('-0.9px');
 
 		// Shift coarsens the drag and Alt refines it, four either way, read
 		// from the move event so either key can be pressed mid-drag. Letter
@@ -266,7 +274,9 @@ test('the row shows its arrow, and Escape takes a typed value back',
 		// typing applies live, so the object moves as the number is typed...
 		await field.fill('0.15');
 		await field.dispatchEvent('input');
-		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('0.15em');
+		// computed letter-spacing is the resolved length: 0.15em of the
+		// object's 18px is 2.7px
+		await expect.poll(() => cssOf(page, a, 'letterSpacing')).toBe('2.7px');
 		// ...and Escape puts it back. Nothing was stored - typing alone never
 		// stores - so there is nothing to store back, and the file keeps the
 		// value it had rather than gaining the default of an attribute it

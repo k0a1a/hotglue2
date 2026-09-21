@@ -267,8 +267,8 @@ test('the reset in the fold clears the whole panel, not just the spacing',
 				`${gone} survived the reset`).toBe(undefined);
 		}
 		// and the controls above the fold say so too
-		await expect(page.locator('.glue-font-toggle-bold'))
-			.not.toHaveClass(/glue-font-toggle-on/);
+		await expect(page.locator('.glue-popover-icon[title="bold"]'))
+			.not.toHaveClass(/glue-btn-active/);
 	});
 
 test('reset clears the properties rather than writing defaults into them',

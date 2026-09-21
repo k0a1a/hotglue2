@@ -1,15 +1,18 @@
-// Run-level formatting: B/I/U/S and an arbitrary-px size for a SELECTED RUN of
-// text, while the object is edited WYSIWYG. The strip (modules/text/text-edit.js)
-// docks to the object's bottom edge and wraps the selection in semantic tags
-// (<b>/<i>/<u>/<s>/<span style="font-size:Npx">) that the storage and render
-// pipeline pass through byte-for-byte - so these assert on the STORED content
-// after leaving edit mode, the way text-link.spec.js does.
+// Run-level formatting through the text panel: B/I/U/S, colour, an arbitrary-px
+// size, the face, the spacings and the shadow for a SELECTED RUN of text, while
+// the object is edited WYSIWYG - and the same panel acting on the WHOLE OBJECT
+// when nothing is selected (a caret is nothing). The run wraps its effects in
+// semantic tags (<b>/<i>/<u>/<s>/<span style="...">) that the storage and
+// render pipeline pass through byte-for-byte; the object writes obj.style.*,
+// stored as attributes. Both are asserted on what is STORED after leaving edit
+// mode, the way text-link.spec.js does.
 //
-// The size field acts on a snapshot taken on mousedown (programmatic focus
-// collapses the selection first, so these tests click then type - never
-// fill()). The face dropdown's pick needs no click: a pick can reach change
-// without any mousedown (selectOption, the keyboard path), so the handler
-// falls back to the last-known selection itself.
+// The size field acts on a snapshot taken on pointerdown (programmatic focus
+// collapses the selection first, so these tests click first, then fill and
+// dispatch - a typed digit appends to the pre-filled field instead of
+// replacing its value). Every run control takes the same snapshot on its own
+// press, so a pick can reach its handler without a preceding mousedown and
+// still act on the run the press was made on.
 // Wrappers nest innermost-last: clicking italic, then underline, then strike
 // stores <i><u><s>world</s></u></i>.
 // Stored forms are the browser's canonical serializations: a size keeps
@@ -29,12 +32,24 @@ const ATTRS = {
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject(ID).content;
+const panel = (page) => page.locator('.glue-font-popover');
+const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 
 async function startEditing(page, id) {
 	await byId(page, id).click();
 	await byId(page, id).click();
 	await expect.poll(() => page.evaluate((i) =>
 		document.querySelector(`[id="${i}"] > .glue-text-render`).isContentEditable, id)).toBe(true);
+}
+
+// the panel is the WYSIWYG surface's toolbar: it is opened from the menu the
+// way every panel is, and it follows the object through editing
+async function openPanel(page, id) {
+	await startEditing(page, id);
+	await expect(fontBtn(page)).toBeVisible();
+	await page.waitForTimeout(400);		// the menu fades in
+	await fontBtn(page).click();
+	await expect(panel(page)).toBeVisible();
 }
 
 // Put the selection over a substring of the rendered text, the way dragging
@@ -66,83 +81,100 @@ async function finish(page, id) {
 
 // what is actually being typed into
 const surface = (page, id) => page.locator(`[id="${id}"] > .glue-text-render`);
-const strip = (page) => page.locator('.glue-text-strip');
-const fmtBtn = (page, kind) => page.locator(`.glue-text-strip .glue-btn-icon[title="${kind} the selected text"]`);
-const sizeField = (page) => page.locator('.glue-text-strip .glue-text-size');
+// the four acts, named by their short tooltips (the panel acts on either
+// target, so "bold the selected text" would lie half the time)
+const fmtBtn = (page, kind) => panel(page).locator(`.glue-popover-icon[title="${kind}"]`);
+// the fold's first field is the exact size
+const sizeField = (page) => panel(page)
+	.locator('.glue-popover-advanced .glue-popover-field').first();
+const alignRow = (page) => panel(page).locator('.glue-popover-row')
+	.filter({ has: page.locator('.glue-align-btn') });
+const resetRow = (page) => panel(page).locator('.glue-popover-row')
+	.filter({ has: page.locator('.glue-popover-reset') });
+const linkRow = (page) => page.locator('.glue-text-strip-link');
 
-async function add(page, hg, content) {
-	const a = hg.addObject(ID, ATTRS, content);
+async function openFold(page) {
+	await panel(page).locator('.glue-popover-disclosure').click();
+	await expect(panel(page).locator('.glue-popover-advanced')).toBeVisible();
+}
+
+// the custom face dropdown: the button opens the list, the option is found
+// by a needle from its truncated label - the value is the family string
+// WITH its CSS quotes ("Courier New", ...), which no attribute selector
+// should have to spell out
+async function pickFace(page, needle) {
+	await panel(page).locator('.glue-font-face-btn').click();
+	await page.locator('.glue-font-face-opt')
+		.filter({ hasText: needle }).first().click();
+}
+
+async function add(page, hg, content, attrs) {
+	const a = hg.addObject(ID, attrs || ATTRS, content);
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	return a;
 }
 
-test('the strip appears while editing and hides on Escape', async ({ page, hg }) => {
+test('the panel is the editing surface\'s toolbar, and Escape closes it',
+	async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 
-	await expect(strip(page)).toBeVisible();
+	// the four acts, the colour, the sizes, the alignments, the face and
+	// the link row - with nothing selected, the link is the one that grays
 	for (const kind of ['bold', 'italic', 'underline', 'strikethrough']) {
 		await expect(fmtBtn(page, kind)).toHaveCount(1);
 	}
-	await expect(sizeField(page)).toBeVisible();
-	await expect(page.locator('.glue-text-strip .glue-text-size-slider')).toBeVisible();
-	// two rows: the size slider and its field on their own line, under the
-	// toggles and face
-	await expect.poll(() => page.evaluate(() => {
-		const q = (s) => document.querySelector(s);
-		const field = q('.glue-text-strip .glue-text-size');
-		return field.parentElement ===
-			q('.glue-text-strip .glue-text-size-slider').parentElement
-			&& field.parentElement !==
-			q('.glue-text-strip .glue-btn-icon[title="bold the selected text"]').parentElement;
-	})).toBe(true);
+	await expect(panel(page).locator('.glue-font-size-s')).toBeVisible();
+	await expect(panel(page).locator('.glue-align-btn')).toHaveCount(4);
+	await expect(panel(page).locator('.glue-font-face-btn')).toBeVisible();
+	await expect(linkRow(page)).toBeVisible();
+	await expect(linkRow(page)).toHaveClass(/glue-popover-disabled/);
+	await expect(alignRow(page)).not.toHaveClass(/glue-popover-disabled/);
 
+	// Escape closes the panel and ends the editing - the old strip's
+	// contract, kept
 	await page.keyboard.press('Escape');
+	await expect(panel(page)).toBeHidden();
 	await expect.poll(() => page.evaluate((i) =>
 		document.getElementById(i).classList.contains('glue-text-editing'), a)).toBe(false);
-	await expect(strip(page)).toBeHidden();
 	// a no-op edit stays byte-stable
 	await expect.poll(() => stored(hg)).toBe('hello world');
 });
 
-test('clicking empty canvas ends editing and hides the strip', async ({ page, hg }) => {
+test('clicking empty canvas ends editing and closes the panel', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
-	await expect(strip(page)).toBeVisible();
+	await openPanel(page, a);
+	await expect(panel(page)).toBeVisible();
 
 	await page.mouse.click(30, 30);		// empty canvas: deselects, stops editing
 	await expect.poll(() => page.evaluate((i) =>
 		document.getElementById(i).classList.contains('glue-text-editing'), a)).toBe(false);
-	await expect(strip(page)).toBeHidden();
+	await expect(panel(page)).toBeHidden();
 });
 
-test('source mode never shows the strip', async ({ page, hg }) => {
-	// entering editing in source mode: the textarea, never the strip
+test('source mode never shows the panel', async ({ page, hg }) => {
+	// entering editing in source mode: the textarea, never the panel
 	const a = await add(page, hg, 'hello world');
 	await byId(page, a).click();
 	await page.getByTitle(/editing its HTML source/).click();
 	await byId(page, a).click();
 	await expect(page.locator(`[id="${a}"] > .glue-text-input`)).toBeFocused();
-	await expect(strip(page)).toBeHidden();
+	await expect(panel(page)).toBeHidden();
 
-	// back out, source mode off, and into WYSIWYG: the strip docks to it
+	// back out, source mode off, and into WYSIWYG: the panel opens on it
 	await page.keyboard.press('Escape');		// exit source editing
 	await page.getByTitle(/editing its HTML source/).click();	// back to WYSIWYG
-	await byId(page, a).click();
-	await byId(page, a).click();
-	await expect.poll(() => page.evaluate((i) =>
-		document.querySelector(`[id="${i}"] > .glue-text-render`).isContentEditable, a)).toBe(true);
-	await expect(strip(page)).toBeVisible();
+	await openPanel(page, a);
 
-	// switching to source mid-edit hides the strip again
+	// switching to source mid-edit hides the panel again
 	await page.getByTitle(/editing its HTML source/).click();
-	await expect(strip(page)).toBeHidden();
+	await expect(panel(page)).toBeHidden();
 });
 
 test('select-then-bold stores a b tag in the content', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	await fmtBtn(page, 'bold').click();
 	await finish(page, a);
@@ -151,9 +183,9 @@ test('select-then-bold stores a b tag in the content', async ({ page, hg }) => {
 
 test('toggle-off unwraps', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <b>world</b>');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
-	// the caret inside the run lights the toggle (state readback)
+	// the run inside the tag lights the toggle (state readback)
 	await expect(fmtBtn(page, 'bold')).toHaveClass(/glue-btn-active/);
 	await fmtBtn(page, 'bold').click();
 	await finish(page, a);
@@ -162,7 +194,7 @@ test('toggle-off unwraps', async ({ page, hg }) => {
 
 test('italic, underline and strike combine, innermost last', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	await fmtBtn(page, 'italic').click();
 	await fmtBtn(page, 'underline').click();
@@ -173,11 +205,13 @@ test('italic, underline and strike combine, innermost last', async ({ page, hg }
 
 test('the size field writes a span, one span per run not per digit', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
-	await sizeField(page).click();		// real click: mousedown snapshots the selection
-	await page.keyboard.type('24');
-	await page.keyboard.press('Enter');	// change: commit, caret back to the run
+	await openFold(page);
+	await sizeField(page).click();		// real click: pointerdown snapshots the selection
+	await sizeField(page).fill('24');
+	await sizeField(page).dispatchEvent('input');
+	await sizeField(page).dispatchEvent('change');	// commit, caret back to the run
 	await page.keyboard.press('Escape');
 	// CSSOM-serialized style attribute: space after the colon, trailing
 	// semicolon - the canonical form both engines write
@@ -187,11 +221,11 @@ test('the size field writes a span, one span per run not per digit', async ({ pa
 
 test('the face dropdown writes a font-family span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	// by value: the option's label is the family string cut to 24 characters
 	// (2026-09-18), and the value is the full name the span stores
-	await page.locator('.glue-text-face').selectOption('Courier New, Courier, monospace');
+	await pickFace(page, 'Courier New');
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('hello <span style="font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
@@ -199,35 +233,39 @@ test('the face dropdown writes a font-family span', async ({ page, hg }) => {
 
 test('a face picked after a size joins the same span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
+	await openFold(page);
 	await sizeField(page).click();
-	await page.keyboard.type('24');
-	await page.keyboard.press('Enter');
-	await page.locator('.glue-text-face').selectOption('Courier New, Courier, monospace');
+	await sizeField(page).fill('24');
+	await sizeField(page).dispatchEvent('input');
+	await sizeField(page).dispatchEvent('change');
+	await pickFace(page, 'Courier New');
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('hello <span style="font-size: 24px; ' +
 		'font-family: &quot;Courier New&quot;, Courier, monospace;">world</span>');
 });
 
-test('the first option is the inherited font, and unwraps a run-level face',
+test('the default option is the inherited font, and unwraps a run-level face',
 	async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <span style="font-family: \'Courier New\', Courier, monospace;">world</span>');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
+	await panel(page).locator('.glue-font-face-btn').click();
 	// the option is named by what the run inherits (the page's font), not
 	// by the word "default"
-	await expect(page.locator('.glue-text-face option').first()).toContainText('Verdana');
-	await page.locator('.glue-text-face').selectOption({ value: '' });
+	await expect(page.locator('.glue-font-face-opt[data-value=""]'))
+		.toContainText('Verdana');
+	await page.locator('.glue-font-face-opt[data-value=""]').click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg)).toBe('hello world');
 });
 
 test('the color button wraps the selection in a color span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
-	await page.getByTitle('color of the selected text').click();
+	await page.getByTitle('text colour').click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 	const field = page.locator('.picker_editor input');
 	await field.fill('#ff0000');
@@ -239,30 +277,16 @@ test('the color button wraps the selection in a color span', async ({ page, hg }
 		.toBe('hello <span style="color: rgb(255, 0, 0);">world</span>');
 });
 
-test('the size slider writes a span, the manual entry follows', async ({ page, hg }) => {
-	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	const slider = page.locator('.glue-text-strip .glue-text-size-slider');
-	await slider.click();				// mousedown snapshots the selection
-	await slider.evaluate((el) => {
-		el.value = '20';
-		el.dispatchEvent(new Event('input', { bubbles: true }));
-		el.dispatchEvent(new Event('change', { bubbles: true }));
-	});
-	await page.keyboard.press('Escape');
-	await expect.poll(() => stored(hg))
-		.toBe('hello <span style="font-size: 20px;">world</span>');
-});
-
 test('a color picked after a size joins the same span', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
+	await openFold(page);
 	await sizeField(page).click();
-	await page.keyboard.type('24');
-	await page.keyboard.press('Enter');
-	await page.getByTitle('color of the selected text').click();
+	await sizeField(page).fill('24');
+	await sizeField(page).dispatchEvent('input');
+	await sizeField(page).dispatchEvent('change');
+	await page.getByTitle('text colour').click();
 	const field = page.locator('.picker_editor input');
 	await field.fill('#ff0000');
 	await field.dispatchEvent('input');
@@ -273,35 +297,95 @@ test('a color picked after a size joins the same span', async ({ page, hg }) => 
 		'color: rgb(255, 0, 0);">world</span>');
 });
 
-test('collapsed-caret bold: typed text is bold, no scaffold persists', async ({ page, hg }) => {
+test('a caret makes the controls act on the whole object', async ({ page, hg }) => {
+	// nothing selected is the OBJECT's target: the same bold click that
+	// wraps a run writes the object's attribute when a caret is all there
+	// is - and the content is not touched
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await surface(page, a).click();
 	await page.keyboard.press('End');
 	await fmtBtn(page, 'bold').click();
-	await page.keyboard.type(' there');
-	await page.keyboard.press('Escape');
-	// the caret sits inside the scaffold, so the typed space is part of the
-	// bold run - the run is " there", not just "there". Firefox's editor
-	// stores a line-leading typed space as a non-breaking one, so normalize
-	// that single difference; everything else is asserted byte-for-byte
-	await expect.poll(() => stored(hg).replace(/\u00a0/g, ' '))
-		.toBe('hello world<b> there</b>');
+	await expect(fmtBtn(page, 'bold')).toHaveClass(/glue-btn-active/);
+	await expect.poll(() => hg.readObject(ID).attrs['text-font-weight']).toBe('bold');
+	await finish(page, a);
+	await expect.poll(() => stored(hg)).toBe('hello world');
 });
 
-test('an abandoned scaffold does not persist', async ({ page, hg }) => {
+test('the bold toggle lights for a bold object, and not for its runs',
+	async ({ page, hg }) => {
+	// the two targets read two different places: the object's computed
+	// style, or the run's explicit tags only (the walk stops at the render
+	// div, so the object-level weight lives outside it)
+	const a = await add(page, hg, 'hello world', { ...ATTRS, 'text-font-weight': 'bold' });
+	await openPanel(page, a);
+	// a caret: the object's own weight lights the toggle
+	await expect(fmtBtn(page, 'bold')).toHaveClass(/glue-btn-active/);
+	// a run inside it: nothing explicit on the run, so the toggle is dark
+	await select(page, a, 'world');
+	await expect(fmtBtn(page, 'bold')).not.toHaveClass(/glue-btn-active/);
+});
+
+test('with a run selected, the object-only rows gray out', async ({ page, hg }) => {
+	// align and reset cannot retarget: text-align is a block property and
+	// a reset clears the object's attributes - they gray, and the link row
+	// (the run's own) comes alive
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
-	await surface(page, a).click();
-	await page.keyboard.press('End');
-	await fmtBtn(page, 'bold').click();	// empty <b> with only the caret pad
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await expect(alignRow(page)).toHaveClass(/glue-popover-disabled/);
+	await expect(resetRow(page)).toHaveClass(/glue-popover-disabled/);
+	await expect(linkRow(page)).not.toHaveClass(/glue-popover-disabled/);
+	for (const kind of ['bold', 'italic', 'underline', 'strikethrough']) {
+		await expect(fmtBtn(page, kind)).not.toHaveClass(/glue-popover-disabled/);
+	}
+});
+
+test('letter spacing wraps the selected run', async ({ page, hg }) => {
+	// the spacings retarget too: a run gets its em on a span, the object
+	// gets it in its style (text-spacing-popover.spec.js owns the object
+	// half of this row)
+	const a = await add(page, hg, 'hello world');
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await openFold(page);
+	const letterField = panel(page).locator('.glue-popover-advanced .glue-popover-field').nth(2);
+	await letterField.click();
+	await letterField.fill('0.5');
+	await letterField.dispatchEvent('input');
+	await letterField.dispatchEvent('change');
 	await page.keyboard.press('Escape');
-	await expect.poll(() => stored(hg)).toBe('hello world');
+	await expect.poll(() => stored(hg))
+		.toBe('hello <span style="letter-spacing: 0.5em;">world</span>');
+});
+
+test('the shadow wraps the selected run', async ({ page, hg }) => {
+	// the run's span carries the COMPOSED text-shadow (the object composes
+	// its own in css/main.css); the bytes are the authored color-mix form
+	const a = await add(page, hg, 'hello world');
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await openFold(page);
+	const shadowField = panel(page).locator('.glue-popover-advanced .glue-popover-field').nth(4);
+	await shadowField.click();
+	await shadowField.fill('6');
+	await shadowField.dispatchEvent('input');
+	await shadowField.dispatchEvent('change');
+	await page.keyboard.press('Escape');
+	// the span stores the composed value, in the engine's own
+	// serialization: the colour first, #000000 or rgb(0, 0, 0), and the
+	// offsets zero-padded
+	await expect.poll(() => stored(hg)).toMatch(
+		/text-shadow: color-mix\(in srgb, (?:#000000|rgb\(0, 0, 0\)) 80%, transparent\) 0px 0px 6px;/);
+	// and the render draws it
+	expect(await page.evaluate((i) => getComputedStyle(
+		document.querySelector(`[id="${i}"] .glue-text-render span`)).textShadow, a))
+		.toContain('6px');
 });
 
 test('formatting survives reload and renders on the published page', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <b>world</b>');
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	await expect(fmtBtn(page, 'bold')).toHaveClass(/glue-btn-active/);
 	await finish(page, a);
@@ -318,7 +402,7 @@ test('run formatting leaves object-level font attributes alone', async ({ page, 
 	const a = hg.addObject(ID, attrs, 'hello world');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
-	await startEditing(page, a);
+	await openPanel(page, a);
 	await select(page, a, 'world');
 	await fmtBtn(page, 'bold').click();
 	await finish(page, a);
@@ -326,25 +410,13 @@ test('run formatting leaves object-level font attributes alone', async ({ page, 
 	expect(hg.readObject(ID).attrs['text-font-size']).toBe('37px');
 });
 
-test('a bold object does not light the strip toggle', async ({ page, hg }) => {
-	const attrs = { ...ATTRS, 'text-font-weight': 'bold' };
-	const a = hg.addObject(ID, attrs, 'hello world');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await startEditing(page, a);
-	await select(page, a, 'world');
-	// the sync reads explicit tags only, and stops at the render div - the
-	// object-level weight lives outside it
-	await expect(fmtBtn(page, 'bold')).not.toHaveClass(/glue-btn-active/);
-});
-
-test('the strip sits beside/below the object, not over it', async ({ page, hg }) => {
+test('the panel sits beside/below the object, not over it', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello world');
-	await startEditing(page, a);
+	await openPanel(page, a);
 
-	const s = await strip(page).boundingBox();
+	const s = await panel(page).boundingBox();
 	const o = await byId(page, a).boundingBox();
 	const overlaps = s.x < o.x + o.width && o.x < s.x + s.width &&
 		s.y < o.y + o.height && o.y < s.y + s.height;
-	expect(overlaps, 'the strip is sitting on top of the text being edited').toBe(false);
+	expect(overlaps, 'the panel is sitting on top of the text being edited').toBe(false);
 });

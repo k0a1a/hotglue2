@@ -628,6 +628,16 @@
 	margin-bottom: 0;
 }
 
+.glue-popover-disabled {
+	/* a control that exists but cannot act on the current target: the
+	   text panel's gray-out (2026-09-18) - the alignments and the reset
+	   while a run is selected, the link row while nothing is. The whole
+	   row or button wears it, and pointer-events: none is what makes the
+	   gray honest rather than just pale. */
+	opacity: 0.4;
+	pointer-events: none;
+}
+
 .glue-popover-pair {
 	/* two of the fold's small controls side by side, each under its own
 	   label: a popover row holding two cells instead of one control. The

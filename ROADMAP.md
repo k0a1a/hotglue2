@@ -74,7 +74,10 @@ Checked against the tree on 2026-09-14.
   out first — it was, that same night, as `$.glue.popover`). A fourth paragraph changed
   on 2026-08-24: run-level formatting for a SELECTED run now exists as the editing strip
   (see Done) — the per-selection half; the object-level controls still style the whole
-  object, so the three-state read is unchanged. The padding relocation shipped on
+  object, so the three-state read is unchanged. *(Superseded on 2026-09-18: the strip
+  became the font panel's run half, and 2026-09-21 made the two halves ONE panel whose
+  controls retarget in place — see Done. The per-run half now styles a selection and the
+  object half styles the object through the same buttons.)* The padding relocation shipped on
   2026-08-25 as a popover off the text menu — a uniform row, per-side knobs in a fold,
   a reset to the module's default — which is NOT the move into object properties this
   SOW planned: the padding button still opens its panel from the menu, and Object
@@ -279,6 +282,28 @@ from reading the code:
   canvases that run far taller than wide.
 - `$.glue.object.unregister()` left an object permanently undraggable.
 - Five places where centered mode's two coordinate spaces were mixed.
+
+Shipped 2026-09-18/21 — the text panel, one editor for both targets:
+
+- **The strip became the font panel's run half** (2026-09-17/18, danja's calls): the
+  docked strip is gone, and the font panel IS the WYSIWYG surface's toolbar. A
+  non-collapsed selection inside the edited render is the target — B/I/U/S, colour,
+  face, size, the three spacings, the shadow and the link row all retarget onto it
+  (wrapping tags and styled spans, committed once by `stop_editing`); nothing selected
+  (a caret) is the whole object, and the same controls write `obj.style.*` + object
+  attributes, saved per change. The panel body does not change with the target — one
+  control retargets in place, and a flip is a re-sync, not a rebuild. The three
+  controls that cannot retarget gray out (`glue-popover-disabled`, css/edit.css):
+  align and reset (the object's own) while a run is selected, the link row while
+  nothing is (a caret inside an existing link still wakes it). Run-level spacings and
+  the text shadow are new storage: a run's span carries `line-height` / `letter-` /
+  `word-spacing` in em and the COMPOSED `text-shadow` (color-mix), parsed back by
+  `text_strip_run_shadow()`. The face dropdown is a custom list (2026-09-18) whose
+  hovered options preview in a "Hi" sample in the sizes row, the names are cut to 24
+  characters, and a "default:" option takes a run's face back off. The panel's
+  `run_active()` honours the per-press range snapshot — the press that collapses the
+  live selection still acts on the run it was made on, and the snapshot is let go of
+  when the op commits.
 
 Shipped 2026-08-24 — text, one run at a time:
 
