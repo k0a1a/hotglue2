@@ -1722,17 +1722,16 @@ function text_panel_build(pop, obj)
 	// --- row 1: the four sizes --------------------------------------------
 	//
 	// Small, normal, big and extra, one click each, with the number in the
-	// tooltip. They are letters rather than drawings, like the style toggles
-	// under them, and each is set at the size it applies - the same joke as the
-	// T wearing its own effect. Danja's call, 2026-09-17: the sizes are what the
-	// panel opens on, and the face and the exact size slid under "more knobs"
-	// below them.
+	// tooltip. The buttons were letters wearing their own sizes until
+	// 2026-09-21, when danja drew the font_small / font_normal / font_big /
+	// font_extra_big artwork and the row took those - the same mask buttons
+	// as the align row below. The sizes are what the panel opens on; the
+	// face and the exact size slid under "more knobs" below them
+	// (2026-09-17, danja's call).
 	//
-	// Four rather than three as of the same day, and the whole scale moved
-	// up on 2026-09-21 (danja's call) - small 14, normal 24, big 32, extra
-	// 48. The row is a scale rather than three islands with a jump between
-	// the last two, and the size the old row called big is the new one's
-	// normal.
+	// The scale moved up the same day - small 14, normal 24, big 32, extra
+	// 48: a scale rather than three islands with a jump between the last
+	// two, and the size the old row called big is the new one's normal.
 	//
 	// The one in force is lit. A size that is none of them - the scrub in the
 	// fold sets one - leaves all four unlit, which is the honest picture rather
@@ -1740,15 +1739,18 @@ function text_panel_build(pop, obj)
 	var size_buttons = [];
 	var size_preset_row = $.glue.popover.row(false);
 	[
-		['s', 14, 'small: 14px'],
-		['n', 24, 'normal: 24px'],
-		['b', 32, 'big: 32px'],
-		['x', 48, 'extra: 48px']
+		['s', 14, 'small: 14px', 'font-small'],
+		['n', 24, 'normal: 24px', 'font-normal'],
+		['b', 32, 'big: 32px', 'font-big'],
+		['x', 48, 'extra: 48px', 'font-extra-big']
 	].forEach(function(s) {
-		var b = document.createElement('div');
-		b.className = 'glue-font-size glue-font-size-'+s[0];
-		b.textContent = s[0];
-		b.title = s[2];
+		var b = $.glue.icon(s[3], s[2]);
+		b.classList.add('glue-font-size');
+		b.classList.add('glue-font-size-'+s[0]);
+		// the panel's icons are 26px; the toolbar's are 32 (the align
+		// buttons' precedent)
+		b.style.width = '26px';
+		b.style.height = '26px';
 		b.dataset.size = s[1];
 		b.addEventListener('click', function() {
 			set_size(s[1], true);

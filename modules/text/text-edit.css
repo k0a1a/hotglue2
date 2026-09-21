@@ -173,44 +173,25 @@
 }
 
 .glue-font-size {
-	/* the three sizes the panel shows - s, n and b, with the number in the
-	   tooltip. Text buttons like the style toggles below them rather than
-	   drawings: there is no artwork for "8px" that reads at 26px. Each letter
-	   is set at the size it applies, which is the same joke as the T wearing
-	   its own effect. */
-	width: 26px;
-	height: 26px;
-	box-sizing: border-box;
-	border: 1px solid #000;
-	background: #fff;
-	color: #000;
-	font-family: serif;
-	line-height: 24px;
-	text-align: center;
+	/* the four sizes the panel shows - small, normal, big and extra, one
+	   click each, with the number in the tooltip. The letters that wore
+	   their own sizes went on 2026-09-21, when danja drew the font_small /
+	   font_normal / font_big / font_extra_big artwork; the buttons are
+	   .glue-btn-icon masks now, like the align row's, and at that row's
+	   26px (set where they are built, since $.glue.icon sizes them
+	   inline). */
+	flex: 0 0 auto;
 	cursor: pointer;
 }
 
-.glue-font-size-s {
-	font-size: 12px;
-}
-
-.glue-font-size-n {
-	font-size: 15px;
-}
-
-.glue-font-size-b {
-	font-size: 19px;
-}
-
-.glue-font-size-x {
-	font-size: 22px;
+.glue-font-size-on::before {
+	/* the size in force. .glue-btn-icon paints the glyph on ::before, so
+	   the on-state has to colour the same layer - the align row's rule */
+	background-color: #fff !important;
 }
 
 .glue-font-size-on {
-	/* the size in force - pressed, and legible as such against the panel, the
-	   same as .glue-font-toggle-on */
-	background: #333;
-	color: #fff;
+	background-color: #333 !important;
 }
 
 .glue-font-toggle {
