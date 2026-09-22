@@ -129,8 +129,9 @@ test('an uploaded file renders as the 50x50 mime box and downloads in view',
 		expect(Math.round(box.width)).toBe(50);
 		expect(Math.round(box.height)).toBe(50);
 		await expect(page.locator('.download-mime')).toHaveText('pdf');
-		// the attach button is the box's own chrome
-		await expect(attachBtn(page)).toHaveText('attach');
+		// the attach icon is the box's own chrome
+		await expect(attachBtn(page)).toHaveAttribute('title',
+			'attach the download to a selected text or image object');
 
 		// the stored object
 		const id = newId(hg, ['100000000001', 'page']);
@@ -235,22 +236,25 @@ test('a wrapped text object edits normally, and the wrap survives the save',
 			.toBe(hg.pageName + '.100000000002');
 	});
 
-test('the pick mode wraps the clicked object', async ({ page, hg }) => {
+test('the selected target and the box\'s attach icon wrap the pair', async ({ page, hg }) => {
 	hg.addObject('100000000001', textObject(50, 50, 100), 'hello');
 	hg.addObject('100000000002', downloadObject(300, 50, 100));
 	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 2);
 
-	await attachBtn(page).click();
-	await expect(attachBtn(page)).toHaveClass(/download-armed/);
+	// select the target, then press the box's attach icon - multi-select
+	// is the picking gesture, no pick mode (danja's call, 2026-09-22)
 	await byId(page, hg, '100000000001').click();
+	await attachBtn(page).click();
 	await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
 		.toBe(hg.pageName + '.100000000002');
 	await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap-target'])
 		.toBe(hg.pageName + '.100000000001');
 	await expect(byId(page, hg, '100000000002')).toBeHidden();
-	await expect(attachBtn(page)).not.toHaveClass(/download-armed/);
+	// the selection survived the button's click (stopPropagation), so the
+	// gesture reads as select-then-attach
+	await expect(byId(page, hg, '100000000001')).toHaveClass(/glue-selected/);
 });
 
 test('detach clears the pair and the box returns at its position',
@@ -311,29 +315,6 @@ test('dragging a download raises no server-communication dialog',
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('400px');
 		expect(dialog).toBeNull();
 	});
-
-test('the box\'s own menu attaches through the pick mode', async ({ page, hg }) => {
-	hg.addObject('100000000001', downloadObject(300, 50, 100));
-	hg.addObject('100000000002', textObject(50, 50, 100), 'hello world');
-	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 2);
-
-	// the download side of the pair carries the same attach/detach item
-	await openMenu(page, hg, '100000000001');
-	await expect(menuBtn(page)).toHaveAttribute('title', 'attach to object on screen');
-	await menuBtn(page).click();
-	// arming the pick is the hanging button's behaviour, shared
-	await expect(attachBtn(page)).toHaveClass(/download-armed/);
-	// the next click on a compatible object wraps
-	await byId(page, hg, '100000000002').click();
-	await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap'])
-		.toBe(hg.pageName + '.100000000001');
-	await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap-target'])
-		.toBe(hg.pageName + '.100000000002');
-	await expect(byId(page, hg, '100000000001')).toBeHidden();
-	await expect(attachBtn(page)).not.toHaveClass(/download-armed/);
-});
 
 test('copy-paste carries the wrap pair and its file', async ({ page, hg }) => {
 	const pageB = makePage('e2e-wrap-b.default');

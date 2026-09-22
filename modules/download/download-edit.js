@@ -8,10 +8,8 @@
  *
  */
 
-// the pick mode's state: { name, box } while "attach to object on screen"
-// is armed, and the wrap target an attach-upload is waiting to box (2026-09-22,
+// the wrap target an attach-upload is waiting to box (2026-09-22,
 // SOW-download-object)
-var download_pick = null;
 var download_pending_wrap = null;
 
 $.glue.live('.download', 'glue-upload-dynamic-early', function(e, mode, target_x, target_y) {
@@ -58,50 +56,25 @@ function download_wrap_pair(dl_name, target_full, box) {
 			if (box) {
 				box.style.display = 'none';
 			}
-			download_pick_disarm();
 		}, false);
 	}, false);
 }
 
-function download_pick_disarm() {
-	if (!download_pick) {
+// the box's attach: the download wraps ONE selected text or image object -
+// multi-select (shift-click) is the picking gesture, no pick mode (danja's
+// call, 2026-09-22). The button's click stops propagation, so the selection
+// stays as it was while the pair is written.
+function download_wrap_attach_selected(box) {
+	var targets = Array.from(document.querySelectorAll('.glue-selected')).filter(function(el) {
+		return el !== box && (el.classList.contains('text') || el.classList.contains('image'));
+	});
+	if (targets.length != 1) {
+		$.glue.error(targets.length ?
+			'select exactly one text or image object to attach the download to' :
+			'select a text or image object to attach the download to');
 		return;
 	}
-	download_pick.box.querySelector('.download-attach').classList.remove('download-armed');
-	document.removeEventListener('click', download_pick_click, true);
-	document.removeEventListener('keydown', download_pick_key);
-	download_pick = null;
-}
-
-// arms the pick mode for a box: the next click on a text or image object
-// wraps the download around it (download_pick_click). Shared by the box's
-// hanging button and the box's own menu item.
-function download_pick_arm(box) {
-	download_pick_disarm();
-	download_pick = { name: box.id, box: box };
-	var btn = box.querySelector('.download-attach');
-	if (btn) {
-		btn.classList.add('download-armed');
-	}
-	document.addEventListener('click', download_pick_click, true);
-	document.addEventListener('keydown', download_pick_key);
-}
-
-// the pick's capture-phase click: a capture listener rather than $.glue.live,
-// so the swallow happens BEFORE the editor's own delegation sees the click
-function download_pick_click(e) {
-	if (e.target.closest('.download')) {
-		return;		// the box and its button pass through
-	}
-	var t = e.target.closest('.text, .image');
-	if (!t || !t.id) {
-		download_pick_disarm();		// anything else cancels the pick
-		return;
-	}
-	e.stopPropagation();
-	e.preventDefault();
-	var pick = download_pick;
-	download_pick_disarm();
+	var t = targets[0];
 	$.glue.backend({ method: 'glue.load_object', name: t.id }, function(data) {
 		if (data['#error'] || !data['#data']) {
 			return;
@@ -115,14 +88,8 @@ function download_pick_click(e) {
 			$.glue.error('this object already has a download');
 			return;
 		}
-		download_wrap_pair(pick.name, t.id, pick.box);
+		download_wrap_pair(box.id, t.id, box);
 	}, false);
-}
-
-function download_pick_key(e) {
-	if (e.key == 'Escape') {
-		download_pick_disarm();
-	}
 }
 
 // the glyph of a stateful attach/detach item is its state - attach.svg while
@@ -161,41 +128,6 @@ function download_wrap_make_item() {
 			download_wrap_detach(obj);
 		} else {
 			download_wrap_attach(obj);
-		}
-	});
-	return elem;
-}
-
-// the download box's own menu item, the same two-state glyph on the
-// download side of the pair: attach arms the pick mode (the hanging
-// button's behaviour), detach unwraps - reachable when a wrapped box is
-// visible (the target is gone and the delete cleanup missed it).
-function download_wrap_make_item_dl() {
-	var elem = $.glue.icon('attach', 'attach to object on screen');
-	var wrapped = false;
-	elem.addEventListener('glue-menu-activate', function() {
-		var obj = $.glue.owner(this);
-		if (!obj) {
-			return;
-		}
-		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-			wrapped = !!(data['#data'] && data['#data']['download-wrap-target']);
-			download_wrap_set_icon(elem, wrapped);
-			elem.title = wrapped ? 'detach the download' : 'attach to object on screen';
-		}, false);
-	});
-	elem.addEventListener('click', function(e) {
-		e.stopPropagation();
-		var obj = $.glue.owner(this);
-		if (!obj) {
-			return;
-		}
-		// the pick's next click must land on the canvas, not the menu
-		$.glue.contextmenu.hide();
-		if (wrapped) {
-			download_wrap_detach_dl(obj);
-		} else {
-			download_pick_arm(obj);
 		}
 	});
 	return elem;
@@ -272,40 +204,6 @@ function download_wrap_detach(obj) {
 	}, false);
 }
 
-// the box menu's detach: download_wrap_detach with the pair reversed - the
-// box side of the association is cleared from here. Only reachable while the
-// box is visible, which a wrapped box normally is not, so this serves the
-// stranded box whose target is gone (object_exists fails and the box renders
-// unwrapped) and rounds the pair out.
-function download_wrap_detach_dl(obj) {
-	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-		if (data['#error'] || !data['#data'] || !data['#data']['download-wrap-target']) {
-			return;
-		}
-		var target = data['#data']['download-wrap-target'];
-		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'download-wrap-target' }, function() {
-			$.glue.backend({ method: 'glue.object_remove_attr', name: target, attr: 'download-wrap' }, function() {
-				$.glue.backend({ method: 'glue.render_object', name: obj.id, edit: true }, function(d) {
-					if (!d || d['#error'] || !d['#data']) {
-						return;
-					}
-					var old = document.getElementById(obj.id);
-					if (old) {
-						$.glue.object.unregister(old);
-						old.remove();
-					}
-					var tmpl = document.createElement('template');
-					tmpl.innerHTML = d['#data'].trim();
-					var box = tmpl.content.firstElementChild;
-					$.glue.canvas.add(box);
-					$.glue.object.register(box);
-					$.glue.sel.select(box);
-				}, false);
-			}, false);
-		}, false);
-	}, false);
-}
-
 function download_public_sync(elem) {
 	var obj = $.glue.owner(elem);
 	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
@@ -335,28 +233,31 @@ function download_public_toggle(elem) {
 
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('download', 'object-link');
-	// the box's ONE button: arms the pick mode (2026-09-22)
-	$.glue.live('.download-attach', 'click', function(e) {
-		e.stopPropagation();
-		var box = this.closest('.download');
+	// the box's ONE button: attaches the box to the ONE text or image
+	// object currently selected (shift-click multi-select is the picking
+	// gesture, 2026-09-22). A capture listener rather than $.glue.live -
+	// the editor's delegated .object click would run first (the live queue
+	// is one document listener in registration order, and a stopPropagation
+	// inside it is too late) and collapse the selection to the box alone
+	// before the attach read it.
+	document.addEventListener('click', function(e) {
+		var btn = e.target.closest('.download-attach');
+		if (!btn) {
+			return;
+		}
+		var box = btn.closest('.download');
 		if (!box || !box.id) {
 			return;
 		}
+		e.stopPropagation();
 		// canvas objects do not carry $.glue.owner - the box's id IS its
 		// full object name
-		if (download_pick && download_pick.box === box) {
-			download_pick_disarm();		// toggle off
-			return;
-		}
-		download_pick_arm(box);
-	});
+		download_wrap_attach_selected(box);
+	}, true);
 	// the text and image menus' attach/detach buttons - two instances, one
 	// per class (a menu element is appended per matching class)
 	$.glue.contextmenu.register('text', 'download-wrap', download_wrap_make_item());
 	$.glue.contextmenu.register('image', 'download-wrap', download_wrap_make_item());
-	// the box's own menu carries the same pair on the download side of the
-	// association
-	$.glue.contextmenu.register('download', 'download-wrap', download_wrap_make_item_dl());
 	//
 	// register menu items
 	//

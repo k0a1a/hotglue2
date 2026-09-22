@@ -42,13 +42,17 @@ function download_alter_render_early($args)
 			elem_attr($v, 'title', htmlspecialchars($obj['download-file-mime'], ENT_COMPAT, 'UTF-8'));
 		}
 		elem_append($elem, $v);
-		// the box's ONE button, editor-only: it arms the pick mode whose
-		// next click on a text or image object wraps the download around it
+		// the box's ONE button, editor-only: an attach icon that wraps the
+		// download around the ONE selected text/image object (multi-select
+		// is the picking gesture, danja's call 2026-09-22). The glyph is
+		// the same mask the menu items use; the url is resolved HERE and
+		// baked into the style, because a relative url() inside a custom
+		// property resolves where the var() is used - the css file.
 		if ($args['edit']) {
 			$b = elem('div');
 			elem_add_class($b, 'download-attach');
-			elem_val($b, 'attach');
-			elem_attr($b, 'title', 'attach to object on screen');
+			elem_attr($b, 'title', 'attach the download to a selected text or image object');
+			elem_css($b, '--glue-icon', 'url('.base_url().'img/icons/attach.svg)');
 			elem_append($elem, $b);
 		}
 		return true;

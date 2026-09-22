@@ -7,11 +7,11 @@ As built: the wrap is BY REFERENCE with the TARGET's own render emitting the
 `<a href download>` (decision b - the link pattern; view-only, the editor stays untouched so
 the wrapped object edits normally). The box is 50x50, 2px border, 80% transparent, the file's
 MIME subtype inside (full MIME as the tooltip, the extension as fallback). The box's ONE
-button - "attach to object on screen" - arms a pick mode (capture-phase click); text and image
-menus gain attach/detach (attach uploads a file as a NEW download wrapped around the target;
-detach puts the box back at its saved position); the box's OWN menu carries the same
-two-state item on the download side (attach arms the pick, detach unwraps - the stranded
-box whose target is gone). The pair is two attributes -
+button - an attach icon hanging below it - wraps the box around the ONE text or image
+object currently selected: shift-click multi-select IS the picking gesture (danja's call,
+2026-09-22; the earlier click-to-pick mode is gone). Text and image menus gain
+attach/detach (attach uploads a file as a NEW download wrapped around the target; detach
+puts the box back at its saved position). The pair is two attributes -
 `download-wrap` on the target, `download-wrap-target` on the download, written via
 glue.update_object. Copy-paste carries the pair and the file; deleting either half unwraps
 the other; a private download wraps nothing in view. Tests:
@@ -69,6 +69,10 @@ appearance differs (own box vs. wrapped object's look).
 
 Two ways to attach a download to a compatible object (mirror whatever's easiest + most
 Hotglue):
+- **Selection + the box's attach icon**: select a text/image object (shift-click for
+  several, though the attach takes exactly one), press the attach icon on the download
+  box - the box wraps the selected object. Multi-select is the picking gesture; the
+  earlier click-to-pick mode was replaced by it (danja's call, 2026-09-22).
 - **Attach button** on a compatible object's controls → opens the standard uploader →
   the uploaded file becomes the wrap target's download. (Also: attach could open a picker
   to point at an existing download object, or just upload — decide; upload is the simplest
