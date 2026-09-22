@@ -2268,9 +2268,14 @@ function text_panel_build(pop, obj)
 		value: shadow.alpha,
 		apply: function(pct, commit) {
 			shadow.alpha = pct;
-			if (0 < shadow.radius) {
-				write_shadow(commit);
+			// a strength with no shadow shows nothing: give it one, the
+			// colour button's courtesy for the same situation (2026-09-22,
+			// danja's call - the row felt inert without it)
+			if (shadow.radius <= 0) {
+				shadow.radius = 6;
+				shadow_radius.set(6);
 			}
+			write_shadow(commit);
 		}
 	});
 	adv.appendChild(shadow_alpha.row);

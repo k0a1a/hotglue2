@@ -736,6 +736,25 @@ test('the text shadow stores its ingredients and reaches the published page',
 		expect(published[1]).toContain('8px');
 	});
 
+test('a fade with no shadow seeds the radius, like the colour does',
+	async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+	await openFold(page);
+	const fade = fold(page).locator('.glue-popover-scrub')
+		.filter({ has: page.locator('.glue-popover-label:text-is("fade")') })
+		.locator('.glue-popover-field');
+	await fade.fill('40');
+	await fade.dispatchEvent('input');
+	await fade.dispatchEvent('change');
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-radius'])
+		.toBe('6');
+	await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-alpha'])
+		.toBe('40');
+});
+
 test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'text-shadow-radius': '8', 'text-shadow-color': '#ff0000' }, 'A');
