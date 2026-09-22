@@ -113,10 +113,19 @@ function download_pick_key(e) {
 	}
 }
 
-// the text/image menu's attach/detach button
+// the text/image menu's attach/detach button: the glyph is the state -
+// attach.svg while the object carries no download, detach.svg once it does.
+// The swap follows the lock module's padlock - a stateful button either
+// swaps its --glue-icon or takes a colour class, and the menu-state classes
+// never paint on a .glue-btn-icon (css/edit.css .glue-menu-enabled).
 function download_wrap_make_item() {
-	var elem = $.glue.icon('download', 'attach a file to download');
+	var elem = $.glue.icon('attach', 'attach a file to download');
 	var wrapped = false;
+	var set_icon = function(is_wrapped) {
+		var url = new URL($.glue.base_url+'img/icons/' +
+			(is_wrapped ? 'detach' : 'attach')+'.svg', document.baseURI).href;
+		elem.style.setProperty('--glue-icon', 'url("'+url+'")');
+	};
 	elem.addEventListener('glue-menu-activate', function() {
 		var obj = $.glue.owner(this);
 		if (!obj) {
@@ -124,8 +133,7 @@ function download_wrap_make_item() {
 		}
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
 			wrapped = !!(data['#data'] && data['#data']['download-wrap']);
-			elem.classList.toggle('glue-menu-enabled', wrapped);
-			elem.classList.toggle('glue-menu-disabled', !wrapped);
+			set_icon(wrapped);
 			elem.title = wrapped ? 'detach the download' : 'attach a file to download';
 		}, false);
 	});
