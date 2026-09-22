@@ -6,10 +6,13 @@ Status: BUILT (2026-09-22, danja's decisions). A download object holds an upload
 As built: the wrap is BY REFERENCE with the TARGET's own render emitting the
 `<a href download>` (decision b - the link pattern; view-only, the editor stays untouched so
 the wrapped object edits normally). The box is 50x50, 2px border, 80% transparent, the file's
-MIME subtype inside (full MIME as the tooltip, the extension as fallback). The box's ONE
-button - an attach icon hanging below it - wraps the box around the ONE text or image
-object currently selected: shift-click multi-select IS the picking gesture (danja's call,
-2026-09-22; the earlier click-to-pick mode is gone). Text and image menus gain
+MIME subtype inside (full MIME as the tooltip, the extension as fallback). The box's attach
+- an icon hanging below it AND the FIRST item of its menu's upper bar - wraps the box
+around the ONE text or image object currently selected: shift-click multi-select IS the
+picking gesture (danja's call, 2026-09-22; the earlier click-to-pick mode is gone). The
+menu's attach falls back to the last compatible object selected, since the click that
+opens the menu collapses the selection; the box never rotates and its menu carries no
+overflow toggle. Text and image menus gain
 attach/detach (attach uploads a file as a NEW download wrapped around the target; detach
 puts the box back at its saved position). The pair is two attributes -
 `download-wrap` on the target, `download-wrap-target` on the download, written via

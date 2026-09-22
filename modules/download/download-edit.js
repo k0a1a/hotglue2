@@ -8,6 +8,14 @@
  *
  */
 
+// the last compatible object the user selected. The box menu's attach
+// falls back to it: opening the box's menu clicks the box, and that click
+// collapses the selection to the box alone before the menu appears - so
+// "select the target, then the box, then attach" needs the target
+// remembered across the collapse. Cleared once the selection is empty
+// (background click), so a stale target can never surprise.
+var download_last_target = null;
+
 // the wrap target an attach-upload is waiting to box (2026-09-22,
 // SOW-download-object)
 var download_pending_wrap = null;
@@ -62,19 +70,24 @@ function download_wrap_pair(dl_name, target_full, box) {
 
 // the box's attach: the download wraps ONE selected text or image object -
 // multi-select (shift-click) is the picking gesture, no pick mode (danja's
-// call, 2026-09-22). The button's click stops propagation, so the selection
+// call, 2026-09-22). With nothing compatible selected it falls back to the
+// last compatible selection (see download_last_target), which is what makes
+// the box menu's attach usable: the click that opens the menu deselects
+// everything else. The button's click stops propagation, so the selection
 // stays as it was while the pair is written.
 function download_wrap_attach_selected(box) {
 	var targets = Array.from(document.querySelectorAll('.glue-selected')).filter(function(el) {
 		return el !== box && (el.classList.contains('text') || el.classList.contains('image'));
 	});
-	if (targets.length != 1) {
-		$.glue.error(targets.length ?
-			'select exactly one text or image object to attach the download to' :
-			'select a text or image object to attach the download to');
+	if (targets.length > 1) {
+		$.glue.error('select exactly one text or image object to attach the download to');
 		return;
 	}
-	var t = targets[0];
+	var t = targets[0] || download_last_target;
+	if (!t || !t.isConnected || t === box) {
+		$.glue.error('select a text or image object to attach the download to');
+		return;
+	}
 	$.glue.backend({ method: 'glue.load_object', name: t.id }, function(data) {
 		if (data['#error'] || !data['#data']) {
 			return;
@@ -233,6 +246,22 @@ function download_public_toggle(elem) {
 
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('download', 'object-link');
+	// the overflow toggle and the like have no business on a 50x50 box
+	$.glue.contextmenu.veto('download', 'object-overflow');
+	// the remembered target for the menu's attach (see download_last_target)
+	$.glue.live('.text, .image', 'glue-select', function() {
+		download_last_target = this;
+	});
+	$.glue.live('.text, .image', 'glue-deselect', function() {
+		// cleared a moment later unless something is still selected: the
+		// box's own click deselects the target and selects the box within
+		// the same dispatch, a background click leaves nothing selected
+		setTimeout(function() {
+			if (!document.querySelector('.glue-selected')) {
+				download_last_target = null;
+			}
+		}, 0);
+	});
 	// the box's ONE button: attaches the box to the ONE text or image
 	// object currently selected (shift-click multi-select is the picking
 	// gesture, 2026-09-22). A capture listener rather than $.glue.live -
@@ -254,6 +283,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		// full object name
 		download_wrap_attach_selected(box);
 	}, true);
+	// the box menu's attach: FIRST in the upper bar (prio -1 beats
+	// object-properties' 0; download-class items land in the top bar
+	// anyway) - the same action as the hanging icon below the box
+	var attach = $.glue.icon('attach', 'attach the download to a selected text or image object');
+	attach.addEventListener('click', function(e) {
+		e.stopPropagation();
+		var obj = $.glue.owner(this);
+		if (!obj) {
+			return;
+		}
+		$.glue.contextmenu.hide();
+		download_wrap_attach_selected(obj);
+	});
+	$.glue.contextmenu.register('download', 'download-attach', attach, -1);
 	// the text and image menus' attach/detach buttons - two instances, one
 	// per class (a menu element is appended per matching class)
 	$.glue.contextmenu.register('text', 'download-wrap', download_wrap_make_item());

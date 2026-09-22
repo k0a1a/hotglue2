@@ -107,7 +107,9 @@ var transform_rotate_bound = new WeakSet();
 $.glue.live('.object', 'glue-select', function(e) {
 	var obj = this;
 	var m = $.glue.object.moveable_of(obj);
-	if (!m || obj.classList.contains('locked')) {
+	// a download box never rotates (danja's call, 2026-09-22) - the
+	// rotation handle has no business on a 50x50 file box
+	if (!m || obj.classList.contains('locked') || obj.classList.contains('download')) {
 		return;
 	}
 	if (!transform_rotate_bound.has(obj)) {

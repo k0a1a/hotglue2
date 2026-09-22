@@ -257,6 +257,41 @@ test('the selected target and the box\'s attach icon wrap the pair', async ({ pa
 	await expect(byId(page, hg, '100000000001')).toHaveClass(/glue-selected/);
 });
 
+test('the box\'s menu: attach first, no overflow, no rotation handle, and it wraps',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', textObject(50, 50, 100), 'hello');
+		hg.addObject('100000000002', downloadObject(300, 50, 100));
+		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+
+		// select the target, then the box: the box's click collapses the
+		// selection and opens its menu, and the remembered target rides
+		// along (danja's call, 2026-09-22)
+		await byId(page, hg, '100000000001').click();
+		await byId(page, hg, '100000000002').click();
+		await expect(page.locator('#glue-contextmenu-download-attach')).toBeVisible();
+
+		// the upper bar's FIRST item is the attach icon, and the items the
+		// box must not carry are absent
+		const ids = await page.evaluate(() =>
+			Array.from(document.querySelectorAll('[id^="glue-contextmenu-"]'))
+				.filter((el) => el.style.visibility !== 'hidden').map((el) => el.id));
+		expect(ids[0]).toBe('glue-contextmenu-download-attach');
+		expect(ids).not.toContain('glue-contextmenu-object-overflow');
+
+		// no rotation handle on the selected box
+		await expect(page.locator('.moveable-rotation-control:visible')).toHaveCount(0);
+
+		// the menu attach wraps the remembered target
+		await page.locator('#glue-contextmenu-download-attach').click();
+		await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
+			.toBe(hg.pageName + '.100000000002');
+		await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap-target'])
+			.toBe(hg.pageName + '.100000000001');
+		await expect(byId(page, hg, '100000000002')).toBeHidden();
+	});
+
 test('detach clears the pair and the box returns at its position',
 	async ({ page, hg }) => {
 	hg.addObject('100000000001', { ...textObject(50, 50, 100),
