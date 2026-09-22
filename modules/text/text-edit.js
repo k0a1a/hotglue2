@@ -1007,10 +1007,12 @@ function text_strip_run_shadow() {
 			// the engines serialize the composed value their own way: the
 			// colour first with zero-padded offsets, or the offsets first;
 			// the colour as #000000 or rgb(0, 0, 0)
+			// the composed value layers the same shadow at shrinking radii;
+			// the FIRST layer carries the ingredients the rest share
 			var m = cur.style.textShadow.match(
-				/^color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\) 0px 0px ([\d.]+)px$/) ||
+				/^color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\) 0px 0px ([\d.]+)px/) ||
 				cur.style.textShadow.match(
-				/^0 0 ([\d.]+)px color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\)$/);
+				/^0 0 ([\d.]+)px color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\)/);
 			if (m) {
 				return m[4] ? { radius: parseFloat(m[4]), color: m[1], alpha: parseFloat(m[2]) }
 					: { radius: parseFloat(m[1]), color: m[2], alpha: parseFloat(m[3]) };
@@ -1028,8 +1030,14 @@ function text_strip_run_shadow() {
 function text_strip_apply_shadow(render, shadow) {
 	var value = '';
 	if (shadow.radius > 0) {
-		value = '0 0 ' + shadow.radius + 'px color-mix(in srgb, ' +
-			shadow.color + ' ' + shadow.alpha + '%, transparent)';
+		// layered like the object's composition: the same shadow at half
+		// and quarter radii, dense at the glyph (2026-09-22)
+		var layer = function(r) {
+			return '0 0 ' + r + 'px color-mix(in srgb, ' + shadow.color +
+				' ' + shadow.alpha + '%, transparent)';
+		};
+		value = layer(shadow.radius) + ', ' + layer(shadow.radius * 0.5) +
+			', ' + layer(shadow.radius * 0.25);
 	}
 	text_strip_apply_style(render, 'textShadow', value);
 }

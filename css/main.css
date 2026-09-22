@@ -156,11 +156,24 @@ a, a:link, a:visited, a:active, a:hover {
 	/* A halo behind the text itself. Like the glow above it, what is stored
 	   is the ingredients - a radius, a strength and a colour - and the value
 	   is composed here, once. text-shadow has no spread of its own, so the
-	   radius is the blur and the strength is the colour's alpha. */
+	   radius is the blur and the strength is the colour's alpha.
+
+	   A single blur at any radius reads as a soft fog - the ink is spread
+	   over the whole blur - so the SAME shadow is layered at half and
+	   quarter radii: dense at the glyph, fading outward. That is what makes
+	   a heavy shadow achievable from the same three ingredients (2026-09-22,
+	   danja's "cannot achieve heavy text shadow"). */
 	--glue-shadow-radius: 6;
 	--glue-shadow-alpha: 80;
 	--glue-shadow-color: #000;
-	text-shadow: 0 0 calc(var(--glue-shadow-radius) * 1px)
-		color-mix(in srgb, var(--glue-shadow-color)
-			calc(var(--glue-shadow-alpha) * 1%), transparent);
+	text-shadow:
+		0 0 calc(var(--glue-shadow-radius) * 1px)
+			color-mix(in srgb, var(--glue-shadow-color)
+				calc(var(--glue-shadow-alpha) * 1%), transparent),
+		0 0 calc(var(--glue-shadow-radius) * 0.5px)
+			color-mix(in srgb, var(--glue-shadow-color)
+				calc(var(--glue-shadow-alpha) * 1%), transparent),
+		0 0 calc(var(--glue-shadow-radius) * 0.25px)
+			color-mix(in srgb, var(--glue-shadow-color)
+				calc(var(--glue-shadow-alpha) * 1%), transparent);
 }

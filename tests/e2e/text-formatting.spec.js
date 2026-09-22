@@ -377,7 +377,7 @@ test('the shadow wraps the selected run', async ({ page, hg }) => {
 	// serialization: the colour first, #000000 or rgb(0, 0, 0), and the
 	// offsets zero-padded
 	await expect.poll(() => stored(hg)).toMatch(
-		/text-shadow: color-mix\(in srgb, (?:#000000|rgb\(0, 0, 0\)) 80%, transparent\) 0px 0px 6px;/);
+		/text-shadow: color-mix\(in srgb, (?:#000000|rgb\(0, 0, 0\)) 80%, transparent\) 0px 0px 6px,/);
 	// and the render draws it
 	expect(await page.evaluate((i) => getComputedStyle(
 		document.querySelector(`[id="${i}"] .glue-text-render span`)).textShadow, a))
