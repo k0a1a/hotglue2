@@ -9,7 +9,9 @@ the wrapped object edits normally). The box is 50x50, 2px border, 80% transparen
 MIME subtype inside (full MIME as the tooltip, the extension as fallback). The box's ONE
 button - "attach to object on screen" - arms a pick mode (capture-phase click); text and image
 menus gain attach/detach (attach uploads a file as a NEW download wrapped around the target;
-detach puts the box back at its saved position). The pair is two attributes -
+detach puts the box back at its saved position); the box's OWN menu carries the same
+two-state item on the download side (attach arms the pick, detach unwraps - the stranded
+box whose target is gone). The pair is two attributes -
 `download-wrap` on the target, `download-wrap-target` on the download, written via
 glue.update_object. Copy-paste carries the pair and the file; deleting either half unwraps
 the other; a private download wraps nothing in view. Tests:
@@ -59,8 +61,9 @@ appearance differs (own box vs. wrapped object's look).
   the image) — the download does NOT trigger. Download is a VIEW-MODE behaviour, inert in
   the editor, exactly like URL links don't navigate while editing. The wrapped object stays
   fully editable in the editor.
-- A subtle editor indicator that "this object is a download" (similar to how linked text is
-  indicated) so the association is visible, not hidden.
+- No dashed editor indicator on the wrapped target (danja's call, 2026-09-22 - the outline
+  went away; the menus and the hover-only title carry the association, which is visible,
+  not hidden, either way).
 
 ## Attaching / detaching
 
@@ -142,7 +145,7 @@ Hotglue):
   `<a href download>` enclosing the wrapped object's markup; the wrapped object keeps its
   own styling/editing.
 - Clicking downloads in VIEW mode; in the EDITOR the wrapped object edits normally
-  (download inert); a subtle indicator shows the association.
+  (download inert); no dashed indicator on the wrapped target (2026-09-22).
 - Attach (via attach button → uploader) associates a file with a compatible object
   (text/image); detach reverses cleanly (download → standalone box, target → plain).
 - The file is a per-page asset served safely (attachment disposition, correct type, never

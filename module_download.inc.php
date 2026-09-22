@@ -53,11 +53,11 @@ function download_alter_render_early($args)
 		}
 		return true;
 	}
-	// the wrapped target's editor indicator: a class and a title so the
-	// association is visible while the download itself stays view-only
+	// the wrapped target's editor indicator: the title only, so the
+	// association says itself on hover. The dashed outline is GONE (danja's
+	// call, 2026-09-22) - the menus carry the association now.
 	if ((elem_has_class($elem, 'text') || elem_has_class($elem, 'image')) &&
 			$args['edit'] && !empty($obj['download-wrap'])) {
-		elem_add_class($elem, 'glue-download-wrap');
 		load_modules('glue');
 		$dl = load_object(['name'=>$obj['download-wrap']]);
 		if (!$dl['#error'] && !empty($dl['#data']['download-file-name'])) {

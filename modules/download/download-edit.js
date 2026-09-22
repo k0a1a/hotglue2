@@ -36,8 +36,6 @@ $.glue.live('.download', 'glue-upload-dynamic-early', function(e, mode, target_x
 		if (target) {
 			this.style.left = (target.offsetLeft + target.offsetWidth + 20)+'px';
 			this.style.top = target.offsetTop+'px';
-			// the indicator rides along without waiting for a reload
-			target.classList.add('glue-download-wrap');
 		}
 		this.style.display = 'none';
 		download_pending_wrap = null;
@@ -73,6 +71,20 @@ function download_pick_disarm() {
 	document.removeEventListener('click', download_pick_click, true);
 	document.removeEventListener('keydown', download_pick_key);
 	download_pick = null;
+}
+
+// arms the pick mode for a box: the next click on a text or image object
+// wraps the download around it (download_pick_click). Shared by the box's
+// hanging button and the box's own menu item.
+function download_pick_arm(box) {
+	download_pick_disarm();
+	download_pick = { name: box.id, box: box };
+	var btn = box.querySelector('.download-attach');
+	if (btn) {
+		btn.classList.add('download-armed');
+	}
+	document.addEventListener('click', download_pick_click, true);
+	document.addEventListener('keydown', download_pick_key);
 }
 
 // the pick's capture-phase click: a capture listener rather than $.glue.live,
@@ -113,19 +125,21 @@ function download_pick_key(e) {
 	}
 }
 
-// the text/image menu's attach/detach button: the glyph is the state -
-// attach.svg while the object carries no download, detach.svg once it does.
-// The swap follows the lock module's padlock - a stateful button either
-// swaps its --glue-icon or takes a colour class, and the menu-state classes
-// never paint on a .glue-btn-icon (css/edit.css .glue-menu-enabled).
+// the glyph of a stateful attach/detach item is its state - attach.svg while
+// there is no wrap, detach.svg once there is. The swap follows the lock
+// module's padlock - a stateful button either swaps its --glue-icon or takes
+// a colour class, and the menu-state classes never paint on a
+// .glue-btn-icon (css/edit.css .glue-menu-enabled).
+function download_wrap_set_icon(elem, is_wrapped) {
+	var url = new URL($.glue.base_url+'img/icons/' +
+		(is_wrapped ? 'detach' : 'attach')+'.svg', document.baseURI).href;
+	elem.style.setProperty('--glue-icon', 'url("'+url+'")');
+}
+
+// the text/image menu's attach/detach button
 function download_wrap_make_item() {
 	var elem = $.glue.icon('attach', 'attach a file to download');
 	var wrapped = false;
-	var set_icon = function(is_wrapped) {
-		var url = new URL($.glue.base_url+'img/icons/' +
-			(is_wrapped ? 'detach' : 'attach')+'.svg', document.baseURI).href;
-		elem.style.setProperty('--glue-icon', 'url("'+url+'")');
-	};
 	elem.addEventListener('glue-menu-activate', function() {
 		var obj = $.glue.owner(this);
 		if (!obj) {
@@ -133,7 +147,7 @@ function download_wrap_make_item() {
 		}
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
 			wrapped = !!(data['#data'] && data['#data']['download-wrap']);
-			set_icon(wrapped);
+			download_wrap_set_icon(elem, wrapped);
 			elem.title = wrapped ? 'detach the download' : 'attach a file to download';
 		}, false);
 	});
@@ -147,6 +161,41 @@ function download_wrap_make_item() {
 			download_wrap_detach(obj);
 		} else {
 			download_wrap_attach(obj);
+		}
+	});
+	return elem;
+}
+
+// the download box's own menu item, the same two-state glyph on the
+// download side of the pair: attach arms the pick mode (the hanging
+// button's behaviour), detach unwraps - reachable when a wrapped box is
+// visible (the target is gone and the delete cleanup missed it).
+function download_wrap_make_item_dl() {
+	var elem = $.glue.icon('attach', 'attach to object on screen');
+	var wrapped = false;
+	elem.addEventListener('glue-menu-activate', function() {
+		var obj = $.glue.owner(this);
+		if (!obj) {
+			return;
+		}
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+			wrapped = !!(data['#data'] && data['#data']['download-wrap-target']);
+			download_wrap_set_icon(elem, wrapped);
+			elem.title = wrapped ? 'detach the download' : 'attach to object on screen';
+		}, false);
+	});
+	elem.addEventListener('click', function(e) {
+		e.stopPropagation();
+		var obj = $.glue.owner(this);
+		if (!obj) {
+			return;
+		}
+		// the pick's next click must land on the canvas, not the menu
+		$.glue.contextmenu.hide();
+		if (wrapped) {
+			download_wrap_detach_dl(obj);
+		} else {
+			download_pick_arm(obj);
 		}
 	});
 	return elem;
@@ -201,9 +250,48 @@ function download_wrap_detach(obj) {
 						return;
 					}
 					// the old hidden box leaves the dom before the fresh one
-					// lands - one element per object, always
+					// lands - one element per object, always. Unregister first:
+					// without it the id stays marked in the registration guard
+					// (js/edit.js register()), the fresh box never gets a
+					// Moveable, and the returned box is undraggable until the
+					// page is reloaded.
 					var old = document.getElementById(dl);
 					if (old) {
+						$.glue.object.unregister(old);
+						old.remove();
+					}
+					var tmpl = document.createElement('template');
+					tmpl.innerHTML = d['#data'].trim();
+					var box = tmpl.content.firstElementChild;
+					$.glue.canvas.add(box);
+					$.glue.object.register(box);
+					$.glue.sel.select(box);
+				}, false);
+			}, false);
+		}, false);
+	}, false);
+}
+
+// the box menu's detach: download_wrap_detach with the pair reversed - the
+// box side of the association is cleared from here. Only reachable while the
+// box is visible, which a wrapped box normally is not, so this serves the
+// stranded box whose target is gone (object_exists fails and the box renders
+// unwrapped) and rounds the pair out.
+function download_wrap_detach_dl(obj) {
+	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+		if (data['#error'] || !data['#data'] || !data['#data']['download-wrap-target']) {
+			return;
+		}
+		var target = data['#data']['download-wrap-target'];
+		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'download-wrap-target' }, function() {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: target, attr: 'download-wrap' }, function() {
+				$.glue.backend({ method: 'glue.render_object', name: obj.id, edit: true }, function(d) {
+					if (!d || d['#error'] || !d['#data']) {
+						return;
+					}
+					var old = document.getElementById(obj.id);
+					if (old) {
+						$.glue.object.unregister(old);
 						old.remove();
 					}
 					var tmpl = document.createElement('template');
@@ -252,16 +340,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			download_pick_disarm();		// toggle off
 			return;
 		}
-		download_pick_disarm();
-		download_pick = { name: box.id, box: box };
-		this.classList.add('download-armed');
-		document.addEventListener('click', download_pick_click, true);
-		document.addEventListener('keydown', download_pick_key);
+		download_pick_arm(box);
 	});
 	// the text and image menus' attach/detach buttons - two instances, one
 	// per class (a menu element is appended per matching class)
 	$.glue.contextmenu.register('text', 'download-wrap', download_wrap_make_item());
 	$.glue.contextmenu.register('image', 'download-wrap', download_wrap_make_item());
+	// the box's own menu carries the same pair on the download side of the
+	// association
+	$.glue.contextmenu.register('download', 'download-wrap', download_wrap_make_item_dl());
 	//
 	// register menu items
 	//

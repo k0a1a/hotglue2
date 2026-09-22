@@ -57,13 +57,6 @@
 	display: none;
 }
 
-.glue-download-wrap {
-	/* the editor indicator on a wrapped text/image target: the
-	   association is visible while the download itself stays view-only */
-	outline: 1px dashed rgba(0, 0, 0, 0.4);
-	outline-offset: 2px;
-}
-
 #glue-contextmenu-download-public {
 	background-color: transparent;
 }

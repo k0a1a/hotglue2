@@ -95,6 +95,19 @@ async function openMenu(page, hg, id) {
 	await page.waitForTimeout(300);
 }
 
+// Drag from a point by a delta. Moveable ignores the first 10px
+// (js/edit.js:986), so the move is stepped to get well past that and to emit
+// several drag events rather than one jump. (Same helper as
+// group-drag.spec.js.)
+async function drag(page, from, dx, dy) {
+	await page.mouse.move(from[0], from[1]);
+	await page.mouse.down();
+	for (let i = 1; i <= 6; i++) {
+		await page.mouse.move(from[0] + (dx * i) / 6, from[1] + (dy * i) / 6);
+	}
+	await page.mouse.up();
+}
+
 test('an uploaded file renders as the 50x50 mime box and downloads in view',
 	async ({ page, hg }) => {
 		hg.addObject('100000000001', textObject(50, 50, 100), 'seed');
@@ -171,8 +184,9 @@ test('attaching from the target menu writes the pair and wraps only in view',
 		// the editor renders the target UNwrapped - no <a> ancestor
 		expect(await page.locator('a').filter({ has: byId(page, hg, '100000000001') }).count())
 			.toBe(0);
-		// the indicator class marks the association
-		await expect(byId(page, hg, '100000000001')).toHaveClass(/glue-download-wrap/);
+		// no dashed indicator on the target (danja's call, 2026-09-22) - the
+		// menus carry the association; the hover title stays
+		await expect(byId(page, hg, '100000000001')).not.toHaveClass(/glue-download-wrap/);
 
 		// the wrap renders in view only for a public download
 		await page.evaluate((n) => fetch($.glue.base_url + 'json.php', {
@@ -261,6 +275,41 @@ test('detach clears the pair and the box returns at its position',
 	const box = await byId(page, hg, '100000000002').boundingBox();
 	expect(Math.round(box.x)).toBeGreaterThanOrEqual(295);
 	expect(Math.round(box.y)).toBeGreaterThanOrEqual(45);
+
+	// and the returned box can be moved: it must be re-registered with
+	// Moveable, or the fresh element stays undraggable until a reload
+	// (the registration guard is keyed by id - see download-edit.js
+	// download_wrap_detach)
+	await page.evaluate(() => $.glue.contextmenu.hide());
+	await drag(page, [box.x + box.width / 2, box.y + box.height / 2], 100, 40);
+	await expect.poll(() => hg.readObject('100000000002').attrs['object-left']).toBe('400px');
+	await expect.poll(() => hg.readObject('100000000002').attrs['object-top']).toBe('90px');
+	const moved = await byId(page, hg, '100000000002').boundingBox();
+	expect(Math.round(moved.x)).toBeGreaterThanOrEqual(395);
+	expect(Math.round(moved.y)).toBeGreaterThanOrEqual(85);
+});
+
+test('the box\'s own menu attaches through the pick mode', async ({ page, hg }) => {
+	hg.addObject('100000000001', downloadObject(300, 50, 100));
+	hg.addObject('100000000002', textObject(50, 50, 100), 'hello world');
+	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+
+	// the download side of the pair carries the same attach/detach item
+	await openMenu(page, hg, '100000000001');
+	await expect(menuBtn(page)).toHaveAttribute('title', 'attach to object on screen');
+	await menuBtn(page).click();
+	// arming the pick is the hanging button's behaviour, shared
+	await expect(attachBtn(page)).toHaveClass(/download-armed/);
+	// the next click on a compatible object wraps
+	await byId(page, hg, '100000000002').click();
+	await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap'])
+		.toBe(hg.pageName + '.100000000001');
+	await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap-target'])
+		.toBe(hg.pageName + '.100000000002');
+	await expect(byId(page, hg, '100000000001')).toBeHidden();
+	await expect(attachBtn(page)).not.toHaveClass(/download-armed/);
 });
 
 test('copy-paste carries the wrap pair and its file', async ({ page, hg }) => {
