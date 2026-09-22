@@ -1606,16 +1606,10 @@ function text_panel_build(pop, obj)
 	var face_list = document.createElement('div');
 	face_list.className = 'glue-font-face-list';
 	face_list.setAttribute('tabindex', '0');
-	// the end spacer: (66 - 22) / 2, so the first row can reach the centre
+	// the end spacer: (60 - 26) / 2, so the first row can reach the centre
 	var face_pad_top = document.createElement('div');
 	face_pad_top.className = 'glue-font-face-pad';
 	face_list.appendChild(face_pad_top);
-	// the up-down affordance, the number rows' ↔ stood up: drawn on
-	// the wheel's right end, and the drag goes straight through it
-	var face_arrow = document.createElement('div');
-	face_arrow.className = 'glue-font-face-arrow';
-	face_arrow.textContent = '\u2195';
-	face_list.appendChild(face_arrow);
 
 	// the range the roller acts on: refreshed on every interaction, but
 	// never DEGRADED - the press that collapses the live selection must
@@ -1874,6 +1868,14 @@ function text_panel_build(pop, obj)
 	// sits, and the wheel IS the row
 	var face_row = $.glue.popover.row(false);
 	face_row.appendChild(face_list);
+	// the up-down affordance, the number rows' ↔ stood up: drawn on
+	// the wheel's right end, pinned to the ROW so the rows scroll under it
+	// instead of carrying it, and the drag goes straight through it
+	face_row.style.position = 'relative';
+	var face_arrow = document.createElement('div');
+	face_arrow.className = 'glue-font-face-arrow';
+	face_arrow.textContent = '\u2195';
+	face_row.appendChild(face_arrow);
 
 	// The one writer for the font size, whichever control asked for it: the
 	// four buttons and the fold's scrub are two views of one number and

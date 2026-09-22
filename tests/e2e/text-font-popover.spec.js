@@ -392,9 +392,9 @@ test('the roller lists the faces compactly, opens centred, and applies on click'
 	await waitForEditor(page, 1);
 	await open(page, a);
 	await openReel(page);
-	// compact - a 50px window, not the 40vh dropdown it replaced
+	// compact - a 60px window, not the 40vh dropdown it replaced
 	const h = (await reel(page).boundingBox()).height;
-	expect(h, 'the roller is not compact').toBeLessThanOrEqual(60);
+	expect(h, 'the roller is not compact').toBeLessThanOrEqual(64);
 	const opts = reel(page).locator('.glue-font-face-opt');
 	const values = await opts.evaluateAll((os) => os.map((o) => o.dataset.value));
 	expect(values.length, 'no faces were offered at all').toBeGreaterThan(1);
@@ -416,8 +416,9 @@ test('the roller lists the faces compactly, opens centred, and applies on click'
 		return Math.abs((rc.top + rc.height/2) - (lc.top + list.clientHeight/2));
 	})).toBeLessThan(3);
 	// the up-down affordance, drawn on the wheel's right end like the
-	// number rows' sideways one - and the vertical cursor to match
-	await expect(reel(page).locator('.glue-font-face-arrow')).toHaveText('\u2195');
+	// number rows' sideways one, pinned to the ROW so the rows scroll
+	// under it - and the vertical cursor to match
+	await expect(page.locator('.glue-font-face-arrow')).toHaveText('\u2195');
 	expect(await reel(page).evaluate((l) => getComputedStyle(l).cursor))
 		.toBe('ns-resize');
 	// no headings and no default row: every row is a face (2026-09-21,
@@ -508,12 +509,12 @@ test('the arrows scroll the drum while the pointer is over it, without applying'
 	// hovering hands the wheel the keyboard - no click needed
 	await reel(page).hover();
 	await page.keyboard.press('ArrowDown');
-	// one full row - the rows are uniform 22px, within the rounding the
+	// one full row - the rows are uniform 26px, within the rounding the
 	// panel's fractional position forces on the scroll positions
 	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
-		.toBeGreaterThan(before + 20);
+		.toBeGreaterThan(before + 24);
 	await expect.poll(() => reel(page).evaluate((l) => l.scrollTop))
-		.toBeLessThan(before + 24);
+		.toBeLessThan(before + 28);
 	// the scroll does not apply: the on-row and the object are untouched
 	await expect.poll(() => onValue(page)).toBe(values[onIdx]);
 	expect(hg.readObject('100000000001').attrs['text-font-family']).toBe(undefined);

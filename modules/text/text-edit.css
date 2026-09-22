@@ -120,7 +120,7 @@
 	width: 100%;
 	box-sizing: border-box;
 	position: relative;		/* the veil pins to it */
-	height: 50px;
+	height: 60px;
 	overflow: hidden;		/* no wheel and no scrollbar - the drag is
 	                           the way around the drum, the click is the
 	                           pick, and the wheel follows the selection */
@@ -137,7 +137,10 @@
 .glue-font-face-arrow {
 	/* the up-down affordance, drawn on the wheel's own right end exactly
 	   where the number rows draw their ↔ - and like that one, the
-	   drag goes straight through it */
+	   drag goes straight through it. It lives on the face ROW, not on the
+	   list: a child of the scroll container would ride along with the
+	   rows, and a fixed affordance must not move with them (2026-09-22,
+	   danja's call). */
 	position: absolute;
 	right: 3px;
 	top: 50%;
@@ -167,22 +170,23 @@
 }
 
 .glue-font-face-pad {
-	/* the spacer at each end of the reel: (50 - 22) / 2, so the FIRST
+	/* the spacer at each end of the reel: (60 - 26) / 2, so the FIRST
 	   and LAST rows can reach the centre exactly. Content, not padding:
 	   scroll-container padding-bottom has engine bug history. */
-	height: 14px;
+	height: 17px;
 }
 
 
 .glue-font-face-opt {
-	/* the wheel's row, pinned so the geometry is exact: pad 3 + line 16
-	   + pad 3. The row is dragged and clicked, never "pointed at" - the
-	   grabbing hand comes down from the list. */
-	height: 22px;
+	/* the wheel's row, pinned so the geometry is exact: pad 4 + line 18
+	   + pad 4 - the 11px geometry scaled up with the 13px names
+	   (2026-09-22, danja's call). The row is dragged and clicked, never
+	   "pointed at" - the grabbing hand comes down from the list. */
+	height: 26px;
 	box-sizing: border-box;
-	padding: 3px 6px;
-	font-size: 11px;
-	line-height: 16px;
+	padding: 4px 6px;
+	font-size: 13px;
+	line-height: 18px;
 	white-space: nowrap;
 	overflow: hidden;
 }
