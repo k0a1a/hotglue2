@@ -76,17 +76,30 @@ function download_wrap_pair(dl_name, target_full, box) {
 // everything else. The button's click stops propagation, so the selection
 // stays as it was while the pair is written.
 function download_wrap_attach_selected(box) {
-	var targets = Array.from(document.querySelectorAll('.glue-selected')).filter(function(el) {
+	var selected = document.querySelectorAll('.glue-selected');
+	var targets = Array.from(selected).filter(function(el) {
 		return el !== box && (el.classList.contains('text') || el.classList.contains('image'));
 	});
 	if (targets.length > 1) {
 		$.glue.error('select exactly one text or image object to attach the download to');
 		return;
 	}
-	var t = targets[0] || download_last_target;
-	if (!t || !t.isConnected || t === box) {
-		$.glue.error('select a text or image object to attach the download to');
-		return;
+	var t = targets[0];
+	if (!t) {
+		// no compatible object in the selection: the remembered target
+		// serves only when the box is selected ALONE - the click that
+		// opened its menu collapsed the selection. In a real multi-select
+		// the selection says what it says, so an attach without a target
+		// there is an error, not a reach into the past.
+		if (selected.length > 1) {
+			$.glue.error('select a text or image object to attach the download to');
+			return;
+		}
+		t = download_last_target;
+		if (!t || !t.isConnected || t === box) {
+			$.glue.error('select a text or image object to attach the download to');
+			return;
+		}
 	}
 	$.glue.backend({ method: 'glue.load_object', name: t.id }, function(data) {
 		if (data['#error'] || !data['#data']) {
@@ -261,6 +274,20 @@ document.addEventListener('DOMContentLoaded', function() {
 				download_last_target = null;
 			}
 		}, 0);
+	});
+	// the editor hides every menu on a multi-select (a menu belongs to ONE
+	// selected object); when a download is selected TOGETHER with others,
+	// the box's own menu shows instead - the attach lives there and reads
+	// the selection itself (danja's call, 2026-09-22). This runs after the
+	// core glue-select handler, which did the hiding.
+	$.glue.live('.object', 'glue-select', function() {
+		var box = this.classList.contains('download') ? this : null;
+		if (!box) {
+			box = document.querySelector('.glue-selected.download');
+		}
+		if (box && document.querySelectorAll('.glue-selected').length > 1) {
+			$.glue.contextmenu.show(box);
+		}
 	});
 	// the box menu's attach: FIRST in the upper bar (prio -1 beats
 	// object-properties' 0; download-class items land in the top bar
