@@ -231,6 +231,100 @@ register_service('glue.get_object', 'get_object', ['auth'=>true]);
  *		key 'name' name of the object created
  *		key 'html' the object as rendered, ready to be added to the editor
  */
+// The asset attrs a pasted object may name - the same set the has_reference
+// hooks answer for (image, download, video and the object's background
+// picture, whatever the editor calls the panel it is set in). Note that
+// page-level attributes and the custom font list are deliberately absent: a
+// font resolves by family name against the whole site, so there is nothing
+// to copy.
+function _paste_object_asset_attrs()
+{
+	return [
+		'image-file',
+		'image-resized-file',
+		'download-file',
+		'video-file',
+		'video-poster-file',
+		'video-encode-file',
+		'video-encode-poster-file',
+		'object-background-file',
+	];
+}
+
+// Copy every asset a pasted object's attrs name, from the source page's
+// shared directory into the target page's, renaming on collision.
+function _paste_object_copy_assets(&$attrs, $source_name, $source_page, $target_page, $have_source)
+{
+	foreach (_paste_object_asset_attrs() as $attr) {
+		if (empty($attrs[$attr])) {
+			continue;
+		}
+		$f = $attrs[$attr];
+		// an upload is always a bare filename inside the page's shared
+		// directory; anything else did not come from one and is left alone
+		if (basename($f) !== $f) {
+			log_msg('warn', 'paste_object: not a plain filename, not copying '.quot($attr).' '.quot($f));
+			continue;
+		}
+		if (!$have_source) {
+			continue;
+		}
+		$src = CONTENT_DIR.'/'.expl('.', $source_page)[0].'/shared/'.$f;
+		if (!is_file($src)) {
+			log_msg('warn', 'paste_object: cannot find '.quot($src).', pasting '.quot($source_name).' without it');
+			continue;
+		}
+		$new_f = copy_asset_to_page($src, $target_page);
+		if ($new_f === false) {
+			continue;
+		}
+		if ($new_f != $f) {
+			$attrs[$attr] = $new_f;
+		}
+	}
+}
+
+// A pasted object carrying download-wrap brings its wrapped download with
+// it: the pair pastes together, the file travels with the download, and the
+// two references are rewritten to the new names (2026-09-22,
+// SOW-download-object). Soft-fails to a plain paste when the download is
+// gone - a dangling wrap would render a broken anchor.
+function _paste_object_wrap(&$attrs, $source_name, $source_page, $target_page, $have_source, $new_target)
+{
+	if (empty($attrs['download-wrap'])) {
+		return;
+	}
+	$ref = $attrs['download-wrap'];
+	if (expl('.', $ref)[0] != expl('.', $source_page)[0]) {
+		log_msg('warn', 'paste_object: '.quot($source_name).' wraps a download on another page, pasting without the wrap');
+		unset($attrs['download-wrap']);
+		return;
+	}
+	$dl = load_object(['name'=>$ref]);
+	if ($dl['#error'] || $dl['#data']['type'] != 'download') {
+		log_msg('warn', 'paste_object: cannot find the wrapped download '.quot($ref).', pasting without the wrap');
+		unset($attrs['download-wrap']);
+		return;
+	}
+	$dl_attrs = $dl['#data'];
+	unset($dl_attrs['name']);
+	_paste_object_copy_assets($dl_attrs, $ref, $source_page, $target_page, $have_source);
+	$new_dl = create_object(['page'=>$target_page]);
+	if ($new_dl['#error']) {
+		unset($attrs['download-wrap']);
+		return;
+	}
+	$new_dl = $new_dl['#data']['name'];
+	$dl_obj = array_merge($dl_attrs, ['name'=>$new_dl, 'download-wrap-target'=>$new_target]);
+	$ret = save_object($dl_obj);
+	if ($ret['#error']) {
+		unset($attrs['download-wrap']);
+		return;
+	}
+	$attrs['download-wrap'] = $new_dl;
+	log_msg('info', 'paste_object: pasted the wrapped download '.quot($ref).' as '.quot($new_dl));
+}
+
 function paste_object($args)
 {
 	if (empty($args['page'])) {
@@ -268,49 +362,7 @@ function paste_object($args)
 		log_msg('warn', 'paste_object: source page '.quot($source_page).' is unavailable, pasting '.quot($clip['name']).' without its assets');
 	}
 
-	// the attributes that name a file in the page's shared directory - the
-	// same set the has_reference hooks answer for (image, download, video and
-	// the object's background picture, whatever the editor calls the panel it
-	// is set in). note that page-level attributes and the custom
-	// font list are deliberately absent: a font resolves by family name
-	// against the whole site, so there is nothing to copy.
-	$asset_attrs = [
-		'image-file',
-		'image-resized-file',
-		'download-file',
-		'video-file',
-		'video-poster-file',
-		'video-encode-file',
-		'video-encode-poster-file',
-		'object-background-file',
-	];
-	foreach ($asset_attrs as $attr) {
-		if (empty($attrs[$attr])) {
-			continue;
-		}
-		$f = $attrs[$attr];
-		// an upload is always a bare filename inside the page's shared
-		// directory; anything else did not come from one and is left alone
-		if (basename($f) !== $f) {
-			log_msg('warn', 'paste_object: not a plain filename, not copying '.quot($attr).' '.quot($f));
-			continue;
-		}
-		if (!$have_source) {
-			continue;
-		}
-		$src = CONTENT_DIR.'/'.expl('.', $source_page)[0].'/shared/'.$f;
-		if (!is_file($src)) {
-			log_msg('warn', 'paste_object: cannot find '.quot($src).', pasting '.quot($clip['name']).' without it');
-			continue;
-		}
-		$new_f = copy_asset_to_page($src, $args['page']);
-		if ($new_f === false) {
-			continue;
-		}
-		if ($new_f != $f) {
-			$attrs[$attr] = $new_f;
-		}
-	}
+	_paste_object_copy_assets($attrs, $clip['name'], $source_page, $args['page'], $have_source);
 
 	// create the new object - create_object() picks a name that is unique in
 	// the target page, and the clipboard's name is deliberately not reused
@@ -319,6 +371,10 @@ function paste_object($args)
 		return $new;
 	}
 	$new = $new['#data']['name'];
+
+	// a wrapped pair pastes whole (2026-09-22): the download object travels
+	// with the target, and the references are rewritten to the new names
+	_paste_object_wrap($attrs, $clip['name'], $source_page, $args['page'], $have_source, $new);
 
 	$obj = array_merge($attrs, ['name'=>$new, 'content'=>$content]);
 	$ret = save_object($obj);

@@ -1,25 +1,67 @@
 .download {
-	background-image:url('download-file.png');
-	background-size: 100%;
-	height: 48px;
-	max-height: 48px;
-	max-width: 48px;
-	width: 48px;
+	/* the 50x50 download box (2026-09-22, danja's call): 2px border, 80%
+	   transparent background, the file's type inside. The size is
+	   CSS-driven on purpose - download_save_state strips object-width and
+	   object-height, so the box is always exactly this. */
+	background-color: rgba(255, 255, 255, 0.2);
+	border: 2px solid rgba(0, 0, 0, 0.35);
+	box-sizing: border-box;
+	width: 50px;
+	height: 50px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
-.download-ext {
-	bottom: 5px;
-	font-size: 8px;
-	max-height: 38px;
-	max-width: 26px;
-	overflow: hidden;
-	position: absolute;
-	right: 12px;
-	text-align: right;
-	/* TODO (later): this does not work in viewing mode on Chrome */
-	text-decoration: none;
-	width: 26px;
+.download-mime {
+	/* the file's type: the MIME subtype where it fits, the extension
+	   otherwise - full MIMEs do not fit at 50x50, and the full string is
+	   the title. */
+	font-size: 9px;
+	line-height: 1;
+	text-align: center;
 	word-break: break-all;
+	max-width: 44px;
+	color: rgba(0, 0, 0, 0.75);
+}
+
+.download-attach {
+	/* the box's ONE button, editor-render-only: arms the pick mode whose
+	   next click on a text or image object wraps the download around it.
+	   Hangs below the box; a div rather than a button, the editor's own
+	   convention, and no loadable element may ever sit inside the box -
+	   edit.js's content_loaded would then reposition a freshly wrapped
+	   upload. */
+	position: absolute;
+	top: 52px;
+	left: 0;
+	height: 16px;
+	line-height: 16px;
+	padding: 0 6px;
+	font-size: 9px;
+	white-space: nowrap;
+	background: #eee;
+	border: 1px solid #999;
+	cursor: pointer;
+}
+
+.download-attach.download-armed {
+	/* the pick mode is on: the next text/image click wraps */
+	background: #dde9ff;
+	border-color: #000;
+}
+
+.glue-download-wrapped {
+	/* the editor's hidden form of a wrapped download box: the object must
+	   exist for undo and detach to reach it, but it stays off-screen */
+	display: none;
+}
+
+.glue-download-wrap {
+	/* the editor indicator on a wrapped text/image target: the
+	   association is visible while the download itself stays view-only */
+	outline: 1px dashed rgba(0, 0, 0, 0.4);
+	outline-offset: 2px;
 }
 
 #glue-contextmenu-download-public {

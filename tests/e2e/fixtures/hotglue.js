@@ -77,6 +77,11 @@ class Fixture {
 		return fs.readdirSync(this.dir).sort();
 	}
 
+	assets() {
+		const dir = path.join(CONTENT, this.pageName.split('.')[0], 'shared');
+		return fs.existsSync(dir) ? fs.readdirSync(dir).sort() : [];
+	}
+
 	editUrl() {
 		// the editor is addressed as ?<page>/edit - the slash matters, it is
 		// how parse_query_string() splits arg0 from arg1 (controller.inc.php)

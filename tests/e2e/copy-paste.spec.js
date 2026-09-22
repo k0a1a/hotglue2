@@ -279,8 +279,8 @@ test('an object pasted onto another page arrives with its image',
 
 		// the file came across into the target page's own shared directory
 		expect(second.assets()).toContain('sample.png');
-		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample.png')))
-			.equals(SAMPLE_BYTES);
+		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample.png'))
+			.equals(SAMPLE_BYTES)).toBe(true);
 		// the source page keeps its own
 		expect(hg.assets()).toEqual(['sample.png']);
 
@@ -296,7 +296,7 @@ test('an object pasted onto another page arrives with its image',
 		const url = bg.match(/url\(["']?([^"')]+)/)[1];
 		const r = await page.request.get(url);
 		expect(r.status()).toBe(200);
-		expect(Buffer.from(await r.body())).equals(SAMPLE_BYTES);
+	expect(Buffer.from(await r.body()).equals(SAMPLE_BYTES)).toBe(true);
 		expect(errors).toEqual([]);
 	});
 
@@ -328,10 +328,10 @@ test('a colliding asset is copied under a new name, never over the target',
 
 		// the target's own file is untouched, byte for byte - this is the
 		// "I pasted an object and it broke a different image" failure
-		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample.png')))
-			.equals(theirs);
-		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample_2.png')))
-			.equals(SAMPLE_BYTES);
+		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample.png'))
+			.equals(theirs)).toBe(true);
+		expect(fs.readFileSync(path.join(sharedDir(second.pageName), 'sample_2.png'))
+			.equals(SAMPLE_BYTES)).toBe(true);
 		expect(errors).toEqual([]);
 	});
 
