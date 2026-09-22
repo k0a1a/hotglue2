@@ -82,9 +82,6 @@ function makePage(pageName) {
 	};
 }
 
-// the box's pick-mode button, which hangs below the 50x50 box
-const attachBtn = (page) => page.locator('.download-attach');
-
 // the target's menu button, whose state flips between attach and detach
 const menuBtn = (page) => page.locator('#glue-contextmenu-download-wrap');
 
@@ -129,9 +126,6 @@ test('an uploaded file renders as the 50x50 mime box and downloads in view',
 		expect(Math.round(box.width)).toBe(50);
 		expect(Math.round(box.height)).toBe(50);
 		await expect(page.locator('.download-mime')).toHaveText('pdf');
-		// the attach icon is the box's own chrome
-		await expect(attachBtn(page)).toHaveAttribute('title',
-			'attach the download to a selected text or image object');
 
 		// the stored object
 		const id = newId(hg, ['100000000001', 'page']);
@@ -235,27 +229,6 @@ test('a wrapped text object edits normally, and the wrap survives the save',
 		expect(hg.readObject('100000000001').attrs['download-wrap'])
 			.toBe(hg.pageName + '.100000000002');
 	});
-
-test('the selected target and the box\'s attach icon wrap the pair', async ({ page, hg }) => {
-	hg.addObject('100000000001', textObject(50, 50, 100), 'hello');
-	hg.addObject('100000000002', downloadObject(300, 50, 100));
-	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 2);
-
-	// select the target, then press the box's attach icon - multi-select
-	// is the picking gesture, no pick mode (danja's call, 2026-09-22)
-	await byId(page, hg, '100000000001').click();
-	await attachBtn(page).click();
-	await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
-		.toBe(hg.pageName + '.100000000002');
-	await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap-target'])
-		.toBe(hg.pageName + '.100000000001');
-	await expect(byId(page, hg, '100000000002')).toBeHidden();
-	// the selection survived the button's click (stopPropagation), so the
-	// gesture reads as select-then-attach
-	await expect(byId(page, hg, '100000000001')).toHaveClass(/glue-selected/);
-});
 
 test('the box\'s menu: attach first, no overflow, no rotation handle, and it wraps',
 	async ({ page, hg }) => {

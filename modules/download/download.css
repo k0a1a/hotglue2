@@ -25,48 +25,6 @@
 	color: rgba(0, 0, 0, 0.75);
 }
 
-.download-attach {
-	/* the box's ONE button, editor-render-only: an attach icon hanging
-	   below the box - the same framed-mask language as the menu's
-	   .glue-btn-icon (frame + fill here; the glyph is the --glue-icon the
-	   server bakes in, so the url resolves against the site, not the css
-	   file). A div rather than a button, the editor's own convention, and
-	   no loadable element may ever sit inside the box - edit.js's
-	   content_loaded would then reposition a freshly wrapped upload. */
-	position: absolute;
-	top: 54px;
-	left: 9px;
-	width: 32px;
-	height: 32px;
-	box-sizing: border-box;
-	border: 1px solid rgba(0, 0, 0, 0.35);
-	background-color: rgba(255, 255, 255, 0.2);
-	cursor: pointer;
-}
-
-.download-attach::before {
-	/* the glyph, masked like .glue-btn-icon::before (css/edit.css) */
-	content: '';
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	background-color: #333;
-	-webkit-mask-image: var(--glue-icon);
-	mask-image: var(--glue-icon);
-	-webkit-mask-position: center;
-	mask-position: center;
-	-webkit-mask-repeat: no-repeat;
-	mask-repeat: no-repeat;
-	-webkit-mask-size: 30px 30px;
-	mask-size: 30px 30px;
-}
-
-.download-attach:hover {
-	background-color: #ccc;
-}
-
 .glue-download-wrapped {
 	/* the editor's hidden form of a wrapped download box: the object must
 	   exist for undo and detach to reach it, but it stays off-screen */

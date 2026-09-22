@@ -262,30 +262,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		}, 0);
 	});
-	// the box's ONE button: attaches the box to the ONE text or image
-	// object currently selected (shift-click multi-select is the picking
-	// gesture, 2026-09-22). A capture listener rather than $.glue.live -
-	// the editor's delegated .object click would run first (the live queue
-	// is one document listener in registration order, and a stopPropagation
-	// inside it is too late) and collapse the selection to the box alone
-	// before the attach read it.
-	document.addEventListener('click', function(e) {
-		var btn = e.target.closest('.download-attach');
-		if (!btn) {
-			return;
-		}
-		var box = btn.closest('.download');
-		if (!box || !box.id) {
-			return;
-		}
-		e.stopPropagation();
-		// canvas objects do not carry $.glue.owner - the box's id IS its
-		// full object name
-		download_wrap_attach_selected(box);
-	}, true);
 	// the box menu's attach: FIRST in the upper bar (prio -1 beats
 	// object-properties' 0; download-class items land in the top bar
-	// anyway) - the same action as the hanging icon below the box
+	// anyway) - the attach lives in the menu only, not on the box
+	// (danja's call, 2026-09-22)
 	var attach = $.glue.icon('attach', 'attach the download to a selected text or image object');
 	attach.addEventListener('click', function(e) {
 		e.stopPropagation();
@@ -324,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('download', function(obj, orig) {
-		['.download-ext', '.download-mime', '.download-attach'].forEach(function(sel) {
+		['.download-ext', '.download-mime'].forEach(function(sel) {
 			var el = obj.querySelector(':scope > '+sel);
 			if (el) {
 				el.remove();
