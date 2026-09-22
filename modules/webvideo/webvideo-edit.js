@@ -30,6 +30,12 @@ function webvideo_autoplay_sync(elem) {
 	var data = Alpine.$data(elem);
 	if (webvideo_cache_get(obj, 'webvideo-autoplay') === undefined) {
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(resp) {
+			// the menu can hide - and Alpine tear the item down - while
+			// this round-trip is in flight; the next show re-syncs, so the
+			// detached write is skipped (see download_public_sync)
+			if (!elem.isConnected) {
+				return;
+			}
 			var val = (resp['webvideo-autoplay'] == 'autoplay') ? 'autoplay' : '';
 			webvideo_cache_set(obj, 'webvideo-autoplay', val);
 			data.enabled = (val == 'autoplay');
@@ -58,6 +64,9 @@ function webvideo_loop_sync(elem) {
 	var data = Alpine.$data(elem);
 	if (webvideo_cache_get(obj, 'webvideo-loop') === undefined) {
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(resp) {
+			if (!elem.isConnected) {
+				return;
+			}
 			var val = (resp['webvideo-loop'] == 'loop') ? 'loop' : '';
 			webvideo_cache_set(obj, 'webvideo-loop', val);
 			data.enabled = (val == 'loop');

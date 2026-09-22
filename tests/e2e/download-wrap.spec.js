@@ -289,6 +289,29 @@ test('detach clears the pair and the box returns at its position',
 	expect(Math.round(moved.y)).toBeGreaterThanOrEqual(85);
 });
 
+test('dragging a download raises no server-communication dialog',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', downloadObject(300, 50, 100));
+		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+		let dialog = null;
+		page.on('dialog', (d) => {
+			dialog = d.message();
+			d.dismiss().catch(() => {});
+		});
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// the drag's first frame shows the box's menu and the movestart
+		// hides it again in the same gesture - the download-public sync's
+		// round-trip lands while Alpine tears the item down (firefox
+		// reported "can't convert undefined to object" into the glue-gun
+		// dialog)
+		const box = await byId(page, hg, '100000000001').boundingBox();
+		await drag(page, [box.x + box.width / 2, box.y + box.height / 2], 100, 40);
+		await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('400px');
+		expect(dialog).toBeNull();
+	});
+
 test('the box\'s own menu attaches through the pick mode', async ({ page, hg }) => {
 	hg.addObject('100000000001', downloadObject(300, 50, 100));
 	hg.addObject('100000000002', textObject(50, 50, 100), 'hello world');

@@ -309,6 +309,14 @@ function download_wrap_detach_dl(obj) {
 function download_public_sync(elem) {
 	var obj = $.glue.owner(elem);
 	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+		// the menu can hide - and Alpine tear the item down - while this
+		// round-trip is in flight (the drag's first frame shows the menu
+		// and the movestart right behind it hides it again). A write into
+		// the torn-down reactive proxy throws; the item's next show
+		// re-syncs, so the detached write is skipped instead.
+		if (!elem.isConnected) {
+			return;
+		}
 		Alpine.$data(elem).enabled = (data['download-public'] == 'public');
 	});
 }
