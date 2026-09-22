@@ -384,3 +384,45 @@ test('the box label falls back to the file extension', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await expect(page.locator('.download-mime')).toHaveText('zip');
 });
+
+test('an image target attaches the same way, and wraps its <img> in view',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', {
+			type: 'image', module: 'image',
+			'image-file': 'sample.pdf', 'image-file-mime': 'application/pdf',
+			'image-file-width': '120', 'image-file-height': '80',
+			'object-left': '50px', 'object-top': '50px',
+			'object-width': '120px', 'object-height': '80px',
+			'object-zindex': '100',
+		});
+		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// the image's menu carries the same attach button
+		await openMenu(page, hg, '100000000001');
+		await expect(menuBtn(page)).toHaveAttribute('title', 'attach a file to download');
+		const chooser = page.waitForEvent('filechooser');
+		await menuBtn(page).click();
+		await (await chooser).setFiles(SAMPLE);
+		await expect(page.locator('.download.object')).toHaveCount(1, { timeout: 10000 });
+
+		const dl = newId(hg, ['100000000001', 'page']);
+		await expect.poll(() => hg.readObject(dl).attrs['download-wrap-target'])
+			.toBe(hg.pageName + '.100000000001');
+		await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
+			.toBe(hg.pageName + '.' + dl);
+
+		// public, then the published page wraps the image's markup
+		await page.evaluate((n) => fetch($.glue.base_url + 'json.php', {
+			method: 'POST',
+			body: new URLSearchParams([
+				['method', JSON.stringify('glue.update_object')],
+				['name', JSON.stringify(n)],
+				['download-public', JSON.stringify('public')],
+			]),
+		}), hg.pageName + '.' + dl);
+		await page.goto(pageUrl(hg));
+		const a = page.locator('a').filter({ has: byId(page, hg, '100000000001') });
+		await expect(a).toHaveAttribute('download', 'sample.pdf');
+	});
