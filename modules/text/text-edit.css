@@ -119,7 +119,7 @@
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-	position: relative;		/* the veil pins to it */
+	position: relative;
 	height: 60px;
 	overflow: hidden;		/* no wheel and no scrollbar - the drag is
 	                           the way around the drum, the click is the
@@ -151,23 +151,6 @@
 }
 
 
-.glue-font-face-list::after {
-	/* the wheel's whole look: a gradient veil dimming the rows toward the
-	   edges. A veil rather than mask-image - a mask would fade the list's
-	   own background too and let the popover's translucent background
-	   ghost through the edges. */
-	content: '';
-	position: absolute;
-	inset: 0;
-	background: linear-gradient(
-		rgba(255, 255, 255, 0.95) 0,
-		rgba(255, 255, 255, 0.55) 16%,
-		rgba(255, 255, 255, 0)    38%,
-		rgba(255, 255, 255, 0)    62%,
-		rgba(255, 255, 255, 0.55) 84%,
-		rgba(255, 255, 255, 0.95) 100%);
-	pointer-events: none;
-}
 
 .glue-font-face-pad {
 	/* the spacer at each end of the reel: (60 - 26) / 2, so the FIRST

@@ -5,17 +5,17 @@ written; what shipped follows it with the deviations listed under "As built".
 
 ## As built (2026-09-21)
 
-- The face wheel (`.glue-font-face-list`) is a 50px window — two rows and two peeks —
+- The face wheel (`.glue-font-face-list`) is a 60px window — two rows and two peeks —
   ALWAYS present in the panel, in-flow in the face row (the button that once opened it is
-  gone, danja's call, 2026-09-21). Its whole look is a gradient veil dimming the rows
-  toward the edges — no centre band, no scrollbar, no preview sample.
+  gone, danja's call, 2026-09-21). No centre band, no scrollbar, no preview sample, and
+  no edge fade (2026-09-22, danja's call) — the rows simply clip at the window.
 - The interactions, danja's calls the same day: **the drag is the way around the drum**
   (pointer events move the scrollTop; the release snaps to the nearest row; touch-action
   none so a finger owns the gesture), **the click is the pick** — nothing applies without
   one, and the wheel follows the applied row into the centre — and **hovering hands the
   wheel the keyboard**: while the pointer is over it, ArrowUp/ArrowDown scroll one row at
-  a time, without applying. The mouse wheel scrolls nothing, and the cursor is the
-  grabbing hand, closing while the drum is dragged.
+  a time, without applying. The mouse wheel scrolls the drum at HALF pace (danja's call,
+  2026-09-21), and the cursor is ns-resize - the number rows' sideways one stood up.
 - A pick wraps the run's span or writes the object's style, exactly as the dropdown did —
   a click always applies, so re-picking the face a MIXED run reports clears the odd faces
   out by construction (the old `face_reel_mixed` guard died with the settle).
@@ -24,9 +24,9 @@ written; what shipped follows it with the deviations listed under "As built".
   not container padding — engine bug history). There is nothing to dismiss — the wheel is
   part of the panel, and Escape closes the panel itself.
 - Deviations from the brief: make-min, not a terser build (the project has no build step);
-  mouse drag has no momentum/fling; the 50px window shows two rows and two peeks rather
-  than three full rows — the peeks are what the brief asked for, and the gradient veil
-  dims them.
+  mouse drag has no momentum/fling; the 60px window shows two rows and two peeks rather
+  than three full rows — the peeks are what the brief asked for, and since 2026-09-22 they
+  simply clip at the window's edges, no fade.
   Tests: the wheel tests in `tests/e2e/text-font-popover.spec.js` and the run-target tests
   in `tests/e2e/text-formatting.spec.js`.
 
