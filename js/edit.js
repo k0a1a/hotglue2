@@ -2765,6 +2765,21 @@ $.glue.undo = function()
 				}
 				render_and_apply(a.id, el, false);
 			}, false);
+		} else if (a.type == 'content') {
+			var el = document.getElementById(a.id);
+			if (!el) {
+				return;
+			}
+			inverse_out.push({ type: 'content', id: a.id,
+				content: $.glue.undo.content_reader ?
+					$.glue.undo.content_reader(el) : null });
+			$.glue.backend({ method: 'glue.update_object', name: a.id,
+				content: a.content }, function(data) {
+				if (!data || data['#error']) {
+					return;
+				}
+				render_and_apply(a.id, el, false);
+			}, false);
 		} else if (a.type == 'delete') {
 			inverse_out.push({ type: 'create', id: a.id });
 			// the object's file was unlinked by delete_object() - glue.
@@ -2853,6 +2868,28 @@ $.glue.undo = function()
 				push({ type: 'update', id: obj.id, before: prev });
 			}
 			last_html.set(obj, html);
+		},
+		// the text module's content, as the editor knows it - registered by
+		// the module; the undo stack itself stays content-agnostic
+		content_reader: null,
+		// called when the object's CONTENT changes (the text module's
+		// edits). The html snapshots carry attributes only - the content
+		// lives in its own part of the object file - so a content change
+		// is an entry of its own, with the PREVIOUS content as the undo
+		// target.
+		capture_content: function(obj, previous_content) {
+			if (restoring) {
+				return;
+			}
+			var prev = last_html.get(obj);
+			if (prev === undefined) {
+				// same classification as capture(): no saved baseline
+				// means a create
+				push({ type: 'create', id: obj.id });
+				last_html.set(obj, $.glue.object.to_html(obj));
+				return;
+			}
+			push({ type: 'content', id: obj.id, content: previous_content });
 		},
 		// called before a delete removes the object from the dom
 		capture_delete: function(obj, html) {

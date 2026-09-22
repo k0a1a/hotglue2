@@ -264,10 +264,31 @@ $.glue.text = function()
 			input.textContent = input.value;
 			// update the content on the server
 			// see the comments in $.glue.object.register_alter_pre_save below
+			if (input.value !== text_preedit_content) {
+				// the content edit is an undo step of its own - the html
+				// snapshots carry attributes only
+				$.glue.undo.capture_content(elem, text_preedit_content);
+			}
+			text_preedit_content = null;
 			$.glue.backend({ method: 'glue.update_object', name: elem.id, 'content': input.value });
 		}
 	};
 }();
+
+// the content as the undo stack reads it: the editing render's source
+// while editing, the stored source otherwise (js/edit.js, $.glue.undo)
+$.glue.undo.content_reader = function(obj) {
+	var input = obj.querySelector(':scope > .glue-text-input');
+	var render = obj.querySelector(':scope > .glue-text-render');
+	if (!input || !render) {
+		return null;
+	}
+	return render.isContentEditable ?
+		$.glue.text.from_editing_html(render) : input.value;
+};
+// the content at the moment editing began - the undo target for whatever
+// the edit session does to it
+var text_preedit_content = null;
 
 $.glue.live('.text', 'glue-register', function(e) {
 	// prevent events from bubbling up while we're editing
@@ -461,6 +482,7 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 	}
 	var input = self.querySelector(':scope > .glue-text-input');
 	var render = self.querySelector(':scope > .glue-text-render');
+	text_preedit_content = input.value;
 	self.classList.add('glue-text-editing');
 
 	if (self.classList.contains('glue-text-source')) {
@@ -1378,9 +1400,11 @@ function text_panel_build(pop, obj)
 		probe.innerHTML = input.value;
 		text_strip_clear_inner(probe, prop);
 		if (probe.innerHTML !== input.value) {
+			var old_value = input.value;
 			input.value = probe.innerHTML;
 			render.innerHTML = $.glue.text.render_content(input.value, obj.id);
 			if (commit) {
+				$.glue.undo.capture_content(obj, old_value);
 				$.glue.backend({ method: 'glue.update_object',
 					name: obj.id, content: input.value });
 			}
@@ -1529,8 +1553,10 @@ function text_panel_build(pop, obj)
 				text_strip_restore(text_strip_render, text_strip_snapshot);
 				text_strip_snapshot = null;
 			} else {
+				$.glue.undo.begin_batch();
 				object_clear_runs('color', true);
 				save();
+				$.glue.undo.end_batch();
 				sync();
 			}
 		});
@@ -1643,8 +1669,10 @@ function text_panel_build(pop, obj)
 			}
 		} else {
 			obj.style.fontFamily = name;
+			$.glue.undo.begin_batch();
 			object_clear_runs('fontFamily', true);
 			save();
+			$.glue.undo.end_batch();
 			if (name !== '') {
 				// remembered as the default for newly created text objects,
 				// as the old face button did (page_set_last_font(), site-wide)
@@ -1862,9 +1890,11 @@ function text_panel_build(pop, obj)
 		}
 		obj.style.fontSize = px+'px';
 		obj.style.lineHeight = (px*ratio)+'px';
+		$.glue.undo.begin_batch();
 		object_clear_runs('fontSize', commit);
 		if (commit) {
 			save();
+			$.glue.undo.end_batch();
 			$.glue.conf.text.last_font_size = obj.style.fontSize;
 			$.glue.backend({ method: 'page.set_last_font_size', size: obj.style.fontSize });
 			$.glue.conf.text.last_line_height = obj.style.lineHeight;
@@ -2095,9 +2125,11 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.lineHeight = v+'em';
+			$.glue.undo.begin_batch();
 			object_clear_runs('lineHeight', commit);
 			if (commit) {
 				save();
+				$.glue.undo.end_batch();
 				// the old line-height control remembered this site-wide for
 				// newly created text objects; so does this one
 				$.glue.conf.text.last_line_height = obj.style.lineHeight;
@@ -2125,9 +2157,11 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.letterSpacing = v+'em';
+			$.glue.undo.begin_batch();
 			object_clear_runs('letterSpacing', commit);
 			if (commit) {
 				save();
+				$.glue.undo.end_batch();
 			}
 		}
 	});
@@ -2148,9 +2182,11 @@ function text_panel_build(pop, obj)
 				return;
 			}
 			obj.style.wordSpacing = v+'em';
+			$.glue.undo.begin_batch();
 			object_clear_runs('wordSpacing', commit);
 			if (commit) {
 				save();
+				$.glue.undo.end_batch();
 			}
 		}
 	});
@@ -2201,9 +2237,11 @@ function text_panel_build(pop, obj)
 			obj.style.setProperty('--glue-shadow-color', shadow.color);
 			obj.classList.add('glue-text-shadow');
 		}
+		$.glue.undo.begin_batch();
 		object_clear_runs('textShadow', commit);
 		if (commit) {
 			save();
+			$.glue.undo.end_batch();
 		}
 	};
 

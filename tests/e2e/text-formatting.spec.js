@@ -417,6 +417,43 @@ test('a face applied over differently-faced words takes them both',
 		'<span style="font-size: 24px;">world</span></span>');
 });
 
+test('a text edit is one undo step away', async ({ page, hg }) => {
+	const a = await add(page, hg, 'hello world');
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await fmtBtn(page, 'bold').click();
+	await finish(page, a);
+	await expect.poll(() => stored(hg)).toBe('hello <b>world</b>');
+	// ctrl-z outside any field: the edit session's content change reverts
+	// (the html snapshots carry attributes only, so a content change is an
+	// undo entry of its own)
+	await page.keyboard.press('Control+z');
+	await expect.poll(() => stored(hg)).toBe('hello world');
+	// and the redo brings it back
+	await page.keyboard.press('Control+y');
+	await expect.poll(() => stored(hg)).toBe('hello <b>world</b>');
+});
+
+test('an object-wide face change over run spans is one undo step',
+	async ({ page, hg }) => {
+	// NOT editing - the panel opens beside the selected object. The apply
+	// writes the attribute AND takes the run span's own face off, and the
+	// two are ONE undo step.
+	const a = await add(page, hg,
+		'hello <span style="font-family: Georgia, serif;">world</span>');
+	await page.locator(`[id="${a}"]`).click();
+	await expect(fontBtn(page)).toBeVisible();
+	await page.waitForTimeout(400);
+	await fontBtn(page).click();
+	await pickFace(page, 'Courier New');
+	await expect.poll(() => hg.readObject(ID).attrs['text-font-family']).toBeTruthy();
+	await expect.poll(() => stored(hg)).toBe('hello world');
+	await page.keyboard.press('Control+z');
+	await expect.poll(() => hg.readObject(ID).attrs['text-font-family']).toBe(undefined);
+	await expect.poll(() => stored(hg))
+		.toBe('hello <span style="font-family: Georgia, serif;">world</span>');
+});
+
 test('formatting survives reload and renders on the published page', async ({ page, hg }) => {
 	const a = await add(page, hg, 'hello <b>world</b>');
 	await openPanel(page, a);
