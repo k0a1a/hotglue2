@@ -4,39 +4,45 @@
    viewBox="0 0 30 30"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  
-  
   <g
-     transform="matrix(-0.70710678,-0.70710678,-0.70710678,0.70710678,76.211013,17.563457)">
-    <g
-       transform="translate(0.9999999,-1.0030976)">
-      <path
-         d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
-         transform="matrix(0,-1.0912502,1,0,21.255251,41.563912)" />
-      <path
-         d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
-         transform="matrix(1.0912502,0,0,1,-11.563912,23.255251)" />
-    </g>
-    <path
-       d="m 12.702551,28.551606 c 4.922896,0 9.845791,0 14.768686,0"
-       transform="matrix(0.71745301,-0.71873574,0.7078561,0.70915619,-14.622186,4.2000266)" />
-  </g>
-  <g
+     id="g10"
      transform="translate(0,-2)">
     <path
-       d="M 4,17 V 27 H 26 V 17 h -2 v 8 H 6 v -8 z" />
+       style="fill:#000000"
+       d="M 4,17 V 27 H 26 V 17 h -2 v 8 H 6 v -8 z"
+       id="path1" />
     <rect
+       style="fill:#000000;stroke-width:0;paint-order:fill markers stroke"
+       id="rect7"
        width="6"
-       height="2" />
+       height="2"
+       x="4"
+       y="17" />
     <rect
+       style="fill:#000000;stroke-width:0;paint-order:fill markers stroke"
+       id="rect8"
        width="6"
-       height="2" />
+       height="2"
+       x="20"
+       y="17" />
   </g>
-  <rect
-     width="10"
-     height="2" />
-  <rect
-     width="10"
-     height="2"
-     transform="rotate(-90)" />
+  <g
+     id="g11"
+     transform="rotate(-90,15,9)">
+    <rect
+       style="fill:#000000;stroke-width:0;paint-order:fill markers stroke"
+       id="rect9"
+       width="10"
+       height="2"
+       x="10"
+       y="8" />
+    <rect
+       style="fill:#000000;stroke-width:0;paint-order:fill markers stroke"
+       id="rect10"
+       width="10"
+       height="2"
+       x="-14"
+       y="14"
+       transform="rotate(-90)" />
+  </g>
 </svg>
