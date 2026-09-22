@@ -274,10 +274,15 @@ test('a download selected together with its target shows the menu and attaches',
 		await waitForEditor(page, 2);
 
 		// multi-select: the text first, the box second - the editor hides
-		// every menu on a multi-select, the download's own shows instead
+		// every menu on a multi-select, the download's own shows instead,
+		// and it is JUST the attach icon
 		await byId(page, hg, '100000000001').click();
 		await byId(page, hg, '100000000002').click({ modifiers: ['Shift'] });
 		await expect(page.locator('#glue-contextmenu-download-attach')).toBeVisible();
+		const ids = await page.evaluate(() =>
+			Array.from(document.querySelectorAll('[id^="glue-contextmenu-"]'))
+				.filter((el) => el.style.visibility !== 'hidden').map((el) => el.id));
+		expect(ids).toEqual(['glue-contextmenu-download-attach']);
 
 		// the attach reads the selection itself - no remembered target
 		await page.locator('#glue-contextmenu-download-attach').click();

@@ -14,8 +14,8 @@ picking gesture (the earlier click-to-pick mode is gone). The
 menu's attach falls back to the last compatible object selected, since the click that
 opens the menu collapses the selection; when the download is selected TOGETHER with
 other objects the box's own menu shows in the multi-select state (the editor otherwise
-hides menus there) and the attach reads the selection itself; the box never rotates and
-its menu carries no overflow toggle. Text and image menus gain
+hides menus there) and it is JUST the attach icon, reading the selection itself; the box
+never rotates and its menu carries no overflow toggle. Text and image menus gain
 attach/detach (attach uploads a file as a NEW download wrapped around the target; detach
 puts the box back at its saved position). The pair is two attributes -
 `download-wrap` on the target, `download-wrap-target` on the download, written via

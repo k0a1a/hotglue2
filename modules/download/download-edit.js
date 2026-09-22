@@ -279,7 +279,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	// selected object); when a download is selected TOGETHER with others,
 	// the box's own menu shows instead - the attach lives there and reads
 	// the selection itself (danja's call, 2026-09-22). This runs after the
-	// core glue-select handler, which did the hiding.
+	// core glue-select handler, which did the hiding. The menu is JUST the
+	// attach icon in this state: every other item hides itself for this
+	// showing, and the next show's place_items resets the visibility, so
+	// nothing persists.
 	$.glue.live('.object', 'glue-select', function() {
 		var box = this.classList.contains('download') ? this : null;
 		if (!box) {
@@ -287,6 +290,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		if (box && document.querySelectorAll('.glue-selected').length > 1) {
 			$.glue.contextmenu.show(box);
+			document.querySelectorAll('[id^="glue-contextmenu-"]').forEach(function(el) {
+				if (el.id != 'glue-contextmenu-download-attach') {
+					el.style.visibility = 'hidden';
+				}
+			});
 		}
 	});
 	// the box menu's attach: FIRST in the upper bar (prio -1 beats
