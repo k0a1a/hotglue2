@@ -2684,9 +2684,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		}
 	});
-	// prio 2: it was 3, and moved up when the padding button between it and the
-	// font button left the menu (2026-09-16, to the object properties panel)
-	$.glue.contextmenu.register('text', 'text-source', elem, 2);
+	// prio 12: the last button of the upper row, after the heading level
+	// (it sat second since forever - 2026-09-22, danja's call)
+	$.glue.contextmenu.register('text', 'text-source', elem, 12);
 
 
 	// The text menu's own two background buttons - "change background color"
