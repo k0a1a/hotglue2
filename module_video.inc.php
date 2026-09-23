@@ -228,6 +228,8 @@ function video_check_pending_encode($obj)
 		}
 	} elseif (time() - intval($obj['video-encode-started']) > VIDEO_ENCODE_TIMEOUT) {
 		log_msg('warn', 'video_check_pending_encode: timed out waiting for encode of '.quot($obj['name']).', falling back to the original');
+		// a dead encode leaves its .part behind - see video_upload
+		@unlink($dir.'/'.$out.'.part');
 		object_remove_attr(['name'=>$obj['name'], 'attr'=>['video-encode-status', 'video-encode-started', 'video-encode-file', 'video-encode-poster-file']]);
 		unset($obj['video-encode-status']);
 		unset($obj['video-encode-started']);
@@ -609,7 +611,16 @@ function video_upload($args)
 			exec(escapeshellarg(FFMPEG_BINARY).' -y -ss '.intval(VIDEO_POSTER_TIME).' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($dir.'/'.$poster).' 2>/dev/null');
 		}
 
-		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart '.escapeshellarg($dir.'/'.$out);
+		// the encode writes to a .part name (with -f mp4: ffmpeg cannot
+		// infer the muxer from a .part extension) and only the mv at the
+		// end of the shell chain puts the final file in place - the
+		// finalize below gates on is_file($out), and without this it
+		// would fire the moment ffmpeg CREATED the file, mid-write (the
+		// +faststart second pass rewrites it), and the browser's first
+		// fetch got a truncated mp4: the video element errors once and
+		// stays dead
+		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart -f mp4 '.escapeshellarg($dir.'/'.$out.'.part')
+			.' && mv '.escapeshellarg($dir.'/'.$out.'.part').' '.escapeshellarg($dir.'/'.$out);
 		exec($cmd.' > /dev/null 2>&1 &');
 		$obj['video-encode-status'] = 'pending';
 		$obj['video-encode-started'] = time();
