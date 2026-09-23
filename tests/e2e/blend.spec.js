@@ -28,7 +28,7 @@ async function openPicker(page, id) {
 	// custom attributes" until 2026-09-16, so the plain match found two. It says
 	// "object attributes" now and finds one again, but the whole name is what is
 	// meant either way.
-	await page.getByTitle('object properties', { exact: true }).click();
+	await page.getByTitle('object properties: background color/image, transparency, padding, flip, link', { exact: true }).click();
 	await page.getByTitle('set object background color', { exact: true }).click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 }

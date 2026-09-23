@@ -42,7 +42,7 @@ const targetSel = (page) => panel(page).locator('.glue-link-target-select');
 // icon row and before "more knobs".
 async function openPanel(page, id) {
 	await byId(page, id).click();
-	await page.getByTitle('object properties').click();
+	await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
 	await expect(panel(page)).toBeVisible();
 	await expect(linkRow(page)).toBeVisible();
 }

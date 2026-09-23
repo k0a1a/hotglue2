@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// reached from - so it names the settings, not the page list that happens
 	// to share the page with them. /?pages stays as it was: it is out there in
 	// links and bookmarks, and an alias is the whole point of it.
-	var elem = $.glue.icon('site-settings', 'site options');
+	var elem = $.glue.icon('site-settings', 'site options: set site icon (favicon), manage pages, add fonts');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		window.location = $.glue.base_url+'?options';

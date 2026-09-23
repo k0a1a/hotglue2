@@ -48,7 +48,7 @@ async function openFold(page) {
 // the page menu, then its background button - the panel's one way in
 async function openPanel(page) {
 	await page.keyboard.press('Alt+P');
-	const button = page.getByTitle('page background', { exact: true });
+	const button = page.getByTitle('set page background', { exact: true });
 	await expect(button).toBeVisible();
 	await button.click();
 	await expect(pop(page)).toBeVisible();

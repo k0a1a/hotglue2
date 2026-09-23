@@ -2002,7 +2002,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// rather than a diagram, and it earns its place: everyone knows what a
 	// cloned sheep is, and the alternative - two overlapping rectangles - is
 	// what half the icons in any toolbar already look like.
-	elem = $.glue.icon('sheep-icon5', 'clone object');
+	elem = $.glue.icon('sheep-icon5', 'create a clone of this object');
 	// the sheep is the one icon in the set that is a joke, so it gets the
 	// one animation in the set too: its eyes blink (a lid painted in the
 	// button's own fill drops over them - see
@@ -2068,7 +2068,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// other two went to the properties button below on 2026-09-16. The PNG
 	// artwork of the removed buttons stays in this directory, like
 	// transform-rotate.png in the transform module's.
-	elem = $.glue.icon('change-layer', 'object adjustments');
+	elem = $.glue.icon('change-layer', 'object position controls: layer up/down and x/y position');
 	elem.addEventListener('click', function(e) {
 		object_adjust_popover($.glue.owner(this));
 	});
@@ -2099,7 +2099,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// background alone. The icon is unchanged - a filled square is what an
 	// object's properties panel looks like from here, and the button's place in
 	// the row has not moved.
-	elem = $.glue.icon('background-set', 'object properties');
+	elem = $.glue.icon('background-set', 'object properties: background color/image, transparency, padding, flip, link');
 	elem.addEventListener('click', function(e) {
 		object_properties_popover($.glue.owner(this));
 		e.stopPropagation();
@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under an object, and how it is flipped, is as much a property of it as
 	// the id is. What this action is about is the object as an element: what it
 	// is called, what classes it carries, what it points at.
-	elem = $.glue.icon('object-props', 'object attributes');
+	elem = $.glue.icon('object-props', 'object HTML attributes: id, class and custom values');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
@@ -2132,7 +2132,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-symlink', elem);
 
-	elem = $.glue.icon('delete', 'delete object');
+	elem = $.glue.icon('delete', 'delete object (UNDOABLE)');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var id = obj.id;
@@ -2155,14 +2155,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	// on" green: that would have said something about THIS object, and the
 	// clipboard is one slot for the whole editor holding an object that may
 	// well not be the one whose menu is open.
-	elem = $.glue.icon('copy-to-clipboard', 'copy object');
+	elem = $.glue.icon('copy-to-clipboard', 'copy object to clipboard: paste copied object on any page of your site');
 	// note: elem is reused for every item in this scope, so the closure must
 	// capture this button, not the mutable elem
 	var copy_elem = elem;
 	var copy_sync = function() {
 		var full = $.glue.clipboard.has_clipboard();
 		copy_elem.classList.toggle('glue-clipboard-full', full);
-		copy_elem.title = full ? 'copy object [previous data present]' : 'copy object';
+		copy_elem.title = full ? 'copy object to clipboard: [previous data present]' : 'copy object to clipboard: paste copied object on any page of your site';
 	};
 	elem.addEventListener('glue-menu-activate', copy_sync);
 	// a copy by shortcut leaves this button untouched, so it is told when the

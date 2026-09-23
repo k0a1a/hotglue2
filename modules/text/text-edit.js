@@ -2640,7 +2640,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = $.glue.icon('text-object', 'add a new text object');
+	var elem = $.glue.icon('text-object', 'create a text object');
 	elem.addEventListener('click', function(e) {
 		// create new object
 		$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {

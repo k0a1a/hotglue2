@@ -68,7 +68,7 @@ async function openPanel(page, hg) {
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await byId(page, `${hg.pageName}.${ID}`).click();
-	await page.getByTitle('object properties').click();
+	await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
 	await expect(panel(page)).toBeVisible();
 	return `${hg.pageName}.${ID}`;		// the DOM id the object element carries
 }
@@ -168,7 +168,7 @@ test('the panel only draws the section for a text object, and there it is flush 
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await byId(page, `${hg.pageName}.${ID}`).click();
-		await page.getByTitle('object properties').click();
+		await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
 		await expect(panel(page)).toBeVisible();
 
 		await expect(panel(page).locator('.glue-padding-row')).toHaveCount(0);

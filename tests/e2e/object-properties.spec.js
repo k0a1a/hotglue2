@@ -37,7 +37,7 @@ const byId = (page, id) => page.locator(`[id="${id}"]`);
 // carries the same two words as its accessible name, though nothing renders it.
 async function openProperties(page, id) {
 	await byId(page, id).click();
-	await page.getByTitle('object attributes').click();
+	await page.getByTitle('object HTML attributes: id, class and custom values').click();
 	await expect(page.locator('.glue-modal-tag')).toBeVisible();
 }
 

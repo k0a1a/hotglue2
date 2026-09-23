@@ -552,7 +552,7 @@ test('a new text object takes the last colour used on the page',
 
 		// the "new" menu opens on a click on empty canvas
 		await page.mouse.click(500, 400);
-		await page.getByTitle('add a new text object').click();
+		await page.getByTitle('create a text object').click();
 		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
 
 		expect(await page.evaluate(() =>
@@ -566,7 +566,7 @@ test('and falls back to a random default on a page with no colours yet',
 		await page.waitForFunction(() => window.$ && window.$.glue && window.$.glue.object);
 
 		await page.mouse.click(500, 400);
-		await page.getByTitle('add a new text object').click();
+		await page.getByTitle('create a text object').click();
 		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
 
 		const bg = await page.evaluate(() =>

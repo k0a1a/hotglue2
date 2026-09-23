@@ -25,7 +25,7 @@ const byId = (page, id) => page.locator(`[id="${id}"]`);
 // background panel became the object's properties panel. The button is in the
 // menu; the two flip toggles are inside the panel. The rotation handle is not
 // in any panel, so nothing here opens it.
-const propsBtn = (page) => page.getByTitle('object properties');
+const propsBtn = (page) => page.getByTitle('object properties: background color/image, transparency, padding, flip, link');
 const flipBtn = (page, axis) => page.getByTitle(axis == 'h' ? 'flip horizontally' : 'flip vertically');
 // the literal inline style, which is what the module parses - never the
 // computed one, where a rotation and a flip are the same matrix()

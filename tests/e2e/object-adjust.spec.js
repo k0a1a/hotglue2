@@ -24,7 +24,7 @@ const OBJ = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const adjust = (page) => page.getByTitle('object adjustments');
+const adjust = (page) => page.getByTitle('object position controls: layer up/down and x/y position');
 const popover = (page) => page.locator('.glue-popover.glue-adjust-popover');
 const zOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).zIndex, id);

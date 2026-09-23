@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	var elem = $.glue.icon('page-title', 'page settings');
+	var elem = $.glue.icon('page-title', 'page options: change title of the page, URL, make it a start page, or delete it');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_settings_popover();
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	elem = $.glue.icon('list-ordered', 'reading order');
+	elem = $.glue.icon('list-ordered', 'reading order: assign element importance, H1 being of most importance, though H6');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_reading_order_popover();
@@ -693,7 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under it, and what each of them does. The glyph followed the name on
 	// 09-16: background-set, the half-filled frame, which says "the background
 	// is set" where the old one only said "there is a picture back here".
-	var page_bg_button = $.glue.icon('background-set', 'page background');
+	var page_bg_button = $.glue.icon('background-set', 'set page background');
 	page_bg_button.addEventListener('click', function(e) {
 		page_background_popover();
 		e.stopPropagation();
@@ -821,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	elem = $.glue.icon('adjust-grid-size', 'grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
+	elem = $.glue.icon('adjust-grid-size', 'show grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		// clicking the button draws the grid (the panel's show toggle
@@ -842,9 +842,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// here because toggling reloads the page.
 	elem = $.glue.conf.page.layout_mode == 'centered' ?
 		$.glue.icon('composition-mode-absolute',
-			'page content is centered in a fixed-width container - click for the unbounded canvas') :
+			'center page content in a fixed-width container') :
 		$.glue.icon('composition-mode-centered',
-			'page content sits on an unbounded canvas - click to center it in a fixed-width container');
+			'page content sits on an unbounded canvas');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_layout_toggle();
