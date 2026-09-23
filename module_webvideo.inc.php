@@ -17,11 +17,13 @@ require_once('html_parse.inc.php');
 
 
 /**
- *	the vendored, curated provider whitelist (SOW Decisions 3 and 7): each
- *	entry carries the oEmbed endpoint template (with {url}), the URL schemes
- *	that select it, and the pattern an embed iframe's host must match.
- *	'bandcamp' has no oEmbed - its page is fetched and the embed id scraped
- *	out of it (the SOW's iframe-template path). The hermetic suite's stub
+ *	the vendored, curated provider whitelist (SOW-oembed-media.md Decisions 3
+ *	and 7): each entry carries the oEmbed endpoint template (with {url}) - or
+ *	the tier it resolves through instead - the URL schemes that select it,
+ *	and the pattern an embed iframe's host must match. Three tiers:
+ *	tier 1 oEmbed (youtube/vimeo/soundcloud/spotify/mixcloud), tier 2 a
+ *	direct URL transform (peertube - the embed url derives from the watch
+ *	url), tier 3 an Open Graph scrape (bandcamp). The hermetic suite's stub
  *	provider joins the list when HG_STUB_OEMBED is defined and resolves
  *	locally, no network involved.
  */
@@ -53,7 +55,19 @@ function webvideo_providers()
 			'schemes' => '#^https?://(www\.)?mixcloud\.com/#i',
 			'host' => '#^www\.mixcloud\.com$#i',
 		],
+		'peertube' => [
+			// tier 2: any instance, matched by the watch-url shape; the embed
+			// url is the same instance's /videos/embed/<uuid>, so the host
+			// allowlist IS the instance itself - self-consistency by
+			// construction (SOW Decision 6)
+			'transform' => true,
+			'schemes' => '~^https?://([^/]+)/(w|videos/watch)/([0-9a-fA-F-]{36})([/?#].*)?$~i',
+			'host' => false,
+		],
 		'bandcamp' => [
+			// tier 3: no oEmbed and the numeric id is not in the url - the
+			// page is fetched and its og:video meta carries the
+			// EmbeddedPlayer url
 			'template' => true,
 			'schemes' => '#^https?://[a-z0-9-]+\.bandcamp\.com/(album|track)/#i',
 			'host' => '#^bandcamp\.com$#i',
@@ -148,83 +162,54 @@ function webvideo_validate_embed($html, $host_pattern)
 
 
 /**
- *	build a Bandcamp embed from a pasted album/track URL: the page carries
- *	the numeric id, the iframe is built here (the SOW's template path).
+ *	build a Bandcamp embed from a pasted album/track URL, the SOW's tier 3:
+ *	the page's og:video (or og:video:secure_url) meta carries the
+ *	EmbeddedPlayer url with the numeric id already in it - Bandcamp keeps
+ *	these for social-media link previews, so they are stable. The raw
+ *	numeric-id scrape is the fallback for a page without them.
  *
  *	@return string|false
  */
 function webvideo_bandcamp_embed($url, $page_html)
 {
 	$src = false;
-	if (preg_match('#"album_id":(\d+)#', $page_html, $m) || preg_match('#data-album-id="(\d+)"#', $page_html, $m)) {
-		$src = 'https://bandcamp.com/EmbeddedPlayer/album='.$m[1]
-			.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
-	} elseif (preg_match('#"track_id":(\d+)#', $page_html, $m)) {
-		$src = 'https://bandcamp.com/EmbeddedPlayer/track='.$m[1]
-			.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
+	$og = '#<meta[^>]+property=["\']PROP["\'][^>]+content=["\']([^"\']+)["\']#i';
+	$og_rev = '#<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']PROP["\']#i';
+	foreach (['og:video:secure_url', 'og:video'] as $prop) {
+		$pat = str_replace('PROP', $prop, $og);
+		$pat_rev = str_replace('PROP', $prop, $og_rev);
+		if (preg_match($pat, $page_html, $m) || preg_match($pat_rev, $page_html, $m)) {
+			$src = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+			break;
+		}
+	}
+	if ($src === false) {
+		// the fallback: the numeric id in the page's own json
+		if (preg_match('#"album_id":(\d+)#', $page_html, $m) || preg_match('#data-album-id="(\d+)"#', $page_html, $m)) {
+			$src = 'https://bandcamp.com/EmbeddedPlayer/album='.$m[1]
+				.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
+		} elseif (preg_match('#"track_id":(\d+)#', $page_html, $m)) {
+			$src = 'https://bandcamp.com/EmbeddedPlayer/track='.$m[1]
+				.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
+		}
 	}
 	if ($src === false) {
 		return false;
 	}
-	$i = elem('iframe');
-	elem_attr($i, 'src', $src);
-	elem_attr($i, 'sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
-	elem_attr($i, 'referrerpolicy', 'strict-origin-when-cross-origin');
-	return elem_finalize($i);
-}
-
-
-/**
- *	the oEmbed DISCOVERY path (PeerTube and any instance of it): the pasted
- *	page is fetched and its <link rel="alternate" type="application/json+oembed">
- *	followed. The embed must be same-host as the endpoint it came from
- *	(SOW Decision 6) - an instance's response can only embed that instance.
- *
- *	@return string|false the validated embed html
- */
-function webvideo_discovery_embed($url)
-{
-	$page = webvideo_fetch($url);
-	if ($page === false) {
-		return false;
-	}
-	if (!preg_match('#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i', $page, $m)) {
-		return false;
-	}
-	if (!preg_match('#href=["\']([^"\']+)["\']#i', $m[0], $h)) {
-		return false;
-	}
-	$endpoint = $h[1];
-	if (preg_match('#^//#', $endpoint)) {
-		$endpoint = 'https:'.$endpoint;
-	} elseif (!preg_match('#^https?://#i', $endpoint)) {
-		$parts = parse_url($url);
-		$endpoint = $parts['scheme'].'://'.$parts['host'].
-			(empty($parts['port']) ? '' : ':'.$parts['port']).
-			($endpoint[0] == '/' ? '' : '/').$endpoint;
-	}
-	if (strpos($endpoint, 'url=') === false) {
-		$endpoint .= (strpos($endpoint, '?') === false ? '?' : '&').'url='.rawurlencode($url);
-	}
-	$body = webvideo_fetch($endpoint);
-	if ($body === false) {
-		return false;
-	}
-	$data = json_decode($body, true);
-	if (empty($data['html'])) {
-		return false;
-	}
-	$host = parse_url($endpoint, PHP_URL_HOST);
-	return webvideo_validate_embed($data['html'], '#^'.preg_quote($host, '#').'$#i');
+	// the url - scraped or templated - goes through the same validation
+	// as every other embed (single iframe, bandcamp's own host)
+	$html = webvideo_validate_embed('<iframe src="'.htmlspecialchars($src, ENT_QUOTES, 'UTF-8').'"></iframe>', '#^bandcamp\.com$#i');
+	return $html;
 }
 
 
 /**
  *	resolve a pasted media URL to its validated embed html: provider match,
- *	oEmbed call (or the Bandcamp template, or discovery), validation.
- *	Writes the cache file into the page's shared directory - shared assets
- *	travel with copy-paste and are deduplicated (SOW Decision 1) - and
- *	creates the object, returning its editor render.
+ *	then the tier the provider maps to - tier 1 oEmbed, tier 2 a direct
+ *	URL transform (PeerTube), tier 3 an Open Graph scrape (Bandcamp) -
+ *	then validation. Writes the cache file into the page's shared
+ *	directory - shared assets travel with copy-paste and are deduplicated
+ *	(SOW Decision 1) - and creates the object, returning its editor render.
  *
  *	@return string|false the embed html, or false with $error set
  */
@@ -239,17 +224,8 @@ function webvideo_resolve_url($url, &$provider_out, &$error)
 		}
 	}
 	if ($provider_out === false) {
-
-		// not on the whitelist - the discovery path (PeerTube) has the
-		// last word: a page that declares an oEmbed endpoint embeds, gated
-		// by the same-host validation
-		$html = webvideo_discovery_embed($url);
-		if ($html === false) {
-			$error = "this service isn't supported yet";
-			return false;
-		}
-		$provider_out = 'peertube';
-		return $html;
+		$error = "this service isn't supported yet";
+		return false;
 	}
 	$p = webvideo_providers()[$provider_out];
 	if (!empty($p['stub'])) {
@@ -272,8 +248,25 @@ function webvideo_resolve_url($url, &$provider_out, &$error)
 		}
 		return $html;
 	}
+	if (!empty($p['transform'])) {
+		// tier 2: the embed url derives directly from the public url - a
+		// PeerTube watch url is /w/<uuid> or /videos/watch/<uuid> on the
+		// instance, the embed is /videos/embed/<uuid> on that same
+		// instance, so the host allowlist IS the instance (SOW Decision 6)
+		preg_match($p['schemes'], $url, $m);
+		$instance = $m[1];
+		$uuid = $m[3];
+		$html = webvideo_validate_embed(
+			'<iframe src="https://'.$instance.'/videos/embed/'.$uuid.'"></iframe>',
+			'#^'.preg_quote($instance, '#').'$#i');
+		if ($html === false) {
+			$error = "couldn't embed this link";
+			return false;
+		}
+		return $html;
+	}
 	if (!empty($p['template'])) {
-		// bandcamp: the page carries the numeric id
+		// tier 3: bandcamp - the page carries the embed url in og:video
 		$page_html = webvideo_fetch($url);
 		if ($page_html === false) {
 			$error = "couldn't reach the provider";

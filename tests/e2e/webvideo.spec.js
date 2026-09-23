@@ -94,6 +94,23 @@ test('a legacy youtube object reconstructs its canonical url', async ({ page, hg
 	await expect(a).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc123');
 });
 
+test('a PeerTube watch url transforms to the instance embed directly',
+	async ({ page, hg }) => {
+		// tier 2: no network - the embed url derives from the watch url, so
+		// the re-resolve completes offline and the view renders the iframe
+		const uuid = '3e8b2f4a-9c6d-4a1e-b7f0-2d5c8a1e6b3f';
+		hg.addObject('100000000001', webvideoObject(100, 100, 100,
+			{ 'webvideo-url': 'https://tube.example/w/'+uuid }));
+		await page.goto(pageUrl(hg));
+		await expect(page.locator('.webvideo.object iframe'))
+			.toHaveAttribute('src', 'https://tube.example/videos/embed/'+uuid);
+		// the cached embed landed in shared, provider recorded
+		const attrs = hg.readObject('100000000001').attrs;
+		expect(attrs['webvideo-provider']).toBe('peertube');
+		expect(attrs['webvideo-cache-file']).toMatch(/^webvideo-[0-9a-f]+\.html$/);
+		expect(fs.readdirSync(sharedDir(hg))).toContain(attrs['webvideo-cache-file']);
+	});
+
 test('a non-whitelisted url fails soft in the editor', async ({ page, hg }) => {
 	hg.addObject('100000000001', {
 		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
