@@ -93,6 +93,19 @@ $.glue.image = function() {
 
 			var width = obj.offsetWidth;
 			var height = obj.offsetHeight;
+			var img = obj.querySelector(':scope > img');
+			// the picture displays proportionally (object-fit: contain), so
+			// the re-encoded file targets the CONTAINED size - the frame
+			// intersected with the picture's own aspect - never the frame
+			// itself, which would bake the distortion of a
+			// disproportionate frame into the stored file
+			var target_w = width;
+			var target_h = height;
+			if (img && img.naturalWidth && img.naturalHeight) {
+				var scale = Math.min(width/img.naturalWidth, height/img.naturalHeight);
+				target_w = Math.round(img.naturalWidth*scale);
+				target_h = Math.round(img.naturalHeight*scale);
+			}
 			// request the resize at device-pixel resolution (capped) rather
 			// than CSS-pixel resolution, so the image the browser gets stays
 			// sharp instead of being upscaled on HiDPI/Retina displays -
@@ -101,8 +114,8 @@ $.glue.image = function() {
 			// image_serve_resource() ignores those query params anyway and
 			// just serves whatever resized file image.resize() produced
 			var dpr = Math.min(window.devicePixelRatio || 1, $.glue.conf.image.resize_max_dpr);
-			var req_width = Math.round(width*dpr);
-			var req_height = Math.round(height*dpr);
+			var req_width = Math.round(target_w*dpr);
+			var req_height = Math.round(target_h*dpr);
 			$.glue.backend({ method: 'image.resize', name: obj.id, 'width': req_width, 'height': req_height }, function(data) {
 				if (!data) {
 					// DEBUG
@@ -119,7 +132,6 @@ $.glue.image = function() {
 					clearTimeout(preload_timer);
 					// DEBUG
 					//console.log('clearing timeout');
-					var img = obj.querySelector(':scope > img');
 					if (!img) {
 						return;
 					}

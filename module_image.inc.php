@@ -154,6 +154,10 @@ function image_alter_render_early($args)
 	}
 	elem_css($i, 'width', '100%');
 	elem_css($i, 'height', '100%');
+	// the picture keeps its proportions: it letterboxes inside the frame,
+	// and the bars show the object's background colour or image through -
+	// that is deliberate, danja's call 2026-09-23
+	elem_css($i, 'object-fit', 'contain');
 	// in the editor the picture must not swallow the clicks meant for the
 	// object (select, menus) - the img fills the frame, so it covers
 	// every pixel; a visitor's page never needs to click through it

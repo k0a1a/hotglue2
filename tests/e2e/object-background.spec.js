@@ -349,6 +349,9 @@ test('an image object renders and keeps its background colour',
 
 		await page.goto(`/?${hg.pageName}`);
 		await expect(byId(page, img).locator('img')).toHaveCount(1);
+		// the picture keeps its proportions (contain), so the bars show the
+		// background through - danja's call, 2026-09-23
+		await expect(byId(page, img).locator('img')).toHaveCSS('object-fit', 'contain');
 		await expect(byId(page, img)).toHaveCSS('background-color', 'rgb(255, 0, 0)');
 
 		// and the editor's save keeps it
