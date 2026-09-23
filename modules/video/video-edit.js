@@ -183,30 +183,28 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// context menu items
 	//
-	var elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
+	// The four toggles wore no artwork at all until 2026-09-23 - bare 32px
+	// frames whose enabled state was the green fill alone. They wear
+	// temporary icons now (img/icons/video-*.svg, drawn quick for the
+	// toggle work; danja's replacements will come), the same mask plumbing
+	// every other menu button uses, and the enabled state is the pressed
+	// frame of the panel toggles (see the two-class rule in css/edit.css).
+	var elem = $.glue.icon('video-autoplay', 'toggle automatic playback of video');
 	$.glue.toggle_button(elem, 'video_autoplay_sync', 'video_autoplay_toggle',
 		'automatic playback is on - click to turn off', 'toggle automatic playback of video');
 	$.glue.contextmenu.register('video', 'video-autoplay', elem);
 
-	elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
+	elem = $.glue.icon('video-loop', 'toggle looping of video');
 	$.glue.toggle_button(elem, 'video_loop_sync', 'video_loop_toggle',
 		'looping is on - click to turn off', 'toggle looping of video');
 	$.glue.contextmenu.register('video', 'video-loop', elem);
 
-	elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
+	elem = $.glue.icon('video-controls', 'show or hide control elements');
 	$.glue.toggle_button(elem, 'video_controls_sync', 'video_controls_toggle',
 		'controls are shown - click to hide them', 'show or hide control elements');
 	$.glue.contextmenu.register('video', 'video-controls', elem);
 
-	elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
+	elem = $.glue.icon('video-sound', 'mute or unmute video');
 	$.glue.toggle_button(elem, 'video_mute_sync', 'video_mute_toggle',
 		'video is muted - click to unmute', 'mute or unmute video');
 	$.glue.contextmenu.register('video', 'video-mute', elem);

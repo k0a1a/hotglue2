@@ -1125,6 +1125,15 @@
 	border-width: 2px;
 }
 
+.glue-btn-icon.glue-menu-enabled {
+	/* the menu toggles that keep the old glue-menu-* Alpine plumbing (the
+	   video and webvideo toggles, glue.js's toggle_button): the green fill
+	   .glue-menu-enabled sets never reaches a .glue-btn-icon - the icon's
+	   own frame background wins the cascade - so the enabled state is this
+	   two-class rule, the same pressed frame the panel toggles wear */
+	border-width: 2px;
+}
+
 .glue-btn-icon::before {
 	/* The glyph, on its own box. A mask clips the element it is set on,
 	   border and background included, so the frame above and the icon cannot
