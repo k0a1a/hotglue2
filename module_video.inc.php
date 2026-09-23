@@ -398,10 +398,6 @@ function video_alter_render_early($args)
 	if (!isset($obj['video-autoplay']) || $obj['video-autoplay'] == 'autoplay') {
 		// autoplay is the default
 		elem_attr($v, 'autoplay', 'autoplay');
-	} else {
-		if (VIDEO_START_ON_CLICK) {
-			elem_attr($v, 'onclick', 'this.play()');
-		}
 	}
 	// loop
 	if (!empty($obj['video-loop'])) {
@@ -410,6 +406,17 @@ function video_alter_render_early($args)
 	// controls
 	if (!empty($obj['video-controls'])) {
 		elem_attr($v, 'controls', 'controls');
+	}
+
+	// clicking the video toggles pause/play, in viewing AND editing mode -
+	// the edit-mode shield above the playback area leaves the lower part
+	// exposed for exactly this, and an autoplaying video (the default) is
+	// paused by the same click. Attached only when there are no native
+	// controls: their own buttons would fight the toggle, a click on the
+	// native play button pausing the video right back. (The click used to
+	// only PLAY, and only when autoplay was off.)
+	if (VIDEO_START_ON_CLICK && empty($obj['video-controls'])) {
+		elem_attr($v, 'onclick', 'this.paused ? this.play() : this.pause()');
 	}
 	// volume
 	if (isset($obj['video-volume']) && $obj['video-volume'] == '0') {

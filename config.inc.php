@@ -100,7 +100,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('VIDEO_POSTER_ATTEMPTS', 5);		// how many random frames to try for a non-empty poster (danja's call, 2026-09-23: a fixed timestamp kept landing on titles or blackness)
 @define('VIDEO_POSTER_EMPTY_YAVG', 16);		// a grabbed frame whose average luma is below this (near-black) or above 256 minus this (near-white) counts as empty and is re-rolled
 @define('VIDEO_ENCODE_TIMEOUT', 60*60*2);	// give up waiting for a background encode after n seconds and fall back to the original upload
-@define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
+@define('VIDEO_START_ON_CLICK', true);		// clicking a video toggles pause/play when it has no native controls
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 
 /**
