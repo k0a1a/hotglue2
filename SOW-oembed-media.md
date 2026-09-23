@@ -1,9 +1,14 @@
 # SOW — Rebuild the media-embed module on oEmbed (from YouTube/Vimeo-only)
 
-Status: to implement (ng). The current embed module hardcodes YouTube + Vimeo (bespoke
-URL parsing → iframe per service). Rebuild it around **oEmbed** so it supports many
-providers via one mechanism (paste a URL → get the embed), with a curated, security-minded
-provider whitelist prioritized for Hotglue's artist/musician audience.
+Status: BUILT (2026-09-23, danja's calls). The webvideo module resolves pasted media URLs
+through the curated oEmbed whitelist (YouTube, Vimeo, SoundCloud, Spotify, Mixcloud),
+the Bandcamp iframe template and PeerTube oEmbed discovery, validates every response
+(single sandboxed iframe on the provider's own host), caches the embed in the page's
+shared directory, and creates the object server-side; legacy YouTube/Vimeo objects
+re-resolve from their reconstructed canonical URL. The hermetic suite exercises the
+whole mechanism through the HG_STUB_OEMBED stub provider (tests/e2e/webvideo.spec.js);
+the real providers need a live probe. The original module hardcoded YouTube + Vimeo
+(bespoke URL parsing → iframe per service).
 
 ## Decisions (folded in 2026-09-23)
 

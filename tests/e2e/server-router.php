@@ -41,6 +41,9 @@ define('CACHE_TIME', 0);
 // verbose logging into the throwaway content dir, so a failing test can be
 // diagnosed from content-e2e/log.txt instead of by guesswork
 define('LOG_LEVEL', 'debug');
+// the oEmbed module's hermetic stub provider: resolves stub.example URLs
+// locally, no network (SOW-oembed-media.md Decision 9)
+define('HG_STUB_OEMBED', true);
 
 chdir($root);
 require $root.(preg_match('#/json\.php$#', $path) ? '/json.php' : '/index.php');

@@ -94,97 +94,25 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = $.glue.icon('embed-webvideo', 'embed a youtube or vimeo video');
+	var elem = $.glue.icon('embed-webvideo', 'embed a video or audio track');
 	elem.addEventListener('click', function(e) {
-		var url = prompt('Enter the video URL (e.g. http://www.youtube.com/watch?v=_mdVHEus0T8)');
+		var url = prompt('Enter the URL of a video or audio track to embed (YouTube, Vimeo, PeerTube, Bandcamp, SoundCloud, Mixcloud, Spotify)');
 		if (!url) {
 			return;
 		}
-		// determine provider
-		var provider = false;
-		if (url.indexOf('youtube') != -1) {
-			var start = url.indexOf('v=');
-			if (start == -1) {
-				$.glue.error('Error understanding the youtube link');
-			} else {
-				start += 2;
-				var end = url.indexOf('&', start);
-				if (end == -1) {
-					end = url.length;
-				}
-				provider = 'youtube';
-				var id = url.slice(start, end);
+		// the server resolves the url through the oEmbed whitelist (or the
+		// Bandcamp template, or discovery), validates the response, caches
+		// the embed and creates the object - the callback gets the service's
+		// #data, the upload-shaped array of html strings, so it lands in
+		// handle_response exactly like an uploaded file (SOW-oembed-media.md;
+		// errors are toasted by glue.backend itself)
+		$.glue.backend({ method: 'webvideo.resolve', 'url': url, 'page': $.glue.page }, function(data) {
+			if (!data || !data.length) {
+				$.glue.error('There was a problem embedding the link');
+				return;
 			}
-		} else if (url.indexOf('vimeo') != -1) {
-			var start = url.indexOf('.com/');
-			if (start == -1) {
-				$.glue.error('Error understanding the vimeo link');
-			} else {
-				start += 5;
-				provider = 'vimeo';
-				var id = String(parseInt(url.slice(start)));
-			}
-		} else {
-			$.glue.error('Only youtube and vimeo videos are supported at the moment.');
-		}
-
-		if (provider) {
-			// create new object
-			$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
-				var elem = document.createElement('div');
-				elem.className = 'webvideo resizable object';
-				elem.style.position = 'absolute';
-				elem.id = data['name'];
-				// default width and height is set in the css
-				var child;
-				if (provider == 'youtube') {
-          // use protocol relative url
-					var src = '//';
-        /*
-					if (location.protocol == 'https:') {
-						src = 'https://';
-					} else {
-						src = 'http://';
-					}
-        */
-					child = document.createElement('iframe');
-					child.className = 'youtube-player';
-					child.src = src+'www.youtube.com/embed/'+id+'?rel=0';
-					child.style.borderWidth = '0px';
-					child.style.height = '100%';
-					child.style.position = 'absolute';
-					child.style.width = '100%';
-				} else if (provider == 'vimeo') {
-					var src = '//';
-					child = document.createElement('iframe');
-					child.src = src+'player.vimeo.com/video/'+id+'?title=0&byline=0&portrait=0&color=ffffff';
-					child.style.borderWidth = '0px';
-					child.style.height = '100%';
-					child.style.position = 'absolute';
-					child.style.width = '100%';
-				}
-				elem.appendChild(child);
-				// put the iframe behind some shield for editing
-				child = document.createElement('div');
-				child.className = 'glue-webvideo-shield glue-ui';
-				child.title = 'click here to select/edit this video';
-				elem.appendChild(child);
-				$.glue.canvas.add(elem);
-				// make width and height explicit
-				elem.style.width = elem.offsetWidth+'px';
-				elem.style.height = elem.offsetHeight+'px';
-				// move to mouseclick - out of page space, since in centered mode an
-				// object's coordinates are measured from the container, not the page
-				var at = $.glue.canvas.from_page(e.pageX, e.pageY);
-				elem.style.left = (at.x-elem.offsetWidth/2)+'px';
-				elem.style.top = (at.y-elem.offsetHeight/2)+'px';
-				$.glue.object.register(elem);
-				// set the provider and the id in the object file
-				$.glue.backend({ method: 'glue.update_object', name: elem.id, 'webvideo-provider': provider, 'webvideo-id': id });
-				// and save the element
-				$.glue.object.save(elem);
-			});
-		}
+			$.glue.upload.handle_response({ '#data': data }, e.pageX, e.pageY);
+		});
 		$.glue.menu.hide();
 	});
 	$.glue.menu.register('new', elem, 13);

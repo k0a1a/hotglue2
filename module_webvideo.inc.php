@@ -2,7 +2,8 @@
 
 /*
  *	module_webvideo.inc.php
- *	Module for embedding youtube and vimeo videos
+ *	Module for embedding media from oEmbed providers
+ *	(SOW-oembed-media.md, implemented 2026-09-23)
  *
  *	Copyright Gottfried Haider, Danja Vasiliev 2010.
  *	This source code is licensed under the GNU General Public License.
@@ -12,6 +13,319 @@
 @require_once('config.inc.php');
 require_once('html.inc.php');
 require_once('modules.inc.php');
+require_once('html_parse.inc.php');
+
+
+/**
+ *	the vendored, curated provider whitelist (SOW Decisions 3 and 7): each
+ *	entry carries the oEmbed endpoint template (with {url}), the URL schemes
+ *	that select it, and the pattern an embed iframe's host must match.
+ *	'bandcamp' has no oEmbed - its page is fetched and the embed id scraped
+ *	out of it (the SOW's iframe-template path). The hermetic suite's stub
+ *	provider joins the list when HG_STUB_OEMBED is defined and resolves
+ *	locally, no network involved.
+ */
+function webvideo_providers()
+{
+	static $providers = [
+		'youtube' => [
+			'endpoint' => 'https://www.youtube.com/oembed?format=json&url={url}',
+			'schemes' => '#^https?://((www|music)\.)?youtube\.com/(watch|shorts|live)\b|^https?://youtu\.be/#i',
+			'host' => '#^(www\.|music\.)?youtube(-nocookie)?\.com$#i',
+		],
+		'vimeo' => [
+			'endpoint' => 'https://vimeo.com/api/oembed.json?url={url}',
+			'schemes' => '#^https?://(www\.)?vimeo\.com/#i',
+			'host' => '#^player\.vimeo\.com$#i',
+		],
+		'soundcloud' => [
+			'endpoint' => 'https://soundcloud.com/oembed?format=json&url={url}',
+			'schemes' => '#^https?://(www\.|m\.)?soundcloud\.com/#i',
+			'host' => '#^w\.soundcloud\.com$#i',
+		],
+		'spotify' => [
+			'endpoint' => 'https://open.spotify.com/oembed?url={url}',
+			'schemes' => '#^https?://open\.spotify\.com/(track|album|playlist|episode|show)/#i',
+			'host' => '#^open\.spotify\.com$#i',
+		],
+		'mixcloud' => [
+			'endpoint' => 'https://www.mixcloud.com/oembed/?format=json&url={url}',
+			'schemes' => '#^https?://(www\.)?mixcloud\.com/#i',
+			'host' => '#^www\.mixcloud\.com$#i',
+		],
+		'bandcamp' => [
+			'template' => true,
+			'schemes' => '#^https?://[a-z0-9-]+\.bandcamp\.com/(album|track)/#i',
+			'host' => '#^bandcamp\.com$#i',
+		],
+	];
+	if (defined('HG_STUB_OEMBED') && HG_STUB_OEMBED) {
+		$providers['stub'] = [
+			'stub' => true,
+			'schemes' => '#^https?://stub\.example/(watch|fail|bad)/#i',
+			'host' => '#^embed\.stub\.example$#i',
+		];
+	}
+	return $providers;
+}
+
+
+/**
+ *	fetch a URL with a 5s timeout - curl when available, streams otherwise.
+ *	Never called in the hermetic suite's normal runs (the stub resolves
+ *	locally); a slow or down provider must not hang a page render.
+ *
+ *	@return string|false the body, or false on failure
+ */
+function webvideo_fetch($url)
+{
+	$ctx = stream_context_create(['http' => [
+		'timeout' => 5,
+		'follow_location' => 1,
+		'max_redirects' => 3,
+		'user_agent' => 'hotglue',
+	]]);
+	if (function_exists('curl_init')) {
+		$ch = curl_init();
+		curl_setopt_array($ch, [
+			CURLOPT_URL => $url,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_MAXREDIRS => 3,
+			CURLOPT_TIMEOUT => 5,
+			CURLOPT_USERAGENT => 'hotglue',
+		]);
+		$body = curl_exec($ch);
+		curl_close($ch);
+		if ($body === false) {
+			return @file_get_contents($url, false, $ctx);
+		}
+		return $body;
+	}
+	return @file_get_contents($url, false, $ctx);
+}
+
+
+/**
+ *	parse an oEmbed-style embed html and return it as a NORMALIZED iframe
+ *	element string: exactly one iframe, whose src host matches the given
+ *	pattern, nothing else (a <script> anywhere rejects the whole response).
+ *	The normalized form carries sandbox and referrerpolicy and no size -
+ *	the object's box sizes the embed (SOW Decisions 7 and 8).
+ *
+ *	@return string|false
+ */
+function webvideo_validate_embed($html, $host_pattern)
+{
+	if (preg_match('#<script\b#i', $html)) {
+		return false;
+	}
+	$childs = html_parse($html);
+	$iframes = [];
+	foreach ($childs as $c) {
+		if (elem_tag($c) == 'iframe') {
+			$iframes[] = $c;
+		}
+	}
+	if (count($iframes) != 1) {
+		return false;
+	}
+	$src = elem_attr($iframes[0], 'src');
+	if (empty($src)) {
+		return false;
+	}
+	$src = preg_replace('#^//#', 'https:', $src);
+	$host = parse_url($src, PHP_URL_HOST);
+	if ($host === false || $host === NULL || !preg_match($host_pattern, $host)) {
+		return false;
+	}
+	$out = elem('iframe');
+	elem_attr($out, 'src', $src);
+	elem_attr($out, 'sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
+	elem_attr($out, 'referrerpolicy', 'strict-origin-when-cross-origin');
+	return elem_finalize($out);
+}
+
+
+/**
+ *	build a Bandcamp embed from a pasted album/track URL: the page carries
+ *	the numeric id, the iframe is built here (the SOW's template path).
+ *
+ *	@return string|false
+ */
+function webvideo_bandcamp_embed($url, $page_html)
+{
+	$src = false;
+	if (preg_match('#"album_id":(\d+)#', $page_html, $m) || preg_match('#data-album-id="(\d+)"#', $page_html, $m)) {
+		$src = 'https://bandcamp.com/EmbeddedPlayer/album='.$m[1]
+			.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
+	} elseif (preg_match('#"track_id":(\d+)#', $page_html, $m)) {
+		$src = 'https://bandcamp.com/EmbeddedPlayer/track='.$m[1]
+			.'/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=true/';
+	}
+	if ($src === false) {
+		return false;
+	}
+	$i = elem('iframe');
+	elem_attr($i, 'src', $src);
+	elem_attr($i, 'sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
+	elem_attr($i, 'referrerpolicy', 'strict-origin-when-cross-origin');
+	return elem_finalize($i);
+}
+
+
+/**
+ *	the oEmbed DISCOVERY path (PeerTube and any instance of it): the pasted
+ *	page is fetched and its <link rel="alternate" type="application/json+oembed">
+ *	followed. The embed must be same-host as the endpoint it came from
+ *	(SOW Decision 6) - an instance's response can only embed that instance.
+ *
+ *	@return string|false the validated embed html
+ */
+function webvideo_discovery_embed($url)
+{
+	$page = webvideo_fetch($url);
+	if ($page === false) {
+		return false;
+	}
+	if (!preg_match('#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i', $page, $m)) {
+		return false;
+	}
+	if (!preg_match('#href=["\']([^"\']+)["\']#i', $m[0], $h)) {
+		return false;
+	}
+	$endpoint = $h[1];
+	if (preg_match('#^//#', $endpoint)) {
+		$endpoint = 'https:'.$endpoint;
+	} elseif (!preg_match('#^https?://#i', $endpoint)) {
+		$parts = parse_url($url);
+		$endpoint = $parts['scheme'].'://'.$parts['host'].
+			(empty($parts['port']) ? '' : ':'.$parts['port']).
+			($endpoint[0] == '/' ? '' : '/').$endpoint;
+	}
+	if (strpos($endpoint, 'url=') === false) {
+		$endpoint .= (strpos($endpoint, '?') === false ? '?' : '&').'url='.rawurlencode($url);
+	}
+	$body = webvideo_fetch($endpoint);
+	if ($body === false) {
+		return false;
+	}
+	$data = json_decode($body, true);
+	if (empty($data['html'])) {
+		return false;
+	}
+	$host = parse_url($endpoint, PHP_URL_HOST);
+	return webvideo_validate_embed($data['html'], '#^'.preg_quote($host, '#').'$#i');
+}
+
+
+/**
+ *	resolve a pasted media URL to its validated embed html: provider match,
+ *	oEmbed call (or the Bandcamp template, or discovery), validation.
+ *	Writes the cache file into the page's shared directory - shared assets
+ *	travel with copy-paste and are deduplicated (SOW Decision 1) - and
+ *	creates the object, returning its editor render.
+ *
+ *	@return string|false the embed html, or false with $error set
+ */
+function webvideo_resolve_url($url, &$provider_out, &$error)
+{
+	$error = '';
+	$provider_out = false;
+	foreach (webvideo_providers() as $name => $p) {
+		if (preg_match($p['schemes'], $url)) {
+			$provider_out = $name;
+			break;
+		}
+	}
+	if ($provider_out === false) {
+
+		// not on the whitelist - the discovery path (PeerTube) has the
+		// last word: a page that declares an oEmbed endpoint embeds, gated
+		// by the same-host validation
+		$html = webvideo_discovery_embed($url);
+		if ($html === false) {
+			$error = "this service isn't supported yet";
+			return false;
+		}
+		$provider_out = 'peertube';
+		return $html;
+	}
+	$p = webvideo_providers()[$provider_out];
+	if (!empty($p['stub'])) {
+		// the hermetic suite's local provider, no network
+		if (preg_match('#/fail/#', $url)) {
+			$error = "couldn't reach the provider";
+			return false;
+		}
+		$id = basename(parse_url($url, PHP_URL_PATH));
+		if (preg_match('#/bad/#', $url)) {
+			$html = '<iframe src="https://evil.example/'.$id.'"></iframe><script>bad()</script>';
+		} else {
+			$html = '<iframe src="https://embed.stub.example/'.$id.'"></iframe>';
+		}
+		$html = webvideo_validate_embed($html, $p['host']);
+
+		if ($html === false) {
+			$error = "the provider's response did not validate";
+			return false;
+		}
+		return $html;
+	}
+	if (!empty($p['template'])) {
+		// bandcamp: the page carries the numeric id
+		$page_html = webvideo_fetch($url);
+		if ($page_html === false) {
+			$error = "couldn't reach the provider";
+			return false;
+		}
+		$html = webvideo_bandcamp_embed($url, $page_html);
+		if ($html === false) {
+			$error = "couldn't embed this link";
+			return false;
+		}
+		return $html;
+	}
+	$endpoint = str_replace('{url}', rawurlencode($url), $p['endpoint']);
+	$body = webvideo_fetch($endpoint);
+	if ($body === false) {
+		$error = "couldn't reach the provider";
+		return false;
+	}
+	$data = json_decode($body, true);
+	if (empty($data['html'])) {
+		$error = "couldn't embed this link";
+		return false;
+	}
+	$html = webvideo_validate_embed($data['html'], $p['host']);
+	if ($html === false) {
+		$error = "the provider's response did not validate";
+		return false;
+	}
+	return $html;
+}
+
+
+/**
+ *	the source URL an object carries - the stored webvideo-url, or the
+ *	canonical URL reconstructed from a legacy object's provider + id
+ *	(SOW Decision 4)
+ */
+function webvideo_object_url($obj)
+{
+	if (!empty($obj['webvideo-url'])) {
+		return $obj['webvideo-url'];
+	}
+	if (!empty($obj['webvideo-id']) && !empty($obj['webvideo-provider'])) {
+		if ($obj['webvideo-provider'] == 'youtube') {
+			return 'https://www.youtube.com/watch?v='.$obj['webvideo-id'];
+		}
+		if ($obj['webvideo-provider'] == 'vimeo') {
+			return 'https://vimeo.com/'.$obj['webvideo-id'];
+		}
+	}
+	return false;
+}
 
 
 function webvideo_alter_render_early($args)
@@ -21,74 +335,95 @@ function webvideo_alter_render_early($args)
 	if (!elem_has_class($elem, 'webvideo')) {
 		return false;
 	}
-	
-	if (empty($obj['webvideo-provider']) || empty($obj['webvideo-id'])) {
-		return false;
+
+	$url = webvideo_object_url($obj);
+	// the cached embed, or ONE re-resolve with the timeout (SOW Decision 2)
+	// - legacy objects resolve through the reconstructed url
+	$html = false;
+	if (!empty($obj['webvideo-cache-file'])) {
+		$pn = get_first_item(expl('.', $obj['name']));
+		$cache = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['webvideo-cache-file'];
+		if (is_file($cache)) {
+			$html = @file_get_contents($cache);
+		}
 	}
-	
-	$i = elem('iframe');
-	if ($obj['webvideo-provider'] == 'youtube') {
-  /*
-		if (empty($_SERVER['HTTPS'])) {
-			$src = 'http://';
+	if ($html === false && $url !== false) {
+		$pn = get_first_item(expl('.', $obj['name']));
+		$provider = false;
+		$error = '';
+		$html = webvideo_resolve_url($url, $provider, $error);
+		if ($html !== false) {
+			$cache = 'webvideo-'.substr(md5($url), 0, 16).'.html';
+			$dir = CONTENT_DIR.'/'.$pn.'/shared';
+			if (!is_dir($dir)) {
+				mkdir($dir, 0777, true);
+			}
+			@file_put_contents($dir.'/'.$cache, $html);
+			update_object(['name'=>$obj['name'], 'webvideo-url'=>$url,
+				'webvideo-provider'=>$provider, 'webvideo-cache-file'=>$cache]);
+			$obj['webvideo-url'] = $url;
+			$obj['webvideo-provider'] = $provider;
+			$obj['webvideo-cache-file'] = $cache;
+		}
+	}
+	if ($html === false) {
+		// the fallback: the url as a plain link, or the message - never a
+		// broken page (SOW Decision 2)
+		if ($url !== false) {
+			$a = elem('a');
+			elem_attr($a, 'href', $url);
+			elem_val($a, htmlspecialchars($url, ENT_NOQUOTES, 'UTF-8'));
+			elem_append($elem, $a);
 		} else {
-			$src = 'https://';
+			elem_val($elem, "couldn't embed this link");
 		}
-  */
-    // use protocol relative url
-		$src = '//';
-		$src .= 'www.youtube.com/embed/'.$obj['webvideo-id'].'?rel=0';
-		if (isset($obj['webvideo-autoplay']) && $obj['webvideo-autoplay'] == 'autoplay') {
-			$src .= '&autoplay=1';
-		}
-		if (isset($obj['webvideo-loop']) && $obj['webvideo-loop'] == 'loop') {
-			// this is not yet supported by the new youtube embed player
-			$src .= '&loop=1';
-		}
-		elem_attr($i, 'src', $src);
-		elem_add_class($i, 'youtube-player');		
-	} elseif ($obj['webvideo-provider'] == 'vimeo') {
-  /*
-    if (empty($_SERVER['HTTPS'])) {
-      $src = 'http://';
-    } else {
-      $src = 'https://';
-    }
-  */
-    // use protocol relative url
- 		$src = '//';
-    $src .= 'player.vimeo.com/video/'.$obj['webvideo-id'].'?title=0&byline=0&portrait=0&color=ffffff';
-		if (isset($obj['webvideo-autoplay']) && $obj['webvideo-autoplay'] == 'autoplay') {
-			$src .= '&autoplay=1';
-		}
-		if (isset($obj['webvideo-loop']) && $obj['webvideo-loop'] == 'loop') {
-			$src .= '&loop=1';
-		}
-		elem_attr($i, 'src', $src);
+		return true;
 	}
-	// frameborder is not valid html
-	//elem_attr($i, 'frameborder', '0');
-	elem_css($i, 'border-width', '0px');
-	elem_css($i, 'height', '100%');
-	elem_css($i, 'position', 'absolute');
-	elem_css($i, 'width', '100%');		
-	elem_append($elem, $i);
-	
+
+	// the embed: the cached (already validated + sandboxed) iframe, with
+	// the autoplay/loop attrs appended where the provider speaks them
+	$childs = html_parse($html);
+	foreach ($childs as $c) {
+		if (elem_tag($c) == 'iframe') {
+			$src = elem_attr($c, 'src');
+			if (!empty($obj['webvideo-provider'])
+				&& ($obj['webvideo-provider'] == 'youtube' || $obj['webvideo-provider'] == 'vimeo')) {
+				if (isset($obj['webvideo-autoplay']) && $obj['webvideo-autoplay'] == 'autoplay'
+					&& strpos($src, 'autoplay') === false) {
+					$src .= (strpos($src, '?') === false ? '?' : '&').'autoplay=1';
+				}
+				if (isset($obj['webvideo-loop']) && $obj['webvideo-loop'] == 'loop'
+					&& strpos($src, 'loop') === false) {
+					$src .= (strpos($src, '?') === false ? '?' : '&').'loop=1';
+				}
+				elem_attr($c, 'src', $src);
+			}
+			$i = elem('iframe');
+			elem_attr($i, 'src', elem_attr($c, 'src'));
+			elem_attr($i, 'sandbox', elem_attr($c, 'sandbox'));
+			elem_attr($i, 'referrerpolicy', elem_attr($c, 'referrerpolicy'));
+			elem_css($i, 'border-width', '0px');
+			elem_css($i, 'height', '100%');
+			elem_css($i, 'position', 'absolute');
+			elem_css($i, 'width', '100%');
+			elem_append($elem, $i);
+			break;
+		}
+	}
+
 	if ($args['edit']) {
-		// shield over the upper part of the embed: the youtube/vimeo
-		// <iframe> is a genuine cross-origin document, so any click landing
-		// directly on it never bubbles to the parent page at all - a
-		// same-document div stacked on top intercepts the click before it
-		// reaches the iframe, letting the editor's select/menu/drag handling
-		// see it (see video's identical glue-video-shield, which replaced
-		// this module's old small corner drag handle)
+		// shield over the upper part of the embed: the <iframe> is a
+		// genuine cross-origin document, so any click landing directly on
+		// it never bubbles to the parent page at all - a same-document div
+		// stacked on top intercepts the click before it reaches the
+		// iframe, letting the editor's select/menu/drag handling see it
 		$s = elem('div');
 		elem_add_class($s, 'glue-webvideo-shield');
 		elem_add_class($s, 'glue-ui');
-		elem_attr($s, 'title', 'click here to select/edit this video');
+		elem_attr($s, 'title', 'click here to select/edit this embed');
 		elem_append($elem, $s);
 	}
-	
+
 	return true;
 }
 
@@ -99,18 +434,24 @@ function webvideo_render_object($args)
 	if (!isset($obj['type']) || $obj['type'] != 'webvideo') {
 		return false;
 	}
-	
+
 	$e = elem('div');
 	elem_attr($e, 'id', $obj['name']);
 	elem_add_class($e, 'webvideo');
 	elem_add_class($e, 'resizable');
 	elem_add_class($e, 'object');
-	
+	// a fresh embed starts at a sensible default size until the author
+	// resizes it (the render is the source of truth, so nothing is stored)
+	if (empty($obj['object-width'])) {
+		elem_css($e, 'width', '400px');
+		elem_css($e, 'height', '300px');
+	}
+
 	// hooks
 	invoke_hook_first('alter_render_early', 'webvideo', ['obj'=>$obj, 'elem'=>&$e, 'edit'=>$args['edit']]);
 	$html = elem_finalize($e);
 	invoke_hook_last('alter_render_late', 'webvideo', ['obj'=>$obj, 'html'=>&$html, 'elem'=>$e, 'edit'=>$args['edit']]);
-	
+
 	return $html;
 }
 
@@ -135,14 +476,14 @@ function webvideo_save_state($args)
 	if (get_first_item(elem_classes($elem)) != 'webvideo') {
 		return false;
 	}
-	
+
 	// make sure the type is set
 	$obj['type'] = 'webvideo';
 	$obj['module'] = 'webvideo';
-	
+
 	// hook
 	invoke_hook('alter_save', ['obj'=>&$obj, 'elem'=>$elem]);
-	
+
 	load_modules('glue');
 	$ret = save_object($obj);
 	if ($ret['#error']) {
@@ -152,3 +493,90 @@ function webvideo_save_state($args)
 		return true;
 	}
 }
+
+
+function webvideo_delete_object($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'webvideo') {
+		return false;
+	}
+
+	load_modules('glue');
+	$pn = get_first_item(expl('.', $obj['name']));
+	if (!empty($obj['webvideo-cache-file'])) {
+		delete_upload(['pagename'=>$pn, 'file'=>$obj['webvideo-cache-file'], 'max_cnt'=>1]);
+	}
+}
+
+
+function webvideo_has_reference($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'webvideo') {
+		return false;
+	}
+	// the cache file is a shared asset, so copy-paste carries it
+	if (!empty($obj['webvideo-cache-file']) && $obj['webvideo-cache-file'] == $args['file']) {
+		return true;
+	}
+	return false;
+}
+
+
+/**
+ *	the editor's resolve-and-create: match the whitelist, resolve, validate,
+ *	write the cache, create the object, return its editor render in the
+ *	upload shape the editor's handle_response consumes.
+ */
+function webvideo_resolve($args)
+{
+	if (empty($args['url']) || empty($args['page'])) {
+		return response('Required argument "url" is missing', 400);
+	}
+	$url = $args['url'];
+	$url = preg_replace('#^//#', 'https:', $url);
+	if (!preg_match('#^https?://#i', $url)) {
+		return response('Not a valid URL', 400);
+	}
+	load_modules('glue');
+	$pn = $args['page'];
+
+	$provider = false;
+	$error = '';
+	$html = webvideo_resolve_url($url, $provider, $error);
+	if ($html === false) {
+		return response($error, 400);
+	}
+
+	$cache = 'webvideo-'.substr(md5($url), 0, 16).'.html';
+	$dir = CONTENT_DIR.'/'.$pn.'/shared';
+	if (!is_dir($dir)) {
+		mkdir($dir, 0777, true);
+	}
+	if (@file_put_contents($dir.'/'.$cache, $html) === false) {
+		log_msg('error', 'webvideo_resolve: could not write the cache file');
+		return response('There was a problem embedding the link', 500);
+	}
+
+	$obj = create_object(['page'=>$pn]);
+	if ($obj['#error']) {
+		return response('There was a problem embedding the link', 500);
+	}
+	$obj = $obj['#data'];
+	$obj['type'] = 'webvideo';
+	$obj['module'] = 'webvideo';
+	$obj['webvideo-url'] = $url;
+	$obj['webvideo-provider'] = $provider;
+	$obj['webvideo-cache-file'] = $cache;
+	save_object($obj);
+
+	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
+	if ($ret['#error']) {
+		return response('There was a problem embedding the link', 500);
+	}
+	// the upload shape: an array of html strings
+	return response([$ret['#data']]);
+}
+
+register_service('webvideo.resolve', 'webvideo_resolve', ['auth'=>true]);
