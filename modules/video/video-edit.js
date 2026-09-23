@@ -209,12 +209,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		'video is muted - click to unmute', 'mute or unmute video');
 	$.glue.contextmenu.register('video', 'video-mute', elem);
 
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/video/video-ratio.png';
-	elem.alt = 'btn';
-	elem.title = 'reset video size';
-	elem.width = 32;
-	elem.height = 32;
+	// the last PNG button in the video menu became an icon too (2026-09-23);
+	// the show/hide and reset logic below is unchanged
+	elem = $.glue.icon('video-ratio', 'reset video size');
 	elem.addEventListener('glue-menu-activate', function(e) {
 		var obj = $.glue.owner(this);
 		var video = obj.querySelector(':scope > video');
