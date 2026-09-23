@@ -58,6 +58,29 @@ test('the popout opens, and the old hidden-gesture buttons are gone',
 		expect(await page.getByTitle('flip vertically').count()).toBe(0);
 	});
 
+test('the x and y rows position the object precisely', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', OBJ, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await selectAndOpen(page, a);
+
+	// the rows live under the fold, seeded from the stored position
+	await popover(page).locator('.glue-popover-disclosure').click();
+	const fields = popover(page).locator('.glue-popover-field');
+	await expect(fields.nth(0)).toHaveValue('300');
+	await expect(fields.nth(1)).toHaveValue('300');
+
+	// typed values move the object live and commit on change
+	await fields.nth(0).fill('415');
+	await fields.nth(0).press('Enter');
+	await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('415px');
+	await expect(byId(page, a)).toHaveCSS('left', '415px');
+	await fields.nth(1).fill('37');
+	await fields.nth(1).press('Enter');
+	await expect.poll(() => hg.readObject('100000000001').attrs['object-top']).toBe('37px');
+	await expect(byId(page, a)).toHaveCSS('top', '37px');
+});
+
 test('to top/to bottom push to the ends; level up/down swap one step',
 	async ({ page, hg }) => {
 		// two overlapping objects (offset so both stay clickable at their

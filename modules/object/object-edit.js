@@ -920,19 +920,16 @@ function object_edge_popover(obj)
 //
 // --- object adjustment ------------------------------------------------------
 //
-// One thing: where the object sits in the stack. Up, down, to the ends.
+// The stack, and the precise position: four z moves in the icon row, and -
+// under the one fold, since a fold holds the values an icon row holds the
+// acts - the x/y rows that put the object exactly where the numbers say
+// (danja's call, 2026-09-23).
 //
 // It was three things until 2026-09-16 - flip, z-level and transparency in one
 // panel - and the other two went to the object properties panel, where an
-// object's own properties are. What is left here is the relation: z-level is
-// not a property of the object but of the company it keeps. That is the whole
-// of the panel now, so it may as well be one row and a reset.
-//
-// The three were menu buttons with hidden gestures once: the flip cycled
-// through four states, and the z-level and the transparency were both
-// drag-distance sliders (drag right, drag further right...). The popout trades
-// the hidden gestures for visible controls, and the flip became two independent
-// toggles instead of a cycle - that part is in the properties panel now.
+// object's own properties are. Z-level is not a property of the object but of
+// the company it keeps; the position is the object's own, and its rows read
+// and write the same stored coordinates the drag writes.
 function object_adjust_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-adjust-popover');
@@ -948,11 +945,8 @@ function object_adjust_popover(obj)
 	// themselves; to_top/to_bottom follow the menu's old pattern of save on
 	// the way out.
 	//
-	// Four actions and a reset is the house style's first half already - this
-	// panel has nothing that is a value rather than an act - so it takes the
-	// shared row and button classes and stays as it is, with no fold. (A panel
-	// with nothing to fold has an icon row and no fold, rather than an empty
-	// one: the convention, in js/edit.js beside icon_row().)
+	// Four actions is the house style's first half; the values - the x/y
+	// position - live under the fold below.
 	var z_row = $.glue.popover.icon_row();
 	var z_btn = function(icon, title, fn) {
 		var b = $.glue.popover.icon_button(icon, title);
@@ -974,6 +968,35 @@ function object_adjust_popover(obj)
 		save();
 	});
 	pop.appendChild(z_row);
+
+	// x and y: the stored coordinates, typed or dragged precisely. Positions
+	// have no natural bounds - the row's range only feeds the field's
+	// steppers, since a typed value is never capped (number_row's own rule) -
+	// and the drag moves one pixel per pixel of pointer, which is what makes
+	// it a positioning control rather than a coarse scrub.
+	var pos = {
+		x: parseFloat(obj.style.left) || obj.offsetLeft,
+		y: parseFloat(obj.style.top) || obj.offsetTop,
+	};
+	var pos_row = function(label, key) {
+		var row = $.glue.popover.number_row(label, {
+			min: -9999, max: 99999, step: 1, unit: 'px', sensitivity: 1,
+			value: pos[key],
+			apply: function(v, commit) {
+				pos[key] = v;
+				obj.style[key == 'x' ? 'left' : 'top'] = v+'px';
+				if (commit) {
+					save();
+				}
+			}
+		});
+		return row.row;
+	};
+	var fold = $.glue.popover.fold(pop, 'more knobs');
+	fold.body.appendChild(pos_row('x', 'x'));
+	fold.body.appendChild(pos_row('y', 'y'));
+	pop.appendChild(fold.toggle);
+	pop.appendChild(fold.body);
 
 	// The reset clears everything this panel owns, and only then saves - one
 	// write, and nothing left behind that the save happened before. Same
@@ -1038,6 +1061,189 @@ function object_background_position(obj)
 	};
 }
 
+// The target of a link, as one of three choices instead of a free-text field
+// (2026-09-23, danja): 'same window' stores nothing - the browser default -
+// 'new tab' stores '_blank', and 'new window' stores a fixed window name (a
+// named target opens one shared new window, the frame-name behaviour the free
+// field always allowed). A stored value none of the three names keeps itself
+// as an extra option rather than being rewritten.
+//
+// Shared by the object properties panel's link row (object_link_row below)
+// and the font panel's (text_panel_link_build in modules/text/text-edit.js,
+// which calls it the same guarded way the flip helpers are called).
+function link_target_select() {
+	var sel = document.createElement('select');
+	sel.className = 'glue-link-target-select';
+	[
+		['', 'same window'],
+		['_blank', 'new tab'],
+		['hotglue-window', 'new window'],
+	].forEach(function(o) {
+		var el = document.createElement('option');
+		el.value = o[0];
+		el.textContent = o[1];
+		sel.appendChild(el);
+	});
+	sel.set_value = function(value) {
+		// show the stored value; one the three choices don't name is added
+		// once as an extra option rather than rewritten (and a repeated sync
+		// finds the same option again)
+		var found = false;
+		for (var i = 0; i < sel.options.length; i++) {
+			if (sel.options[i].value === value) { found = true; break; }
+		}
+		if (!found && value) {
+			var el = document.createElement('option');
+			el.value = value;
+			el.textContent = value;
+			sel.appendChild(el);
+		}
+		sel.value = value;
+	};
+	return sel;
+}
+
+// The link row of the object properties panel: a url field and one button,
+// the font panel's shape, with the target select on a row of its own under
+// them. The link is not on the element - the renderer adds it in viewing
+// mode - so the row is handed the stored object when it arrives (set below),
+// and every commit writes straight back (glue.update_object /
+// glue.object_remove_attr), the way the link panel this replaced did.
+function object_link_row(obj)
+{
+	var row = document.createElement('div');
+	row.className = 'glue-object-link-row';
+	var url_input = document.createElement('input');
+	url_input.type = 'text';
+	url_input.className = 'glue-popover-field glue-object-link-field';
+	// the prompt's examples, which were this feature's only documentation
+	url_input.title = 'a full address (https://hotglue.me), a page name, or an anchor (#top)';
+	var btn = document.createElement('button');
+	btn.type = 'button';
+	btn.className = 'glue-link-add-class';
+	btn.textContent = 'make link';
+	btn.title = 'put this address on the object';
+	var target = link_target_select();
+	target.title = 'where clicking the object opens the link';
+	var target_row = $.glue.popover.row('target');
+	target_row.appendChild(target);
+
+	row.appendChild(url_input);
+	row.appendChild(btn);
+
+	var link = '';           // what the file says now
+	var stored_target = '';  // and its target
+	var mode = 'add';        // what the button does right now
+	var prefill = '';        // the url the load put in, for change detection
+
+	var sync = function() {
+		if (mode == 'remove') {
+			btn.textContent = 'remove link';
+			btn.title = 'take the link off the object';
+		} else if (mode == 'update') {
+			btn.textContent = 'update link';
+			btn.title = 'apply the edited address to the link';
+		} else {
+			btn.textContent = 'make link';
+			btn.title = 'put this address on the object';
+		}
+	};
+
+	var write_target = function() {
+		var tgt = target.value;
+		if (tgt) {
+			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-target': tgt });
+			stored_target = tgt;
+		} else if (stored_target) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
+			stored_target = '';
+		}
+	};
+
+	var commit = function() {
+		var url = url_input.value.trim();
+		if (!url) {
+			return;		// nothing typed, nothing to do
+		}
+		$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-link': url });
+		link = url;
+		prefill = url;
+		write_target();
+		mode = 'remove';
+		sync();
+	};
+
+	var remove = function() {
+		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
+		if (stored_target) {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
+		}
+		link = '';
+		stored_target = '';
+		url_input.value = '';
+		target.set_value('');
+		prefill = '';
+		mode = 'add';
+		sync();
+	};
+
+	url_input.addEventListener('keydown', function(e) {
+		if (e.key == 'Escape') {
+			// the panel's own Escape closes it; stopping the event here
+			// keeps the panel open and empties the field instead - the
+			// first press empties, the second closes the panel (the font
+			// row's contract)
+			e.preventDefault();
+			e.stopPropagation();
+			url_input.value = '';
+			return;
+		}
+		if (e.key == 'Enter') {
+			e.preventDefault();
+			commit();
+		}
+	});
+	// an edit to a pre-filled url flips the button from 'remove link' to
+	// 'update link' - and back, if the author restores the stored value
+	url_input.addEventListener('input', function() {
+		if (mode != 'add' && prefill !== '') {
+			mode = url_input.value != prefill ? 'update' : 'remove';
+			sync();
+		}
+	});
+	btn.addEventListener('click', function() {
+		if (mode == 'remove') {
+			remove();
+		} else {
+			commit();
+		}
+	});
+	// a target change is a deliberate act and commits on its own - but only
+	// when there is a link for it to say anything about; the choice made
+	// before a link exists is read at commit
+	target.addEventListener('change', function() {
+		if (link) {
+			write_target();
+		}
+	});
+
+	return {
+		row: row,
+		target_row: target_row,
+		// the stored object arrives after the panel is open; the row fills
+		// in then
+		set: function(new_link, new_target) {
+			link = new_link || '';
+			stored_target = new_target || '';
+			url_input.value = link;
+			prefill = link;
+			target.set_value(stored_target);
+			mode = link ? 'remove' : 'add';
+			sync();
+		},
+	};
+}
+
 function object_properties_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-properties-popover');
@@ -1080,24 +1286,20 @@ function object_properties_popover(obj)
 
 	// --- make the object a link --------------------------------------------
 	//
-	// The act that was its own menu button until 2026-09-23. A link is an
-	// object's own property, so the act belongs here, last in the icon row
-	// (the background's three and the flip pair came first, in their own
-	// sections). The link is not on the element - the renderer adds it in
-	// viewing mode - so the panel is opened once the stored object has
-	// arrived, and it is that load the link panel reads the current link out
-	// of.
-	var link = $.glue.popover.icon_button('object-link', 'make the object a link');
-	link.addEventListener('click', function() {
-		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-			if (data['#error']) {
-				$.glue.error(data['#error']);
-				return;
-			}
-			object_link_popover(obj, data['#data']);
-		}, false);
-	});
-	icons.appendChild(link);
+	// The link row, the same shape the font panel's link row is (2026-09-23,
+	// danja): a url field and a button out front, under the icon row and
+	// before "more knobs", with the target as one of three choices on a row
+	// of its own. The link is not on the element - the renderer adds it in
+	// viewing mode - so the row reads the stored object when it arrives, and
+	// writes straight back, the way the link panel this replaced did.
+	var link_ui = object_link_row(obj);
+	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+		if (data['#error']) {
+			$.glue.error(data['#error']);
+			return;
+		}
+		link_ui.set(data['object-link'] || '', data['object-target'] || '');
+	}, false);
 
 	// --- take it off, or put it back --------------------------------------
 	//
@@ -1132,6 +1334,8 @@ function object_properties_popover(obj)
 	body.appendChild(footer);
 
 	pop.appendChild(icons);
+	pop.appendChild(link_ui.row);
+	pop.appendChild(link_ui.target_row);
 	pop.appendChild(fold.toggle);
 	pop.appendChild(body);
 
@@ -1774,182 +1978,6 @@ function object_transparency_section(body, obj, save)
 			opacity.set(100);
 		}
 	};
-}
-
-// --- link -------------------------------------------------------------------
-
-// Where clicking the object sends the reader: a panel beside the object, where
-// it used to be a browser prompt().
-//
-// The prompt asked both questions in one string - the address, a space, the
-// target - and its one line of help was the only thing that said so. Two rows
-// say it instead, one per question, and the address can be READ: a native box
-// cannot be widened, styled, or shown what the object already has, which is why
-// editing an existing link meant parsing it back out of the text you were
-// given. Both rows are out front; the target spent its first day in a fold and
-// is a row like the url's since 2026-09-17.
-//
-// What the prompt did that this does not lose. The link is not a dom
-// attribute: it is stored (object-link, object-target) and applied by the
-// renderer in viewing mode only, which is why this is handed the object as
-// loaded rather than reading the element, and why every change is a backend
-// write. Those writes are not undoable - undo replays the dom, and a link
-// never appears in it. The prompt was not undoable either.
-//
-// Nothing is written until the field is committed, and there are two ways to
-// commit: Enter, or the panel closing. That is the one place this panel
-// differs from the ones beside it, which apply while they are being dragged -
-// a url is typed, and half a url is not a value worth storing. Escape drops
-// what was typed since the last commit, the way Escape on the prompt dropped
-// everything.
-//
-// Neither half is left to the browser, because closing REMOVES the field and
-// what that fires is not the same thing twice. Chromium fires change (and
-// blur) on a focused input it removes, so the close by itself stored whatever
-// was typed - including what Escape was meant to drop; Firefox fires neither,
-// so a url typed and then clicked away from was stored in Chromium and
-// silently dropped in Firefox. So: Escape marks the close as a discard, and
-// on_close does the committing, which is the single path every way out of
-// this panel goes through (js/edit.js close()).
-//
-// The button is vetoed for iframe and download objects (modules/iframe,
-// modules/download): an iframe is already somewhere, and a download is what
-// clicking it does.
-function object_link_popover(obj, data)
-{
-	var pop = $.glue.popover.open(obj, 'glue-object-link-popover');
-	if (!pop) {
-		return;
-	}
-	var link = data['object-link'] || '';
-	var target = data['object-target'] || '';
-	// Escape says the close that follows is a discard, not a commit
-	var discarding = false;
-
-	var url_row = $.glue.popover.row('link');
-	var url_input = document.createElement('input');
-	url_input.type = 'text';
-	url_input.className = 'glue-popover-field glue-object-link-field';
-	url_input.value = link;
-	// the prompt's examples, which were this feature's only documentation
-	url_input.title = 'a full address (https://hotglue.me), a page name, or an anchor (#top)';
-	url_row.appendChild(url_input);
-	pop.appendChild(url_row);
-
-	// The target, out front beside the url. It was folded - as the one fold in
-	// the editor whose label named its contents rather than "more knobs" - on
-	// the reasoning that a target is STORED and must not be invisible; danja's
-	// call on 2026-09-17 is that the way to not hide it is not to fold it.
-	// Nothing else follows from that: the fold was one row and a click, and what
-	// it held is a value with a name, which is a row like the one above it.
-	var target_row = $.glue.popover.row('target');
-	var target_input = document.createElement('input');
-	target_input.type = 'text';
-	target_input.className = 'glue-popover-field glue-object-link-field';
-	target_input.value = target;
-	target_input.title = '_blank opens a new window; a frame name works too';
-	target_row.appendChild(target_input);
-	pop.appendChild(target_row);
-
-	var footer = $.glue.popover.row(false);
-	var remove = $.glue.popover.delete('take the link off the object', function() {
-		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
-		if (target) {
-			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
-		}
-		link = '';
-		target = '';
-		url_input.value = '';
-		target_input.value = '';
-		sync();
-	});
-	footer.appendChild(remove);
-	pop.appendChild(footer);
-
-	// the remove is only offered when there is something to remove, the way
-	// the properties panel only offers its delete when there is a picture
-	var sync = function() {
-		remove.style.display = link ? '' : 'none';
-	};
-
-	var write = function() {
-		var url = url_input.value.trim();
-		var tgt = target_input.value.trim();
-		// Escape is on its way out and takes what was typed with it. The flag
-		// is read here rather than at the close because Chromium fires change
-		// when the field is removed, which is after the close has run.
-		if (discarding) {
-			return;
-		}
-		// a commit that would store what is already stored does nothing, which
-		// makes the second of two commits in one closing (this panel's own,
-		// then Chromium's on removal) a no-op
-		if (url === link && (url ? tgt : '') === target) {
-			return;
-		}
-		// an emptied field takes the link off, which is what an emptied
-		// prompt box did too
-		if (url) {
-			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-link': url });
-		} else if (link) {
-			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-link' });
-		}
-		// a target with no link to open is not a thing to store
-		if (tgt && url) {
-			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'object-target': tgt });
-		} else if (target) {
-			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'object-target' });
-		}
-		link = url;
-		target = url ? tgt : '';
-		// the fields are left showing what was stored, trimmed - the same
-		// tidying a settled number field gets
-		url_input.value = link;
-		target_input.value = target;
-		sync();
-	};
-
-	// Enter commits from either field - change would fire on blur anyway, but
-	// only when focus leaves, and Enter is how a url is finished
-	var on_enter = function(e) {
-		if (e.key == 'Enter') {
-			e.preventDefault();
-			write();
-		}
-	};
-	// Escape closes the panel from documentElement (js/edit.js), and this only
-	// tells the close below which of the two things it is doing. The flag is
-	// cleared on focus, which is the only way back into a field that is still
-	// there.
-	var on_escape = function(e) {
-		if (e.key == 'Escape') {
-			discarding = true;
-		}
-	};
-	var on_focus = function() {
-		discarding = false;
-	};
-	url_input.addEventListener('change', write);
-	target_input.addEventListener('change', write);
-	url_input.addEventListener('keydown', on_enter);
-	target_input.addEventListener('keydown', on_enter);
-	url_input.addEventListener('keydown', on_escape);
-	target_input.addEventListener('keydown', on_escape);
-	url_input.addEventListener('focus', on_focus);
-	target_input.addEventListener('focus', on_focus);
-
-	// Closing commits, whatever closed it - a click on the page, Escape (which
-	// has just said no to this), the object being deselected, another panel
-	// opening. on_close runs before the panel is removed, so the fields are
-	// still there to read.
-	pop.on_close = write;
-
-	sync();
-	$.glue.popover.show(pop);
-	url_input.focus();
-	// selected rather than just focused: a link is usually replaced whole,
-	// and a new one has nothing in the field to select
-	url_input.select();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
