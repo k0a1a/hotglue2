@@ -278,7 +278,7 @@ function video_alter_render_early($args)
 	if (!empty($obj['video-encode-status']) && $obj['video-encode-status'] == 'pending') {
 		$ph = elem('div');
 		elem_add_class($ph, 'video-processing');
-		elem_val($ph, 'Video is being processed, reload in a moment to see it');
+		elem_val($ph, 'converting video');
 		elem_append($elem, $ph);
 		return true;
 	}
