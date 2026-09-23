@@ -504,6 +504,12 @@ function webvideo_resolve($args)
 	}
 	$url = $args['url'];
 	$url = preg_replace('#^//#', 'https:', $url);
+	// a pasted embed CODE - the whole <iframe>...</iframe> a share dialog
+	// hands out - is fine too: the src is the url being resolved (danja's
+	// call, 2026-09-23)
+	if (preg_match('#<iframe[^>]+src=["\']([^"\']+)["\']#i', $url, $m)) {
+		$url = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+	}
 	if (!preg_match('#^https?://#i', $url)) {
 		return response('Not a valid URL', 400);
 	}

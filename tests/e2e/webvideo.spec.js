@@ -124,6 +124,35 @@ test('a pasted Bandcamp embed url wraps directly, no fetch', async ({ page, hg }
 	expect(fs.readdirSync(sharedDir(hg))).toContain(attrs['webvideo-cache-file']);
 });
 
+test('pasting the whole <iframe> embed code extracts the src', async ({ page, hg }) => {
+	// the share dialog's full snippet - iframe plus the fallback link -
+	// resolves to the iframe's own src (danja's call, 2026-09-23)
+	const snippet = '<iframe style="border: 0; width: 100%; height: 42px;" ' +
+		'src="https://bandcamp.com/EmbeddedPlayer/album=2156047848/size=small/' +
+		'bgcol=ffffff/linkcol=0687f5/track=272996041/transparent=true/" seamless>' +
+		'<a href="https://caskaudio.bandcamp.com/album/tubular-bells-sample-pack-samples">' +
+		'Tubular Bells Sample Pack [SAMPLES] by CASKaudio</a></iframe>';
+	hg.addObject('100000000001', {
+		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
+		'object-width': '100px', 'object-height': '50px', 'object-zindex': '100',
+		'text-background-color': 'transparent',
+	}, 'seed');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	page.on('dialog', (d) => d.accept(snippet));
+	await page.keyboard.press('Alt+o');
+	await page.locator('input[title="upload a file"]').first().waitFor({ state: 'attached' });
+	await page.getByTitle('embed a video or audio track').click();
+	await expect(page.locator('.webvideo.object')).toHaveCount(1, { timeout: 10000 });
+	await expect(page.locator('.webvideo.object iframe')).toHaveAttribute('src',
+		'https://bandcamp.com/EmbeddedPlayer/album=2156047848/size=small/bgcol=ffffff/linkcol=0687f5/track=272996041/transparent=true/');
+	// the stored url is the clean src, not the whole snippet
+	const id = hg.ids().find((f) => f !== '100000000001' && f !== 'page');
+	expect(hg.readObject(id).attrs['webvideo-url']).toContain('bandcamp.com/EmbeddedPlayer/album=2156047848');
+	expect(hg.readObject(id).attrs['webvideo-url']).not.toContain('<iframe');
+});
+
 test('a non-whitelisted url fails soft in the editor', async ({ page, hg }) => {
 	hg.addObject('100000000001', {
 		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
