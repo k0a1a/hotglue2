@@ -96,7 +96,9 @@ error_reporting(E_ALL);						// see php documentation
 @define('VIDEO_MAX_DURATION', 60);			// only the first n seconds of an upload are encoded/served, regardless of how long the original is
 @define('VIDEO_DISPLAY_MAX_WIDTH', 512);		// cap the on-canvas size of a newly-encoded video to at most this many pixels wide (0 to disable) - only affects initial display size, not the encoded resolution (VIDEO_MAX_HEIGHT) or file
 @define('VIDEO_DISPLAY_MAX_HEIGHT', 512);		// same as above, for height
-@define('VIDEO_POSTER_TIME', 1);			// second offset into the video to grab the poster frame from
+@define('VIDEO_POSTER_TIME', 1);			// second offset into the video to grab the poster frame from - the fallback when no non-empty random frame is found
+@define('VIDEO_POSTER_ATTEMPTS', 5);		// how many random frames to try for a non-empty poster (danja's call, 2026-09-23: a fixed timestamp kept landing on titles or blackness)
+@define('VIDEO_POSTER_EMPTY_YAVG', 16);		// a grabbed frame whose average luma is below this (near-black) or above 256 minus this (near-white) counts as empty and is re-rolled
 @define('VIDEO_ENCODE_TIMEOUT', 60*60*2);	// give up waiting for a background encode after n seconds and fall back to the original upload
 @define('VIDEO_START_ON_CLICK', true);		// start video on click when autoplay is off
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication

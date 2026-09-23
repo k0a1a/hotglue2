@@ -71,6 +71,83 @@ function _video_dimensions($file)
 
 
 /**
+ *	return the frame rate of a video file's first video stream
+ *
+ *	@param string $file filename
+ *
+ *	@return float frames per second, or false on error
+ */
+function _video_fps($file)
+{
+	$dir = dirname(FFMPEG_BINARY);
+	$ffprobe = ($dir == '.') ? 'ffprobe' : $dir.'/ffprobe';
+	$cmd = escapeshellarg($ffprobe).' -v quiet -print_format json -show_streams '.escapeshellarg($file);
+	exec($cmd, $out, $ret);
+	if ($ret !== 0 || empty($out)) {
+		return false;
+	}
+	$data = json_decode(implode("\n", $out), true);
+	if (empty($data['streams'])) {
+		return false;
+	}
+	foreach ($data['streams'] as $s) {
+		if (isset($s['codec_type']) && $s['codec_type'] == 'video') {
+			$rate = !empty($s['avg_frame_rate']) ? $s['avg_frame_rate'] : (!empty($s['r_frame_rate']) ? $s['r_frame_rate'] : false);
+			if (!$rate || $rate == '0/0') {
+				return false;
+			}
+			$a = explode('/', $rate);
+			if (count($a) != 2 || floatval($a[1]) <= 0) {
+				return false;
+			}
+			return floatval($a[0]) / floatval($a[1]);
+		}
+	}
+	return false;
+}
+
+
+/**
+ *	grab the poster frame for a freshly uploaded video: a RANDOM frame
+ *	from the first 90 (danja's call, 2026-09-23 - the fixed
+ *	VIDEO_POSTER_TIME kept landing on titles or blackness), re-rolled
+ *	when the grabbed frame reads as empty - near-black or near-white,
+ *	measured with signalstats - falling back to the fixed timestamp
+ *	after VIDEO_POSTER_ATTEMPTS tries.
+ *
+ *	@param string $orig path of the uploaded file
+ *	@param string $poster path to write the poster to
+ *	@param float $fps the source's frame rate
+ *
+ *	@return bool
+ */
+function _video_grab_poster($orig, $poster, $fps)
+{
+	$ffmpeg = escapeshellarg(FFMPEG_BINARY);
+	for ($i = 0; $i < VIDEO_POSTER_ATTEMPTS; $i++) {
+		// frames 1..90: frame N starts at (N-1)/fps
+		$t = random_int(0, 89) / $fps;
+		exec($ffmpeg.' -y -ss '.$t.' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($poster).' 2>/dev/null');
+		if (!is_file($poster) || 0 == filesize($poster)) {
+			continue;
+		}
+		exec($ffmpeg.' -i '.escapeshellarg($poster).' -vf "signalstats,metadata=print:key=lavfi.signalstats.YAVG" -frames:v 1 -f null - 2>&1', $out);
+		foreach ($out as $line) {
+			if (preg_match('/YAVG=([0-9.]+)/', $line, $m)) {
+				if (VIDEO_POSTER_EMPTY_YAVG < floatval($m[1]) && floatval($m[1]) < 256 - VIDEO_POSTER_EMPTY_YAVG) {
+					return true;
+				}
+				break;
+			}
+		}
+	}
+	// fall back to the fixed timestamp
+	exec($ffmpeg.' -y -ss '.intval(VIDEO_POSTER_TIME).' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($poster).' 2>/dev/null');
+	return is_file($poster) && 0 < filesize($poster);
+}
+
+
+/**
  *	the on-canvas display size for given pixel dimensions: capped by
  *	VIDEO_DISPLAY_MAX_WIDTH/HEIGHT, never upscaled. This is the canvas
  *	size, independent of the encoded resolution cap (VIDEO_MAX_HEIGHT)
@@ -514,8 +591,17 @@ function video_upload($args)
 		// -t as an input option so ffmpeg stops reading once it has enough
 		// source material, rather than decoding the whole file and
 		// discarding everything past VIDEO_MAX_DURATION
-		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart '.escapeshellarg($dir.'/'.$out)
-			.' && '.escapeshellarg(FFMPEG_BINARY).' -y -ss '.intval(VIDEO_POSTER_TIME).' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($dir.'/'.$poster);
+		// grab the poster frame up front - a random non-empty frame from
+		// the first 90, falling back to the fixed timestamp - while the
+		// encode runs on its own in the background
+		$fps = _video_fps($orig);
+		if ($fps !== false) {
+			_video_grab_poster($orig, $dir.'/'.$poster, $fps);
+		} else {
+			exec(escapeshellarg(FFMPEG_BINARY).' -y -ss '.intval(VIDEO_POSTER_TIME).' -i '.escapeshellarg($orig).' -vframes 1 '.escapeshellarg($dir.'/'.$poster).' 2>/dev/null');
+		}
+
+		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart '.escapeshellarg($dir.'/'.$out);
 		exec($cmd.' > /dev/null 2>&1 &');
 		$obj['video-encode-status'] = 'pending';
 		$obj['video-encode-started'] = time();
