@@ -318,13 +318,14 @@ test('an image object has the full panel, background section included',
 		await expect(p.locator('.glue-background-tile')).toHaveCount(1);
 		await expect(p.locator('.glue-background-pos')).toHaveCount(2);
 		await expect(p.locator('.glue-background-scale')).toHaveCount(1);
-		// the flip pair in the row and, in the fold, the transparency and the
-		// reset - and no padding, which is a text property
+		// the flip pair in the row and, in the fold, the padding, the
+		// transparency and the reset - the padding section came to image
+		// objects with the video's in 2026-09-23
 		await expect(p.locator('.glue-popover-icon')).toHaveCount(5);
 		await expect(flipV(page)).toBeVisible();
 		await expect(flipH(page)).toBeVisible();
-		await expect(p.locator('.glue-padding-row')).toHaveCount(0);
 		await openFold(page);
+		await expect(p.locator('.glue-padding-row')).toHaveCount(1);
 		await expect(p.locator('.glue-opacity-row')).toBeVisible();
 		await expect(p.locator('.glue-popover-reset')).toBeVisible();
 	});
@@ -363,6 +364,36 @@ test('an image object renders and keeps its background colour',
 		}));
 		expect(hg.readObject('100000000004').attrs['object-background-color']).toBe('#ff0000');
 	});
+
+test('an image object renders and keeps its padding', async ({ page, hg }) => {
+	// the picture letterboxes inside the padded content box, and the save
+	// round-trip keeps the attrs (danja's call, 2026-09-23)
+	const img = hg.addObject('100000000005', {
+		type: 'image', module: 'image',
+		'image-file': 'sample.png', 'image-file-mime': 'image/png',
+		'image-file-width': '120', 'image-file-height': '80',
+		'object-padding-x': '10px',
+		'object-left': '700px', 'object-top': '400px',
+		'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+	});
+	fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+		{ recursive: true });
+	fs.copyFileSync(SAMPLE,
+		path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+
+	await page.goto(`/?${hg.pageName}`);
+	await expect(byId(page, img)).toHaveCSS('padding-left', '10px');
+	await expect(byId(page, img)).toHaveCSS('padding-right', '10px');
+
+	// and the editor's save keeps it
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await page.evaluate(() => new Promise((res) => {
+		window.$.glue.backend({ method: 'glue.save_state',
+			html: window.$.glue.object.to_html(document.querySelector('.image.object')) }, res);
+	}));
+	expect(hg.readObject('100000000005').attrs['object-padding-x']).toBe('10px');
+});
 
 test('the object serves its own background, and it survives a reload',
 	async ({ page, hg }) => {

@@ -325,6 +325,35 @@ function object_alter_render_early($args)
 	if (!elem_has_class($elem, 'text') && !empty($obj['object-background-color'])) {
 		elem_css($elem, 'background-color', $obj['object-background-color']);
 	}
+	// Padding, for every kind except text (which stores its own
+	// text-padding-*): the four longhands when the object was saved with
+	// per-side values, the x/y pair as the fallback for the uniform row -
+	// danja's call, 2026-09-23: image and video objects got the padding
+	// section text has. The frame compensation the panel does means the
+	// object's stored width/height stay the OUTER size, and the picture
+	// letterboxes inside the padded content box.
+	if (!elem_has_class($elem, 'text')) {
+		if (!empty($obj['object-padding-left'])) {
+			elem_css($elem, 'padding-left', $obj['object-padding-left']);
+		}
+		if (!empty($obj['object-padding-right'])) {
+			elem_css($elem, 'padding-right', $obj['object-padding-right']);
+		}
+		if (empty($obj['object-padding-left']) && empty($obj['object-padding-right']) && !empty($obj['object-padding-x'])) {
+			elem_css($elem, 'padding-left', $obj['object-padding-x']);
+			elem_css($elem, 'padding-right', $obj['object-padding-x']);
+		}
+		if (!empty($obj['object-padding-top'])) {
+			elem_css($elem, 'padding-top', $obj['object-padding-top']);
+		}
+		if (!empty($obj['object-padding-bottom'])) {
+			elem_css($elem, 'padding-bottom', $obj['object-padding-bottom']);
+		}
+		if (empty($obj['object-padding-top']) && empty($obj['object-padding-bottom']) && !empty($obj['object-padding-y'])) {
+			elem_css($elem, 'padding-top', $obj['object-padding-y']);
+			elem_css($elem, 'padding-bottom', $obj['object-padding-y']);
+		}
+	}
 	// The box-shadow family - a soft halo behind the content, a solid band
 	// outside the box and one inside it, and a directional drop shadow - see
 	// .glue-glow in css/main.css. Like the fade above, what is stored is the
@@ -515,6 +544,86 @@ function object_alter_save($args)
 		$obj['object-background-color'] = elem_css($elem, 'background-color');
 	} else {
 		unset($obj['object-background-color']);
+	}
+	// padding, for every kind except text (the text module stores its own
+	// text-padding-*): the x/y pair while the sides are symmetric, the four
+	// longhands when they are not - the same parse text_alter_save does.
+	// The panel compensates the frame, so width/height above keep being the
+	// OUTER size and the content box shrinks by the padding.
+	if (!elem_has_class($elem, 'text')) {
+		$pad = ['top'=>NULL, 'right'=>NULL, 'bottom'=>NULL, 'left'=>NULL];
+		if (elem_css($elem, 'padding') !== NULL) {
+			// inline padding as shorthand rather than longhands (Firefox
+			// serialises it that way - same reason as text_alter_save)
+			$s = expl(' ', elem_css($elem, 'padding'));
+			if (count($s) == 1) {
+				$pad['top'] = $pad['right'] = $pad['bottom'] = $pad['left'] = $s[0];
+			} elseif (count($s) == 2) {
+				$pad['top'] = $pad['bottom'] = $s[0];
+				$pad['left'] = $pad['right'] = $s[1];
+			} elseif (count($s) == 3) {
+				$pad['top'] = $s[0];
+				$pad['left'] = $pad['right'] = $s[1];
+				$pad['bottom'] = $s[2];
+			} else {
+				$pad['top'] = $s[0];
+				$pad['right'] = $s[1];
+				$pad['bottom'] = $s[2];
+				$pad['left'] = $s[3];
+			}
+		} else {
+			foreach ($pad as $side => $v) {
+				$pad[$side] = elem_css($elem, 'padding-'.$side);
+			}
+		}
+		// left/right -> object-padding-x, or the two longhands when they differ
+		if ($pad['left'] !== NULL || $pad['right'] !== NULL) {
+			if ($pad['left'] !== NULL && $pad['right'] !== NULL && $pad['left'] == $pad['right']) {
+				$obj['object-padding-x'] = $pad['left'];
+				unset($obj['object-padding-left']);
+				unset($obj['object-padding-right']);
+			} else {
+				unset($obj['object-padding-x']);
+				if ($pad['left'] !== NULL) {
+					$obj['object-padding-left'] = $pad['left'];
+				} else {
+					unset($obj['object-padding-left']);
+				}
+				if ($pad['right'] !== NULL) {
+					$obj['object-padding-right'] = $pad['right'];
+				} else {
+					unset($obj['object-padding-right']);
+				}
+			}
+		} else {
+			unset($obj['object-padding-x']);
+			unset($obj['object-padding-left']);
+			unset($obj['object-padding-right']);
+		}
+		// top/bottom likewise
+		if ($pad['top'] !== NULL || $pad['bottom'] !== NULL) {
+			if ($pad['top'] !== NULL && $pad['bottom'] !== NULL && $pad['top'] == $pad['bottom']) {
+				$obj['object-padding-y'] = $pad['top'];
+				unset($obj['object-padding-top']);
+				unset($obj['object-padding-bottom']);
+			} else {
+				unset($obj['object-padding-y']);
+				if ($pad['top'] !== NULL) {
+					$obj['object-padding-top'] = $pad['top'];
+				} else {
+					unset($obj['object-padding-top']);
+				}
+				if ($pad['bottom'] !== NULL) {
+					$obj['object-padding-bottom'] = $pad['bottom'];
+				} else {
+					unset($obj['object-padding-bottom']);
+				}
+			}
+		} else {
+			unset($obj['object-padding-y']);
+			unset($obj['object-padding-top']);
+			unset($obj['object-padding-bottom']);
+		}
 	}
 	// Only the two settings, never the image URL: that is derived from
 	// object-background-file, which the upload sets and nothing else touches.

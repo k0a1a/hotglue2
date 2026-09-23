@@ -1040,10 +1040,14 @@ function object_properties_popover(obj)
 	// object does not have is not a control that is waiting for something to
 	// arrive.
 	//
-	// Only a text object has a padding section: text-padding-x / text-padding-y
-	// is the only padding hotglue stores (module_text.inc.php).
+	// The padding section belongs to text, image and video objects: the
+	// picture or footage letterboxes inside the padded content box, and the
+	// frame compensation the section does keeps the object's stored size the
+	// OUTER one. Text stores text-padding-* (module_text.inc.php), the other
+	// two object-padding-* (module_object.inc.php) - danja's call, 2026-09-23.
 	var background = object_background_section(pop, icons, body, obj, save);
-	var padding = (obj.classList.contains('text')) ?
+	var padding = (obj.classList.contains('text') ||
+		obj.classList.contains('image') || obj.classList.contains('video')) ?
 		object_padding_section(body, obj, save) : null;
 	var flip = object_flip_section(icons, obj, save);
 	var transparency = object_transparency_section(body, obj, save);
