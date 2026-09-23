@@ -1,1 +1,29 @@
-<svg width="30px" height="30px" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg"><polygon style="fill:#000" points="15,13 11.04,8.71 18.96,8.71"/><polygon style="fill:#000" points="15,17 11.04,21.29 18.96,21.29"/></svg>
+<svg
+   width="30"
+   height="30"
+   viewBox="0 0 30 30"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><g
+     id="g2"
+     transform="rotate(-90,15,14.935334)"><path
+       fill="#000000"
+       d="M 5,10.982568 15,2.982569 25,10.982568 Z"
+       id="path1" /><line
+       fill="none"
+       stroke="#000000"
+       stroke-width="2"
+       stroke-dasharray="3, 2"
+       stroke-linecap="butt"
+       x1="3"
+       y1="13.98257"
+       x2="27"
+       y2="13.98257"
+       id="line1" /><path
+       fill="none"
+       stroke="#000000"
+       stroke-width="2"
+       stroke-linecap="butt"
+       stroke-linejoin="miter"
+       stroke-miterlimit="10"
+       d="M 7.3903002,17.982568 H 22.577367 L 15,25.482568 Z"
+       id="path2" /></g></svg>

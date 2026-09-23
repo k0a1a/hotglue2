@@ -1643,17 +1643,13 @@ function object_padding_section(body, obj, save)
 // Returns an object with the section's reset.
 function object_flip_section(icons, obj, save)
 {
-	// The artwork is danja's pair of 2026-09-16 (the set's flip-v/flip-h, which
-	// this called until then), and the two files are named for the AXIS their
-	// dashed line draws - which is the opposite of the words in the tooltips
-	// beside them. flip-horizontal.svg draws a horizontal dashed line with the
-	// shape reflected above and below it, flip-vertical.svg a vertical one with
-	// the shape reflected left to right. So each button wears the file showing
-	// what its own click does, and the two names are swapped here rather than in
-	// the files - the same fitting-to-the-artwork the font panel's align buttons
-	// carry, two of whose four names are swapped at their own wiring.
-	var flip_h = $.glue.popover.icon_button('flip-vertical', 'flip horizontally');
-	var flip_v = $.glue.popover.icon_button('flip-horizontal', 'flip vertically');
+	// The artwork is danja's pair: flip-h.svg draws the shape reflected
+	// across a horizontal dashed line, flip-v.svg the same drawing turned
+	// on its side - each file depicts the flip its own click performs
+	// (2026-09-23, the earlier names were crossed because the old art
+	// read opposite to the action).
+	var flip_h = $.glue.popover.icon_button('flip-h', 'flip horizontally');
+	var flip_v = $.glue.popover.icon_button('flip-v', 'flip vertically');
 	var flip_sync = function() {
 		var axes = (typeof transform_flip_axes === 'function') ?
 			transform_flip_axes(obj) : { h: false, v: false };
