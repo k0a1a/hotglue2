@@ -71,6 +71,29 @@ function _video_dimensions($file)
 
 
 /**
+ *	the on-canvas display size for given pixel dimensions: capped by
+ *	VIDEO_DISPLAY_MAX_WIDTH/HEIGHT, never upscaled. This is the canvas
+ *	size, independent of the encoded resolution cap (VIDEO_MAX_HEIGHT)
+ *	- it only shrinks to fit, so a 720p video can land on a 512px canvas.
+ *
+ *	@param int $w width in pixels
+ *	@param int $h height in pixels
+ *
+ *	@return array with width and height
+ */
+function _video_display_size($w, $h)
+{
+	if (VIDEO_DISPLAY_MAX_WIDTH && VIDEO_DISPLAY_MAX_HEIGHT
+		&& (VIDEO_DISPLAY_MAX_WIDTH < $w || VIDEO_DISPLAY_MAX_HEIGHT < $h)) {
+		$scale = min(VIDEO_DISPLAY_MAX_WIDTH/$w, VIDEO_DISPLAY_MAX_HEIGHT/$h);
+		$w = round($w*$scale);
+		$h = round($h*$scale);
+	}
+	return [$w, $h];
+}
+
+
+/**
  *	check on a pending background video encode, finalizing it (swapping in
  *	the encoded variant, recording the poster file, discarding the
  *	original) if the expected output files have appeared on disk, or
@@ -108,16 +131,7 @@ function video_check_pending_encode($obj)
 		// placeholder is showing (no real <video> element exists yet)
 		$dim = _video_dimensions($dir.'/'.$out);
 		if ($dim !== false) {
-			$w = $dim['width'];
-			$h = $dim['height'];
-			// cap the on-canvas display size (independent of the encoded
-			// resolution cap above) - never upscales, only shrinks to fit
-			if (VIDEO_DISPLAY_MAX_WIDTH && VIDEO_DISPLAY_MAX_HEIGHT
-				&& (VIDEO_DISPLAY_MAX_WIDTH < $w || VIDEO_DISPLAY_MAX_HEIGHT < $h)) {
-				$scale = min(VIDEO_DISPLAY_MAX_WIDTH/$w, VIDEO_DISPLAY_MAX_HEIGHT/$h);
-				$w = round($w*$scale);
-				$h = round($h*$scale);
-			}
+			[$w, $h] = _video_display_size($dim['width'], $dim['height']);
 			$update['object-width'] = $w.'px';
 			$update['object-height'] = $h.'px';
 		}
@@ -142,6 +156,15 @@ function video_check_pending_encode($obj)
 		unset($obj['video-encode-started']);
 		unset($obj['video-encode-file']);
 		unset($obj['video-encode-poster-file']);
+		// the size predicted at upload was for the encoded output; the
+		// fallback serves the original, so measure IT
+		$dim = _video_dimensions($dir.'/'.$obj['video-file']);
+		if ($dim !== false) {
+			[$w, $h] = _video_display_size($dim['width'], $dim['height']);
+			update_object(['name'=>$obj['name'], 'object-width'=>$w.'px', 'object-height'=>$h.'px']);
+			$obj['object-width'] = $w.'px';
+			$obj['object-height'] = $h.'px';
+		}
 	}
 
 	return $obj;
@@ -498,6 +521,26 @@ function video_upload($args)
 		$obj['video-encode-started'] = time();
 		$obj['video-encode-file'] = $out;
 		$obj['video-encode-poster-file'] = $poster;
+
+		// size the object NOW from the source, so the placeholder already
+		// shows at the dimensions the finished encode will have: the same
+		// short-side cap the -vf above applies, then the display cap. The
+		// pending-encode finalize re-measures the encoded output and lands
+		// on the same numbers (danja's call, 2026-09-23).
+		$src_dim = _video_dimensions($orig);
+		if ($src_dim !== false) {
+			$w = $src_dim['width'];
+			$h = $src_dim['height'];
+			$short = min($w, $h);
+			if (VIDEO_MAX_HEIGHT && VIDEO_MAX_HEIGHT < $short) {
+				$scale = VIDEO_MAX_HEIGHT / $short;
+				$w = round($w * $scale);
+				$h = round($h * $scale);
+			}
+			[$w, $h] = _video_display_size($w, $h);
+			$obj['object-width'] = $w.'px';
+			$obj['object-height'] = $h.'px';
+		}
 	}
 
 	save_object($obj);
