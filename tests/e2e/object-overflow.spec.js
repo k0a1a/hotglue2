@@ -1,8 +1,11 @@
-// Overflow toggle in the object context menu.
+// Overflow toggle in the object's edge popout.
 //
 // Objects are fixed-size absolutely positioned boxes, and content bigger than
 // the box spills out of it - the browser default, and what hotglue has always
 // done. This lets an object clip instead.
+//
+// The toggle was its own context-menu button until 2026-09-23, when it moved
+// into the edge popout as the last row before "more knobs".
 //
 // Absent means visible: only 'hidden' is ever stored, so an object nobody has
 // touched keeps exactly the markup it had.
@@ -25,6 +28,8 @@ const overflowOf = (page, id) => page.evaluate((i) =>
 
 async function select(page, id) {
 	await byId(page, id).click();
+	// the toggle lives in the edge popout, as the last row before the fold
+	await page.getByTitle('edges: rounded corners and a soft fade').click();
 	await expect(toggle(page)).toBeVisible();
 }
 

@@ -606,6 +606,31 @@ function object_edge_popover(obj)
 	pop.appendChild(radius.row);
 	pop.appendChild(border.row);
 
+	// --- clip: content bigger than the object, cut off or spilling ---------
+	//
+	// The toggle that was its own menu button until 2026-09-23. It is an act
+	// like the panel's other controls, so it sits as the last row before
+	// "more knobs"; the fold below holds the values. The state is the
+	// pressed-in frame the flip toggles use, and the tooltip says what is
+	// true now.
+	var clip_row = $.glue.popover.row('clip');
+	var clip = $.glue.popover.icon_button('clip', '');
+	var clip_sync = function() {
+		var on = object_overflow_hidden(obj);
+		clip.classList.toggle('glue-btn-active', on);
+		clip.title = on ?
+			'content bigger than this object is cut off - click to let it show' :
+			'content bigger than this object spills out - click to cut it off';
+	};
+	clip.addEventListener('click', function() {
+		obj.style.overflow = object_overflow_hidden(obj) ? '' : 'hidden';
+		save();
+		clip_sync();
+	});
+	clip_row.appendChild(clip);
+	pop.appendChild(clip_row);
+	clip_sync();
+
 	// --- more knobs: the fade and the glow --------------------------------
 	//
 	// Everything else the object's edge can do, and most objects want none of
@@ -1052,6 +1077,27 @@ function object_properties_popover(obj)
 	var flip = object_flip_section(icons, obj, save);
 	var transparency = object_transparency_section(body, obj, save);
 	var sections = [background, padding, flip, transparency];
+
+	// --- make the object a link --------------------------------------------
+	//
+	// The act that was its own menu button until 2026-09-23. A link is an
+	// object's own property, so the act belongs here, last in the icon row
+	// (the background's three and the flip pair came first, in their own
+	// sections). The link is not on the element - the renderer adds it in
+	// viewing mode - so the panel is opened once the stored object has
+	// arrived, and it is that load the link panel reads the current link out
+	// of.
+	var link = $.glue.popover.icon_button('object-link', 'make the object a link');
+	link.addEventListener('click', function() {
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+			if (data['#error']) {
+				$.glue.error(data['#error']);
+				return;
+			}
+			object_link_popover(obj, data['#data']);
+		}, false);
+	});
+	icons.appendChild(link);
 
 	// --- take it off, or put it back --------------------------------------
 	//
@@ -2018,48 +2064,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		e.stopPropagation();
 	});
 	$.glue.contextmenu.register('object', 'object-properties', elem, 0, true);
-
-	// Toggle whether content bigger than the object's box is cut off or spills
-	// out of it. Absent means visible, the browser default and what hotglue has
-	// always done, so only 'hidden' is ever stored.
-	//
-	// An icon button now, from the SuperGlue set's extra folder. The text it
-	// replaced spelled out the state, and the state is now the pressed-in
-	// frame (glue-btn-active), the same as the flip toggles - the tooltip
-	// still says what is true now.
-	elem = $.glue.icon('clip');
-	elem.setAttribute('x-data', '{ clipped: false }');
-	elem.setAttribute('x-bind:title', "clipped ? " +
-		"'content bigger than this object is cut off - click to let it show' : " +
-		"'content bigger than this object spills out - click to cut it off'");
-	elem.setAttribute('x-bind:class', "clipped ? 'glue-btn-active' : ''");
-	elem.setAttribute('x-on:glue-menu-activate',
-		"clipped = object_overflow_hidden($.glue.owner($el))");
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		obj.style.overflow = object_overflow_hidden(obj) ? '' : 'hidden';
-		$.glue.object.save(obj);
-		// refresh the frame and tooltip through Alpine's reactive state, the
-		// same way the transparency button refreshes its percentage
-		this.dispatchEvent(new CustomEvent('glue-menu-activate'));
-	});
-	$.glue.contextmenu.register('object', 'object-overflow', elem, 4);
-
-	elem = $.glue.icon('object-link', 'make the object a link');
-	// the link is not on the element - the renderer adds it in viewing mode -
-	// so the panel is opened once the stored object has arrived, and it is
-	// that load the panel reads the current link out of
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-			if (data['#error']) {
-				$.glue.error(data['#error']);
-				return;
-			}
-			object_link_popover(obj, data['#data']);
-		}, false);
-	});
-	$.glue.contextmenu.register('object', 'object-link', elem);
 
 	// 'object attributes', not 'object properties: id, classes and custom
 	// attributes', which is what this said until 2026-09-16. The panel button

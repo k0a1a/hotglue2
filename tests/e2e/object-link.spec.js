@@ -37,11 +37,14 @@ const removeButton = (page) => panel(page).locator('.glue-popover-delete');
 // the row labels, in order: 'link' then 'target'
 const labels = (page) => panel(page).locator('.glue-popover-label');
 
-// Open the object's context menu and click the link icon. The button's tooltip
-// is 'make the object a link'; what it opens is a panel, and the panel is what
-// carries the state, so nothing here reads the button again.
+// Open the object's properties popout and click the link icon. The act was
+// its own context-menu button until 2026-09-23, when it moved into the
+// properties popout's icon row. The button's tooltip is 'make the object a
+// link'; what it opens is a panel, and the panel is what carries the state,
+// so nothing here reads the button again.
 async function openPanel(page, id) {
 	await byId(page, id).click();
+	await page.getByTitle('object properties').click();
 	await page.getByTitle('make the object a link').click();
 	await expect(panel(page)).toBeVisible();
 }
