@@ -1,0 +1,38 @@
+{
+	"#": "The vendored, curated oEmbed whitelist (SOW-oembed-media.md). Each entry: the oEmbed endpoint template ({url}), the URL schemes that select the provider, and the pattern an embed iframe's host must match. 'transform' marks the tier-2 providers (the embed url derives from the public url - peertube), 'template' the tier-3 ones (the page is fetched and scraped - bandcamp). Refresh by editing this file; the hermetic suite's stub provider is appended in code when HG_STUB_OEMBED is defined.",
+	"youtube": {
+		"endpoint": "https://www.youtube.com/oembed?format=json&url={url}",
+		"schemes": "~^https?://((www|music)\\.)?youtube\\.com/(watch|shorts|live)\\b|^https?://youtu\\.be/~i",
+		"host": "~^(www\\.|music\\.)?youtube(-nocookie)?\\.com$~i"
+	},
+	"vimeo": {
+		"endpoint": "https://vimeo.com/api/oembed.json?url={url}",
+		"schemes": "~^https?://(www\\.)?vimeo\\.com/~i",
+		"host": "~^player\\.vimeo\\.com$~i"
+	},
+	"soundcloud": {
+		"endpoint": "https://soundcloud.com/oembed?format=json&url={url}",
+		"schemes": "~^https?://(www\\.|m\\.)?soundcloud\\.com/~i",
+		"host": "~^w\\.soundcloud\\.com$~i"
+	},
+	"spotify": {
+		"endpoint": "https://open.spotify.com/oembed?url={url}",
+		"schemes": "~^https?://open\\.spotify\\.com/(track|album|playlist|episode|show)/~i",
+		"host": "~^open\\.spotify\\.com$~i"
+	},
+	"mixcloud": {
+		"endpoint": "https://www.mixcloud.com/oembed/?format=json&url={url}",
+		"schemes": "~^https?://(www\\.)?mixcloud\\.com/~i",
+		"host": "~^www\\.mixcloud\\.com$~i"
+	},
+	"peertube": {
+		"transform": true,
+		"schemes": "~^https?://([^/]+)/(w|videos/watch)/([0-9a-fA-F-]{36})([/?#].*)?$~i",
+		"host": false
+	},
+	"bandcamp": {
+		"template": true,
+		"schemes": "~^https?://[a-z0-9-]+\\.bandcamp\\.com/(album|track)/~i",
+		"host": "~^bandcamp\\.com$~i"
+	}
+}

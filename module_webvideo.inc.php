@@ -17,67 +17,34 @@ require_once('html_parse.inc.php');
 
 
 /**
- *	the vendored, curated provider whitelist (SOW-oembed-media.md Decisions 3
- *	and 7): each entry carries the oEmbed endpoint template (with {url}) - or
- *	the tier it resolves through instead - the URL schemes that select it,
- *	and the pattern an embed iframe's host must match. Three tiers:
- *	tier 1 oEmbed (youtube/vimeo/soundcloud/spotify/mixcloud), tier 2 a
- *	direct URL transform (peertube - the embed url derives from the watch
- *	url), tier 3 an Open Graph scrape (bandcamp). The hermetic suite's stub
- *	provider joins the list when HG_STUB_OEMBED is defined and resolves
- *	locally, no network involved.
+ *	the vendored, curated provider whitelist, read from
+ *	modules/webvideo/providers.json (SOW-oembed-media.md): each entry
+ *	carries the oEmbed endpoint template (with {url}) - or the tier it
+ *	resolves through instead - the URL schemes that select it, and the
+ *	pattern an embed iframe's host must match. Three tiers: tier 1 oEmbed
+ *	(youtube/vimeo/soundcloud/spotify/mixcloud), tier 2 a direct URL
+ *	transform (peertube - the embed url derives from the watch url), tier
+ *	3 an Open Graph scrape (bandcamp). The hermetic suite's stub provider
+ *	joins the list when HG_STUB_OEMBED is defined and resolves locally,
+ *	no network involved.
  */
 function webvideo_providers()
 {
-	static $providers = [
-		'youtube' => [
-			'endpoint' => 'https://www.youtube.com/oembed?format=json&url={url}',
-			'schemes' => '#^https?://((www|music)\.)?youtube\.com/(watch|shorts|live)\b|^https?://youtu\.be/#i',
-			'host' => '#^(www\.|music\.)?youtube(-nocookie)?\.com$#i',
-		],
-		'vimeo' => [
-			'endpoint' => 'https://vimeo.com/api/oembed.json?url={url}',
-			'schemes' => '#^https?://(www\.)?vimeo\.com/#i',
-			'host' => '#^player\.vimeo\.com$#i',
-		],
-		'soundcloud' => [
-			'endpoint' => 'https://soundcloud.com/oembed?format=json&url={url}',
-			'schemes' => '#^https?://(www\.|m\.)?soundcloud\.com/#i',
-			'host' => '#^w\.soundcloud\.com$#i',
-		],
-		'spotify' => [
-			'endpoint' => 'https://open.spotify.com/oembed?url={url}',
-			'schemes' => '#^https?://open\.spotify\.com/(track|album|playlist|episode|show)/#i',
-			'host' => '#^open\.spotify\.com$#i',
-		],
-		'mixcloud' => [
-			'endpoint' => 'https://www.mixcloud.com/oembed/?format=json&url={url}',
-			'schemes' => '#^https?://(www\.)?mixcloud\.com/#i',
-			'host' => '#^www\.mixcloud\.com$#i',
-		],
-		'peertube' => [
-			// tier 2: any instance, matched by the watch-url shape; the embed
-			// url is the same instance's /videos/embed/<uuid>, so the host
-			// allowlist IS the instance itself - self-consistency by
-			// construction (SOW Decision 6)
-			'transform' => true,
-			'schemes' => '~^https?://([^/]+)/(w|videos/watch)/([0-9a-fA-F-]{36})([/?#].*)?$~i',
-			'host' => false,
-		],
-		'bandcamp' => [
-			// tier 3: no oEmbed and the numeric id is not in the url - the
-			// page is fetched and its og:video meta carries the
-			// EmbeddedPlayer url
-			'template' => true,
-			'schemes' => '#^https?://[a-z0-9-]+\.bandcamp\.com/(album|track)/#i',
-			'host' => '#^bandcamp\.com$#i',
-		],
-	];
-	if (defined('HG_STUB_OEMBED') && HG_STUB_OEMBED) {
+	static $providers = false;
+	if ($providers === false) {
+		$file = __DIR__.'/modules/webvideo/providers.json';
+		$providers = json_decode(@file_get_contents($file), true);
+		if (!is_array($providers)) {
+			log_msg('error', 'webvideo: could not read the provider whitelist '.$file);
+			$providers = [];
+		}
+		unset($providers['#']);
+	}
+	if (defined('HG_STUB_OEMBED') && HG_STUB_OEMBED && !isset($providers['stub'])) {
 		$providers['stub'] = [
 			'stub' => true,
-			'schemes' => '#^https?://stub\.example/(watch|fail|bad)/#i',
-			'host' => '#^embed\.stub\.example$#i',
+			'schemes' => '~^https?://stub\\.example/(watch|fail|bad)/~i',
+			'host' => '~^embed\\.stub\\.example$~i',
 		];
 	}
 	return $providers;
