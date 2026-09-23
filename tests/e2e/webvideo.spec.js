@@ -111,6 +111,19 @@ test('a PeerTube watch url transforms to the instance embed directly',
 		expect(fs.readdirSync(sharedDir(hg))).toContain(attrs['webvideo-cache-file']);
 	});
 
+test('a pasted Bandcamp embed url wraps directly, no fetch', async ({ page, hg }) => {
+	// the share dialog's own iframe url: the player url IS the embed, so
+	// the resolve wraps and validates it without touching the network
+	const embedUrl = 'https://bandcamp.com/EmbeddedPlayer/v=2/album=3352330868/size=large/tracklist=false/artwork=small/';
+	hg.addObject('100000000001', webvideoObject(100, 100, 100,
+		{ 'webvideo-url': embedUrl }));
+	await page.goto(pageUrl(hg));
+	await expect(page.locator('.webvideo.object iframe')).toHaveAttribute('src', embedUrl);
+	const attrs = hg.readObject('100000000001').attrs;
+	expect(attrs['webvideo-provider']).toBe('bandcamp');
+	expect(fs.readdirSync(sharedDir(hg))).toContain(attrs['webvideo-cache-file']);
+});
+
 test('a non-whitelisted url fails soft in the editor', async ({ page, hg }) => {
 	hg.addObject('100000000001', {
 		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',

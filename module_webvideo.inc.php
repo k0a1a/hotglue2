@@ -233,7 +233,15 @@ function webvideo_resolve_url($url, &$provider_out, &$error)
 		return $html;
 	}
 	if (!empty($p['template'])) {
-		// tier 3: bandcamp - the page carries the embed url in og:video
+		// tier 3: bandcamp. A pasted share/embed link may already BE the
+		// player url - wrap it directly, no fetch; the ordinary album/
+		// track url fetches the page and reads og:video.
+		if (preg_match('~^https?://bandcamp\.com/EmbeddedPlayer/~i', $url)) {
+			$html = webvideo_validate_embed('<iframe src="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'"></iframe>', $p['host']);
+			if ($html !== false) {
+				return $html;
+			}
+		}
 		$page_html = webvideo_fetch($url);
 		if ($page_html === false) {
 			$error = "couldn't reach the provider";

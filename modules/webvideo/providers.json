@@ -32,7 +32,7 @@
 	},
 	"bandcamp": {
 		"template": true,
-		"schemes": "~^https?://[a-z0-9-]+\\.bandcamp\\.com/(album|track)/~i",
+		"schemes": "~^https?://[a-z0-9-]+\\.bandcamp\\.com/(album|track)/|^https?://bandcamp\\.com/EmbeddedPlayer/~i",
 		"host": "~^bandcamp\\.com$~i"
 	}
 }
