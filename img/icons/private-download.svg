@@ -1,0 +1,26 @@
+<svg
+   width="30px"
+   height="30px"
+   viewBox="0 0 30 30"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><path
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-linecap="butt"
+     stroke-linejoin="miter"
+     stroke-miterlimit="10"
+     d="M 4,15 9,8 h 12 l 5,7 -5,7 H 9 Z"
+     id="path1"
+     style="stroke-linejoin:bevel" /><line
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-linecap="butt"
+     stroke-linejoin="miter"
+     stroke-miterlimit="10"
+     x1="4"
+     y1="25"
+     x2="26"
+     y2="5"
+     id="line1" /></svg>
