@@ -603,6 +603,21 @@ function text_panel_link_build() {
 	link_btn.title = 'wrap the selected text in a link to this address';
 	link_row.appendChild(link_url);
 	link_row.appendChild(link_btn);
+
+	// The target, as one of three choices (2026-09-23, danja) instead of
+	// whatever the author could remember to type: 'same window' stores
+	// nothing, 'new tab' stores '_blank', 'new window' stores the fixed
+	// window name. The select is the shared link_target_select()
+	// (object-edit.js, where the object link row lives) and sits on a row
+	// of its own under the url - the link row already fills the panel's
+	// width.
+	var target_sel = (typeof link_target_select === 'function') ?
+		link_target_select() : null;
+	var target_row = $.glue.popover.row('target');
+	if (target_sel) {
+		target_sel.title = 'where clicking the link opens it';
+		target_row.appendChild(target_sel);
+	}
 	var link_range = null;      // the snapshot the first interaction took
 	var link_mode = 'add';      // what the button does right now
 	var link_prefill = null;    // the href the sync put in, for change detection
@@ -665,6 +680,14 @@ function text_panel_link_build() {
 		// whatever the author typed, as long as it is a (non-empty) string -
 		// no validation, no rewriting
 		existing.setAttribute('href', link_url.value.trim());
+		if (target_sel) {
+			var tgt = target_sel.value;
+			if (tgt) {
+				existing.setAttribute('target', tgt);
+			} else {
+				existing.removeAttribute('target');
+			}
+		}
 		link_reset_fields();
 		text_strip_restore(render, range);
 		render.focus();
@@ -756,15 +779,43 @@ function text_panel_link_build() {
 			link_btn.textContent = 'remove link';
 			link_btn.title = 'take the link off the text';
 			link_mode = 'remove';
+			if (target_sel) target_sel.set_value(existing.getAttribute('target') || '');
 		} else {
 			link_btn.textContent = 'make link';
 			link_btn.title = 'wrap the selected text in a link to this address';
 			link_mode = 'add';
+			if (target_sel) target_sel.set_value('');
 		}
 	};
 	text_strip_link_reset = link_reset_fields;
 	link_reset_fields();
-	return link_row;
+
+	// a target change on an existing link applies on the spot, the way the
+	// object link row's does; without a link under the selection it only
+	// remembers the choice for the next commit
+	if (target_sel) {
+		target_sel.addEventListener('change', function() {
+			var render = text_strip_render;
+			if (!render) {
+				return;
+			}
+			var range = link_range || text_strip_range_for();
+			var existing = link_existing_for(range);
+			if (!existing) {
+				return;
+			}
+			var tgt = target_sel.value;
+			if (tgt) {
+				existing.setAttribute('target', tgt);
+			} else {
+				existing.removeAttribute('target');
+			}
+			// applied to the live content; it lands in the file with the
+			// next save, the way a link made here does
+		});
+	}
+
+	return { link_row: link_row, target_row: target_row };
 }
 
 // live selection if it is inside the render, else the cached last-known
@@ -2076,10 +2127,12 @@ function text_panel_build(pop, obj)
 	// button does. No link under it, 'make link' wraps the selected run; a
 	// link, 'remove link' unwraps it, and the url pre-fills so Enter edits
 	// the href. It is the run's own row - the whole-object link is the
-	// object link panel's job - so the sync grays it while nothing is
-	// selected.
-	var link_row = text_panel_link_build();
+	// object properties panel's link row's job - so the sync grays it (and
+	// the target row under it) while nothing is selected.
+	var link_parts = text_panel_link_build();
+	var link_row = link_parts.link_row;
 	pop.appendChild(link_row);
+	pop.appendChild(link_parts.target_row);
 
 	// --- more knobs: the exact size, spacing and a shadow -------------------
 	//
@@ -2364,6 +2417,7 @@ function text_panel_build(pop, obj)
 		set_gray(align_row, run);
 		set_gray(reset_row, run);
 		set_gray(link_row, !link_available());
+		set_gray(link_parts.target_row, !link_available());
 
 		// the four toggles: the run's explicit tags, or the object's style
 		if (run) {

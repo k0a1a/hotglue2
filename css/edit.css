@@ -906,8 +906,9 @@
 
 
 .glue-object-link-field {
-	/* Both fields of the object link panel - the url and, since danja took it
-	   out of the fold on 2026-09-17, the target beside it - and the same shape
+	/* The url field of the object properties panel's link row (the link panel
+	   this field belonged to went away on 2026-09-23, when the link became a
+	   row in the properties panel) - and the same shape
 	   .glue-image-alt-field has above: .glue-popover-field's flex: 0 0 auto
 	   kept, with only the width overridden - 150 here, 180 there.
 
@@ -934,6 +935,21 @@
 	   with the rest of the family. A bare domain is 90px at this font size and
 	   still reads whole; a deep path scrolls, as it did at 240. */
 	width: 150px;
+}
+
+.glue-object-link-row {
+	/* the properties panel's link row: the same field-and-button shape as the
+	   font panel's link row (.glue-text-strip-link), without that class's
+	   text-strip name or its spec locators */
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.glue-link-target-select {
+	/* the link target as one of three choices, shared by the properties
+	   panel's link row and the font panel's */
+	font-size: 11px;
 }
 
 .glue-popover-unit {

@@ -32,6 +32,7 @@ const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
 const linkRow = (page) => page.locator('.glue-text-strip-link');
 const urlField = (page) => linkRow(page).locator('.glue-link-field').first();
 const linkButton = (page) => linkRow(page).locator('button').first();
+const targetSel = (page) => panel(page).locator('.glue-link-target-select');
 
 async function startEditing(page, id) {
 	await byId(page, id).click();
@@ -284,3 +285,61 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 	expect(await ta.inputValue(), 'source mode should show the literal markup')
 		.toBe('see <a href="https://example.org/">this</a> now');
 });
+
+// --- the target select (2026-09-23) ----------------------------------------
+//
+// The link row gained a target row under it: one of three choices, shared
+// with the object properties panel's link row. 'same window' stores nothing,
+// 'new tab' stores '_blank', 'new window' stores a fixed window name. The
+// choice applies when the link is made, and a change on an existing link
+// applies on the spot.
+
+test('the target select stores its choice with the link', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', ATTRS, 'hello world');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openPanel(page, a);
+	await select(page, a, 'world');
+
+	await targetSel(page).selectOption('_blank');
+	await typeInto(urlField(page), 'https://example.org/');
+	await urlField(page).press('Enter');
+	await finish(page, a);
+	await expect.poll(() => stored(hg))
+		.toBe('hello <a href="https://example.org/" target="_blank">world</a>');
+});
+
+test('same window stores no target, and a change on an existing link applies',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', ATTRS, 'hello world');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPanel(page, a);
+		await select(page, a, 'world');
+
+		// the default choice stores nothing
+		await typeInto(urlField(page), 'https://example.org/');
+		await urlField(page).press('Enter');
+		await finish(page, a);
+		await expect.poll(() => stored(hg))
+			.toBe('hello <a href="https://example.org/">world</a>');
+
+		// a cursor inside the link shows the stored target (none), and
+		// choosing 'new tab' applies it to the live content
+		await openPanel(page, a);
+		await select(page, a, 'world', true);
+		await expect.poll(async () => targetSel(page).inputValue()).toBe('');
+		await targetSel(page).selectOption('_blank');
+		await finish(page, a);
+		await expect.poll(() => stored(hg))
+			.toContain('target="_blank"');
+
+		// and 'same window' takes it off again
+		await openPanel(page, a);
+		await select(page, a, 'world', true);
+		await expect.poll(async () => targetSel(page).inputValue()).toBe('_blank');
+		await targetSel(page).selectOption('');
+		await finish(page, a);
+		await expect.poll(() => stored(hg))
+			.toBe('hello <a href="https://example.org/">world</a>');
+	});

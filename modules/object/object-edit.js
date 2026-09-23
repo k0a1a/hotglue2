@@ -1185,6 +1185,17 @@ function object_link_row(obj)
 		sync();
 	};
 
+	// the pre-filled url is selected the first time the field is focused, so
+	// typing replaces it whole - the old link panel did the same on open, and
+	// a link is usually replaced rather than edited (the caret would
+	// otherwise land at the end and append)
+	var select_on_focus = false;
+	url_input.addEventListener('focus', function() {
+		if (select_on_focus) {
+			select_on_focus = false;
+			url_input.select();
+		}
+	});
 	url_input.addEventListener('keydown', function(e) {
 		if (e.key == 'Escape') {
 			// the panel's own Escape closes it; stopping the event here
@@ -1237,6 +1248,7 @@ function object_link_row(obj)
 			prefill = link;
 			target.set_value(stored_target);
 			mode = link ? 'remove' : 'add';
+			select_on_focus = !!link;
 			sync();
 		},
 	};
@@ -1296,7 +1308,10 @@ function object_properties_popover(obj)
 			$.glue.error(data['#error']);
 			return;
 		}
-		link_ui.set(data['object-link'] || '', data['object-target'] || '');
+		// the backend wraps the object in '#data' (the old link panel read
+		// it the same way)
+		var stored = data['#data'];
+		link_ui.set(stored['object-link'] || '', stored['object-target'] || '');
 	}, false);
 
 	// --- take it off, or put it back --------------------------------------

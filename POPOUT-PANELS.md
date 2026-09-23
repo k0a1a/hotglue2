@@ -218,21 +218,14 @@ field rather than beside it, which is a different panel.
 
 | panel | built by | shows | folds |
 |---|---|---|---|
-| object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v · link | x, y, scale, padding (text only), transparency, delete, reset |
+| object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v, then a link row (url field + make/remove/update link) with its target select on a row of its own | x, y, scale, padding (text only), transparency, delete, reset |
 | page background | `page_background_popover()`, `modules/page/page-edit.js:387` | colour · picture · tile · scroll | x, y, scale, delete, reset |
-| font | `text_panel_build()`, `modules/text/text-edit.js` | one editor for both targets: B/I/U/S + colour · alignments · sizes s/n/b/x (14, 24, 32, 48) with the "Typeface" sample · face (a three-row ROLLER, always present in the panel — a fixed centre band is the selection window, wheel/drag/arrows spin the rows through it, the centred row is applied on settle, and the sample shows the centred face) + fonts note · link row. A run selected retargets every control onto the run; the alignments, the reset and the link row gray out when the target cannot take them | exact size, three spacings, shadow + its colour, reset |
+| font | `text_panel_build()`, `modules/text/text-edit.js` | one editor for both targets: B/I/U/S + colour · alignments · sizes s/n/b/x (14, 24, 32, 48) with the "Typeface" sample · face (a three-row ROLLER, always present in the panel — a fixed centre band is the selection window, wheel/drag/arrows spin the rows through it, the centred row is applied on settle, and the sample shows the centred face) + fonts note · link row with its target select on a row of its own. A run selected retargets every control onto the run; the alignments, the reset and the link row (and its target row) gray out when the target cannot take them | exact size, three spacings, shadow + its colour, reset |
 | edge | `object_edge_popover()`, `modules/object/object-edit.js:486` | style + colour · round · width · clip | fade, glow, drop shadow, reset |
 | adjust (z-level) | `object_adjust_popover()`, `modules/object/object-edit.js:893` | four z buttons | nothing — an icon row and no fold |
-| object link | `object_link_popover()`, `modules/object/object-edit.js:1727` | link · target (two labelled rows) | nothing — no acts, and the two rows are the panel |
 
 ### The exceptions, and why
 
-- **The object link panel has no fold, and no acts either.** It was the one panel whose fold
-  label named its contents (`target: _blank`) — a target is a STORED value and must not be
-  invisible in a fold named for knobs nobody may want — until danja's *"don't fold target in
-  link panel"* on 2026-09-17. A fold with one row in it was never hiding anything an author
-  would thank it for, and the panel is now the two rows the prompt's two questions deserve:
-  link, target, and the delete under them.
 - **The font panel keeps its face out front**, above the fold: it is a value, so the rule
   would fold it, and a font panel that opens without a font is a worse panel. It spent
   2026-09-17 under "more knobs" and came back out the next day (danja's call). The exact
@@ -295,19 +288,13 @@ would mean inventing a glyph to justify a row.
   — a cancel that changes the object it was undoing. So the row tracks whether anything
   reached the file, and Escape commits only then. Both halves are measured in both engines;
   the typed-and-cancelled file is byte-identical.
-- **A panel that commits cannot leave the commit to blur.** The link panel stores nothing
-  until a field is finished with — Enter, or the panel closing — and its first version
-  explained itself with "clicking away commits, because the field blurs before the click
-  lands". Measured, that is not what happens: every close goes through
-  `$.glue.popover.close()`, which REMOVES the panel and the focused field in it, and removal
-  fires `change` and `blur` in Chromium and neither in Firefox. So Escape stored in Chromium
-  what it was meant to drop, and a url typed and then clicked away from was committed in
-  Chromium and silently dropped in Firefox — the same gesture, two different files. The panel
-  now says which of the two things a close is (`discarding`, set by the field's own Escape
-  `keydown`) and does the committing itself in `pop.on_close`, which `close()` calls before it
-  removes anything, so both fields are still there to read. One close can then commit twice —
-  the panel's own, then Chromium's on removal; the second is a no-op, because `write()`
-  returns early when the fields already say what is stored.
+- **A panel that commits cannot leave the commit to blur.** (History: the object link panel
+  that owned this trap is gone — 2026-09-23, when the link became a row in the properties
+  panel with the font row's contract: Enter and the button commit, Escape empties, clicking
+  away stores nothing. The measured lesson stays as the reason no future panel should commit
+  on blur: every close goes through `$.glue.popover.close()`, which REMOVES the panel and the
+  focused field in it, and removal fires `change` and `blur` in Chromium and neither in
+  Firefox — the same gesture, two different files.)
 - **`grab`/`grabbing` has to be a class, not `:active`.** The one-word way to write "the hand
   closes while you drag" is `.glue-popover-scrub:active { cursor: grabbing }`, and it is wrong
   in Firefox: measured, the cursor stayed `grab` through a whole drag there while Chromium
