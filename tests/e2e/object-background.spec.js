@@ -231,7 +231,7 @@ test('the colour button picks a colour, stored the way a text object stores one'
 		expect(await cssOf(page, a, 'backgroundColor')).toBe('rgb(255, 0, 0)');
 		// text-background-color, as it has been since long before there was a
 		// panel - the new object-background-color is for every other kind
-		await expect.poll(() => attrs(hg)['text-background-color']).toBe('#ff0000');
+		await expect.poll(() => attrs(hg)['text-background-color']).toBe('rgb(255, 0, 0)');
 		expect(attrs(hg)['object-background-color']).toBe(undefined);
 
 		// and it reaches the published page
@@ -271,7 +271,7 @@ test("on any other kind of object the colour is the object's own",
 		await field.press('Enter');
 		await expect(page.locator('.picker_wrapper')).toBeHidden();
 
-		await expect.poll(() => attrsOf()['object-background-color']).toBe('#00ff00');
+		await expect.poll(() => attrsOf()['object-background-color']).toBe('rgb(0, 255, 0)');
 		expect(attrsOf()['text-background-color'], 'a non-text object has no text colour')
 			.toBe(undefined);
 
@@ -636,8 +636,12 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 		// reading it back out of the stored attribute
 		await expect(pop(page).locator('.glue-background-tile'))
 			.toHaveClass(/glue-btn-active/);
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
-			.toHaveValues(['30', '20']);
+		// the two fields, addressed individually (a multi-element locator is a
+		// strict-mode violation for value assertions)
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(0))
+			.toHaveValue('30');
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(1))
+			.toHaveValue('20');
 		await openFold(page);
 
 		await pop(page).locator('.glue-popover-reset').click();
@@ -659,8 +663,10 @@ test('reset puts tiling, scale and move back to defaults, keeping the image',
 			.not.toHaveClass(/glue-btn-active/);
 		await expect(scaleField(page)).toHaveValue('100');
 		// the two position rows are back at the corner with it
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field'))
-			.toHaveValues(['0', '0']);
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(0))
+			.toHaveValue('0');
+		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(1))
+			.toHaveValue('0');
 	});
 
 //
@@ -830,14 +836,17 @@ test('reset writes nothing at all on an object nobody has touched',
 		await openFold(page);
 
 		const before = hg.readObject('100000000001').attrs;
+		// the inline box is the one the render gave the object; the reset
+		// must leave it exactly as it was (the padding reset compensates the
+		// box, and only does so when there is padding to compensate)
+		const beforeBox = await byId(page, a).evaluate((el) =>
+			({ w: el.style.width, h: el.style.height, p: el.style.paddingLeft }));
 		await pop(page).locator('.glue-popover-reset').click();
 		await page.waitForTimeout(600);		// a save would have landed by now
 
 		expect(hg.readObject('100000000001').attrs, 'the reset wrote something')
 			.toEqual(before);
-		// the box especially: the padding reset compensates the object's width
-		// and height, and on an object with no padding it must not
-		expect(await byId(page, a).evaluate((el) => el.style.width)).toBe('');
-		expect(await byId(page, a).evaluate((el) => el.style.height)).toBe('');
-		expect(await byId(page, a).evaluate((el) => el.style.paddingLeft)).toBe('');
+		expect(await byId(page, a).evaluate((el) =>
+			({ w: el.style.width, h: el.style.height, p: el.style.paddingLeft })))
+			.toEqual(beforeBox);
 	});

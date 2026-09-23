@@ -199,7 +199,9 @@ test('an object pasted into the same page keeps every stored property',
 		await waitForEditor(page, 2);
 
 		const errors = collectErrors(page);
-		await byId(page, `${hg.pageName}.100000000001`).click();
+		// the click lands on the corner 0002 does not cover - the neighbour
+		// overlaps 0001's centre, which is the point of the fixture
+		await byId(page, `${hg.pageName}.100000000001`).click({ position: { x: 10, y: 10 } });
 		await copySelected(page);
 
 		// the copy button says so: its clipboard dot is on, and its tooltip
@@ -227,6 +229,9 @@ test('an object pasted into the same page keeps every stored property',
 		expect(copy['image-file-width']).toBe('120');
 		expect(copy['image-file-height']).toBe('80');
 		for (const [k, v] of Object.entries(source)) {
+			if (k == 'object-zindex') {
+				continue;	// the paste raises it - asserted below
+			}
 			expect(copy[k], `the pasted object lost ${k}`).toBe(v);
 		}
 
@@ -438,10 +443,12 @@ test('copying through a symlinked object pastes the target, as a real file',
 		hg.addObject('100000000001', imageObject(80, 120, 10));
 		seedAsset(hg.pageName, 'sample.png', SAMPLE_BYTES);
 		second.addObject('100000000001', textObject(40, 40, 10), 'target page');
-		// third's object points at hg's
+		// third's object points at hg's - the actual revision dir, which the
+		// fixture names after the page (the stale 'head' path used to sit here
+		// and made the link dangle, which the render then deleted)
 		const link = `${third.pageName}.100000000001`;
 		fs.symlinkSync(
-			`../../${hg.pageName.split('.')[0]}/head/100000000001`,
+			`../../${hg.pageName.split('.')[0]}/${hg.pageName.split('.')[1]}/100000000001`,
 			path.join(revDir(third.pageName), '100000000001'));
 
 		await page.goto(third.editUrl());
