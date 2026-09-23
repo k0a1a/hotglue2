@@ -64,8 +64,7 @@ test('the x and y rows position the object precisely', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await selectAndOpen(page, a);
 
-	// the rows live under the fold, seeded from the stored position
-	await popover(page).locator('.glue-popover-disclosure').click();
+	// the rows are right in the panel, seeded from the stored position
 	const fields = popover(page).locator('.glue-popover-field');
 	await expect(fields.nth(0)).toHaveValue('300');
 	await expect(fields.nth(1)).toHaveValue('300');

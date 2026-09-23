@@ -920,10 +920,9 @@ function object_edge_popover(obj)
 //
 // --- object adjustment ------------------------------------------------------
 //
-// The stack, and the precise position: four z moves in the icon row, and -
-// under the one fold, since a fold holds the values an icon row holds the
-// acts - the x/y rows that put the object exactly where the numbers say
-// (danja's call, 2026-09-23).
+// The stack, and the precise position: four z moves in the icon row, and the
+// x/y rows right under it - no fold, the position is what one comes to this
+// panel for (danja's call, 2026-09-23).
 //
 // It was three things until 2026-09-16 - flip, z-level and transparency in one
 // panel - and the other two went to the object properties panel, where an
@@ -946,7 +945,7 @@ function object_adjust_popover(obj)
 	// the way out.
 	//
 	// Four actions is the house style's first half; the values - the x/y
-	// position - live under the fold below.
+	// position - sit right below, out in the open.
 	var z_row = $.glue.popover.icon_row();
 	var z_btn = function(icon, title, fn) {
 		var b = $.glue.popover.icon_button(icon, title);
@@ -992,11 +991,10 @@ function object_adjust_popover(obj)
 		});
 		return row.row;
 	};
-	var fold = $.glue.popover.fold(pop, 'more knobs');
-	fold.body.appendChild(pos_row('x', 'x'));
-	fold.body.appendChild(pos_row('y', 'y'));
-	pop.appendChild(fold.toggle);
-	pop.appendChild(fold.body);
+	// the rows sit out in the open, no fold - the position is what one comes
+	// to this panel FOR (danja's call, 2026-09-23)
+	pop.appendChild(pos_row('x', 'x'));
+	pop.appendChild(pos_row('y', 'y'));
 
 	// The reset clears everything this panel owns, and only then saves - one
 	// write, and nothing left behind that the save happened before. Same
