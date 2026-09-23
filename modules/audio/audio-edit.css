@@ -1,0 +1,24 @@
+.audio {
+	/* these are default widths and heights for new audio objects */
+	height: 120px;
+	width: 200px;
+}
+
+.glue-audio-shield {
+	/* covers the upper part of the object so clicks reach the editor
+	   instead of triggering the playback toggle - the rest is left
+	   uncovered so playback can still be tested while editing */
+	background-color: darkgrey;
+	height: 40%;
+	left: 0;
+	opacity: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+
+.audio:hover .glue-audio-shield {
+	/* only show the shield while hovering the object, so it doesn't
+	   obscure the icon when the user isn't interacting with it */
+	opacity: 0.5;
+}

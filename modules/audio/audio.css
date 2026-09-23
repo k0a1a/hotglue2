@@ -1,0 +1,72 @@
+.audio {
+	/* this is for the fallback below */
+	overflow: hidden;
+}
+
+.audio audio {
+	/* the <audio> element has no box of its own while the controls
+	   attribute is off (a hard UA display:none - even !important cannot
+	   override it, verified empirically); the surface div below is what
+	   receives clicks. These rules only take effect when native controls
+	   are toggled on, so the control bar fills the object. */
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+
+.audio-surface {
+	/* the transparent play/pause surface: the clickable whole of the
+	   object. Sits above the hidden <audio> element and below the sound
+	   icon (which lets clicks pass through to it) and, while editing,
+	   below the shield that protects the upper part for the editor. */
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+
+.audio-icon {
+	/* the sound icon, centred in the object - deliberately lets clicks
+	   pass through to the <audio> element below, so the whole object is
+	   the play/pause button */
+	height: 64px;
+	left: 50%;
+	pointer-events: none;
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 64px;
+}
+
+.audio-fallback {
+	/* displayed when the browser can't interpret the audio tag */
+	height: 100%;
+	margin-top: -25px;
+	min-height: 50px;
+	overflow: hidden;
+	position: absolute;
+	text-align: center;
+	top: 50%;
+	width: 100%;
+}
+
+.audio-processing {
+	/* displayed while a background encode/trim is still in progress: a
+	   #ccccccaa rectangle at the object's own size with the notice
+	   centred in it (same look as video's) */
+	align-items: center;
+	background-color: #ccccccaa;
+	box-sizing: border-box;
+	color: #000;
+	display: flex;
+	font-family: sans-serif;
+	font-size: 18px;
+	height: 100%;
+	justify-content: center;
+	overflow: hidden;
+	text-align: center;
+	width: 100%;
+}

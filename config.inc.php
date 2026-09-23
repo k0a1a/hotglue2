@@ -101,6 +101,13 @@ error_reporting(E_ALL);						// see php documentation
 @define('VIDEO_POSTER_EMPTY_YAVG', 16);		// a grabbed frame whose average luma is below this (near-black) or above 256 minus this (near-white) counts as empty and is re-rolled
 @define('VIDEO_ENCODE_TIMEOUT', 60*60*2);	// give up waiting for a background encode after n seconds and fall back to the original upload
 @define('VIDEO_START_ON_CLICK', true);		// clicking a video toggles pause/play when it has no native controls
+@define('AUDIO_ENCODING', true);			// re-encode every uploaded audio file into a web-compliant 44.1kHz stereo 128kbps m4a (needs ffmpeg installed)
+@define('AUDIO_SAMPLE_RATE', 44100);			// sample rate for the encoded variant
+@define('AUDIO_CHANNELS', 2);				// stereo
+@define('AUDIO_BITRATE', '128k');			// audio bitrate for the encoded variant
+@define('AUDIO_MAX_DURATION', 1800);			// only the first n seconds of an upload are encoded/served, regardless of how long the original is (30 minutes)
+@define('AUDIO_ENCODE_TIMEOUT', 60*60*2);		// give up waiting for a background encode after n seconds and fall back to the original upload
+@define('AUDIO_START_ON_CLICK', true);		// clicking an audio object toggles pause/play when it has no native controls
 @define('VIEW_NEEDS_AUTH', false);			// viewing pages requires authentication
 
 /**
