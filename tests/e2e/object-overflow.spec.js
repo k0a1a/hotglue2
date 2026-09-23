@@ -29,7 +29,7 @@ const overflowOf = (page, id) => page.evaluate((i) =>
 async function select(page, id) {
 	await byId(page, id).click();
 	// the toggle lives in the edge popout, as the last row before the fold
-	await page.getByTitle('edges: rounded corners and a soft fade').click();
+	await page.getByTitle('object border properties and effects: rounded corners, style, shadow and glow').click();
 	await expect(toggle(page)).toBeVisible();
 }
 

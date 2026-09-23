@@ -2075,8 +2075,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// in the top row, after the text items (prios 1-6): 7 and 8
 	$.glue.contextmenu.register('object', 'object-adjust', elem, 7, true);
 
-	// edges: rounded corners and a soft fade
-	elem = $.glue.icon('border-radius1', 'edges: rounded corners and a soft fade');
+	// border properties and effects: rounded corners, style, shadow and glow
+	elem = $.glue.icon('border-radius1', 'object border properties and effects: rounded corners, style, shadow and glow');
 	elem.addEventListener('click', function(e) {
 		object_edge_popover($.glue.owner(this));
 		e.stopPropagation();

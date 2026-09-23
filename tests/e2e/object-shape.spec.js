@@ -27,7 +27,7 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const edgeBtn = (page) => page.getByTitle(/edges: rounded corners/);
+const edgeBtn = (page) => page.getByTitle(/border properties and effects/);
 const pop = (page) => page.locator('.glue-edge-popover');
 const field = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
