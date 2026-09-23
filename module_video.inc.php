@@ -571,6 +571,14 @@ function video_upload($args)
 	$obj['module'] = 'video';
 	$obj['video-file'] = $args['file'];
 	$obj['video-file-mime'] = $mime;
+	// a fresh upload plays by itself on a loop, muted, with the browser
+	// controls off - the menu toggles can change any of it (danja's call,
+	// 2026-09-23). Autoplay and no controls are already the render's
+	// defaults; the muted default is also what lets browsers actually
+	// honour the autoplay, so the playing video replaces the poster as
+	// soon as the encode lands.
+	$obj['video-loop'] = 'loop';
+	$obj['video-volume'] = '0';
 
 	// kick off ffmpeg-based transcoding + poster generation, if available -
 	// every upload gets re-encoded, regardless of its original resolution/
