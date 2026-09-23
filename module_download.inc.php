@@ -85,8 +85,12 @@ function download_alter_render_late($args)
 	$html = &$args['html'];
 	$obj = $args['obj'];
 	if (elem_has_class($elem, 'download')) {
-		if (!$args['edit']) {
-			// add the css only on-demand in viewing mode
+		if (!$args['edit'] && (isset($obj['download-public']) && $obj['download-public'] == 'private')) {
+			// hide it in viewing mode when made private - public is the
+			// default, so the attribute only ever says 'private'
+			$html = '';
+		} elseif (!$args['edit']) {
+			// otherwise add the css only on-demand in viewing mode
 			html_add_css(base_url().'modules/download/download.css');
 		}
 		return true;
@@ -107,8 +111,9 @@ function download_alter_render_late($args)
 		return false;
 	}
 	$dl = $dl['#data'];
-	// downloads are public by default - there is no public/private switch
-	// (danja's call, 2026-09-23)
+	if (isset($dl['download-public']) && $dl['download-public'] == 'private') {
+		return false;		// a private download wraps nothing in view
+	}
 	if (SHORT_URLS) {
 		$link = urlencode($dl['name']).'&download=1';
 	} else {
@@ -289,8 +294,17 @@ function download_serve_resource($args)
 	
 	$a = expl('.', $obj['name']);
 
-	// downloads are public by default - there is no public/private switch
-	// (danja's call, 2026-09-23)
+	// public is the default; a download made private serves only to a
+	// logged-in editor (danja's call, 2026-09-23). The 401 is sent here
+	// rather than through prompt_auth(): its hotglue_error page render
+	// gets discarded inside the serve flow (the hook returning "handled"
+	// leaves the response to whatever the controller does next), so the
+	// client used to receive a silent 200 with an empty body.
+	if (isset($obj['download-public']) && $obj['download-public'] == 'private' && !is_auth()) {
+		header('WWW-Authenticate: Basic realm="'.str_replace("\"", '', SITE_NAME).'"');
+		header($_SERVER['SERVER_PROTOCOL'].' 401 Unauthorized');
+		return true;
+	}
 	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
 }
 

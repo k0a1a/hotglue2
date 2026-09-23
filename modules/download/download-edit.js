@@ -118,15 +118,17 @@ function download_wrap_attach_selected(box) {
 	}, false);
 }
 
-// the glyph of a stateful attach/detach item is its state - attach.svg while
-// there is no wrap, detach.svg once there is. The swap follows the lock
-// module's padlock - a stateful button either swaps its --glue-icon or takes
-// a colour class, and the menu-state classes never paint on a
+// the glyph of a stateful item is its state. The swap follows the lock
+// module's padlock - a stateful button either swaps its --glue-icon or
+// takes a colour class, and the menu-state classes never paint on a
 // .glue-btn-icon (css/edit.css .glue-menu-enabled).
-function download_wrap_set_icon(elem, is_wrapped) {
-	var url = new URL($.glue.base_url+'img/icons/' +
-		(is_wrapped ? 'detach' : 'attach')+'.svg', document.baseURI).href;
+function download_icon(elem, name) {
+	var url = new URL($.glue.base_url+'img/icons/'+name+'.svg', document.baseURI).href;
 	elem.style.setProperty('--glue-icon', 'url("'+url+'")');
+}
+
+function download_wrap_set_icon(elem, is_wrapped) {
+	download_icon(elem, is_wrapped ? 'detach' : 'attach');
 }
 
 // the text/image menu's attach/detach button
@@ -230,6 +232,55 @@ function download_wrap_detach(obj) {
 	}, false);
 }
 
+// the box menu's public/private toggle: public is the DEFAULT (no
+// attribute), the toggle writes 'download-public': 'private' and back.
+// The glyph says the state - danja's tray icons: the dot is public, the
+// slash is private (2026-09-23). One element per registration, reused
+// across boxes like every menu item, so the state lives in the closure
+// and every activate re-syncs it.
+function download_public_make_item() {
+	var elem = $.glue.icon('public-download', 'this download is public - click to make it private');
+	var is_public = true;
+	var set = function() {
+		download_icon(elem, is_public ? 'public-download' : 'private-download');
+		elem.title = is_public ?
+			'this download is public - click to make it private' :
+			'this download is private - click to make it public';
+	};
+	elem.addEventListener('glue-menu-activate', function() {
+		var obj = $.glue.owner(this);
+		if (!obj) {
+			return;
+		}
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+			// the menu can hide while this round-trip is in flight (the
+			// drag's first frame shows the menu and the movestart right
+			// behind it hides it again) - the next show re-syncs, so the
+			// detached write is skipped
+			if (!elem.isConnected) {
+				return;
+			}
+			is_public = !(data['#data'] && data['#data']['download-public'] == 'private');
+			set();
+		}, false);
+	});
+	elem.addEventListener('click', function(e) {
+		e.stopPropagation();
+		var obj = $.glue.owner(this);
+		if (!obj) {
+			return;
+		}
+		if (is_public) {
+			$.glue.backend({ method: 'glue.update_object', name: obj.id, 'download-public': 'private' });
+		} else {
+			$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'download-public' });
+		}
+		is_public = !is_public;
+		set();
+	});
+	return elem;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('download', 'object-link');
 	// the overflow toggle and the like have no business on a 50x50 box
@@ -300,6 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		window.location = $.glue.base_url+'?'+obj.id+'&download=1';
 	});
 	$.glue.contextmenu.register('download', 'download-download', elem);
+	$.glue.contextmenu.register('download', 'download-public', download_public_make_item());
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('download', function(obj, orig) {

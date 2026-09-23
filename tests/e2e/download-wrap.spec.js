@@ -447,6 +447,69 @@ test('a wrapped pair renders in view with no public attribute needed', async ({ 
 	await expect(a).toHaveAttribute('download', 'sample.pdf');
 });
 
+test('the public/private toggle hides and restores the box in view',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', downloadObject(300, 50, 100));
+		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// public by default (danja's call, 2026-09-23) - the view shows
+		// the box and the file serves
+		await page.goto(pageUrl(hg));
+		const a = page.locator('a').filter({ has: page.locator('.object') });
+		await expect(a).toHaveAttribute('download', 'sample.pdf');
+		const href = await a.getAttribute('href');
+		expect((await page.request.get(new URL(href, page.url()).href)).status()).toBe(200);
+
+		// toggle private - the glyph and the title say it
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await byId(page, hg, '100000000001').click();
+		const toggle = page.locator('#glue-contextmenu-download-public');
+		await expect(toggle).toHaveAttribute('title',
+			'this download is public - click to make it private');
+		await toggle.click();
+		await expect.poll(() => hg.readObject('100000000001').attrs['download-public'])
+			.toBe('private');
+		await expect(toggle).toHaveAttribute('title',
+			'this download is private - click to make it public');
+
+		// the view shows nothing and the file asks an outsider for auth
+		// (a bare node fetch, not Playwright's request fixture - that one
+		// inherits the suite's httpCredentials and is not an outsider)
+		await page.goto(pageUrl(hg));
+		expect(await page.locator('.object').count()).toBe(0);
+		const bare = await fetch(new URL(href, page.url()).href);
+		expect(bare.status).toBe(401);
+		expect(bare.headers.get('www-authenticate')).toBeTruthy();
+
+		// toggle back public - the attribute goes, the view shows the box
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await byId(page, hg, '100000000001').click();
+		await toggle.click();
+		await expect.poll(() => hg.readObject('100000000001').attrs['download-public'])
+			.toBe(undefined);
+		await page.goto(pageUrl(hg));
+		await expect(page.locator('a').filter({ has: page.locator('.object') }))
+			.toHaveAttribute('download', 'sample.pdf');
+	});
+
+test('a private download wraps nothing in view', async ({ page, hg }) => {
+	hg.addObject('100000000001', { ...textObject(50, 50, 100),
+		'download-wrap': hg.pageName + '.100000000002' }, 'hello');
+	hg.addObject('100000000002', { ...downloadObject(300, 50, 100),
+		'download-wrap-target': hg.pageName + '.100000000001',
+		'download-public': 'private' });
+	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+	await page.goto(pageUrl(hg));
+	// no anchor around the text, and no box
+	expect(await page.locator('a').filter({ has: byId(page, hg, '100000000001') }).count())
+		.toBe(0);
+	expect(await byId(page, hg, '100000000002').count()).toBe(0);
+});
+
 test('the box label falls back to the file extension', async ({ page, hg }) => {
 	// no mime stored: the label is the extension
 	hg.addObject('100000000001', {
