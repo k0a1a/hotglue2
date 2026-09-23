@@ -289,14 +289,21 @@ test('an object pasted onto another page arrives with its image',
 		await page.goto(second.url());
 		const img = page.locator('.image.object');
 		await expect(img).toHaveCount(1);
-		const bg = await img.evaluate((el) => getComputedStyle(el).backgroundImage);
-		expect(bg, 'the pasted image is not painted on the published page').not.toBe('none');
+		// painted either as the object's background or as the img child
+		// (the picture moved to an img child, 2026-09-23)
+		const painted = await img.evaluate((el) => {
+			const bg = getComputedStyle(el).backgroundImage;
+			return bg && bg !== 'none' ? bg : el.querySelector('img') ? 'img' : 'none';
+		});
+		expect(painted, 'the pasted image is not painted on the published page').not.toBe('none');
 		// and the file the object points at is really served (the url is the
 		// object's name, resolved by the image module, not the shared path)
-		const url = bg.match(/url\(["']?([^"')]+)/)[1];
+		const url = (painted == 'img') ?
+			await img.evaluate((el) => el.querySelector('img').getAttribute('src')) :
+			painted.match(/url\(["']?([^"')]+)/)[1];
 		const r = await page.request.get(url);
 		expect(r.status()).toBe(200);
-	expect(Buffer.from(await r.body()).equals(SAMPLE_BYTES)).toBe(true);
+		expect(Buffer.from(await r.body()).equals(SAMPLE_BYTES)).toBe(true);
 		expect(errors).toEqual([]);
 	});
 

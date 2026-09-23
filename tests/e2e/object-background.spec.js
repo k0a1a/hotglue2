@@ -46,12 +46,12 @@
 // a text object stores it as text-background-color, as it always has, and
 // every other kind as object-background-color.
 //
-// Image objects have the panel, without its background section. A sized image
-// object is painted *as* a background - the module puts the picture on the
-// object's own background-image - so a section that also owned "the background"
-// would be a second owner of one picture. It used to be kept out of the panel
-// entirely by a veto in image-edit.js; the panel omits the one section instead,
-// which is why an image object still gets its flip and its transparency.
+// Image objects have the full panel, background section included, since
+// 2026-09-23: the picture moved out of the object's background-image into a
+// child <img> (module_image.inc.php), so the background properties belong to
+// the section alone and an image's transparency can show a colour or a
+// picture through - danja's call. Before that the picture WAS the background
+// and the section was omitted for the class.
 
 const fs = require('fs');
 const path = require('path');
@@ -286,20 +286,12 @@ test("on any other kind of object the colour is the object's own",
 			.toBe('rgb(0, 255, 0)');
 	});
 
-test('an image object has the panel, minus the background section',
+test('an image object has the full panel, background section included',
 	async ({ page, hg }) => {
-		// A sized image object is painted *as* a background: the module puts
-		// the picture on the object's own background-image, and
-		// image_alter_save() reads the tiling and position back out of that
-		// same property. So the background section would find the picture where
-		// it looks for a background, offer to clear it, and write its own
-		// settings into the image's - which is why the panel does not build
-		// that section for the class.
-		//
-		// It used to be a veto in image-edit.js instead, and the whole panel
-		// went with it - so this test used to assert the button was absent. It
-		// is the section that is absent now, and the test that follows is the
-		// other half of what the veto used to take away.
+		// the picture is a child img now (2026-09-23), so the background
+		// section owns the object's background alone - no second owner, no
+		// omission. The panel matches every other object's: colour, picture,
+		// tile, position and scale, plus the flip pair and the transparency.
 		const img = hg.addObject('100000000003', {
 			type: 'image', module: 'image',
 			'image-file': 'sample.png', 'image-file-mime': 'image/png',
@@ -320,23 +312,53 @@ test('an image object has the panel, minus the background section',
 		await expect(page.locator('.glue-popover.glue-properties-popover')).toBeVisible();
 
 		const p = page.locator('.glue-properties-popover');
-		// no background section: no colour button, no picture picker, no tile
-		// toggle, and none of its three number rows or its delete button
-		await expect(p.locator('.glue-background-color')).toHaveCount(0);
-		await expect(p.locator('.glue-background-image')).toHaveCount(0);
-		await expect(p.locator('.glue-background-tile')).toHaveCount(0);
-		await expect(p.locator('.glue-background-pos')).toHaveCount(0);
-		await expect(p.locator('.glue-background-scale')).toHaveCount(0);
-		await expect(p.locator('.glue-popover-delete')).toHaveCount(0);
-		// what the class DOES get is the flip pair in the row - two actions, not
-		// five - and, in the fold, the transparency and the reset
-		await expect(p.locator('.glue-popover-icon')).toHaveCount(2);
+		// the background section is there in full
+		await expect(p.locator('.glue-background-color')).toHaveCount(1);
+		await expect(p.locator('.glue-background-image')).toHaveCount(1);
+		await expect(p.locator('.glue-background-tile')).toHaveCount(1);
+		await expect(p.locator('.glue-background-pos')).toHaveCount(2);
+		await expect(p.locator('.glue-background-scale')).toHaveCount(1);
+		// the flip pair in the row and, in the fold, the transparency and the
+		// reset - and no padding, which is a text property
+		await expect(p.locator('.glue-popover-icon')).toHaveCount(5);
 		await expect(flipV(page)).toBeVisible();
 		await expect(flipH(page)).toBeVisible();
 		await expect(p.locator('.glue-padding-row')).toHaveCount(0);
 		await openFold(page);
 		await expect(p.locator('.glue-opacity-row')).toBeVisible();
 		await expect(p.locator('.glue-popover-reset')).toBeVisible();
+	});
+
+test('an image object renders and keeps its background colour',
+	async ({ page, hg }) => {
+		// the picture (a child img) covers the frame; the background colour
+		// shows through whatever the picture is transparent about - and the
+		// save round-trip keeps the attr (2026-09-23)
+		const img = hg.addObject('100000000004', {
+			type: 'image', module: 'image',
+			'image-file': 'sample.png', 'image-file-mime': 'image/png',
+			'image-file-width': '120', 'image-file-height': '80',
+			'object-background-color': '#ff0000',
+			'object-left': '700px', 'object-top': '300px',
+			'object-width': '120px', 'object-height': '80px', 'object-zindex': '100',
+		});
+		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
+			{ recursive: true });
+		fs.copyFileSync(SAMPLE,
+			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
+
+		await page.goto(`/?${hg.pageName}`);
+		await expect(byId(page, img).locator('img')).toHaveCount(1);
+		await expect(byId(page, img)).toHaveCSS('background-color', 'rgb(255, 0, 0)');
+
+		// and the editor's save keeps it
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await page.evaluate(() => new Promise((res) => {
+			window.$.glue.backend({ method: 'glue.save_state',
+				html: window.$.glue.object.to_html(document.querySelector('.image.object')) }, res);
+		}));
+		expect(hg.readObject('100000000004').attrs['object-background-color']).toBe('#ff0000');
 	});
 
 test('the object serves its own background, and it survives a reload',

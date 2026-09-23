@@ -291,9 +291,16 @@ function object_alter_render_early($args)
 	// not at the file in the shared directory - object_serve_resource() below
 	// hands the file over - which is the same arrangement image objects use
 	// and for the same reason: the shared directory is deduplicated, and the
-	// object is what knows which file is its.
+	// object is what knows which file is its. The one exception is an image
+	// object: its object URL serves the PICTURE (image_serve_resource wins
+	// the hook dispatch, and object_serve_resource refuses objects with
+	// image-file), so the background of an image object points at the
+	// shared file directly - the same raw path the video poster uses.
 	if (!empty($obj['object-background-file'])) {
-		if (SHORT_URLS) {
+		if (!empty($obj['image-file'])) {
+			$pn = get_first_item(expl('.', $obj['name']));
+			$url = CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['object-background-file']);
+		} else if (SHORT_URLS) {
 			$url = urlencode($obj['name']);
 		} else {
 			$url = '?'.urlencode($obj['name']);

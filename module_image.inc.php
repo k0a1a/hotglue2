@@ -134,51 +134,41 @@ function image_alter_render_early($args)
 	$alt = isset($obj['image-alt']) ? $obj['image-alt']
 		: (isset($obj['image-title']) ? $obj['image-title'] : '');
 
-	// render a div with background if we have original-{width,height}
-	// otherwise a div with an img inside
-	if (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0) {
-		// render a div with an img inside
-		$i = elem('img');
-		elem_attr($i, 'src', $url);
-		if ($decorative) {
-			// a decorative image must have EMPTY alt text and the role
-			// says so explicitly, so screen readers skip it
-			elem_attr($i, 'alt', '');
-			elem_attr($i, 'role', 'presentation');
-		} else {
-			elem_attr($i, 'alt', $alt);
-		}
-		// make sure you only append to the element in alter_render_early
-		// handlers, don't assume that nothing is in there yet
-		elem_append($elem, $i);
+	// the picture is always a child img filling the frame (danja's call,
+	// 2026-09-23). The object's own background-image used to carry it,
+	// which put the picture and the object's background section in each
+	// other's way - the panel had to skip the section for image objects,
+	// and an unproportionally resized frame could leave the picture at
+	// its natural size with bars where the background showed through.
+	// The img stretches with the frame, and the background properties
+	// belong to the background section alone.
+	$i = elem('img');
+	elem_attr($i, 'src', $url);
+	if ($decorative) {
+		// a decorative image must have EMPTY alt text and the role
+		// says so explicitly, so screen readers skip it
+		elem_attr($i, 'alt', '');
+		elem_attr($i, 'role', 'presentation');
 	} else {
-		// render a div with background
-		elem_css($elem, 'background-image', 'url('.$url.')');
-		// default to no tiling
-		if (empty($obj['image-background-repeat']) || $obj['image-background-repeat'] == 'no-repeat') {
-			elem_css($elem, 'background-repeat', 'no-repeat');
-			elem_css($elem, 'background-size', '100% 100%');
-		} else {
-			elem_css($elem, 'background-repeat', $obj['image-background-repeat']);
-		}
-		if (!empty($obj['image-background-position'])) {
-			elem_css($elem, 'background-position', $obj['image-background-position']);
-		}
-		// there is no img element to carry the alt text in this case,
-		// so the wrapper carries it instead
-		if ($decorative) {
-			elem_attr($elem, 'role', 'presentation');
-		} else if (!empty($obj['image-alt'])) {
-			elem_attr($elem, 'role', 'img');
-			elem_attr($elem, 'aria-label', $obj['image-alt']);
-		}
+		elem_attr($i, 'alt', $alt);
 	}
+	elem_css($i, 'width', '100%');
+	elem_css($i, 'height', '100%');
+	// in the editor the picture must not swallow the clicks meant for the
+	// object (select, menus) - the img fills the frame, so it covers
+	// every pixel; a visitor's page never needs to click through it
+	if ($args['edit']) {
+		elem_css($i, 'pointer-events', 'none');
+	}
+	// make sure you only append to the element in alter_render_early
+	// handlers, don't assume that nothing is in there yet
+	elem_append($elem, $i);
 
 	// additional properties for both
 	if (!empty($obj['image-title'])) {
 		elem_attr($elem, 'title', $obj['image-title']);
 	}
-	
+
 	return true;
 }
 
@@ -200,49 +190,36 @@ function image_alter_save($args)
 	}
 	
 	// update the object based on the element's properties
-	// by convention all properties are prefixed with the module name, in order 
+	// by convention all properties are prefixed with the module name, in order
 	// to prevent any naming collisions
-	if (elem_css($elem, 'background-repeat') !== NULL) {
-		$val = elem_css($elem, 'background-repeat');
-		// normalize
-		if ($val == 'no-repeat no-repeat') {
-			$val = 'no-repeat';
-		}
-		$obj['image-background-repeat'] = $val;
-	} else {
-		unset($obj['image-background-repeat']);
-	}
-	if (elem_css($elem, 'background-position') !== NULL) {
-		$obj['image-background-position'] = elem_css($elem, 'background-position');
-	} else {
-		unset($obj['image-background-position']);
-	}
+	// note: the legacy image-background-repeat/-position are no longer read
+	// or rendered (the picture is a child img now) - attrs already in
+	// content stay stored but inert
 
 	// accessibility round-trip (SOW-accessibility.md): the serialized DOM
-	// carries role/aria-label/alt, map them back to image-decorative/
-	// image-alt. save_state() parses the object non-recursively, so the img
-	// child (unsized case only) has to be fished out of the raw inner HTML.
-	$role = elem_attr($elem, 'role');
-	if ($role === 'presentation') {
-		$obj['image-decorative'] = 'yes';
-		unset($obj['image-alt']);	// decorative implies empty alt
+	// carries role/alt on the img child (the picture is always a child
+	// img). save_state() parses the object non-recursively, so the img
+	// child has to be fished out of the raw inner HTML.
+	$stored_alt = '';
+	if (is_string(elem_val($elem)) && preg_match('#<img\b[^>]*>#i', elem_val($elem), $m)) {
+		$img = html_parse_elem($m[0]);
+		if (elem_attr($img, 'role') === 'presentation') {
+			$obj['image-decorative'] = 'yes';
+			unset($obj['image-alt']);	// decorative implies empty alt
+		} else {
+			unset($obj['image-decorative']);
+			$stored_alt = elem_attr($img, 'alt');
+			if ($stored_alt !== '' && $stored_alt !== @$obj['image-title']) {
+				$obj['image-alt'] = $stored_alt;
+			} else {
+				// empty, or identical to the legacy image-title (the render
+				// fallback covers that) - keep the file byte-idempotent
+				unset($obj['image-alt']);
+			}
+		}
 	} else {
 		unset($obj['image-decorative']);
-		$stored_alt = '';
-		if (elem_attr($elem, 'aria-label') !== NULL && elem_attr($elem, 'aria-label') !== '') {
-			// sized case: the description lives on the wrapper
-			$stored_alt = elem_attr($elem, 'aria-label');
-		} else if (is_string(elem_val($elem)) && preg_match('#<img\b[^>]*>#i', elem_val($elem), $m)) {
-			$img = html_parse_elem($m[0]);
-			$stored_alt = elem_attr($img, 'alt');
-		}
-		if ($stored_alt !== '' && $stored_alt !== @$obj['image-title']) {
-			$obj['image-alt'] = $stored_alt;
-		} else {
-			// empty, or identical to the legacy image-title (the render
-			// fallback covers that) - keep the file byte-idempotent
-			unset($obj['image-alt']);
-		}
+		unset($obj['image-alt']);
 	}
 
 	// this is more out of courtesy than anything else

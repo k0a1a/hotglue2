@@ -84,7 +84,7 @@ $.glue.image = function() {
 			}
 		},
 		resize: function(obj, mode) {
-			if (!$.glue.conf.image.resizing || getComputedStyle(obj).backgroundRepeat != 'no-repeat') {
+			if (!$.glue.conf.image.resizing) {
 				return;
 			}
 			if (mode === undefined) {
@@ -113,10 +113,16 @@ $.glue.image = function() {
 				} else if (!data['#data']) {
 					// no refresh necessary
 				} else {
-					// try to preload the file to prevent flicker
+					// try to preload the file to prevent flicker - the
+					// picture is the img child, so the swap retargets its
+					// src rather than the object's backgroundImage
 					clearTimeout(preload_timer);
 					// DEBUG
 					//console.log('clearing timeout');
+					var img = obj.querySelector(':scope > img');
+					if (!img) {
+						return;
+					}
 					var temp_elem = obj.cloneNode(true);
 					temp_elem.id = '';
 					temp_elem.className = 'glue-object-copy';
@@ -126,7 +132,11 @@ $.glue.image = function() {
 						temp_elem.style.top = (obj.offsetTop+(obj.offsetHeight-height)/2)+'px';
 					}
 					// set new url (w & h are only here to prevent caching)
-					temp_elem.style.backgroundImage = 'url('+$.glue.base_url+'?'+obj.id+'&w='+width+'&h='+height+')';
+					var new_url = $.glue.base_url+'?'+obj.id+'&w='+width+'&h='+height;
+					var clone_img = temp_elem.querySelector(':scope > img');
+					if (clone_img) {
+						clone_img.src = new_url;
+					}
 					obj.before(temp_elem);
 					// destroy element on move or resize
 					obj.addEventListener('glue-movestart', function() {
@@ -145,7 +155,7 @@ $.glue.image = function() {
 					preload_timer = setTimeout(function() {
 						// DEBUG
 						//console.log('outer timeout');
-						obj.style.backgroundImage = 'url('+$.glue.base_url+'?'+obj.id+'&w='+width+'&h='+height+')';
+						img.src = new_url;
 						var remove = preload_obj;
 						setTimeout(function() {
 							remove.remove();
@@ -174,13 +184,8 @@ $.glue.live('.image', 'glue-upload-dynamic-late', function(e, loaded) {
 		this.style.height = img.offsetHeight+'px';
 		// update object file
 		$.glue.backend({ method: 'glue.update_object', name: this.id, 'image-file-width': img.offsetWidth, 'image-file-height': img.offsetHeight });
-		// set the defaults
-		this.style.backgroundImage = 'url('+img.getAttribute('src')+')';
-		this.style.backgroundRepeat = 'no-repeat';
-		this.style.backgroundSize = '100% 100%';
-		this.style.setProperty('-moz-background-size', '100% 100%');
-		// remove the img
-		img.remove();
+		// the img child IS the picture now and stays in place, filling
+		// the frame - no background conversion, no removal
 		// automatically resize
 		$.glue.image.autoresize(this);
 	}

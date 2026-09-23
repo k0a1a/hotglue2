@@ -205,8 +205,11 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
   with nothing in the console.
 - **vanilla-picker builds its wrapper once and reuses it**; anything added to that
   wrapper survives into the next open.
-- **The image module paints its picture with `background-image`**, so a save rule that
-  reads background properties off any element will write into every image object.
+- **An image's picture is a child `<img>` filling the frame** (since 2026-09-23; it used
+  to be the object's own `background-image`). An image object's background props belong
+  to the object background section now, and an image's background URL must be the raw
+  shared-file path — its object URL serves the PICTURE (`image_serve_resource` wins the
+  dispatch and `object_serve_resource` refuses objects with `image-file`).
 - **Test-harness races**: `Fixture.destroy()` removes a page directory while the editor
   is still saving into it, and `readObject()` on a file that does not exist yet. Both are
   fixed, and both presented as unreproducible one-off failures in unrelated tests for a

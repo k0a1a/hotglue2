@@ -1,12 +1,11 @@
 // Image descriptions (SOW-accessibility.md, Feature 3): a decorative toggle
 // plus an alt-text input on image objects.
 //
-// Two stored keys drive the render:
+// Two stored keys drive the render, which is always a child <img> filling
+// the frame (2026-09-23 - the picture used to be the object's
+// background-image, with the description on the wrapper in that case):
 //   image-decorative  - the image is pure decoration: alt="" + role="presentation"
-//   image-alt         - the description; emitted as the <img>'s alt in the
-//                       unsized case, and as role="img" + aria-label on the
-//                       wrapper in the sized (background-image) case, which is
-//                       the common one since GD uploads record dimensions.
+//   image-alt         - the description; emitted as the <img>'s alt
 //
 // The render must stay byte-identical to the old behaviour for images that
 // carry neither key, and a no-op save must not introduce them (the
@@ -19,9 +18,8 @@ const ATTRS = {
 	'object-left': '120px', 'object-top': '80px',
 	'object-width': '200px', 'object-height': '150px', 'object-zindex': '100',
 };
-// the sized case: dimensions recorded, no <img> element at all
-const SIZED = { ...ATTRS, 'image-file-width': '120', 'image-file-height': '80',
-	'image-background-repeat': 'no-repeat' };
+// the upload also records the picture's own dimensions
+const SIZED = { ...ATTRS, 'image-file-width': '120', 'image-file-height': '80' };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const propsBtn = (page) => page.locator('#glue-contextmenu-image-properties');
@@ -38,31 +36,16 @@ async function saveAll(page) {
 		}))));
 }
 
-test('sized image with image-alt renders role="img" and aria-label', async ({ page, hg }) => {
+test('an image with image-alt carries it on the <img> child', async ({ page, hg }) => {
 	const id = hg.addObject('100000000001', { ...SIZED, 'image-alt': 'a red balloon' });
 	await page.goto(`/?${hg.pageName}`);
-	await expect(byId(page, id)).toHaveAttribute('role', 'img');
-	await expect(byId(page, id)).toHaveAttribute('aria-label', 'a red balloon');
-	// and nothing else leaks
-	expect(await byId(page, id).evaluate((e) => e.getAttribute('aria-label'))).toBe('a red balloon');
-});
-
-test('sized image marked decorative renders role="presentation" and no description',
-	async ({ page, hg }) => {
-		const id = hg.addObject('100000000001', { ...SIZED, 'image-decorative': 'yes' });
-		await page.goto(`/?${hg.pageName}`);
-		await expect(byId(page, id)).toHaveAttribute('role', 'presentation');
-		await expect(byId(page, id)).not.toHaveAttribute('aria-label', /./);
-	});
-
-test('unsized image carries the description on the <img> child', async ({ page, hg }) => {
-	const id = hg.addObject('100000000001', { ...ATTRS, 'image-alt': 'a red balloon' });
-	await page.goto(`/?${hg.pageName}`);
 	await expect(byId(page, id).locator('img')).toHaveAttribute('alt', 'a red balloon');
+	// and nothing else leaks
+	expect(await byId(page, id).evaluate((e) => e.getAttribute('aria-label'))).toBe(null);
 });
 
-test('unsized decorative image has empty alt and role="presentation"', async ({ page, hg }) => {
-	const id = hg.addObject('100000000001', { ...ATTRS, 'image-decorative': 'yes' });
+test('a decorative image has empty alt and role="presentation"', async ({ page, hg }) => {
+	const id = hg.addObject('100000000001', { ...SIZED, 'image-decorative': 'yes' });
 	await page.goto(`/?${hg.pageName}`);
 	const img = byId(page, id).locator('img');
 	await expect(img).toHaveAttribute('alt', '');

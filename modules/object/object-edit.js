@@ -1040,19 +1040,9 @@ function object_properties_popover(obj)
 	// object does not have is not a control that is waiting for something to
 	// arrive.
 	//
-	// An image object has no background section. The image module paints that
-	// object's picture with the object's own background-image
-	// (module_image.inc.php) and reads background-repeat/-position back out of
-	// it, so a panel that also owned "the background" would be a second owner of
-	// one picture - which is what took the background button off the class in
-	// the first place. The background is a section of this panel now rather than
-	// the whole of it, so what it costs an image object is the section: its flip
-	// and its transparency are in here with everything else.
-	//
 	// Only a text object has a padding section: text-padding-x / text-padding-y
 	// is the only padding hotglue stores (module_text.inc.php).
-	var background = (obj.classList.contains('image')) ? null :
-		object_background_section(pop, icons, body, obj, save);
+	var background = object_background_section(pop, icons, body, obj, save);
 	var padding = (obj.classList.contains('text')) ?
 		object_padding_section(body, obj, save) : null;
 	var flip = object_flip_section(icons, obj, save);
@@ -1212,6 +1202,31 @@ function object_background_section(pop, icons, body, obj, save)
 			if (!data || data['#error']) {
 				$.glue.error('There was a problem uploading the file'+
 					(data && data['#data'] ? ' ('+data['#data']+')' : ''));
+				return;
+			}
+			if (obj.classList.contains('image')) {
+				// an image object's background is painted by the server
+				// render with the raw shared-file url (its object url
+				// serves the PICTURE), so the panel re-renders instead of
+				// guessing the url client-side
+				$.glue.backend({ method: 'glue.render_object', name: obj.id, edit: true }, function(d) {
+					if (!d || d['#error'] || !d['#data']) {
+						return;
+					}
+					var tmpl = document.createElement('template');
+					tmpl.innerHTML = d['#data'].trim();
+					var fresh = tmpl.content.firstElementChild;
+					if (fresh) {
+						obj.innerHTML = fresh.innerHTML;
+						obj.style.backgroundImage = fresh.style.backgroundImage;
+						obj.style.backgroundRepeat = fresh.style.backgroundRepeat;
+						obj.style.backgroundPosition = fresh.style.backgroundPosition;
+						obj.style.backgroundSize = fresh.style.backgroundSize;
+					}
+					save();
+					arm();
+					sync_has();
+				}, false);
 				return;
 			}
 			// the timestamp defeats the cache: the url does not change when
