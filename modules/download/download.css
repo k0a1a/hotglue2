@@ -30,15 +30,3 @@
 	   exist for undo and detach to reach it, but it stays off-screen */
 	display: none;
 }
-
-#glue-contextmenu-download-public {
-	background-color: transparent;
-}
-
-#glue-contextmenu-download-public.glue-menu-disabled {
-	background-image: url(download-public-off.png);
-}
-
-#glue-contextmenu-download-public.glue-menu-enabled {
-	background-image: url(download-public-on.png);
-}

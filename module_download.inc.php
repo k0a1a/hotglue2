@@ -85,11 +85,8 @@ function download_alter_render_late($args)
 	$html = &$args['html'];
 	$obj = $args['obj'];
 	if (elem_has_class($elem, 'download')) {
-		if (!$args['edit'] && (!isset($obj['download-public']) || $obj['download-public'] != 'public')) {
-			// hide it in viewing mode if not public
-			$html = '';
-		} elseif (!$args['edit']) {
-			// otherwise add the css only on-demand in viewing mode
+		if (!$args['edit']) {
+			// add the css only on-demand in viewing mode
 			html_add_css(base_url().'modules/download/download.css');
 		}
 		return true;
@@ -110,9 +107,8 @@ function download_alter_render_late($args)
 		return false;
 	}
 	$dl = $dl['#data'];
-	if (!isset($dl['download-public']) || $dl['download-public'] != 'public') {
-		return false;		// a private download wraps nothing in view
-	}
+	// downloads are public by default - there is no public/private switch
+	// (danja's call, 2026-09-23)
 	if (SHORT_URLS) {
 		$link = urlencode($dl['name']).'&download=1';
 	} else {
@@ -292,13 +288,10 @@ function download_serve_resource($args)
 	}
 	
 	$a = expl('.', $obj['name']);
-	
-	// serve the resource only when it's public or we're logged in (i.e. editing)
-	if ((isset($obj['download-public']) && $obj['download-public'] == 'public') || is_auth()) {
-		serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
-	} else if (!is_auth()) {
-		prompt_auth(true);
-	}
+
+	// downloads are public by default - there is no public/private switch
+	// (danja's call, 2026-09-23)
+	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
 }
 
 

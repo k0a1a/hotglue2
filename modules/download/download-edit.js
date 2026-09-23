@@ -230,33 +230,6 @@ function download_wrap_detach(obj) {
 	}, false);
 }
 
-function download_public_sync(elem) {
-	var obj = $.glue.owner(elem);
-	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-		// the menu can hide - and Alpine tear the item down - while this
-		// round-trip is in flight (the drag's first frame shows the menu
-		// and the movestart right behind it hides it again). A write into
-		// the torn-down reactive proxy throws; the item's next show
-		// re-syncs, so the detached write is skipped instead.
-		if (!elem.isConnected) {
-			return;
-		}
-		Alpine.$data(elem).enabled = (data['download-public'] == 'public');
-	});
-}
-
-function download_public_toggle(elem) {
-	var obj = $.glue.owner(elem);
-	var data = Alpine.$data(elem);
-	if (data.enabled) {
-		data.enabled = false;
-		$.glue.backend({ method: 'glue.object_remove_attr', name: obj.id, attr: 'download-public' });
-	} else {
-		data.enabled = true;
-		$.glue.backend({ method: 'glue.update_object', name: obj.id, 'download-public': 'public' });
-	}
-}
-
 document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.veto('download', 'object-link');
 	// the overflow toggle and the like have no business on a 50x50 box
@@ -327,15 +300,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		window.location = $.glue.base_url+'?'+obj.id+'&download=1';
 	});
 	$.glue.contextmenu.register('download', 'download-download', elem);
-
-	elem = document.createElement('div');
-	elem.setAttribute('alt', 'btn');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
-	$.glue.toggle_button(elem, 'download_public_sync', 'download_public_toggle',
-		'this object is shown to everyone - click to make it private',
-		'this object is only shown while editing - click to make it public');
-	$.glue.contextmenu.register('download', 'download-public', elem);
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('download', function(obj, orig) {

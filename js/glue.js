@@ -175,8 +175,8 @@ $.glue.owner = function()
 }();
 
 // wires up the Alpine x-data/x-bind/x-on plumbing shared by the many
-// "boolean toggle" context-menu icons (download-public, video-autoplay/
-// -loop/-controls/-mute, webvideo-autoplay/-loop, ...): an icon that shows
+// "boolean toggle" context-menu icons (video-autoplay/-loop/-controls/-mute,
+// webvideo-autoplay/-loop, ...): an icon that shows
 // enabled/disabled via the glue-menu-enabled/glue-menu-disabled classes and
 // a matching tooltip, synced on glue-menu-activate and flipped on click.
 // sync_fn/toggle_fn are the names of globally-defined functions taking the

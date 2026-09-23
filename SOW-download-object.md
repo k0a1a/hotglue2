@@ -20,7 +20,9 @@ attach/detach (attach uploads a file as a NEW download wrapped around the target
 puts the box back at its saved position). The pair is two attributes -
 `download-wrap` on the target, `download-wrap-target` on the download, written via
 glue.update_object. Copy-paste carries the pair and the file; deleting either half unwraps
-the other; a private download wraps nothing in view. Tests:
+the other; downloads are PUBLIC by default - there is no public/private switch, no UI
+for one, and the published page always shows the box or the wrap (danja's call,
+2026-09-23). Tests:
 tests/e2e/download-wrap.spec.js. It renders EITHER as its own
 default box (MIME type shown) OR, when "wrapped" around a compatible object (text/image),
 borrows that object's appearance so the download blends into the page's design. Reuses the

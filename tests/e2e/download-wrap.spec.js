@@ -135,12 +135,9 @@ test('an uploaded file renders as the 50x50 mime box and downloads in view',
 		expect(attrs['download-file-name']).toBe('sample.pdf');
 		expect(fs.readdirSync(sharedDir(hg.pageName))).toContain('sample.pdf');
 
-		// make it public, then the published page wraps it in the anchor and
-		// the server hands the bytes out as an attachment
-		await byId(page, hg, id).click();
-		await page.locator('#glue-contextmenu-download-public').click();
-		await expect.poll(() => hg.readObject(id).attrs['download-public']).toBe('public');
-
+		// downloads are public by default (danja's call, 2026-09-23) - the
+		// published page wraps the box in the anchor and the server hands
+		// the bytes out as an attachment
 		await page.goto(pageUrl(hg));
 		// the anchor is AROUND the object div, not inside it
 		const a = page.locator('a').filter({ has: page.locator('.object') });
@@ -183,18 +180,8 @@ test('attaching from the target menu writes the pair and wraps only in view',
 		// menus carry the association; the hover title stays
 		await expect(byId(page, hg, '100000000001')).not.toHaveClass(/glue-download-wrap/);
 
-		// the wrap renders in view only for a public download
-		await page.evaluate((n) => fetch($.glue.base_url + 'json.php', {
-			method: 'POST',
-			body: new URLSearchParams([
-				['method', JSON.stringify('glue.update_object')],
-				['name', JSON.stringify(n)],
-				['download-public', JSON.stringify('public')],
-			]),
-		}), hg.pageName + '.' + dl);
-		await expect.poll(() => hg.readObject(dl).attrs['download-public']).toBe('public');
-
-		// and the published page wraps the target in the anchor
+		// the wrap renders in view - downloads are public by default
+		// (danja's call, 2026-09-23)
 		await page.goto(pageUrl(hg));
 		const a = page.locator('a').filter({ has: byId(page, hg, '100000000001') });
 		await expect(a).toHaveAttribute('download', 'sample.pdf');
@@ -342,10 +329,10 @@ test('dragging a download raises no server-communication dialog',
 		await waitForEditor(page, 1);
 
 		// the drag's first frame shows the box's menu and the movestart
-		// hides it again in the same gesture - the download-public sync's
-		// round-trip lands while Alpine tears the item down (firefox
-		// reported "can't convert undefined to object" into the glue-gun
-		// dialog)
+		// hides it again in the same gesture - an Alpine item's sync
+		// round-trip landing while the tear-down runs used to throw
+		// (firefox reported "can't convert undefined to object" into the
+		// glue-gun dialog)
 		const box = await byId(page, hg, '100000000001').boundingBox();
 		await drag(page, [box.x + box.width / 2, box.y + box.height / 2], 100, 40);
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('400px');
@@ -357,8 +344,7 @@ test('copy-paste carries the wrap pair and its file', async ({ page, hg }) => {
 	pageB.create();
 	try {
 		const dl = hg.addObject('100000000002', { ...downloadObject(300, 50, 100),
-			'download-wrap-target': hg.pageName + '.100000000001',
-			'download-public': 'public' });
+			'download-wrap-target': hg.pageName + '.100000000001' });
 		hg.addObject('100000000001', { ...textObject(50, 50, 100),
 			'download-wrap': hg.pageName + '.100000000002' }, 'hello');
 		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
@@ -448,17 +434,17 @@ test('deleting the wrapped target un-hides the box', async ({ page, hg }) => {
 	await expect(byId(page, hg, '100000000002')).toBeVisible();
 });
 
-test('a private download wraps nothing in view', async ({ page, hg }) => {
+test('a wrapped pair renders in view with no public attribute needed', async ({ page, hg }) => {
+	// downloads are public by default (danja's call, 2026-09-23) - no
+	// download-public attribute is written, and the anchor still renders
 	hg.addObject('100000000001', { ...textObject(50, 50, 100),
 		'download-wrap': hg.pageName + '.100000000002' }, 'hello');
 	hg.addObject('100000000002', { ...downloadObject(300, 50, 100),
 		'download-wrap-target': hg.pageName + '.100000000001' });
 	seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
 	await page.goto(pageUrl(hg));
-	// no anchor around the text, and no box
-	expect(await page.locator('a').filter({ has: byId(page, hg, '100000000001') }).count())
-		.toBe(0);
-	expect(await byId(page, hg, '100000000002').count()).toBe(0);
+	const a = page.locator('a').filter({ has: byId(page, hg, '100000000001') });
+	await expect(a).toHaveAttribute('download', 'sample.pdf');
 });
 
 test('the box label falls back to the file extension', async ({ page, hg }) => {
@@ -502,15 +488,7 @@ test('an image target attaches the same way, and wraps its <img> in view',
 		await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
 			.toBe(hg.pageName + '.' + dl);
 
-		// public, then the published page wraps the image's markup
-		await page.evaluate((n) => fetch($.glue.base_url + 'json.php', {
-			method: 'POST',
-			body: new URLSearchParams([
-				['method', JSON.stringify('glue.update_object')],
-				['name', JSON.stringify(n)],
-				['download-public', JSON.stringify('public')],
-			]),
-		}), hg.pageName + '.' + dl);
+		// the published page wraps the image's markup - public by default
 		await page.goto(pageUrl(hg));
 		const a = page.locator('a').filter({ has: byId(page, hg, '100000000001') });
 		await expect(a).toHaveAttribute('download', 'sample.pdf');
