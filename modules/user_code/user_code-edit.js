@@ -11,7 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	var elem = $.glue.icon('site-code', 'add custom JavaScript code and CSS definitions');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
-		window.location = $.glue.base_url+'?'+$.glue.page+'/code';
+		// a new tab, so the page being worked on stays behind (danja's
+		// call, 2026-09-24) - the click is a user gesture, so no popup
+		// blocker applies
+		window.open($.glue.base_url+'?'+$.glue.page+'/code', '_blank');
 	});
 	$.glue.menu.register('page', elem, 12);
 });

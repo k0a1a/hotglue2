@@ -16,7 +16,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	var elem = $.glue.icon('site-settings', 'site options: set site icon (favicon), manage pages, add fonts');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
-		window.location = $.glue.base_url+'?options';
+		// a new tab, so the page being worked on stays behind (danja's
+		// call, 2026-09-24) - the click is a user gesture, so no popup
+		// blocker applies
+		window.open($.glue.base_url+'?options', '_blank');
 	});
 	$.glue.menu.register('page', elem, 11);
 });
