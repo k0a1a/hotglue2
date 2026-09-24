@@ -381,10 +381,14 @@ function page_render_page_late($args)
 			elem_css($v, 'width', '320px');
 			elem_css($v, 'z-index', '-1');
 		} else {
+			// the untiled look: the video FILLS the page, cropping to the
+			// frame (danja's call, 2026-09-24)
 			elem_css($v, 'position', $pos);
 			elem_css($v, 'left', '0px');
 			elem_css($v, 'top', '0px');
 			elem_css($v, 'width', '100%');
+			elem_css($v, 'height', '100%');
+			elem_css($v, 'object-fit', 'cover');
 			elem_css($v, 'z-index', '0');
 			if (!empty($o['page-background-image-position'])) {
 				$p = expl(' ', $o['page-background-image-position']);
@@ -395,7 +399,9 @@ function page_render_page_late($args)
 			}
 			if (!empty($o['page-background-size'])) {
 				$s = expl(' ', $o['page-background-size']);
+				// the scale zooms the cover: both sides grow together
 				elem_css($v, 'width', $s[0]);
+				elem_css($v, 'height', $s[0]);
 			}
 			// in the editor the video must never swallow the clicks meant
 			// for the canvas and the objects

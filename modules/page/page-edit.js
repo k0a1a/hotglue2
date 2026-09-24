@@ -421,6 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			v.style.left = '0px';
 			v.style.top = '0px';
 			v.style.width = '100%';
+			v.style.height = '100%';
+			v.style.objectFit = 'cover';
 			v.style.zIndex = '0';
 			v.style.pointerEvents = 'none';
 			document.body.prepend(v);
@@ -702,6 +704,8 @@ document.addEventListener('DOMContentLoaded', function() {
 						f.style.left = left;
 						f.style.top = top;
 						f.style.width = c.getAttribute('data-scale') ? c.getAttribute('data-scale')+'%' : '100%';
+						f.style.height = f.style.width;
+						f.style.objectFit = 'cover';
 						f.style.zIndex = '0';
 						f.style.pointerEvents = 'none';
 						f.play();
@@ -878,12 +882,15 @@ document.addEventListener('DOMContentLoaded', function() {
 							el.setAttribute('data-scale', pct);
 						}
 					} else {
-						// the single video's width
+						// the single video's zoomed cover: both sides grow
+						// together, cropping to the frame
 						if (!pct || pct < 0) {
 							el.style.width = '100%';
+							el.style.height = '100%';
 							scale_row.set(100);
 						} else {
 							el.style.width = pct+'%';
+							el.style.height = pct+'%';
 						}
 					}
 				} else {
@@ -931,6 +938,8 @@ document.addEventListener('DOMContentLoaded', function() {
 					el.removeAttribute('data-scale');
 				} else {
 					el.style.width = '100%';
+					el.style.height = '100%';
+					el.style.objectFit = 'cover';
 				}
 			}
 			// and the panel says so: the rows, the tile toggle (the page's

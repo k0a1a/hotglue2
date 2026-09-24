@@ -36,6 +36,7 @@
 		}
 		running = true;
 
+		var last = 0;
 		var draw = function() {
 			// the offscreen feeder's autoplay attribute is not always
 			// enough (policy differences between engines) - the tiler asks
@@ -48,6 +49,15 @@
 				requestAnimationFrame(draw);
 				return;
 			}
+			// Throttled: a wallpaper has no use for 60 repaints a second,
+			// and each repaint is one drawImage per tile - the timed rAF at
+			// 15fps quarters the CPU bill (danja's call, 2026-09-24).
+			var now = performance.now();
+			if (now - last < 66) {
+				requestAnimationFrame(draw);
+				return;
+			}
+			last = now;
 			var pct = parseFloat(canvas.getAttribute('data-scale'));
 			var vw = video.videoWidth;
 			var vh = video.videoHeight;
