@@ -2613,7 +2613,7 @@ $.glue.text.set_heading = function(obj, level) {
 // does nothing" on a page whose palette head happens to be transparent.
 function text_new_object_bg(color) {
 	var r, g, b, a;
-	var s = String(color || '');
+	var s = String(color || '').trim();
 	if (/^#([0-9a-f]{3})$/i.test(s)) {
 		r = parseInt(s[1]+s[1], 16);
 		g = parseInt(s[2]+s[2], 16);
@@ -2630,8 +2630,21 @@ function text_new_object_bg(color) {
 		b = parseInt(s.substr(5,2), 16);
 		a = parseInt(s.substr(7,2), 16);
 	} else {
-		// not a hex we know - leave it alone
-		return s;
+		var m = s.match(/^rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\)$/i);
+		if (m) {
+			r = parseInt(m[1], 10);
+			g = parseInt(m[2], 10);
+			b = parseInt(m[3], 10);
+			a = (m[4] === undefined) ? 255 : Math.round(parseFloat(m[4])*255);
+		} else if (s == 'transparent') {
+			// the picker's keyword for 0% alpha (to_css in js/edit.js):
+			// there is no colour to preserve, so the minimums ARE the
+			// colour - the 30% grey at 30% opacity
+			return '#4d4d4d4d';
+		} else {
+			// not a colour form we know - leave it alone
+			return s;
+		}
 	}
 	// minimum 30% opacity
 	if (a < 0x4D) {
