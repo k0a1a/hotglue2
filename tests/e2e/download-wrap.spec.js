@@ -271,13 +271,13 @@ test('a download selected together with its target shows the menu and attaches',
 				.filter((el) => el.style.visibility !== 'hidden').map((el) => el.id));
 		expect(ids).toEqual(['glue-contextmenu-download-attach']);
 
-		// the icon sits at the corner facing the target: the text here is
-		// left of (and a hair below) the box, so the icon touches the box's
-		// bottom-left corner
+		// the icon sits at the corner facing the target, with the menu's
+		// usual 20px stand-off: the text here is left of (and a hair below)
+		// the box, so the icon hangs off the box's bottom-left corner
 		const box = await byId(page, hg, '100000000002').boundingBox();
 		const icon = await page.locator('#glue-contextmenu-download-attach').boundingBox();
-		expect(icon.x + icon.width).toBeCloseTo(box.x, 0);
-		expect(icon.y).toBeCloseTo(box.y + box.height, 0);
+		expect(icon.x + icon.width).toBeCloseTo(box.x - 20, 0);
+		expect(icon.y).toBeCloseTo(box.y + box.height + 20, 0);
 
 		// the attach reads the selection itself - no remembered target
 		await page.locator('#glue-contextmenu-download-attach').click();
@@ -304,8 +304,8 @@ test('the attach icon points at the target: the corner facing it, whichever way 
 
 		const box = await byId(page, hg, '100000000001').boundingBox();
 		const icon = await page.locator('#glue-contextmenu-download-attach').boundingBox();
-		expect(icon.x).toBeCloseTo(box.x + box.width, 0);
-		expect(icon.y).toBeCloseTo(box.y + box.height, 0);
+		expect(icon.x).toBeCloseTo(box.x + box.width + 20, 0);
+		expect(icon.y).toBeCloseTo(box.y + box.height + 20, 0);
 	});
 
 test('detach clears the pair and the box returns at its position',
