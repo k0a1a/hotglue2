@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
+	<rect width="120" height="80" fill="#dd3355"/>
+	<circle cx="60" cy="40" r="30" fill="#ffffff"/>
+	<script>document.title = 'owned';</script>
+</svg>

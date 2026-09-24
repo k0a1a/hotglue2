@@ -112,3 +112,47 @@ test('resizing an image leaves no preload leftovers behind', async ({ page, hg }
 		'a preload copy was left behind in the page').toBe(before);
 	await expect(page.locator('.image.object')).toHaveCount(1);
 });
+
+// SVG is an image format too - the fixture even carries a <script>, the
+// poisoned case: the render shows it through an <img> (where scripts never
+// execute), and the direct URL must be neutralized by the sandbox CSP, so
+// nothing anywhere runs it.
+test('an svg upload becomes an image object, sized from its own numbers, and the served file is sandboxed',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', {
+			type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
+			'object-width': '100px', 'object-height': '50px', 'object-zindex': '100',
+			'text-background-color': 'transparent',
+		}, 'seed');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		await uploadViaNewMenu(page, path.join(__dirname, 'fixtures', 'sample.svg'));
+		await expect(page.locator('.image.object')).toHaveCount(1, { timeout: 10000 });
+
+		// the object: an image, with the svg's own width/height (GD cannot
+		// read vectors, the parser reads the root element)
+		const id = hg.ids().find((f) => f !== '100000000001' && f !== 'page');
+		const attrs = hg.readObject(id).attrs;
+		expect(attrs['type']).toBe('image');
+		expect(attrs['image-file']).toBe('sample.svg');
+		expect(attrs['image-file-mime']).toBe('image/svg+xml');
+		expect(attrs['image-file-width']).toBe('120');
+		expect(attrs['image-file-height']).toBe('80');
+		expect(attrs['object-width']).toBe('120px');
+
+		// the editor renders it as an img - and the poisoned script did not
+		// fire (an <img> never executes svg scripts)
+		const src = await page.locator('.image.object img').getAttribute('src');
+		expect(src).toBeTruthy();
+		expect(await page.title()).not.toBe('owned');
+
+		// the published page shows it the same way
+		await page.goto(`/?${hg.pageName}`);
+		await expect(page.locator('.image.object img')).toHaveCount(1);
+
+		// the direct URL carries the sandbox CSP that keeps the document
+		// inert when someone opens it in a tab
+		const resp = await page.request.get(new URL(src, page.url()).href);
+		expect(resp.headers()['content-security-policy']).toContain('sandbox');
+	});

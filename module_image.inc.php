@@ -67,19 +67,19 @@ function _gd_get_imagesize($f)
 function _image_finalize_dimensions($obj)
 {
 	if (!empty($obj['image-file']) && (empty($obj['image-file-width']) || intval($obj['image-file-width']) == 0)) {
-		if (_gd_available()) {
-			$a = expl('.', $obj['name']);
-			$fn = CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file'];
-			// resolve symlinks
-			if (@is_link($fn)) {
-				$target = @readlink($fn);
-				if (substr($target, 0, 1) == '/') {
-					$fn = $target;
-				} else {
-					$fn = dirname($fn).'/'.$target;
-				}
+		$a = expl('.', $obj['name']);
+		$fn = CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file'];
+		// resolve symlinks
+		if (@is_link($fn)) {
+			$target = @readlink($fn);
+			if (substr($target, 0, 1) == '/') {
+				$fn = $target;
+			} else {
+				$fn = dirname($fn).'/'.$target;
 			}
-			$size = _gd_get_imagesize($fn);
+		}
+		$size = _image_size($fn);
+		if ($size !== false) {
 			$obj['image-file-width'] = $size[0];
 			// update regular with as well if not set
 			if (empty($obj['object-width']) || intval($obj['object-width']) == 0) {
@@ -93,6 +93,67 @@ function _image_finalize_dimensions($obj)
 		save_object($obj);
 	}
 	return $obj;
+}
+
+
+/**
+ *	return the dimensions of an SVG file: the root element's width/height
+ *	attributes in px when present, the viewBox as the fallback, a 200x200
+ *	default when neither says. GD cannot read SVGs, so this little parse
+ *	is their only size source.
+ *
+ *	@param string $file filename
+ *
+ *	@return array with width and height
+ */
+function _svg_dimensions($file)
+{
+	$h = @fopen($file, 'r');
+	if (!$h) {
+		return [200, 200];
+	}
+	// the root element always sits in the first chunk
+	$head = fread($h, 4096);
+	fclose($h);
+	$w = false;
+	$hh = false;
+	if (preg_match('/<svg\b[^>]*>/i', $head, $m)) {
+		$tag = $m[0];
+		if (preg_match('/\bwidth\s*=\s*["\']([0-9]+)(?:px)?["\']/i', $tag, $a)) {
+			$w = intval($a[1]);
+		}
+		if (preg_match('/\bheight\s*=\s*["\']([0-9]+)(?:px)?["\']/i', $tag, $a)) {
+			$hh = intval($a[1]);
+		}
+		// the last two numbers of the viewBox are its width and height
+		if ((!$w || !$hh) && preg_match('/\bviewBox\s*=\s*["\'][-0-9. ]+?\s([0-9.]+)\s+([0-9.]+)\s*["\']/i', $tag, $a)) {
+			if (!$w) {
+				$w = intval(round(floatval($a[1])));
+			}
+			if (!$hh) {
+				$hh = intval(round(floatval($a[2])));
+			}
+		}
+	}
+	return [($w > 0 ? $w : 200), ($hh > 0 ? $hh : 200)];
+}
+
+
+/**
+ *	return a size for an image file: the svg parser for vectors (GD cannot
+ *	read them), _gd_get_imagesize() for everything else when gd is there
+ *
+ *	@param string $fn filename
+ *	@return array with width and height, or false
+ */
+function _image_size($fn)
+{
+	if (filext($fn) == 'svg') {
+		return _svg_dimensions($fn);
+	} elseif (_gd_available()) {
+		return _gd_get_imagesize($fn);
+	}
+	return false;
 }
 
 
@@ -418,6 +479,11 @@ function image_resize($args)
 	if (@intval($obj['image-file-width']) == 0 || @intval($obj['image-file-height']) == 0) {
 		return response('Original dimensions are not available', 500);
 	}
+	// SVG is vector: the original scales losslessly to any frame, and GD
+	// cannot read it to rasterize anyway - no resized variant, ever
+	if (filext($obj['image-file']) == 'svg') {
+		return response(false);
+	}
 	// set pagename
 	$pn = get_first_item(expl('.', $obj['name']));
 	
@@ -644,6 +710,17 @@ function image_serve_resource($args)
 		if (empty($obj['image-file-mime'])) {
 			$obj['image-file-mime'] = '';
 		}
+		// an SVG served inline is an active document: a script inside it
+		// would run in the site's own origin when the URL is opened
+		// directly (the render only ever shows it through an <img>, where
+		// scripts never execute, but the direct URL is anyone's to visit).
+		// The sandbox CSP renders the document inert - no scripts, no
+		// navigation - while it still paints inside an <img> or a
+		// background, and the download path (an attachment, not a
+		// document) is unaffected.
+		if ($obj['image-file-mime'] == 'image/svg+xml' && !$args['dl']) {
+			header('Content-Security-Policy: sandbox');
+		}
 		serve_file(CONTENT_DIR.'/'.$pn.'/shared/'.$obj['image-file'], $args['dl'], $obj['image-file-mime']);
 	}
 	
@@ -658,10 +735,10 @@ function image_serve_resource($args)
 function image_upload($args)
 {
 	// check if supported file
-	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif', 'webp']))) {
+	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']))) {
 		return false;
 	}
-	
+
 	load_modules('glue');
 	// create new object
 	$obj = create_object($args);
@@ -676,9 +753,9 @@ function image_upload($args)
 	$obj['image-file'] = $args['file'];
 	$obj['image-file-mime'] = $args['mime'];
 	// save original-{width,height} if we can calculate it
-	if (_gd_available()) {
-		$a = expl('.', $args['page']);
-		$size = _gd_get_imagesize(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file']);
+	$a = expl('.', $args['page']);
+	$size = _image_size(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['image-file']);
+	if ($size !== false) {
 		$obj['image-file-width'] = $size[0];
 		$obj['object-width'] = $size[0].'px';
 		$obj['image-file-height'] = $size[1];
