@@ -603,9 +603,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		// The moving picture, next to the still one: a video background
 		// uploads the same way and the server (page_upload) tells the two
 		// apart by the file's mime. What you do next - moving, sizing,
-		// fixing - is the same rows as the image's. The glyph is the embed
-		// set's until the icon set has its own.
-		var video_btn = $.glue.popover.icon_button('embed-webvideo', 'set page background video');
+		// tiling - is the same rows as the image's.
+		var video_btn = $.glue.popover.icon_button('background-video', 'set page background video');
 		video_btn.classList.add('glue-background-video');
 		$.glue.upload.button(video_btn, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
 			tooltip: 'set page background video',
