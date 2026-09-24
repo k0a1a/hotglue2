@@ -739,12 +739,16 @@ function object_edge_popover(obj)
 		});
 	glow_colour.classList.add('glue-glow-color');
 
-	// the toggle itself is a plain square - the base .glue-font-toggle
-	// style is a white square with a black frame, and .glue-font-toggle-on
-	// fills it dark - so the glow-inside control reads as a dark square
-	// when it is on and a white one when it is off
+	// the toggle wears the empty square glyph, the same one the image
+	// panel's decorative toggle has (danja's call, 2026-09-24) - the base
+	// .glue-font-toggle style is a white square with a black frame, and
+	// .glue-font-toggle-on fills it dark, so the control reads as a dark
+	// square when it is on and a white one when it is off
 	var inner_toggle = document.createElement('div');
 	inner_toggle.className = 'glue-font-toggle glue-glow-inner-toggle';
+	var inner_glyph = document.createElement('span');
+	inner_glyph.className = 'glue-glyph-empty-square';
+	inner_toggle.appendChild(inner_glyph);
 	inner_toggle.title = 'glow inside the object too';
 	var sync_inner = function() {
 		inner_toggle.classList.toggle('glue-font-toggle-on', 0 < glow.inner);
