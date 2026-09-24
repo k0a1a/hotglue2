@@ -2611,7 +2611,12 @@ $.glue.text.set_heading = function(obj, level) {
 		return;
 	}
 	var selected = obj.classList.contains('glue-selected');
-	// the popover's owner points at the node that is about to die
+	// the heading panel stays open across the choice (danja's call,
+	// 2026-09-24): the swap below kills the node the panel points at, so it
+	// is re-opened on the new node once that exists
+	var reopen = $.glue.popover.current() &&
+		$.glue.owner($.glue.popover.current()) === obj &&
+		$.glue.popover.current().classList.contains('glue-heading-popover');
 	$.glue.popover.close();
 	var neu = document.createElement(tag);
 	for (var i = 0; i < obj.attributes.length; i++) {
@@ -2631,6 +2636,9 @@ $.glue.text.set_heading = function(obj, level) {
 	// NOTE: the undo WeakMap is keyed by element, so this first save reads
 	// as a 'create' rather than an 'update' - a cosmetic, accepted gap.
 	$.glue.object.save(neu);
+	if (reopen) {
+		text_heading_popover(neu);
+	}
 };
 
 // does a palette colour qualify as a fresh object's background: fully
@@ -2692,8 +2700,18 @@ function text_heading_popover(obj)
 	levels.forEach(function(level) {
 		var b = document.createElement('div');
 		b.className = 'glue-font-toggle glue-heading-toggle';
-		b.textContent = level[0];
-		b.title = 'render this text as a '+level[0]+' heading';
+		if (level[1] == 'div') {
+			// the plain-text choice wears the white/black circle instead of
+			// a letter (danja's call, 2026-09-24)
+			b.classList.add('glue-heading-normal');
+			var glyph = document.createElement('span');
+			glyph.className = 'glue-heading-normal-glyph';
+			b.appendChild(glyph);
+			b.title = 'render this text as a plain text object';
+		} else {
+			b.textContent = level[0];
+			b.title = 'render this text as a '+level[0]+' heading';
+		}
 		var sync = function() {
 			b.classList.toggle('glue-font-toggle-on', obj.tagName.toLowerCase() == level[1]);
 		};
