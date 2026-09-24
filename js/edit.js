@@ -1545,17 +1545,20 @@ $.glue.contextmenu = function()
 					// which corner: the quadrant the target's centre sits in
 					// relative to the box's own centre. The class margins
 					// (the row's spacing) come off - the icon is alone in
-					// this state and sits flush against the corner it points
-					// at; the next row placement restores them below.
+					// this state - and the menu's usual 20px stand-off goes
+					// on instead, the same distance every other icon keeps
+					// from its object (css/edit.css margins); the next row
+					// placement restores the margins below.
 					var face_right = (target_rect.left+target_rect.width/2) >=
 						(obj_rect.left+obj_rect.width/2);
 					var face_down = (target_rect.top+target_rect.height/2) >=
 						(obj_rect.top+obj_rect.height/2);
+					var gap = 20;
 					attach_elem.style.margin = '0';
-					attach_elem.style.left = (face_right ? obj_rect.right :
-						obj_rect.left-attach_elem.offsetWidth)+window.scrollX+'px';
-					attach_elem.style.top = (face_down ? obj_rect.bottom :
-						obj_rect.top-attach_elem.offsetHeight)+window.scrollY+'px';
+					attach_elem.style.left = (face_right ? obj_rect.right+gap :
+						obj_rect.left-attach_elem.offsetWidth-gap)+window.scrollX+'px';
+					attach_elem.style.top = (face_down ? obj_rect.bottom+gap :
+						obj_rect.top-attach_elem.offsetHeight-gap)+window.scrollY+'px';
 				} else {
 					attach_elem.style.margin = '';
 				}
