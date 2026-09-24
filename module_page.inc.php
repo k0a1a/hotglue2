@@ -346,8 +346,15 @@ function page_render_page_late($args)
 	$page_obj = load_object(['name'=>$args['page'].'.page']);
 	if (!$page_obj['#error'] && !empty($page_obj['#data']['page-background-video-file'])) {
 		$o = $page_obj['#data'];
+		$tiled = !empty($o['page-background-repeat']) && $o['page-background-repeat'] == 'repeat';
+		// the video source is shared by both looks; the tiled one keeps it
+		// offscreen and paints its frames through a canvas instead
 		$v = elem('video');
-		elem_add_class($v, 'page-background-video');
+		if ($tiled) {
+			elem_add_class($v, 'page-background-video-source');
+		} else {
+			elem_add_class($v, 'page-background-video');
+		}
 		// kept relative (not prefixed with base_url()) so it still resolves
 		// correctly when viewed through a different domain than the one
 		// configured/detected as the base url - the same rationale as the
@@ -362,32 +369,73 @@ function page_render_page_late($args)
 		elem_attr($v, 'loop', 'loop');
 		elem_attr($v, 'playsinline', 'playsinline');
 		if (!empty($o['page-background-attachment']) && $o['page-background-attachment'] == 'fixed') {
-			elem_css($v, 'position', 'fixed');
+			$pos = 'fixed';
 		} else {
+			$pos = 'absolute';
+		}
+		if ($tiled) {
+			// offscreen: it feeds the canvas, nobody looks at it
 			elem_css($v, 'position', 'absolute');
-		}
-		elem_css($v, 'left', '0px');
-		elem_css($v, 'top', '0px');
-		elem_css($v, 'width', '100%');
-		elem_css($v, 'z-index', '0');
-		if (!empty($o['page-background-image-position'])) {
-			$p = expl(' ', $o['page-background-image-position']);
-			if (2 <= count($p)) {
-				elem_css($v, 'left', $p[0]);
-				elem_css($v, 'top', $p[1]);
+			elem_css($v, 'left', '-10000px');
+			elem_css($v, 'top', '0px');
+			elem_css($v, 'width', '320px');
+			elem_css($v, 'z-index', '-1');
+		} else {
+			elem_css($v, 'position', $pos);
+			elem_css($v, 'left', '0px');
+			elem_css($v, 'top', '0px');
+			elem_css($v, 'width', '100%');
+			elem_css($v, 'z-index', '0');
+			if (!empty($o['page-background-image-position'])) {
+				$p = expl(' ', $o['page-background-image-position']);
+				if (2 <= count($p)) {
+					elem_css($v, 'left', $p[0]);
+					elem_css($v, 'top', $p[1]);
+				}
 			}
-		}
-		if (!empty($o['page-background-size'])) {
-			$s = expl(' ', $o['page-background-size']);
-			elem_css($v, 'width', $s[0]);
-		}
-		// in the editor the video must never swallow the clicks meant for
-		// the canvas and the objects
-		if ($args['edit']) {
-			elem_css($v, 'pointer-events', 'none');
+			if (!empty($o['page-background-size'])) {
+				$s = expl(' ', $o['page-background-size']);
+				elem_css($v, 'width', $s[0]);
+			}
+			// in the editor the video must never swallow the clicks meant
+			// for the canvas and the objects
+			if ($args['edit']) {
+				elem_css($v, 'pointer-events', 'none');
+			}
 		}
 		$bdy = &body();
 		elem_append($bdy, $v);
+
+		if ($tiled) {
+			// the wallpaper canvas: the whole page, the frames painted in a
+			// grid by js/page-background-video.js
+			$c = elem('canvas');
+			elem_add_class($c, 'page-background-video');
+			elem_css($c, 'position', $pos);
+			elem_css($c, 'left', '0px');
+			elem_css($c, 'top', '0px');
+			elem_css($c, 'width', '100%');
+			elem_css($c, 'height', '100%');
+			elem_css($c, 'z-index', '0');
+			if (!empty($o['page-background-image-position'])) {
+				$p = expl(' ', $o['page-background-image-position']);
+				if (2 <= count($p)) {
+					elem_css($c, 'left', $p[0]);
+					elem_css($c, 'top', $p[1]);
+				}
+			}
+			if (!empty($o['page-background-size'])) {
+				$s = expl(' ', $o['page-background-size']);
+				elem_attr($c, 'data-scale', rtrim($s[0], '%'));
+			}
+			if ($args['edit']) {
+				elem_css($c, 'pointer-events', 'none');
+			}
+			elem_append($bdy, $c);
+		}
+		// the tiler only acts when the pair exists - safe to ship on every
+		// page that has any video background
+		html_add_js(base_url().'js/page-background-video.js');
 	}
 
 	$layout = page_layout($args['page']);

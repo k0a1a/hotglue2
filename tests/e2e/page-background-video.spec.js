@@ -50,8 +50,8 @@ test('a video uploads as the page background and behaves like the picture',
 			.toBe('sample-bg.mp4');
 		expect(hg.readObject('page').attrs['page-background-file']).toBeUndefined();
 
-		// the tile toggle has nothing to say about a video - it greys out
-		await expect(page.locator('.glue-background-tile')).toHaveClass(/glue-background-off/);
+		// the tile toggle works for a video too: the wallpaper swap
+		await expect(page.locator('.glue-background-tile')).not.toHaveClass(/glue-background-off/);
 
 		// the scale row drives the video's width and stores the same key
 		await pop.locator('.glue-popover-disclosure').click();
@@ -68,6 +68,25 @@ test('a video uploads as the page background and behaves like the picture',
 		const viewLayer = page.locator('video.page-background-video');
 		await expect.poll(() => viewLayer.evaluate((v) => v.paused)).toBe(false);
 		expect(await viewLayer.evaluate((v) => getComputedStyle(v).pointerEvents)).toBe('auto');
+		await expect(page.getByText('hello')).toBeVisible();
+
+		// tiling: the video becomes the offscreen feeder and a canvas
+		// paints its frames in a grid - stored as the picture's own key
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await page.keyboard.press('Alt+P');
+		await page.getByTitle('set page background').click();
+		await expect(pop).toBeVisible();
+		await page.locator('.glue-background-tile').click();
+		await expect(page.locator('canvas.page-background-video')).toHaveCount(1);
+		await expect(page.locator('video.page-background-video-source')).toHaveCount(1);
+		await expect.poll(() => hg.readObject('page').attrs['page-background-repeat']).toBe('repeat');
+
+		await page.goto(`/?${hg.pageName}`);
+		await expect(page.locator('canvas.page-background-video')).toHaveCount(1);
+		await expect(page.locator('video.page-background-video-source')).toHaveCount(1);
+		await expect.poll(() =>
+			page.locator('video.page-background-video-source').evaluate((v) => v.paused)).toBe(false);
 		await expect(page.getByText('hello')).toBeVisible();
 
 		// and the delete takes the layer, the keys and the file with it

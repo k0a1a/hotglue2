@@ -427,7 +427,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		return v;
 	};
+	// The layer that shows on the page: the tiled wallpaper's canvas, or
+	// the single video element.
+	var page_bg_video_layer = function() {
+		var c = document.querySelector('canvas.page-background-video');
+		return c || document.querySelector('video.page-background-video');
+	};
 	var page_bg_video_mode = function() {
+		var c = document.querySelector('canvas.page-background-video');
+		if (c) {
+			return true;
+		}
 		var v = document.querySelector('video.page-background-video');
 		return !!(v && v.getAttribute('src'));
 	};
@@ -441,11 +451,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		doc.style.backgroundRepeat = '';
 		doc.style.backgroundPosition = '';
 		doc.style.backgroundSize = '';
-		// the video layer goes with the rest
-		var v = document.querySelector('video.page-background-video');
-		if (v) {
-			v.remove();
-		}
+		// the video layer goes with the rest, whichever look it wore
+		document.querySelectorAll('video.page-background-video, video.page-background-video-source, canvas.page-background-video')
+			.forEach(function(el) {
+				el.remove();
+			});
 		$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page }, function(data) {
 			// the file and its settings are gone with it
 			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
@@ -458,9 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// into something with two of them.
 	var page_background_position = function() {
 		if (page_bg_video_mode()) {
-			var v = page_bg_video_el();
-			var vx = parseInt(v.style.left);
-			var vy = parseInt(v.style.top);
+			var el = page_bg_video_layer();
+			var vx = parseInt(el.style.left);
+			var vy = parseInt(el.style.top);
 			return {
 				x: isNaN(vx) ? 0 : vx,
 				y: isNaN(vy) ? 0 : vy
@@ -576,10 +586,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else {
 					// the video the panel used to describe is gone - the
 					// picture replaces it
-					var v = document.querySelector('video.page-background-video');
-					if (v) {
-						v.remove();
-					}
+					document.querySelectorAll('video.page-background-video, video.page-background-video-source, canvas.page-background-video')
+						.forEach(function(el) {
+							el.remove();
+						});
 					// the timestamp here is to trick any caching going on
 					doc.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
 					// the two toggles have something to act on now. sync_has is
@@ -640,9 +650,64 @@ document.addEventListener('DOMContentLoaded', function() {
 		var repeat = $.glue.popover.icon_button('tile', 'tile page background image');
 		repeat.classList.add('glue-background-tile');
 		var sync_repeat = function() {
-			repeat.classList.toggle('glue-btn-active',
-				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
-		};		repeat.addEventListener('click', function() {
+			if (page_bg_video_mode()) {
+				repeat.classList.toggle('glue-btn-active',
+					!!document.querySelector('canvas.page-background-video'));
+			} else {
+				repeat.classList.toggle('glue-btn-active',
+					getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
+			}
+		};
+		repeat.addEventListener('click', function() {
+			if (page_bg_video_mode()) {
+				// the wallpaper swap: the single video becomes the offscreen
+				// feeder and a canvas takes its place (and the way back)
+				var v = document.querySelector('video.page-background-video');
+				if (v) {
+					// tile it: the video's own place becomes the canvas's
+					// grid origin
+					var left = v.style.left, top = v.style.top;
+					v.className = 'page-background-video-source';
+					v.style.position = 'absolute';
+					v.style.left = '-10000px';
+					v.style.top = '0px';
+					v.style.width = '320px';
+					v.style.zIndex = '-1';
+					var c = document.createElement('canvas');
+					c.className = 'page-background-video';
+					c.style.position = (getComputedStyle(v).position == 'fixed') ? 'fixed' : 'absolute';
+					c.style.left = left;
+					c.style.top = top;
+					c.style.width = '100%';
+					c.style.height = '100%';
+					c.style.zIndex = '0';
+					c.style.pointerEvents = 'none';
+					c.setAttribute('data-scale', parseFloat(v.style.width) == 100 ? '' : String(parseFloat(v.style.width)));
+					document.body.prepend(c);
+					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-repeat': 'repeat' });
+				} else {
+					// untiled: the canvas goes, the feeder comes back into
+					// its place with the single video's usual look
+					var c = document.querySelector('canvas.page-background-video');
+					var left = c.style.left, top = c.style.top;
+					var f = document.querySelector('video.page-background-video-source');
+					c.remove();
+					if (f) {
+						f.className = 'page-background-video';
+						f.style.position = (c.style.position == 'fixed') ? 'fixed' : 'absolute';
+						f.style.left = left;
+						f.style.top = top;
+						f.style.width = c.getAttribute('data-scale') ? c.getAttribute('data-scale')+'%' : '100%';
+						f.style.zIndex = '0';
+						f.style.pointerEvents = 'none';
+						f.play();
+					}
+					$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-repeat' });
+				}
+				sync_repeat();
+				sync_scroll();
+				return;
+			}
 			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
 			doc.style.backgroundRepeat = tiled ? 'no-repeat' : 'repeat';
 			sync_repeat();
@@ -664,8 +729,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		scroll.classList.add('glue-background-scroll');
 		var sync_scroll = function() {
 			if (page_bg_video_mode()) {
+				var el = page_bg_video_layer();
 				scroll.classList.toggle('glue-btn-active',
-					page_bg_video_el().style.position != 'fixed');
+					el && el.style.position != 'fixed');
 			} else {
 				scroll.classList.toggle('glue-btn-active',
 					getComputedStyle(doc).backgroundAttachment != 'fixed');
@@ -673,11 +739,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		};
 		scroll.addEventListener('click', function() {
 			if (page_bg_video_mode()) {
-				var v = page_bg_video_el();
-				var fixed = v.style.position == 'fixed';
-				// emptied rather than set to 'scroll', so going back to the
-				// default leaves no inline style behind
-				v.style.position = fixed ? 'absolute' : 'fixed';
+				var el = page_bg_video_layer();
+				var fixed = el.style.position == 'fixed';
+				el.style.position = fixed ? 'absolute' : 'fixed';
 				sync_scroll();
 				if (fixed) {
 					$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-attachment' });
@@ -703,12 +767,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// would be toggling a background that is not there. So they grey out
 		// and go inert until one arrives - the uploads above call this too,
 		// so a picture or video dropped in while the panel is open wakes
-		// them where they stand. The tile toggle has nothing to say about a
-		// VIDEO background (a moving picture cannot repeat), so it stays
-		// greyed while one is up.
+		// them where they stand.
 		var sync_has = function() {
 			var off = !page_bg_has();
-			repeat.classList.toggle('glue-background-off', off || page_bg_video_mode());
+			repeat.classList.toggle('glue-background-off', off);
 			scroll.classList.toggle('glue-background-off', off);
 		};
 		sync_repeat();
@@ -729,9 +791,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		var at = page_background_position();
 		var write_at = function() {
 			if (page_bg_video_mode()) {
-				var v = page_bg_video_el();
-				v.style.left = (at.x == 0) ? '0px' : at.x+'px';
-				v.style.top = (at.y == 0) ? '0px' : at.y+'px';
+				var el = page_bg_video_layer();
+				el.style.left = (at.x == 0) ? '0px' : at.x+'px';
+				el.style.top = (at.y == 0) ? '0px' : at.y+'px';
 			} else {
 				doc.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
 			}
@@ -789,17 +851,36 @@ document.addEventListener('DOMContentLoaded', function() {
 		// touched, and a zero clears the attribute again.
 		var scale_row = $.glue.popover.number_row('scale', {
 			min: 10, max: 300, step: 1, unit: '%',
-			value: page_bg_video_mode() ?
-				(parseFloat(page_bg_video_el().style.width) || 100) :
-				(parseFloat(doc.style.backgroundSize) || 100),
+			value: (function() {
+				if (page_bg_video_mode()) {
+					var el = page_bg_video_layer();
+					if (el.tagName == 'CANVAS') {
+						// the tile size, native when nothing is stored
+						return parseFloat(el.getAttribute('data-scale')) || 0;
+					}
+					return parseFloat(el.style.width) || 100;
+				}
+				return parseFloat(doc.style.backgroundSize) || 100;
+			})(),
 			apply: function(pct, commit) {
 				if (page_bg_video_mode()) {
-					var v = page_bg_video_el();
-					if (!pct || pct < 0) {
-						v.style.width = '100%';
-						scale_row.set(100);
+					var el = page_bg_video_layer();
+					if (el.tagName == 'CANVAS') {
+						// the tile size: a percentage of the page width
+						if (!pct || pct < 0) {
+							el.removeAttribute('data-scale');
+							scale_row.set(0);
+						} else {
+							el.setAttribute('data-scale', pct);
+						}
 					} else {
-						v.style.width = pct+'%';
+						// the single video's width
+						if (!pct || pct < 0) {
+							el.style.width = '100%';
+							scale_row.set(100);
+						} else {
+							el.style.width = pct+'%';
+						}
 					}
 				} else {
 					if (!pct || pct < 0) {
@@ -839,10 +920,14 @@ document.addEventListener('DOMContentLoaded', function() {
 			doc.style.backgroundPosition = '';
 			doc.style.backgroundSize = '';
 			if (page_bg_video_mode()) {
-				var v = page_bg_video_el();
-				v.style.left = '0px';
-				v.style.top = '0px';
-				v.style.width = '100%';
+				var el = page_bg_video_layer();
+				el.style.left = '0px';
+				el.style.top = '0px';
+				if (el.tagName == 'CANVAS') {
+					el.removeAttribute('data-scale');
+				} else {
+					el.style.width = '100%';
+				}
 			}
 			// and the panel says so: the rows, the tile toggle (the page's
 			// default IS repeat, so it lights) and the scale field
