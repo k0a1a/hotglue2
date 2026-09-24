@@ -1547,8 +1547,13 @@ function upload_files($args)
 		if ($s === false) {
 			$r = invoke_hook_while('upload_fallback', false, $args);
 			if (count($r) == 1) {
-				$s = array_pop(array_values($r));
-				log_msg('info', 'upload_object: '.quot($fn).' was (fallback-) handled by '.quot(array_pop(array_keys($r))));
+				// into variables first: array_pop() takes a reference and
+				// cannot pop the expression array_values($r) directly -
+				// "Only variables should be passed by reference" on PHP 8
+				$tmp_vals = array_values($r);
+				$tmp_keys = array_keys($r);
+				$s = array_pop($tmp_vals);
+				log_msg('info', 'upload_object: '.quot($fn).' was (fallback-) handled by '.quot(array_pop($tmp_keys)));
 			}
 		}
 		

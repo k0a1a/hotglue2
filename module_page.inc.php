@@ -681,17 +681,19 @@ function page_font_upload($args)
 	}
 	// woff/woff2/ttf/otf accepted - see module_text.inc.php's
 	// _include_custom_font() for the format() mapping used when declaring
-	// these via @font-face. Browsers are especially inconsistent about
-	// reporting mime types for font files (often falling back to a generic
-	// type that upload_files() already clears to ''), so an empty mime
-	// paired with a recognized extension is accepted too - see
-	// page_favicon_upload()'s identical reasoning
+	// these via @font-face. The EXTENSION is the authoritative signal:
+	// browsers report font mimes wildly inconsistently (Chromium calls an
+	// .otf application/vnd.ms-opentype, Firefox something else again), and
+	// trusting the mime here would knock those uploads off this module and
+	// into the generic fallback, which stores the font as a download object
+	// instead. A known font mime is still accepted on its own, for uploads
+	// that come with a recognized mime but an unusual extension.
 	$mime_ok = in_array($args['mime'], ['font/woff', 'application/font-woff', 'application/x-font-woff',
 		'font/woff2', 'application/font-woff2', 'application/x-font-woff2',
 		'font/ttf', 'font/sfnt', 'application/x-font-ttf', 'application/x-font-truetype',
 		'font/otf', 'application/x-font-opentype', 'application/x-font-otf']);
 	$ext_ok = in_array(filext($args['file']), ['woff', 'woff2', 'ttf', 'otf']);
-	if (!$mime_ok && !($args['mime'] == '' && $ext_ok)) {
+	if (!$ext_ok && !$mime_ok) {
 		return false;
 	}
 
