@@ -2331,21 +2331,41 @@ $.glue.object = function()
 	};
 
 	// only show resize handles while an object is selected, not permanently
-	$.glue.live('.object', 'glue-select', function(e) {
-		var m = moveables.get(this);
-		if (m && this.classList.contains('resizable') && !this.classList.contains('locked')) {
-			var obj = this;
+	var show_resize_handles = function(obj) {
+		var m = moveables.get(obj);
+		if (m && obj.classList.contains('resizable') && !obj.classList.contains('locked')) {
 			m.resizable = true;
 			// the controls are (re)created by that assignment, so the offsets
 			// go on once the render it schedules has landed
 			m.updateRect();
 			place_handles_soon(obj);
 		}
-	});
-	$.glue.live('.object', 'glue-deselect', function(e) {
-		var m = moveables.get(this);
+	};
+	var hide_resize_handles = function(obj) {
+		var m = moveables.get(obj);
 		if (m) {
 			m.resizable = false;
+		}
+	};
+	// a download box sharing its selection with anything else is the attach
+	// flow - the box's own menu shows instead, and no object in the selection
+	// draws resize or rotate handles (danja's call, 2026-09-24)
+	var attach_flow_selection = function() {
+		return document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length;
+	};
+	$.glue.live('.object', 'glue-select', function(e) {
+		if (attach_flow_selection()) {
+			document.querySelectorAll('.glue-selected').forEach(hide_resize_handles);
+			return;
+		}
+		show_resize_handles(this);
+	});
+	$.glue.live('.object', 'glue-deselect', function(e) {
+		hide_resize_handles(this);
+		// leaving the attach-flow selection: exactly one object left gets
+		// its handles back
+		if (document.querySelectorAll('.glue-selected').length == 1) {
+			show_resize_handles(document.querySelector('.glue-selected'));
 		}
 	});
 
@@ -2355,18 +2375,14 @@ $.glue.object = function()
 	// (danja's call, 2026-09-24). glue-movestart reaches every object in a
 	// multi-object move, so each one drops its handles for the duration.
 	$.glue.live('.object', 'glue-movestart', function(e) {
-		var m = moveables.get(this);
-		if (m) {
-			m.resizable = false;
-		}
+		hide_resize_handles(this);
 	});
 	$.glue.live('.object', 'glue-movestop', function(e) {
-		var m = moveables.get(this);
-		if (m && this.classList.contains('resizable') && !this.classList.contains('locked') && this.classList.contains('glue-selected')) {
-			// the same re-show glue-select does
-			m.resizable = true;
-			m.updateRect();
-			place_handles_soon(this);
+		if (attach_flow_selection()) {
+			return;
+		}
+		if (this.classList.contains('glue-selected')) {
+			show_resize_handles(this);
 		}
 	});
 

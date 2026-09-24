@@ -107,6 +107,20 @@ var transform_rotate_bound = new WeakSet();
 $.glue.live('.object', 'glue-select', function(e) {
 	var obj = this;
 	var m = $.glue.object.moveable_of(obj);
+	// the attach flow - a download box sharing its selection - draws no
+	// handles on any of the selected objects (js/edit.js), rotation
+	// included. Checked before the download guard below: the box is the
+	// object whose selection completes the pair, so this handler is the one
+	// that has to take the other selected objects' rotation handles away.
+	if (m && document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length) {
+		document.querySelectorAll('.glue-selected').forEach(function(el) {
+			var mm = $.glue.object.moveable_of(el);
+			if (mm) {
+				mm.rotatable = false;
+			}
+		});
+		return;
+	}
 	// a download box never rotates (danja's call, 2026-09-22) - the
 	// rotation handle has no business on a 50x50 file box
 	if (!m || obj.classList.contains('locked') || obj.classList.contains('download')) {
@@ -163,6 +177,16 @@ $.glue.live('.object', 'glue-deselect', function(e) {
 	if (m) {
 		m.rotatable = false;
 	}
+	// leaving the attach-flow selection: exactly one object left gets its
+	// rotation handle back
+	var sel = document.querySelectorAll('.glue-selected');
+	if (sel.length == 1) {
+		var el = sel[0];
+		var mm = $.glue.object.moveable_of(el);
+		if (mm && !el.classList.contains('locked') && !el.classList.contains('download')) {
+			mm.rotatable = true;
+		}
+	}
 });
 
 // The rotation handle hides while the object moves and comes back once it
@@ -179,6 +203,10 @@ $.glue.live('.object', 'glue-movestart', function(e) {
 $.glue.live('.object', 'glue-movestop', function(e) {
 	var m = $.glue.object.moveable_of(this);
 	if (m && !this.classList.contains('locked') && !this.classList.contains('download') && this.classList.contains('glue-selected')) {
+		// no handles while a download shares the selection
+		if (document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length) {
+			return;
+		}
 		m.rotatable = true;
 	}
 });
