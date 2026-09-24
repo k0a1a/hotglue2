@@ -16,12 +16,16 @@
 }
 
 .video-processing {
-	/* displayed while a background encode/trim is still in progress: a
-	   #ccccccaa rectangle at the video's own size - the object carries
-	   the dimensions predicted at upload - with the notice centred in it
-	   (danja's call, 2026-09-23) */
+	/* displayed while a background encode/trim is still in progress: the
+	   poster frame grabbed at upload - falling back to a #ccccccaa
+	   rectangle when there is none - at the video's own size (the object
+	   carries the dimensions predicted at upload), with the notice centred
+	   in it */
 	align-items: center;
 	background-color: #ccccccaa;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
 	box-sizing: border-box;
 	color: #000;
 	display: flex;
@@ -32,4 +36,13 @@
 	overflow: hidden;
 	text-align: center;
 	width: 100%;
+}
+
+.video-processing-label {
+	/* the notice on a chip of its own so it stays legible over any poster
+	   frame */
+	background-color: #00000088;
+	border-radius: 4px;
+	color: #fff;
+	padding: 6px 12px;
 }

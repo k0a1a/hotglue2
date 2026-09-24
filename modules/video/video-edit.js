@@ -180,6 +180,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
+	// a pending video arrives with its predicted dimensions already set (the
+	// upload stored object-width/-height), so edit.js takes the STATIC upload
+	// path and the glue-upload-dynamic-early handler above never fires -
+	// catch the placeholder here too, or the object would sit on the
+	// "converting video" screen until the next page load
+	$.glue.live('.video', 'glue-upload-static', function(e, mode) {
+		if (this.querySelector('.video-processing')) {
+			video_poll_encode(this);
+		}
+	});
+
 	//
 	// context menu items
 	//

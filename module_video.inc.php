@@ -195,7 +195,12 @@ function video_check_pending_encode($obj)
 	$out = $obj['video-encode-file'];
 	$poster = $obj['video-encode-poster-file'];
 
-	if (is_file($dir.'/'.$out) && is_file($dir.'/'.$poster)) {
+	// the output file is only accepted if it appeared after this upload
+	// started: re-uploading a file whose earlier encode output is still on
+	// disk would otherwise finalize instantly - the response render runs
+	// right after video_upload() kicked off THIS upload's encode - and the
+	// converting placeholder would never show
+	if (is_file($dir.'/'.$out) && filemtime($dir.'/'.$out) >= intval($obj['video-encode-started']) && is_file($dir.'/'.$poster)) {
 		$orig_file = $obj['video-file'];
 		object_remove_attr(['name'=>$obj['name'], 'attr'=>['video-encode-status', 'video-encode-started', 'video-encode-file', 'video-encode-poster-file']]);
 		$update = [];
@@ -357,7 +362,19 @@ function video_alter_render_early($args)
 	if (!empty($obj['video-encode-status']) && $obj['video-encode-status'] == 'pending') {
 		$ph = elem('div');
 		elem_add_class($ph, 'video-processing');
-		elem_val($ph, 'converting video');
+		// the poster was grabbed up front at upload, so it's already on disk
+		// while the encode runs - show it under the notice instead of a bare
+		// rectangle (danja, 2026-09-24)
+		if (!empty($obj['video-encode-poster-file'])) {
+			$pn = get_first_item(expl('.', $obj['name']));
+			if (is_file(CONTENT_DIR.'/'.$pn.'/shared/'.$obj['video-encode-poster-file'])) {
+				elem_css($ph, 'background-image', 'url('.CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['video-encode-poster-file']).')');
+			}
+		}
+		$l = elem('span');
+		elem_add_class($l, 'video-processing-label');
+		elem_val($l, 'converting video');
+		elem_append($ph, $l);
 		elem_append($elem, $ph);
 		return true;
 	}
@@ -494,6 +511,11 @@ function video_render_page_early($args)
 		} else {
 			html_add_js(base_url().'modules/video/video-edit.js');
 		}
+		// video.css is otherwise only queued by video_alter_render_early()
+		// when a video object renders during the page build - an editor page
+		// whose first video arrives via upload has none yet, and the
+		// uploaded "converting video" placeholder would arrive unstyled
+		html_add_css(base_url().'modules/video/video.css');
 		html_add_css(base_url().'modules/video/video-edit.css');
 	}
 }
@@ -628,7 +650,12 @@ function video_upload($args)
 		// stays dead
 		$cmd = escapeshellarg(FFMPEG_BINARY).' -y -t '.intval(VIDEO_MAX_DURATION).' -i '.escapeshellarg($orig).' -vf '.escapeshellarg($vf).' -c:v libx264 -crf '.intval(VIDEO_ENCODE_CRF).' -c:a aac -b:a '.escapeshellarg(VIDEO_ENCODE_AUDIO_BITRATE).' -movflags +faststart -f mp4 '.escapeshellarg($dir.'/'.$out.'.part')
 			.' && mv '.escapeshellarg($dir.'/'.$out.'.part').' '.escapeshellarg($dir.'/'.$out);
-		exec($cmd.' > /dev/null 2>&1 &');
+		// the whole chain runs in a subshell whose output is redirected - a
+		// plain '... &' at the end would only redirect the mv, and ffmpeg's
+		// stderr would keep exec()'s output pipe open, making this request
+		// wait for the ENTIRE encode and hand the client the finished video
+		// instead of the converting placeholder
+		exec('('.$cmd.') > /dev/null 2>&1 &');
 		$obj['video-encode-status'] = 'pending';
 		$obj['video-encode-started'] = time();
 		$obj['video-encode-file'] = $out;
