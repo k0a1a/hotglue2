@@ -80,6 +80,13 @@ test('a video uploads as the page background and behaves like the picture',
 		await page.locator('.glue-background-tile').click();
 		await expect(page.locator('canvas.page-background-video')).toHaveCount(1);
 		await expect(page.locator('video.page-background-video-source')).toHaveCount(1);
+		// the tiler actually paints the swapped-in canvas - the frame is
+		// opaque pixels, not a blank layer (the swap must start the loop:
+		// at load there was no canvas for the tiler to arm itself on)
+		await expect.poll(() => page.locator('canvas.page-background-video').evaluate((c) => {
+			const d = c.getContext('2d').getImageData(Math.min(40, c.width-1), Math.min(40, c.height-1), 1, 1).data;
+			return d[3];
+		})).toBeGreaterThan(0);
 		await expect.poll(() => hg.readObject('page').attrs['page-background-repeat']).toBe('repeat');
 
 		await page.goto(`/?${hg.pageName}`);

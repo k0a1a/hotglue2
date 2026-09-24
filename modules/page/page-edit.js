@@ -683,6 +683,11 @@ document.addEventListener('DOMContentLoaded', function() {
 					c.style.pointerEvents = 'none';
 					c.setAttribute('data-scale', parseFloat(v.style.width) == 100 ? '' : String(parseFloat(v.style.width)));
 					document.body.prepend(c);
+					// the pair exists only now - the tiler arms itself at
+					// load, so the live swap starts it itself
+					if (typeof window.start_page_background_video_tiler == 'function') {
+						window.start_page_background_video_tiler();
+					}
 					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-repeat': 'repeat' });
 				} else {
 					// untiled: the canvas goes, the feeder comes back into
