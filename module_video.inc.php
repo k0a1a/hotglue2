@@ -583,10 +583,17 @@ function video_upload($args)
 	} elseif ($args['mime'] == 'video/webm' || $ext == 'webm') {
 		// again, webm could also be audio/webm
 		$mime = 'video/webm';
-	} elseif ($args['mime'] == 'video/quicktime' || $ext == 'mov') {
+	} elseif ($args['mime'] == 'video/quicktime' || $ext == 'mov' || $ext == 'qt') {
 		// QuickTime - not natively playable in most browsers, but every
 		// upload gets re-encoded to mp4 anyway (see below), so this is fine
 		$mime = 'video/quicktime';
+	} elseif ($args['mime'] == 'video/x-msvideo' || $ext == 'avi') {
+		// AVI - same story: never served as-is, only the mp4 encode
+		$mime = 'video/x-msvideo';
+	} elseif ($args['mime'] == 'video/x-matroska' || $ext == 'mkv') {
+		$mime = 'video/x-matroska';
+	} elseif ($args['mime'] == 'video/x-ms-wmv' || $ext == 'wmv') {
+		$mime = 'video/x-ms-wmv';
 	} else {
 		return false;
 	}

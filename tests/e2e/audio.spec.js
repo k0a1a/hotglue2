@@ -127,3 +127,37 @@ test('the menu is video\'s: the four toggles and download, and no reset-size',
 			return hg.readObject(id).attrs['audio-loop'];
 		}, { timeout: 5000 }).toBe('loop');
 	});
+
+// the formats the audio module claims beyond m4a (2026-09-24): each upload
+// becomes an audio object - anything unclaimed would fall back to a
+// download object, so the counts below pin the whole dispatch
+const AUDIO_FORMATS = ['sample.mp3', 'sample.flac', 'sample.wav', 'sample.aac',
+	'sample.oga', 'sample.aiff'];
+
+test('the other audio formats all become audio objects', async ({ page, hg }) => {
+	hg.addObject('100000000001', {
+		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
+		'object-width': '100px', 'object-height': '50px', 'object-zindex': '100',
+		'text-background-color': 'transparent',
+	}, 'seed');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	for (let i = 0; i < AUDIO_FORMATS.length; i++) {
+		await uploadViaNewMenu(page, path.join(__dirname, 'fixtures', AUDIO_FORMATS[i]));
+		await expect(audioOf(page)).toHaveCount(i + 1, { timeout: 10000 });
+	}
+	// all six finalize their background encode (or render directly when
+	// ffmpeg is unavailable) - six real <audio> elements means none of the
+	// uploads fell back to a download object
+	await expect(page.locator('.audio.object audio')).toHaveCount(AUDIO_FORMATS.length,
+		{ timeout: 30000 });
+
+	const ids = hg.ids().filter((f) => f !== '100000000001' && f !== 'page');
+	expect(ids.length).toBe(AUDIO_FORMATS.length);
+	for (const id of ids) {
+		const attrs = hg.readObject(id).attrs;
+		expect(attrs['type']).toBe('audio');
+		expect(attrs['audio-file-mime']).toBeTruthy();
+	}
+});

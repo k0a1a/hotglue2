@@ -404,6 +404,21 @@ function audio_upload($args)
 	if ($args['mime'] == 'audio/mp4' || $args['mime'] == 'audio/x-m4a' || $ext == 'm4a') {
 		// notice: m4a is an audio-only mp4 container, served as audio/mp4
 		$mime = 'audio/mp4';
+	} elseif ($args['mime'] == 'audio/mpeg' || $args['mime'] == 'audio/mp3' || $ext == 'mp3') {
+		$mime = 'audio/mpeg';
+	} elseif ($args['mime'] == 'audio/flac' || $args['mime'] == 'audio/x-flac' || $ext == 'flac') {
+		$mime = 'audio/flac';
+	} elseif ($args['mime'] == 'audio/wav' || $args['mime'] == 'audio/x-wav' || $args['mime'] == 'audio/wave' || $ext == 'wav') {
+		// audio/wave is what Safari sends
+		$mime = 'audio/wav';
+	} elseif ($args['mime'] == 'audio/aac' || $args['mime'] == 'audio/x-aac' || $ext == 'aac') {
+		$mime = 'audio/aac';
+	} elseif ($args['mime'] == 'audio/ogg' || $args['mime'] == 'audio/oga' || $ext == 'oga') {
+		// bare .ogg stays with the video module: an ogg container can hold a
+		// Theora video stream, and .ogg uploads have always been video here
+		$mime = 'audio/ogg';
+	} elseif ($args['mime'] == 'audio/aiff' || $args['mime'] == 'audio/x-aiff' || $ext == 'aiff' || $ext == 'aif') {
+		$mime = 'audio/aiff';
 	} else {
 		return false;
 	}
