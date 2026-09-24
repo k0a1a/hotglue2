@@ -2604,13 +2604,16 @@ $.glue.text.set_heading = function(obj, level) {
 };
 
 // the creation minimums for a new text object's background (danja's call,
-// 2026-09-24): at least 30% opacity and at least 30% brightness, whatever
-// the source - the head of the page's recent-colours palette or the
-// configured default pick. A swatch taken to 0% alpha (or a near-black
-// one) would otherwise create an object that is invisible or hides the
-// black default text, and the object would be created anyway: the write
-// succeeds, only the paint is missing, which reads as "creating objects
-// does nothing" on a page whose palette head happens to be transparent.
+// 2026-09-24): at least 30% opacity, and the colour itself inside the
+// 30%-70% brightness band, whatever the source - the head of the page's
+// recent-colours palette or the configured default pick. The band is the
+// page-agnostic version of "visible": below 30% hides the black default
+// text, above 70% blends with the default white page background - and a
+// fresh object is empty, so its background is ALL it has to show for
+// itself. A swatch taken to 0% alpha (or a near-black/near-white one)
+// would otherwise create an object that is invisible, while the write
+// succeeds - which reads as "creating objects does nothing" on a page
+// whose palette head happens to be transparent or white.
 function text_new_object_bg(color) {
 	var r, g, b, a;
 	var s = String(color || '').trim();
@@ -2660,6 +2663,16 @@ function text_new_object_bg(color) {
 		r = Math.round(r*f);
 		g = Math.round(g*f);
 		b = Math.round(b*f);
+	}
+	// maximum 70% brightness: a near-white background blends with the
+	// page's default white, and an empty fresh object has no text to show
+	// for itself - scale down to the ceiling, hue intact
+	var min = Math.min(r, g, b);
+	if (min > 0xB3) {
+		var f2 = 0xB3 / min;
+		r = Math.round(r*f2);
+		g = Math.round(g*f2);
+		b = Math.round(b*f2);
 	}
 	var hex = function(n) {
 		n = n.toString(16);
