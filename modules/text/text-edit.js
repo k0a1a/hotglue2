@@ -2603,18 +2603,12 @@ $.glue.text.set_heading = function(obj, level) {
 	$.glue.object.save(neu);
 };
 
-// the creation minimums for a new text object's background (danja's call,
-// 2026-09-24): at least 30% opacity, and the colour itself inside the
-// 30%-70% brightness band, whatever the source - the head of the page's
-// recent-colours palette or the configured default pick. The band is the
-// page-agnostic version of "visible": below 30% hides the black default
-// text, above 70% blends with the default white page background - and a
-// fresh object is empty, so its background is ALL it has to show for
-// itself. A swatch taken to 0% alpha (or a near-black/near-white one)
-// would otherwise create an object that is invisible, while the write
-// succeeds - which reads as "creating objects does nothing" on a page
-// whose palette head happens to be transparent or white.
-function text_new_object_bg(color) {
+// does a palette colour qualify as a fresh object's background: fully
+// opaque, and not white or near-white. The picker memorizes transparent
+// and white swatches, and either would create an invisible object on the
+// default white page background (danja's call, 2026-09-24). Returns the
+// colour as stored, or false.
+function text_palette_bg(color) {
 	var r, g, b, a;
 	var s = String(color || '').trim();
 	if (/^#([0-9a-f]{3})$/i.test(s)) {
@@ -2639,46 +2633,20 @@ function text_new_object_bg(color) {
 			g = parseInt(m[2], 10);
 			b = parseInt(m[3], 10);
 			a = (m[4] === undefined) ? 255 : Math.round(parseFloat(m[4])*255);
-		} else if (s == 'transparent') {
-			// the picker's keyword for 0% alpha (to_css in js/edit.js):
-			// there is no colour to preserve, so the minimums ARE the
-			// colour - the 30% grey at 30% opacity
-			return '#4d4d4d4d';
 		} else {
-			// not a colour form we know - leave it alone
-			return s;
+			// 'transparent' and anything we do not understand: not usable
+			return false;
 		}
 	}
-	// minimum 30% opacity
-	if (a < 0x4D) {
-		a = 0x4D;
+	// 0% transparency only
+	if (a != 255) {
+		return false;
 	}
-	// minimum 30% brightness: scale the colour up to it, hue intact (a
-	// pure black has no hue to preserve - it becomes the floor grey)
-	var max = Math.max(r, g, b);
-	if (max <= 0) {
-		r = g = b = 0x4D;
-	} else if (max < 0x4D) {
-		var f = 0x4D / max;
-		r = Math.round(r*f);
-		g = Math.round(g*f);
-		b = Math.round(b*f);
+	// white or near-white blends with the page background
+	if (Math.min(r, g, b) >= 0xB3) {
+		return false;
 	}
-	// maximum 70% brightness: a near-white background blends with the
-	// page's default white, and an empty fresh object has no text to show
-	// for itself - scale down to the ceiling, hue intact
-	var min = Math.min(r, g, b);
-	if (min > 0xB3) {
-		var f2 = 0xB3 / min;
-		r = Math.round(r*f2);
-		g = Math.round(g*f2);
-		b = Math.round(b*f2);
-	}
-	var hex = function(n) {
-		n = n.toString(16);
-		return n.length < 2 ? '0'+n : n;
-	};
-	return '#'+hex(r)+hex(g)+hex(b)+hex(a);
+	return s;
 }
 
 function text_heading_popover(obj)
@@ -2744,23 +2712,28 @@ document.addEventListener('DOMContentLoaded', function() {
 			elem.id = data['name'];
 			// default width and height is set in the css
 			//
-			// The background is the last colour used on this page - the one
-			// at the head of the colour picker's swatch row - so a run of new
-			// objects comes out in the palette being worked in rather than in
-			// a random one each time. Falls back to the random pick from
-			// $.glue.conf.object.default_colors on a page where nothing has
-			// been coloured yet, which is what it always did.
-			//
-			// Either source passes through the creation minimums (danja's
-			// call, 2026-09-24): at least 30% opacity and at least 30%
-			// brightness - a swatch the author took to 0% alpha (or a
-			// near-black one) would otherwise create an invisible object
+			// The background comes from the page's recent palette: the first
+			// colour that is fully opaque and not white or near-white, so a
+			// run of new objects stays in the palette being worked in while
+			// a fresh object is always visible (danja's call, 2026-09-24 -
+			// the picker memorizes transparent and white swatches, and
+			// either would create an invisible object). A palette with no
+			// usable colour falls back to the random pick from the global
+			// defaults, which is what it always did.
+			var bg = false;
 			var recent = $.glue.colorpicker.recent();
-			if (recent.length) {
-				elem.style.backgroundColor = text_new_object_bg(recent[0]);
-			} else if ($.glue.conf.object.default_colors) {
+			for (var i=0; i < recent.length; i++) {
+				bg = text_palette_bg(recent[i]);
+				if (bg !== false) {
+					break;
+				}
+			}
+			if (bg === false && $.glue.conf.object.default_colors) {
 				var rand = Math.floor(Math.random()*$.glue.conf.object.default_colors.length);
-				elem.style.backgroundColor = text_new_object_bg($.glue.conf.object.default_colors[rand]);
+				bg = $.glue.conf.object.default_colors[rand];
+			}
+			if (bg !== false) {
+				elem.style.backgroundColor = bg;
 			}
 			// default to whichever typeface/font size/line height were last
 			// picked via "change typeface"/"change font size"/"change line

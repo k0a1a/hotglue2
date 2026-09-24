@@ -585,12 +585,12 @@ test('and falls back to a random default on a page with no colours yet',
 		expect(asRgb).toContain(bg);
 	});
 
-test('a new text object never wears an invisible background from the palette',
+test('a new text object skips transparent and white swatches for a usable one',
 	async ({ page, hg }) => {
 		hg.addObject('100000000001', OBJ(300, 300), 'A');
-		// the palette head was taken to 0% alpha - a new object must still
-		// show at least 30% opacity (the creation minimums)
-		hg.addObject('page', { 'page-recent-colors': '#d0121200' });
+		// the head is a 0%-alpha red, then white, then a usable orange -
+		// the first fully opaque non-white colour wins
+		hg.addObject('page', { 'page-recent-colors': '#d0121200,#ffffff,#ff8844' });
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 
@@ -598,17 +598,15 @@ test('a new text object never wears an invisible background from the palette',
 		await page.getByTitle('create a text object').click();
 		const obj = page.locator('.text.object').last();
 		await expect(obj).toBeVisible();
-		const bg = await obj.evaluate((e) =>
-			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
-		expect(bg.length < 4 ? 1 : bg[3]).toBeGreaterThanOrEqual(0.3);
-		// the colour itself is untouched: still the red
-		expect(bg[0]).toBeGreaterThan(100);
+		expect(await obj.evaluate((e) => getComputedStyle(e).backgroundColor))
+			.toBe('rgb(255, 136, 68)');
 	});
 
-test('a near-black palette head is lifted to at least 30% brightness',
+test('a palette with nothing usable falls back to the global defaults',
 	async ({ page, hg }) => {
 		hg.addObject('100000000001', OBJ(300, 300), 'A');
-		hg.addObject('page', { 'page-recent-colors': '#000000' });
+		// transparent and white: nothing qualifies for a visible fresh object
+		hg.addObject('page', { 'page-recent-colors': 'transparent,#ffffff,#ffffff00' });
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 
@@ -616,46 +614,12 @@ test('a near-black palette head is lifted to at least 30% brightness',
 		await page.getByTitle('create a text object').click();
 		const obj = page.locator('.text.object').last();
 		await expect(obj).toBeVisible();
-		const bg = await obj.evaluate((e) =>
-			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
-		// the black default text stays visible on the lifted grey
-		expect(Math.max(bg[0], bg[1], bg[2])).toBeGreaterThanOrEqual(77);
-	});
-
-test('a memorized transparent background still creates a visible object',
-	async ({ page, hg }) => {
-		hg.addObject('100000000001', OBJ(300, 300), 'A');
-		// the picker stores the KEYWORD when alpha hits 0% - the minimums
-		// must catch that form too
-		hg.addObject('page', { 'page-recent-colors': 'transparent' });
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-
-		await page.keyboard.press('Alt+o');
-		await page.getByTitle('create a text object').click();
-		const obj = page.locator('.text.object').last();
-		await expect(obj).toBeVisible();
-		const bg = await obj.evaluate((e) =>
-			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
-		expect(bg.length < 4 ? 1 : bg[3]).toBeGreaterThanOrEqual(0.3);
-		expect(Math.max(bg[0], bg[1], bg[2])).toBeGreaterThanOrEqual(77);
-	});
-
-test('a memorized white background is pulled down into the visible band',
-	async ({ page, hg }) => {
-		hg.addObject('100000000001', OBJ(300, 300), 'A');
-		// white at 0% alpha, clamped to 30% opacity: the colour itself must
-		// still not blend with the page's default white background
-		hg.addObject('page', { 'page-recent-colors': '#ffffff00' });
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-
-		await page.keyboard.press('Alt+o');
-		await page.getByTitle('create a text object').click();
-		const obj = page.locator('.text.object').last();
-		await expect(obj).toBeVisible();
-		const bg = await obj.evaluate((e) =>
-			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
-		expect(bg.length < 4 ? 1 : bg[3]).toBeGreaterThanOrEqual(0.3);
-		expect(Math.max(bg[0], bg[1], bg[2])).toBeLessThanOrEqual(179);
+		const bg = await obj.evaluate((e) => getComputedStyle(e).backgroundColor);
+		// the random pick from the global defaults, converted to the
+		// computed rgb form
+		const defaults = await page.evaluate(() => $.glue.conf.object.default_colors.map((c) => {
+			const n = parseInt(c.slice(1), 16);
+			return 'rgb('+((n>>16)&255)+', '+((n>>8)&255)+', '+(n&255)+')';
+		}));
+		expect(defaults).toContain(bg);
 	});
