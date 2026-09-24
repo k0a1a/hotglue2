@@ -245,6 +245,9 @@ function http_error($code, $header_only = false)
 		case 400:
 			$error = 'Bad Request';
 			break;
+		case 403:
+			$error = 'Forbidden';
+			break;
 		case 404:
 			$error = 'Not Found';
 			break;

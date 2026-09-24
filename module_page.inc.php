@@ -804,3 +804,330 @@ function controller_favicon($args)
 }
 
 register_controller('favicon', '', 'controller_favicon');
+
+
+/*
+ *	per-page password protection (SOW-page-password.md)
+ *
+ *	The password hash is a per-page property in the flat-file store (on the
+ *	page's own settings object, page.rev.page - no db), pure-PHP bcrypt.
+ *	The gate is the PHP session: entering the password authorizes THAT page
+ *	for the session. Protected pages route their static assets through the
+ *	'asset' controller below, and the php-served object resources gate at
+ *	serve_resource() (controller.inc.php). Authenticated users (the editor)
+ *	pass every gate: the owner does not need the page password.
+ */
+
+
+/**
+ *	return the page's own settings object (page.rev.page), or an empty
+ *	array when it does not exist yet
+ *
+ *	@param string $page full page name (i.e. page.rev)
+ *	@return array
+ */
+function _page_password_obj($page)
+{
+	$o = load_object(['name'=>$page.'.page']);
+	return ($o['#error']) ? [] : $o['#data'];
+}
+
+
+/**
+ *	whether the page carries a password
+ *
+ *	@param string $page full page name
+ *	@return bool
+ */
+function page_password_required($page)
+{
+	return !empty(_page_password_obj($page)['page-password']);
+}
+
+
+/**
+ *	whether the current request may see this page: unprotected, or the
+ *	session was authorized for it, or the visitor is an authenticated
+ *	user (the owner edits and previews without the page password)
+ *
+ *	@param string $page full page name
+ *	@return bool
+ */
+function page_password_allowed($page)
+{
+	if (!page_password_required($page)) {
+		return true;
+	}
+	if (is_auth()) {
+		return true;
+	}
+	if (session_status() !== PHP_SESSION_ACTIVE) {
+		return false;
+	}
+	return !empty($_SESSION['hotglue_page_pass'][$page]);
+}
+
+
+/**
+ *	the flat-file brute-force guard: per page and ip, at most
+ *	PAGE_PASSWORD_MAX_TRIES attempts within PAGE_PASSWORD_WINDOW seconds.
+ *	The counter file is a dotfile in the page directory - it holds a
+ *	counter and a timestamp, nothing sensitive.
+ *
+ *	@param string $page full page name
+ *	@return bool whether another attempt is allowed
+ */
+function page_password_try_allowed($page)
+{
+	$pn = get_first_item(expl('.', $page));
+	$f = CONTENT_DIR.'/'.$pn.'/.password_tries';
+	$ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+	$data = @json_decode(@file_get_contents($f), true);
+	if (!is_array($data)) {
+		$data = [];
+	}
+	$now = time();
+	if (empty($data[$ip]) || !is_array($data[$ip]) || $now - intval($data[$ip][0]) > PAGE_PASSWORD_WINDOW) {
+		return true;
+	}
+	return intval($data[$ip][1]) < PAGE_PASSWORD_MAX_TRIES;
+}
+
+
+/**
+ *	record a failed attempt
+ *
+ *	@param string $page full page name
+ */
+function page_password_try_failed($page)
+{
+	$pn = get_first_item(expl('.', $page));
+	$f = CONTENT_DIR.'/'.$pn.'/.password_tries';
+	$ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+	$data = @json_decode(@file_get_contents($f), true);
+	if (!is_array($data)) {
+		$data = [];
+	}
+	$now = time();
+	if (empty($data[$ip]) || !is_array($data[$ip]) || $now - intval($data[$ip][0]) > PAGE_PASSWORD_WINDOW) {
+		$data[$ip] = [$now, 0];
+	}
+	$data[$ip][1] = intval($data[$ip][1]) + 1;
+	@file_put_contents($f, json_encode($data));
+}
+
+
+/**
+ *	clear the counter after a successful entry
+ *
+ *	@param string $page full page name
+ */
+function page_password_try_clear($page)
+{
+	$pn = get_first_item(expl('.', $page));
+	$f = CONTENT_DIR.'/'.$pn.'/.password_tries';
+	$ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+	$data = @json_decode(@file_get_contents($f), true);
+	if (!is_array($data)) {
+		return;
+	}
+	unset($data[$ip]);
+	@file_put_contents($f, json_encode($data));
+}
+
+
+/**
+ *	verify a submitted password against the page's stored hash
+ *
+ *	@param string $page full page name
+ *	@param string $pw
+ *	@return bool
+ */
+function page_password_verify($page, $pw)
+{
+	$hash = _page_password_obj($page)['page-password'] ?? '';
+	if (empty($hash)) {
+		return false;
+	}
+	return password_verify($pw, $hash);
+}
+
+
+/**
+ *	the styled password prompt: a standalone page, no dependencies on the
+ *	protected page's own assets. $error keeps the message generic - it
+ *	never says whether the page is protected or the password was wrong.
+ *
+ *	@param string $page full page name
+ *	@param bool $error
+ */
+function page_password_prompt($page, $error)
+{
+	$url = '?'.htmlspecialchars($page, ENT_QUOTES, 'UTF-8');
+	echo '<!DOCTYPE html>'.nl();
+	echo '<html>'.nl();
+	echo '<head>'.nl();
+	echo '<meta charset="utf-8">'.nl();
+	echo '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
+	echo '<title>Password required</title>'.nl();
+	echo '<style>'.nl();
+	echo 'body { font-family: sans-serif; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }'.nl();
+	echo '.glue-password { max-width: 320px; width: 100%; padding: 24px; border: 1px solid #000; }'.nl();
+	echo '.glue-password h1 { font-size: 18px; margin: 0 0 12px; font-weight: normal; }'.nl();
+	echo '.glue-password p { font-size: 13px; }'.nl();
+	echo '.glue-password input { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #000; font-size: 14px; margin-bottom: 10px; }'.nl();
+	echo '.glue-password button { padding: 6px 12px; border: 1px solid #000; background: #fff; color: #000; font-size: 13px; cursor: pointer; }'.nl();
+	echo '.glue-password .glue-password-error { color: #c00; }'.nl();
+	echo '</style>'.nl();
+	echo '</head>'.nl();
+	echo '<body>'.nl();
+	echo '<form class="glue-password" method="post" action="'.$url.'">'.nl();
+	echo '<h1>This page is protected</h1>'.nl();
+	if ($error) {
+		echo '<p class="glue-password-error">The password was not accepted.</p>'.nl();
+	} else {
+		echo '<p>Enter the password to view it.</p>'.nl();
+	}
+	echo '<input type="password" name="page_password" autocomplete="current-password" autofocus>'.nl();
+	echo '<button type="submit">Show the page</button>'.nl();
+	echo '</form>'.nl();
+	echo '</body>'.nl();
+	echo '</html>'.nl();
+	die();
+}
+
+
+/**
+ *	the page-view gate: returns when the visitor may see the page, serves
+ *	the prompt (and dies) otherwise. Runs before the cache and before the
+ *	render, so nothing of a protected page is ever served to a visitor
+ *	without the session flag.
+ *
+ *	@param string $page full page name
+ */
+function page_password_gate($page)
+{
+	if (!page_password_required($page)) {
+		return;
+	}
+	if (page_password_allowed($page)) {
+		return;
+	}
+	if (isset($_POST['page_password'])) {
+		$pw = strval($_POST['page_password']);
+		if (!page_password_try_allowed($page)) {
+			page_password_prompt($page, true);
+		}
+		if (page_password_verify($page, $pw)) {
+			page_password_try_clear($page);
+			$_SESSION['hotglue_page_pass'][$page] = true;
+			return;
+		}
+		page_password_try_failed($page);
+		page_password_prompt($page, true);
+	}
+	page_password_prompt($page, false);
+}
+
+
+/**
+ *	set, change or clear the page's password (the owner is authenticated
+ *	by the editor auth, so no current password is needed). Returns whether
+ *	the page is protected now.
+ *
+ *	@param array $args page, password ('', unset or missing clears)
+ *	@return array response
+ */
+function page_set_password($args)
+{
+	if (empty($args['page'])) {
+		return response('Required argument "page" missing or empty', 400);
+	}
+	if (!page_exists($args['page'])) {
+		return response('Page '.quot($args['page']).' does not exist', 404);
+	}
+	$pw = isset($args['password']) ? strval($args['password']) : '';
+	load_modules('glue');
+	if ($pw === '') {
+		$ret = object_remove_attr(['name'=>$args['page'].'.page', 'attr'=>['page-password']]);
+	} elseif (!object_exists($args['page'].'.page')) {
+		// a fresh page has no settings object yet - create it with the
+		// hash on it (the same pattern the editor's undo uses to recreate
+		// a missing object file)
+		$ret = save_object(['name'=>$args['page'].'.page', 'page-password'=>password_hash($pw, PASSWORD_BCRYPT)]);
+	} else {
+		$ret = update_object(['name'=>$args['page'].'.page', 'page-password'=>password_hash($pw, PASSWORD_BCRYPT)]);
+	}
+	if ($ret['#error']) {
+		log_msg('error', 'page_set_password: error storing password for '.quot($args['page']).': '.quot($ret['#data']));
+		return $ret;
+	}
+	// the changed page must not be served from the page cache
+	clear_cache('page', $args['page']);
+	return response(page_password_required($args['page']));
+}
+
+register_service('page.set_password', 'page_set_password', ['auth'=>true]);
+
+
+/**
+ *	the gated asset proxy: serves a protected page's shared file after the
+ *	session check. Only the path's basename is ever read - no traversal.
+ *
+ *	@param array $args p (full page name), f (file in shared)
+ */
+function controller_asset($args)
+{
+	if (empty($args['p']) || empty($args['f'])) {
+		hotglue_error(403);
+	}
+	$page = $args['p'];
+	if (!page_exists($page)) {
+		hotglue_error(404);
+	}
+	// an unprotected page has no proxy urls - and telling is nothing
+	if (!page_password_required($page)) {
+		hotglue_error(403);
+	}
+	if (!page_password_allowed($page)) {
+		hotglue_error(403);
+	}
+	$file = strval($args['f']);
+	if ($file === '' || strpos($file, '/') !== false || strpos($file, '\\') !== false || strpos($file, '..') !== false) {
+		hotglue_error(403);
+	}
+	$pn = get_first_item(expl('.', $page));
+	$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$file;
+	if (!is_file($fn)) {
+		hotglue_error(404);
+	}
+	serve_file($fn, false, _page_password_mime($file));
+}
+
+register_controller('asset', '', 'controller_asset');
+
+
+/**
+ *	a content type for a gated asset, by extension
+ *
+ *	@param string $file
+ *	@return string mime
+ */
+function _page_password_mime($file)
+{
+	$map = [
+		'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
+		'gif' => 'image/gif', 'webp' => 'image/webp', 'svg' => 'image/svg+xml',
+		'ico' => 'image/x-icon', 'mp4' => 'video/mp4', 'm4v' => 'video/mp4',
+		'webm' => 'video/webm', 'mov' => 'video/quicktime', 'avi' => 'video/x-msvideo',
+		'mkv' => 'video/x-matroska', 'wmv' => 'video/x-ms-wmv', 'ogv' => 'video/ogg',
+		'mp3' => 'audio/mpeg', 'm4a' => 'audio/mp4', 'aac' => 'audio/aac',
+		'wav' => 'audio/wav', 'flac' => 'audio/flac', 'ogg' => 'audio/ogg',
+		'oga' => 'audio/ogg', 'aiff' => 'audio/aiff', 'aif' => 'audio/aiff',
+		'pdf' => 'application/pdf', 'woff2' => 'font/woff2', 'woff' => 'font/woff',
+		'ttf' => 'font/ttf', 'otf' => 'font/otf', 'css' => 'text/css',
+		'js' => 'text/javascript', 'txt' => 'text/plain',
+	];
+	$ext = strtolower(filext($file));
+	return isset($map[$ext]) ? $map[$ext] : 'application/octet-stream';
+}

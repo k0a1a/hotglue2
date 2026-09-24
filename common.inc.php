@@ -279,9 +279,11 @@ function hotglue_error($code, $no_header = false)
 	if ($code == 400) {
 		body_append(tab(5).'<h1 id="error-title">ERROR 400, bad request!</h1>'.nl());
 	} elseif ($code == 401) {
-		body_append(tab(5).'<h1 id="error-title">Authorization required!</h1>'.nl());	
+		body_append(tab(5).'<h1 id="error-title">Authorization required!</h1>'.nl());
+	} elseif ($code == 403) {
+		body_append(tab(5).'<h1 id="error-title">ERROR 403, forbidden!</h1>'.nl());
 	} elseif ($code == 404) {
-		body_append(tab(5).'<h1 id="error-title">ERROR 404, not found!</h1>'.nl());	
+		body_append(tab(5).'<h1 id="error-title">ERROR 404, not found!</h1>'.nl());
 	} elseif ($code == 500) {
 		body_append(tab(5).'<h1 id="error-title">ERROR 500, server fault!</h1>'.nl());	
 	}
@@ -291,6 +293,8 @@ function hotglue_error($code, $no_header = false)
 		body_append(tab(6).'The page is sending a bad request to the server!'.nl());
 	} elseif ($code == 401) {
 		body_append(tab(6).'You need to be logged in in order to do this.<br>'.nl());
+	} elseif ($code == 403) {
+		body_append(tab(6).'You are not allowed to access this.<br>'.nl());
 	} elseif ($code == 404) {
 		body_append(tab(6).'It looks like you got lost in cyber-space...<br>'.nl());
 		body_append(tab(6).'The page you are trying to reach does not exist!'.nl());
@@ -704,6 +708,23 @@ function resolve_relative_urls($s)
  *	@param string $name item name
  *	@return true if successful, false if not
  */
+/**
+ *	drop a cached output
+ *
+ *	@param string $category
+ *	@param string $name
+ *	@return bool true when a cache file was removed
+ */
+function clear_cache($category, $name)
+{
+	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;
+	if (is_file($f)) {
+		return @unlink($f);
+	}
+	return false;
+}
+
+
 function serve_cached($category, $name)
 {
 	$f = CONTENT_DIR.'/cache/'.$category.'/'.$name;

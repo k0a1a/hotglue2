@@ -14,6 +14,11 @@ require_once('log.inc.php');
 log_msg('info', '--- request ---');
 require_once('controller.inc.php');
 require_once('modules.inc.php');
+// the per-page password gate lives on the session (SOW-page-password.md):
+// started up front so every controller may read/write it before output
+if (session_status() !== PHP_SESSION_ACTIVE) {
+	session_start();
+}
 
 
 $args = parse_query_string();

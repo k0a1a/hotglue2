@@ -243,19 +243,35 @@ function controller_show($args)
 		prompt_auth();
 	}
 
+	// per-page password (SOW-page-password.md): the gate runs before the
+	// cache and before the render, so nothing of a protected page - not
+	// even a stale cached copy - is served without the session flag
+	page_password_gate($page);
+	$gated = page_password_required($page);
+
 	// serve from page if possible
-	if (0 < CACHE_TIME && is_cached('page', $page, CACHE_TIME)) {
+	if (!$gated && 0 < CACHE_TIME && is_cached('page', $page, CACHE_TIME)) {
 		serve_cached('page', $page);
 		die();
 	}
-	
+
 	// otherwise create page on the fly
 	load_modules('glue');
 	default_html(false);
-	$cache_page = true;
+	// protected pages are never cached: the cached html would outlive the
+	// password and serve the content to whoever came next
+	$cache_page = !$gated;
 	render_page(['page'=>$page, 'edit'=>false]);
 	// the $cache_page parameter is set by the html_finalize()
 	$html = html_finalize($cache_page);
+	if ($gated) {
+		// the protected page's static assets go through the session-checked
+		// proxy (controller_asset) - everything the render referenced
+		// directly under the page's own shared dir is rewritten, so no
+		// direct-url fetch bypasses the password
+		$pn = get_first_item(expl('.', $page));
+		$html = str_replace(CONTENT_DIR.'/'.$pn.'/shared/', '?asset&p='.urlencode($page).'&f=', $html);
+	}
 	echo $html;
 	
 	// and cache it
@@ -425,6 +441,17 @@ function serve_resource($s, $dl)
 		return false;
 	} else {
 		$obj = $obj['#data'];
+	}
+	// per-page password (SOW-page-password.md): the php-served object
+	// resources of a protected page need the same session the page's html
+	// does - otherwise the direct ?object url bypasses the gate entirely.
+	// Authenticated users pass (the editor needs its own objects).
+	if (!is_auth()) {
+		$a = expl('.', $s);
+		array_pop($a);
+		if (!page_password_allowed(implode('.', $a))) {
+			hotglue_error(403);
+		}
 	}
 	
 	$ret = invoke_hook_while('serve_resource', false, ['obj'=>$obj, 'dl'=>$dl]);

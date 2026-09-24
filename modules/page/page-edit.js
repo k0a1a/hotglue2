@@ -192,6 +192,55 @@ document.addEventListener('DOMContentLoaded', function() {
 		row.appendChild(start_check);
 		pop.appendChild(row);
 
+		// --- password protection -------------------------------------------
+		// per-page password (SOW-page-password.md): the field sets or
+		// changes it, the button clears it when the page is protected.
+		// The hashing happens server-side (page.set_password), the client
+		// never sees the hash.
+		row = $.glue.popover.row('password');
+		var pw_field = document.createElement('input');
+		pw_field.type = 'password';
+		pw_field.className = 'glue-popover-field glue-page-password';
+		pw_field.autocomplete = 'new-password';
+		pw_field.title = 'protect this page with a password';
+		var pw_btn = document.createElement('div');
+		pw_btn.className = 'glue-popover-reset';
+		pw_btn.title = 'protect this page with a password';
+		var pw_sync = function(protected_) {
+			pw_field.value = '';
+			if (protected_) {
+				pw_field.placeholder = 'page is protected';
+				pw_btn.textContent = 'clear';
+				pw_btn.title = 'remove the password';
+			} else {
+				pw_field.placeholder = 'set a password';
+				pw_btn.textContent = 'set';
+				pw_btn.title = 'protect this page with a password';
+			}
+		};
+		var pw_commit = function() {
+			var pw = pw_btn.textContent == 'clear' ? '' : pw_field.value;
+			if (pw_btn.textContent != 'clear' && pw === '') {
+				return;
+			}
+			$.glue.backend({ method: 'page.set_password', 'page': $.glue.page, 'password': pw }, function(data) {
+				pw_sync(data === true);
+			});
+		};
+		pw_btn.addEventListener('click', pw_commit);
+		pw_field.addEventListener('keydown', function(e) {
+			if (e.key == 'Enter') {
+				pw_commit();
+			}
+		});
+		row.appendChild(pw_field);
+		row.appendChild(pw_btn);
+		// sync with reality when the panel opens
+		$.glue.backend({ method: 'glue.load_object', name: $.glue.page+'.page' }, function(data) {
+			pw_sync(!!(data && data['page-password']));
+		});
+		pop.appendChild(row);
+
 		// --- delete page --------------------------------------------------
 		var footer = $.glue.popover.row(false);
 		footer.appendChild($.glue.popover.delete('delete this page and all its revisions', function() {
