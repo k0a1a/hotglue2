@@ -485,6 +485,36 @@ $.glue.live('.text.glue-selected', 'click', function(e) {
 	text_preedit_content = input.value;
 	self.classList.add('glue-text-editing');
 
+	// Typing into a block whose background nearly matches its font colour is
+	// typing blind, so on entering the edit the font colour defaults to the
+	// inverted background (danja's call, 2026-09-24). Written to the inline
+	// style, so the save that follows the edit stores it and the published
+	// page shows the text the way the author saw it. A transparent background
+	// never triggers - what shows through it is not this block's to fix - and
+	// colours far enough apart are left alone.
+	var _parse_rgb = function(s) {
+		var m = /rgba?\(([^)]+)\)/.exec(s);
+		if (!m) {
+			return false;
+		}
+		var a = m[1].split(',');
+		if (3 > a.length) {
+			return false;
+		}
+		return { r: parseFloat(a[0]), g: parseFloat(a[1]), b: parseFloat(a[2]), alpha: 4 <= a.length ? parseFloat(a[3]) : 1 };
+	};
+	var _bg = _parse_rgb(getComputedStyle(self).backgroundColor);
+	var _col = _parse_rgb(getComputedStyle(self).color);
+	if (_bg && _col && 0.01 < _bg.alpha) {
+		var _dist = Math.sqrt(Math.pow(_bg.r-_col.r, 2)+Math.pow(_bg.g-_col.g, 2)+Math.pow(_bg.b-_col.b, 2));
+		if (120 > _dist) {
+			self.style.color = 'rgb('+Math.round(255-_bg.r)+', '+Math.round(255-_bg.g)+', '+Math.round(255-_bg.b)+')';
+			// the house save path, so the inversion is stored like any other
+			// colour change the panel makes - and is undoable like one
+			$.glue.object.save(self);
+		}
+	}
+
 	if (self.classList.contains('glue-text-source')) {
 		// source mode: the textarea, as before, and no panel - the panel is
 		// the WYSIWYG surface's toolbar and the textarea is where the raw
