@@ -122,6 +122,15 @@ test('the menu is video\'s: the four toggles and download, and no reset-size',
 		// place
 		await expect(page.getByTitle('reset video size')).toHaveCount(0);
 
+		// mute toggles the live state, the property not just the attribute -
+		// the same loaded-element lock the video module's fix is about
+		await page.getByTitle('mute or unmute audio').click();
+		await expect.poll(() => audioOf(page).locator('audio').evaluate((a) => a.muted))
+			.toBe(true);
+		await page.getByTitle('audio is muted - click to unmute').click();
+		await expect.poll(() => audioOf(page).locator('audio').evaluate((a) => a.muted))
+			.toBe(false);
+
 		// loop toggles the stored attr the way video's does
 		await page.getByTitle('toggle looping of audio').click();
 		await expect.poll(() => {

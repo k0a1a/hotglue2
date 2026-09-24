@@ -77,9 +77,17 @@ function video_mute_toggle(elem) {
 	var data = Alpine.$data(elem);
 	if (!video.hasAttribute('muted')) {
 		video.setAttribute('muted', 'muted');
+		// the attribute is the STORED state (alter_save reads it), the
+		// property the live one - and they must both be set. A media element
+		// locks its mute state in when the resource loads; afterwards
+		// flipping the attribute alone does nothing (verified empirically:
+		// attr set while the video kept playing unmuted, and vice versa),
+		// so the button would only ever change its own title.
+		video.muted = true;
 		data.enabled = true;
 	} else {
 		video.removeAttribute('muted');
+		video.muted = false;
 		data.enabled = false;
 	}
 	$.glue.object.save(obj);

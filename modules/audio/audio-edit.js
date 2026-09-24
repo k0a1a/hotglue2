@@ -83,9 +83,16 @@ function audio_mute_toggle(elem) {
 	var data = Alpine.$data(elem);
 	if (!audio.hasAttribute('muted')) {
 		audio.setAttribute('muted', 'muted');
+		// the attribute is the STORED state (alter_save reads it), the
+		// property the live one - and they must both be set, same reason
+		// the video module's mute toggle sets both: a media element locks
+		// its mute state in when the resource loads, and the attribute
+		// alone stops having any effect after that.
+		audio.muted = true;
 		data.enabled = true;
 	} else {
 		audio.removeAttribute('muted');
+		audio.muted = false;
 		data.enabled = false;
 	}
 	$.glue.object.save(obj);
