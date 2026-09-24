@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			html += '<a href="'+$.glue.base_url+'?'+this.id+'/edit">edit</a> | ';
 			html += '<a href="#" class="page_browser_copy">copy</a> | ';
 			html += '<a href="#" class="page_browser_rename">rename</a> | ';
-			html += '<a href="#" class="page_browser_delete">delete</a>';
+			html += '<a href="#" class="page_browser_delete">delete</a> | ';
+			html += '<a href="#" class="page_browser_password">password</a>';
 			if (this.id+'.head' != $.glue.conf.page.startpage) {
 				html += ' | <a href="#" class="page_browser_set_startpage">startpage</a>';
 			}
@@ -60,6 +61,40 @@ document.addEventListener('DOMContentLoaded', function() {
 		e.preventDefault();
 	});
 
+	$.glue.live('.page_browser_password', 'click', function(e) {
+		var entry = this.closest('.page_browser_entry');
+		var pn = entry.id;
+		var current = entry.hasAttribute('data-protected');
+		// set / change / clear, hashed server-side (page.set_password):
+		// an empty entry removes the protection
+		var pw = prompt(current ?
+			'Enter a new password for page '+pn+' (leave empty to remove the protection)' :
+			'Set a password for page '+pn, '');
+		if (pw === null) {
+			e.preventDefault();
+			return;
+		}
+		$.glue.backend({ method: 'page.set_password', 'page': pn+'.head', 'password': pw }, function(data) {
+			var marker = entry.querySelector(':scope > .page_browser_protected');
+			if (data === true) {
+				entry.setAttribute('data-protected', '1');
+				if (!marker) {
+					var m = document.createElement('span');
+					m.className = 'page_browser_protected';
+					m.textContent = '[protected] ';
+					var pagename = entry.querySelector(':scope > .page_browser_pagename');
+					pagename.parentNode.insertBefore(m, pagename.nextSibling);
+				}
+			} else {
+				entry.removeAttribute('data-protected');
+				if (marker) {
+					marker.remove();
+				}
+			}
+		});
+		e.preventDefault();
+	});
+
 	$.glue.live('.page_browser_copy', 'click', function(e) {
 		var entry = this.closest('.page_browser_entry');
 		var old = entry.id;
@@ -75,6 +110,13 @@ document.addEventListener('DOMContentLoaded', function() {
 					}
 				});
 				pagenameSpan.innerHTML = '<a href="'+$.glue.base_url+'?'+pn+'">'+pn+'</a>';
+				// the server's copy_page copies the page's settings object
+				// along, so a protected source's copy is protected too -
+				// the marker the stripping above removed comes back
+				if (copy.hasAttribute('data-protected')) {
+					pagenameSpan.insertAdjacentHTML('afterend',
+						' <span class="page_browser_protected">[protected] </span>');
+				}
 				entry.after(copy);
 				bind_hover(copy);
 			});

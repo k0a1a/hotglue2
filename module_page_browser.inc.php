@@ -80,9 +80,16 @@ function controller_pages($args)
 	foreach ($pns as $pn) {
 		// display only pages with 'head'
 		if (is_dir(CONTENT_DIR.'/'.$pn.'/head')) {
-			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"><span class="page_browser_pagename"><a href="?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
+			// the per-page password state (SOW-page-password.md) rides the
+			// entry as a data attribute for the actions, and as a marker
+			// next to the name, like [startpage]
+			$protected = page_password_required($pn.'.head');
+			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"'.($protected ? ' data-protected="1"' : '').'><span class="page_browser_pagename"><a href="?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
 			if ($pn.'.head' == startpage()) {
 				body_append('<span id="page_browser_startpage">[startpage]</span> ');
+			}
+			if ($protected) {
+				body_append('<span class="page_browser_protected">[protected] </span>');
 			}
 		}
 		body_append('</div>');
