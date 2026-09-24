@@ -337,9 +337,7 @@
 	font-family: monospace;
 	font-size: 12px;
 	line-height: 1.8;
-	overflow-x: auto;
 	padding: 8px;
-	white-space: nowrap;
 }
 
 .glue-tag-line {
@@ -368,6 +366,14 @@
 	color: #666;
 	cursor: text;
 	user-select: all;
+}
+
+.glue-tag-line > .glue-tag-fixed {
+	/* the long parts - the dotted id, a long class list - wrap within
+	   their line instead of scrolling the tag sideways (danja's call,
+	   2026-09-24). Outranks the .glue-tag-line > span pre rule above. */
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
 }
 
 .glue-tag-input {
