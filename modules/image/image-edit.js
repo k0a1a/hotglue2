@@ -241,7 +241,11 @@ function image_properties_popover(obj)
 	dec_row = $.glue.popover.row('decorative');
 	toggle = document.createElement('div');
 	toggle.className = 'glue-font-toggle';
-	toggle.textContent = '▦';
+	// the empty square, the same glyph the heading panel's first option
+	// wears (danja's call, 2026-09-24)
+	var glyph = document.createElement('span');
+	glyph.className = 'glue-glyph-empty-square';
+	toggle.appendChild(glyph);
 	toggle.title = 'mark the image as decorative (screen readers skip it)';
 	toggle.addEventListener('click', function() {
 		if (t.getAttribute('role') == 'presentation') {
@@ -296,7 +300,10 @@ function image_properties_popover(obj)
 	pop.appendChild(nudge);
 
 	// --- reset -----------------------------------------------------------
-	pop.appendChild($.glue.popover.reset(
+	// a row of its own, like every other panel's reset: appended to the
+	// bare popover column it would stretch the whole panel width
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset(
 		'drop the description and the decorative mark',
 		function() {
 			if (t.tagName.toLowerCase() == 'img') {
@@ -308,6 +315,7 @@ function image_properties_popover(obj)
 			save();
 		}
 	));
+	pop.appendChild(footer);
 
 	sync();
 	$.glue.popover.show(pop);

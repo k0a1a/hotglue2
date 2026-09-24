@@ -910,6 +910,21 @@
 	width: 180px;
 }
 
+.glue-glyph-empty-square {
+	/* the "nothing set" placeholder of a panel's plain/decorative toggle
+	   (the heading panel's first option, the image panel's decorative):
+	   just an empty square, no letter and no fill inside (danja's call,
+	   2026-09-24). The white fill is what the pressed state
+	   (glue-font-toggle-on) shows as the square. */
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 1px solid #000;
+	border-radius: 2px;
+	background: #fff;
+	vertical-align: middle;
+}
+
 
 .glue-object-link-field {
 	/* The url field of the object properties panel's link row (the link panel

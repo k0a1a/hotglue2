@@ -2710,11 +2710,13 @@ function text_heading_popover(obj)
 		var b = document.createElement('div');
 		b.className = 'glue-font-toggle glue-heading-toggle';
 		if (level[1] == 'div') {
-			// the plain-text choice wears the white/black circle instead of
-			// a letter (danja's call, 2026-09-24)
+			// the plain-text choice wears the empty square instead of a
+			// letter (danja's call, 2026-09-24) - the shared glyph class in
+			// css/edit.css, the same one the image panel's decorative
+			// toggle uses
 			b.classList.add('glue-heading-normal');
 			var glyph = document.createElement('span');
-			glyph.className = 'glue-heading-normal-glyph';
+			glyph.className = 'glue-glyph-empty-square';
 			b.appendChild(glyph);
 			b.title = 'render this text as a plain text object';
 		} else {
