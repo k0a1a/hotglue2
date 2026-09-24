@@ -1304,18 +1304,23 @@ function object_properties_popover(obj)
 	// before "more knobs", with the target as one of three choices on a row
 	// of its own. The link is not on the element - the renderer adds it in
 	// viewing mode - so the row reads the stored object when it arrives, and
-	// writes straight back, the way the link panel this replaced did.
-	var link_ui = object_link_row(obj);
-	$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
-		if (data['#error']) {
-			$.glue.error(data['#error']);
-			return;
-		}
-		// the backend wraps the object in '#data' (the old link panel read
-		// it the same way)
-		var stored = data['#data'];
-		link_ui.set(stored['object-link'] || '', stored['object-target'] || '');
-	}, false);
+	// writes straight back, the way the link panel this replaced did. Media
+	// embeds don't get it (2026-09-24, danja): the embed is its own clickable
+	// thing, so the link row and its target have nothing to say there.
+	var link_ui = null;
+	if (!obj.classList.contains('webvideo')) {
+		link_ui = object_link_row(obj);
+		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
+			if (data['#error']) {
+				$.glue.error(data['#error']);
+				return;
+			}
+			// the backend wraps the object in '#data' (the old link panel read
+			// it the same way)
+			var stored = data['#data'];
+			link_ui.set(stored['object-link'] || '', stored['object-target'] || '');
+		}, false);
+	}
 
 	// --- take it off, or put it back --------------------------------------
 	//
@@ -1350,8 +1355,10 @@ function object_properties_popover(obj)
 	body.appendChild(footer);
 
 	pop.appendChild(icons);
-	pop.appendChild(link_ui.row);
-	pop.appendChild(link_ui.target_row);
+	if (link_ui) {
+		pop.appendChild(link_ui.row);
+		pop.appendChild(link_ui.target_row);
+	}
 	pop.appendChild(fold.toggle);
 	pop.appendChild(body);
 
