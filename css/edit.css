@@ -617,6 +617,8 @@
 	color: #c00;
 	margin-bottom: 5px;
 	min-height: 14px;
+	/* a two-line note stays two lines (danja's call, 2026-09-24) */
+	white-space: pre-line;
 }
 
 .glue-popover-row {
