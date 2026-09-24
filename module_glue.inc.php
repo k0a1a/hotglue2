@@ -1495,6 +1495,23 @@ register_service('glue.update_object', 'update_object', ['auth'=>true]);
  *	@return array response
  *		array of rendered, newly created objects
  */
+/**
+ *	a byte count in the unit the error message reads best in: MB once it
+ *	is one, KB below
+ *
+ *	@param int $n
+ *	@return string
+ */
+function _upload_size_str($n)
+{
+	if ($n >= 1024*1024) {
+		return round($n/1024/1024).'MB';
+	} else {
+		return round($n/1024).'KB';
+	}
+}
+
+
 function upload_files($args)
 {
 	if (empty($args['page'])) {
@@ -1508,6 +1525,22 @@ function upload_files($args)
 	
 	log_msg('debug', 'upload_files: $_FILES is '.var_dump_inl($_FILES));
 	foreach ($_FILES as $f) {
+		// a php-level limit refused the file before it ever reached us
+		if (!empty($f['error'])) {
+			if ($f['error'] == UPLOAD_ERR_INI_SIZE || $f['error'] == UPLOAD_ERR_FORM_SIZE) {
+				return response('file too large (max '._upload_size_str(UPLOAD_MAX_SIZE).')', 413);
+			} elseif ($f['error'] == UPLOAD_ERR_PARTIAL) {
+				return response('file upload was interrupted', 400);
+			} else {
+				return response('file upload failed', 400);
+			}
+		}
+		// the application's own cap, below whatever php allows: refuse
+		// before anything touches disk, so an oversized upload costs
+		// nothing but the transfer
+		if (UPLOAD_MAX_SIZE && !empty($f['size']) && intval($f['size']) > UPLOAD_MAX_SIZE) {
+			return response('file too large (max '._upload_size_str(UPLOAD_MAX_SIZE).')', 413);
+		}
 		$existed = false;
 		$fn = upload_file($f['tmp_name'], $args['page'], $f['name'], $existed);
 		if ($fn === false) {

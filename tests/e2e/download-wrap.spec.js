@@ -112,10 +112,10 @@ test('an uploaded file renders as the 50x50 mime box and downloads in view',
 		await waitForEditor(page, 1);
 
 		await page.keyboard.press('Alt+o');
-		const input = page.locator('input[title="upload a file"]').first();
+		const input = page.locator('input[title="upload an asset: an image, video or sound file"]').first();
 		await expect(input).toBeAttached();
 		await page.evaluate(() => {
-			document.querySelector('input[title="upload a file"]').parentElement
+			document.querySelector('input[title="upload an asset: an image, video or sound file"]').parentElement
 				.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		});
 		await input.setInputFiles(SAMPLE);

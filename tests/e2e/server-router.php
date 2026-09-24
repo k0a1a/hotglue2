@@ -38,6 +38,10 @@ define('AUTH_PASSWORD', 'e2e-secret');
 // tools/make-min.js rather than being a byte-for-byte duplicate.
 define('USE_MIN_FILES', getenv('HG_MIN') === '1');
 define('CACHE_TIME', 0);
+// a small upload cap: every committed fixture (the largest are the ~88KB
+// wav/aiff tones) sits under it, and the size-cap spec can exceed it with
+// a generated file instead of a committed one
+define('UPLOAD_MAX_SIZE', 200000);
 // verbose logging into the throwaway content dir, so a failing test can be
 // diagnosed from content-e2e/log.txt instead of by guesswork
 define('LOG_LEVEL', 'debug');

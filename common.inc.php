@@ -137,6 +137,7 @@ function default_html($add_glue)
 		// html.inc.php's _relativize_asset_url()
 		html_add_js_var('$.glue.base_url', '');
 		html_add_js_var('$.glue.conf.show_frontend_errors', SHOW_FRONTEND_ERRORS);
+		html_add_js_var('$.glue.conf.upload.max_size', UPLOAD_MAX_SIZE);
 		html_add_js_var('$.glue.version', glue_version());
 	} else {
 		// mobile guided view - a pan/zoom viewing layer for small screens (see

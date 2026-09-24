@@ -35,7 +35,7 @@ test('pasting a URL resolves, caches and embeds it', async ({ page, hg }) => {
 	// lands like an upload
 	page.on('dialog', (d) => d.accept('https://stub.example/watch/abc123'));
 	await page.keyboard.press('Alt+o');
-	await page.locator('input[title="upload a file"]').first().waitFor({ state: 'attached' });
+	await page.locator('input[title="upload an asset: an image, video or sound file"]').first().waitFor({ state: 'attached' });
 	await page.getByTitle('embed a video or audio track').click();
 	await expect(page.locator('.webvideo.object')).toHaveCount(1, { timeout: 10000 });
 
@@ -70,7 +70,7 @@ test('the properties panel offers padding and the iframe obeys it', async ({ pag
 
 	page.on('dialog', (d) => d.accept('https://stub.example/watch/abc123'));
 	await page.keyboard.press('Alt+o');
-	await page.locator('input[title="upload a file"]').first().waitFor({ state: 'attached' });
+	await page.locator('input[title="upload an asset: an image, video or sound file"]').first().waitFor({ state: 'attached' });
 	await page.getByTitle('embed a video or audio track').click();
 	await expect(page.locator('.webvideo.object')).toHaveCount(1, { timeout: 10000 });
 
@@ -195,7 +195,7 @@ test('pasting the whole <iframe> embed code extracts the src', async ({ page, hg
 
 	page.on('dialog', (d) => d.accept(snippet));
 	await page.keyboard.press('Alt+o');
-	await page.locator('input[title="upload a file"]').first().waitFor({ state: 'attached' });
+	await page.locator('input[title="upload an asset: an image, video or sound file"]').first().waitFor({ state: 'attached' });
 	await page.getByTitle('embed a video or audio track').click();
 	await expect(page.locator('.webvideo.object')).toHaveCount(1, { timeout: 10000 });
 	await expect(page.locator('.webvideo.object iframe')).toHaveAttribute('src',

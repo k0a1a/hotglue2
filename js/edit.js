@@ -4252,6 +4252,24 @@ $.glue.upload = function()
 			if (!options) {
 				options = {};
 			}
+			// the application's upload cap, refused before the bytes leave
+			// the browser - the same limit the server enforces (the message
+			// matches its wording)
+			var max_size = $.glue.conf.upload.max_size;
+			if (max_size) {
+				for (var i=0; i < files.length; i++) {
+					if (files[i].size > max_size) {
+						var unit = (max_size >= 1024*1024) ?
+							Math.round(max_size/1024/1024)+'MB' :
+							Math.round(max_size/1024)+'KB';
+						$.glue.error('file too large (max '+unit+')');
+						if (typeof options.abort == 'function') {
+							options.abort();
+						}
+						return false;
+					}
+				}
+			}
 			var xhr = new XMLHttpRequest();
 			if (typeof options.progress == 'function') {
 				// this is needed otherwise this is XMLHttpRequestUpload in the

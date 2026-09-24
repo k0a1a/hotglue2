@@ -72,6 +72,7 @@ error_reporting(E_ALL);						// see php documentation
 @define('IMAGE_UPLOAD_MAX_WIDTH', 512);		// cap the on-canvas size of a newly-uploaded image to at most this many pixels wide (0 to disable) - the original file/resolution is untouched, "reset image size" still shows it at full size
 @define('IMAGE_UPLOAD_MAX_HEIGHT', 512);		// same as above, for height
 @define('OBJECT_DEFAULT_COLORS', '#61b9cf #ff00ff #ffff00');		// default colors for new objects (space-separated string)
+@define('UPLOAD_MAX_SIZE', 512*1024*1024);		// cap on a single uploaded file, in bytes (0 to disable) - refused before anything touches disk, and announced to the editor for an early client-side refusal
 @define('RESERVED_PAGE_NAMES', 'code edit pages favicon');	// page names used internaly and thus unavailable
 // centered layout mode: the content container's width, and the bounds the
 // editor's drag handles may set it to. Only used by pages that opt in to
