@@ -92,12 +92,12 @@ function download_wrap_attach_selected(box) {
 		// the selection says what it says, so an attach without a target
 		// there is an error, not a reach into the past.
 		if (selected.length > 1) {
-			$.glue.error('select a text or image object to attach the download to');
+			$.glue.error('select a text or image object to attach the download to using Shift+click');
 			return;
 		}
 		t = download_last_target;
 		if (!t || !t.isConnected || t === box) {
-			$.glue.error('select a text or image object to attach the download to');
+			$.glue.error('select a text or image object to attach the download to using Shift+click');
 			return;
 		}
 	}
