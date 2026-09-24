@@ -679,7 +679,7 @@ function page_font_upload($args)
 	if (empty($args['page']) || $args['page'] != startpage()) {
 		return false;
 	}
-	// woff/woff2/ttf accepted - see module_text.inc.php's
+	// woff/woff2/ttf/otf accepted - see module_text.inc.php's
 	// _include_custom_font() for the format() mapping used when declaring
 	// these via @font-face. Browsers are especially inconsistent about
 	// reporting mime types for font files (often falling back to a generic
@@ -688,8 +688,9 @@ function page_font_upload($args)
 	// page_favicon_upload()'s identical reasoning
 	$mime_ok = in_array($args['mime'], ['font/woff', 'application/font-woff', 'application/x-font-woff',
 		'font/woff2', 'application/font-woff2', 'application/x-font-woff2',
-		'font/ttf', 'font/sfnt', 'application/x-font-ttf', 'application/x-font-truetype']);
-	$ext_ok = in_array(filext($args['file']), ['woff', 'woff2', 'ttf']);
+		'font/ttf', 'font/sfnt', 'application/x-font-ttf', 'application/x-font-truetype',
+		'font/otf', 'application/x-font-opentype', 'application/x-font-otf']);
+	$ext_ok = in_array(filext($args['file']), ['woff', 'woff2', 'ttf', 'otf']);
 	if (!$mime_ok && !($args['mime'] == '' && $ext_ok)) {
 		return false;
 	}

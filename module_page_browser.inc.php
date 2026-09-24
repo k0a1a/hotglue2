@@ -70,7 +70,7 @@ function controller_pages($args)
 		body_append(tab(2).'<li data-file="'.htmlspecialchars($font['file'], ENT_COMPAT, 'UTF-8').'"><span class="site_settings_font_name">'.htmlspecialchars($font['name'], ENT_NOQUOTES, 'UTF-8').'</span></li>'.nl());
 	}
 	body_append(tab().'</ul>'.nl());
-	body_append(tab().'<label class="site_settings_upload_btn">upload font<input type="file" id="site_settings_fonts_input" accept=".woff,.woff2,.ttf" hidden></label>'.nl());
+	body_append(tab().'<label class="site_settings_upload_btn">upload font<input type="file" id="site_settings_fonts_input" accept=".woff,.woff2,.ttf,.otf" hidden></label>'.nl());
 	body_append(tab().' <a href="https://www.dafont.com/theme.php?cat=402&amp;l[]=10&amp;l[]=1&amp;l[]=6" target="_blank" rel="noopener">free fonts on <u>dafont.com</u> &#8605;</a>'.nl());
 	body_append('</div>'.nl());
 

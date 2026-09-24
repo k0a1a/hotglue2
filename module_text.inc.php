@@ -129,6 +129,9 @@ function _include_custom_font($font_family)
 			case 'ttf':
 				$format = 'truetype';
 				break;
+			case 'otf':
+				$format = 'opentype';
+				break;
 			default:
 				$format = 'woff';
 		}
