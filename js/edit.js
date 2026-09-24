@@ -4131,7 +4131,7 @@ $.glue.upload = function()
 		// the SVG icon set is white artwork and this chrome is light, so the
 		// button is a mask (.glue-btn-icon) and the colour comes from CSS;
 		// the tooltip rides on the file input, which covers the button
-		elem.appendChild($.glue.icon('upload'));
+		elem.appendChild($.glue.icon('upload-asset'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
 		upload.accept = 'image/*,video/*,audio/*';
@@ -4153,7 +4153,7 @@ $.glue.upload = function()
 		file_elem.style.maxWidth = '32px';
 		file_elem.style.overflow = 'hidden';
 		file_elem.style.width = '32px';
-		file_elem.appendChild($.glue.icon('download'));
+		file_elem.appendChild($.glue.icon('upload-file'));
 		var file_upload = default_upload_handling();
 		file_upload.multiple = true;
 		file_upload.tooltip = 'upload a file: any file, stored as a download object';

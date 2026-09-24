@@ -861,7 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// otherwise default to 'upload a file' (upload.button)
 	asset_upload.accept = 'image/*,video/*,audio/*';
 	asset_upload.tooltip = 'upload an asset: an image, video or sound file';
-	var asset_elem = $.glue.icon('embed-webvideo', 'upload an asset: an image, video or sound file');
+	var asset_elem = $.glue.icon('upload-asset', 'upload an asset: an image, video or sound file');
 	$.glue.upload.button(asset_elem, { method: 'glue.upload_files', page: $.glue.page }, asset_upload);
 	asset_elem.addEventListener('click', function(e) {
 		// update x, y - the same spawn_coords the new menu's upload uses
