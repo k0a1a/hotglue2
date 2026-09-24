@@ -117,7 +117,9 @@ test('the menu is video\'s: the four toggles and download, and no reset-size',
 		await expect(page.getByTitle('show or hide control elements')).toBeVisible();
 		await expect(page.getByTitle('mute or unmute audio')).toBeVisible();
 		await expect(page.getByTitle('download original file')).toBeVisible();
-		// video's reset-size has no audio counterpart
+		// no reset-size: the button left the video menu too (2026-09-24), and
+		// the audio object never had a native size to reset to in the first
+		// place
 		await expect(page.getByTitle('reset video size')).toHaveCount(0);
 
 		// loop toggles the stored attr the way video's does

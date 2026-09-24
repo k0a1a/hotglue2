@@ -220,43 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		'video is muted - click to unmute', 'mute or unmute video');
 	$.glue.contextmenu.register('video', 'video-mute', elem);
 
-	// the last PNG button in the video menu became an icon too (2026-09-23);
-	// the show/hide and reset logic below is unchanged
-	elem = $.glue.icon('video-ratio', 'reset video size');
-	elem.addEventListener('glue-menu-activate', function(e) {
-		var obj = $.glue.owner(this);
-		var video = obj.querySelector(':scope > video');
-		// only show the icon when we have the native width and height
-		var w = video.videoWidth;
-		var h = video.videoHeight;
-		if (typeof w == 'number' && 0 < w && typeof h == 'number' && 0 < h) {
-			this.style.display = 'block';
-		} else {
-			this.style.display = 'none';
-		}
-	});
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var video = obj.querySelector(':scope > video');
-		// get the native width and height
-		var w = video.videoWidth;
-		var h = video.videoHeight;
-		if (typeof w != 'number' || w <= 0 || typeof h != 'number' || h <= 0) {
-			// return if we don't have them
-			return;
-		}
-		var aspect = w/h;
-		$.glue.trigger(obj, 'glue-resizestart');
-		obj.style.width = w+'px';
-		obj.style.height = h+'px';
-		$.glue.trigger(obj, 'glue-resize');
-		$.glue.object.resizable_update_tooltip(obj);
-		$.glue.object.save(obj);
-		$.glue.trigger(obj, 'glue-resizestop');
-		$.glue.canvas.update(obj);
-	});
-	$.glue.contextmenu.register('video', 'video-ratio', elem);
-
 	elem = $.glue.icon('download', 'download original file');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
