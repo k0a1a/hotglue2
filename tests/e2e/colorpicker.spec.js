@@ -584,3 +584,40 @@ test('and falls back to a random default on a page with no colours yet',
 		}), defaults);
 		expect(asRgb).toContain(bg);
 	});
+
+test('a new text object never wears an invisible background from the palette',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(300, 300), 'A');
+		// the palette head was taken to 0% alpha - a new object must still
+		// show at least 30% opacity (the creation minimums)
+		hg.addObject('page', { 'page-recent-colors': '#d0121200' });
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		await page.keyboard.press('Alt+o');
+		await page.getByTitle('create a text object').click();
+		const obj = page.locator('.text.object').last();
+		await expect(obj).toBeVisible();
+		const bg = await obj.evaluate((e) =>
+			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
+		expect(bg.length < 4 ? 1 : bg[3]).toBeGreaterThanOrEqual(0.3);
+		// the colour itself is untouched: still the red
+		expect(bg[0]).toBeGreaterThan(100);
+	});
+
+test('a near-black palette head is lifted to at least 30% brightness',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(300, 300), 'A');
+		hg.addObject('page', { 'page-recent-colors': '#000000' });
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		await page.keyboard.press('Alt+o');
+		await page.getByTitle('create a text object').click();
+		const obj = page.locator('.text.object').last();
+		await expect(obj).toBeVisible();
+		const bg = await obj.evaluate((e) =>
+			getComputedStyle(e).backgroundColor.match(/[\d.]+/g).map(Number));
+		// the black default text stays visible on the lifted grey
+		expect(Math.max(bg[0], bg[1], bg[2])).toBeGreaterThanOrEqual(77);
+	});

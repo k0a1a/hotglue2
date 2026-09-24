@@ -2603,6 +2603,58 @@ $.glue.text.set_heading = function(obj, level) {
 	$.glue.object.save(neu);
 };
 
+// the creation minimums for a new text object's background (danja's call,
+// 2026-09-24): at least 30% opacity and at least 30% brightness, whatever
+// the source - the head of the page's recent-colours palette or the
+// configured default pick. A swatch taken to 0% alpha (or a near-black
+// one) would otherwise create an object that is invisible or hides the
+// black default text, and the object would be created anyway: the write
+// succeeds, only the paint is missing, which reads as "creating objects
+// does nothing" on a page whose palette head happens to be transparent.
+function text_new_object_bg(color) {
+	var r, g, b, a;
+	var s = String(color || '');
+	if (/^#([0-9a-f]{3})$/i.test(s)) {
+		r = parseInt(s[1]+s[1], 16);
+		g = parseInt(s[2]+s[2], 16);
+		b = parseInt(s[3]+s[3], 16);
+		a = 255;
+	} else if (/^#([0-9a-f]{6})$/i.test(s)) {
+		r = parseInt(s.substr(1,2), 16);
+		g = parseInt(s.substr(3,2), 16);
+		b = parseInt(s.substr(5,2), 16);
+		a = 255;
+	} else if (/^#([0-9a-f]{8})$/i.test(s)) {
+		r = parseInt(s.substr(1,2), 16);
+		g = parseInt(s.substr(3,2), 16);
+		b = parseInt(s.substr(5,2), 16);
+		a = parseInt(s.substr(7,2), 16);
+	} else {
+		// not a hex we know - leave it alone
+		return s;
+	}
+	// minimum 30% opacity
+	if (a < 0x4D) {
+		a = 0x4D;
+	}
+	// minimum 30% brightness: scale the colour up to it, hue intact (a
+	// pure black has no hue to preserve - it becomes the floor grey)
+	var max = Math.max(r, g, b);
+	if (max <= 0) {
+		r = g = b = 0x4D;
+	} else if (max < 0x4D) {
+		var f = 0x4D / max;
+		r = Math.round(r*f);
+		g = Math.round(g*f);
+		b = Math.round(b*f);
+	}
+	var hex = function(n) {
+		n = n.toString(16);
+		return n.length < 2 ? '0'+n : n;
+	};
+	return '#'+hex(r)+hex(g)+hex(b)+hex(a);
+}
+
 function text_heading_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-heading-popover');
@@ -2672,12 +2724,17 @@ document.addEventListener('DOMContentLoaded', function() {
 			// a random one each time. Falls back to the random pick from
 			// $.glue.conf.object.default_colors on a page where nothing has
 			// been coloured yet, which is what it always did.
+			//
+			// Either source passes through the creation minimums (danja's
+			// call, 2026-09-24): at least 30% opacity and at least 30%
+			// brightness - a swatch the author took to 0% alpha (or a
+			// near-black one) would otherwise create an invisible object
 			var recent = $.glue.colorpicker.recent();
 			if (recent.length) {
-				elem.style.backgroundColor = recent[0];
+				elem.style.backgroundColor = text_new_object_bg(recent[0]);
 			} else if ($.glue.conf.object.default_colors) {
 				var rand = Math.floor(Math.random()*$.glue.conf.object.default_colors.length);
-				elem.style.backgroundColor = $.glue.conf.object.default_colors[rand];
+				elem.style.backgroundColor = text_new_object_bg($.glue.conf.object.default_colors[rand]);
 			}
 			// default to whichever typeface/font size/line height were last
 			// picked via "change typeface"/"change font size"/"change line
