@@ -857,8 +857,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	// anything-goes sibling: every file lands as a download object.
 	var asset_upload = $.glue.upload.default_upload_handling();
 	asset_upload.multiple = true;
-	// the picker only offers what the modules can take
+	// the picker only offers what the modules can take; the tooltip would
+	// otherwise default to 'upload a file' (upload.button)
 	asset_upload.accept = 'image/*,video/*,audio/*';
+	asset_upload.tooltip = 'upload an asset: an image, video or sound file';
 	var asset_elem = $.glue.icon('embed-webvideo', 'upload an asset: an image, video or sound file');
 	$.glue.upload.button(asset_elem, { method: 'glue.upload_files', page: $.glue.page }, asset_upload);
 	asset_elem.addEventListener('click', function(e) {
@@ -868,17 +870,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		asset_upload.y = p.y;
 	});
 	$.glue.menu.register('page', asset_elem, 11);
-
-	var file_upload = $.glue.upload.default_upload_handling();
-	file_upload.multiple = true;
-	var file_elem = $.glue.icon('upload', 'upload a file: any file, stored as a download object');
-	$.glue.upload.button(file_elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'download' }, file_upload);
-	file_elem.addEventListener('click', function(e) {
-		var p = $.glue.menu.spawn_coords();
-		file_upload.x = p.x;
-		file_upload.y = p.y;
-	});
-	$.glue.menu.register('page', file_elem, 12);
 
 	// container edge handles, in centered mode only
 	if ($.glue.canvas.wrapper()) {

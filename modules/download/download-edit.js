@@ -164,19 +164,19 @@ function download_wrap_make_item() {
 // attach: the file picker; the uploaded file becomes a NEW download object
 // wrapped around this target (download_upload server-side). A transient
 // input - the menu element is reused across objects, so a persistent one
-// would carry a stale wrap target.
+// would carry a stale wrap target. The upload runs through the same
+// default handling the page menu's 'upload a file' gets - status bar,
+// error reporting, spawn placement - with the wrap target added to the
+// service call, so the server pairs the new download with this object.
 function download_wrap_attach(obj) {
 	download_pending_wrap = obj.id;
-	var upload = {
-		x: 0,
-		y: 0,
-		error: function() {
-			download_pending_wrap = null;
-			$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
-		},
-		finish: function(data) {
-			$.glue.upload.handle_response(data, this.x, this.y);
-		}
+	var upload = $.glue.upload.default_upload_handling();
+	// the only extra on top of the default handling: a failed upload also
+	// clears the remembered wrap target
+	var orig_error = upload.error;
+	upload.error = function(e) {
+		download_pending_wrap = null;
+		orig_error.call(this, e);
 	};
 	var p = $.glue.menu.spawn_coords();
 	upload.x = p.x;

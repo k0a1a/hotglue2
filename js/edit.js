@@ -4116,8 +4116,12 @@ $.glue.upload = function()
 		}
 	};
 
-	document.addEventListener('DOMContentLoaded', function() {
-		// generic upload button
+		document.addEventListener('DOMContentLoaded', function() {
+		// 'upload an asset' button (renamed from 'upload a file',
+		// 2026-09-24, danja): the picker offers only what the modules
+		// recognize - image, video, sound - and the generic upload pass
+		// hands each file to its module. The 'upload a file' sibling below
+		// is the anything-goes entry.
 		var elem = document.createElement('div');
 		elem.style.height = '32px';
 		elem.style.maxHeight = '32px';
@@ -4130,6 +4134,8 @@ $.glue.upload = function()
 		elem.appendChild($.glue.icon('upload'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
+		upload.accept = 'image/*,video/*,audio/*';
+		upload.tooltip = 'upload an asset: an image, video or sound file';
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		elem.addEventListener('click', function(e) {
 			// update x, y
@@ -4138,6 +4144,27 @@ $.glue.upload = function()
 			upload.y = p.y;
 		});
 		$.glue.menu.register('new', elem, 11);
+
+		// 'upload a file' (moved here from the page menu, 2026-09-24,
+		// danja): every file lands as a download object, recognized or not
+		var file_elem = document.createElement('div');
+		file_elem.style.height = '32px';
+		file_elem.style.maxHeight = '32px';
+		file_elem.style.maxWidth = '32px';
+		file_elem.style.overflow = 'hidden';
+		file_elem.style.width = '32px';
+		file_elem.appendChild($.glue.icon('download'));
+		var file_upload = default_upload_handling();
+		file_upload.multiple = true;
+		file_upload.tooltip = 'upload a file: any file, stored as a download object';
+		$.glue.upload.button(file_elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'download' }, file_upload);
+		file_elem.addEventListener('click', function(e) {
+			// update x, y
+			var p = $.glue.menu.spawn_coords();
+			file_upload.x = p.x;
+			file_upload.y = p.y;
+		});
+		$.glue.menu.register('new', file_elem, 12);
 
 		// handle drop events on body
 		// this is based on http://developer.mozilla.org/en/using_files_from_web_applications
