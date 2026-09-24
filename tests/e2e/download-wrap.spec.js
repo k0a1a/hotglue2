@@ -271,6 +271,14 @@ test('a download selected together with its target shows the menu and attaches',
 				.filter((el) => el.style.visibility !== 'hidden').map((el) => el.id));
 		expect(ids).toEqual(['glue-contextmenu-download-attach']);
 
+		// the icon sits at the corner facing the target: the text here is
+		// left of (and a hair below) the box, so the icon touches the box's
+		// bottom-left corner
+		const box = await byId(page, hg, '100000000002').boundingBox();
+		const icon = await page.locator('#glue-contextmenu-download-attach').boundingBox();
+		expect(icon.x + icon.width).toBeCloseTo(box.x, 0);
+		expect(icon.y).toBeCloseTo(box.y + box.height, 0);
+
 		// the attach reads the selection itself - no remembered target
 		await page.locator('#glue-contextmenu-download-attach').click();
 		await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
@@ -278,6 +286,26 @@ test('a download selected together with its target shows the menu and attaches',
 		await expect.poll(() => hg.readObject('100000000002').attrs['download-wrap-target'])
 			.toBe(hg.pageName + '.100000000001');
 		await expect(byId(page, hg, '100000000002')).toBeHidden();
+	});
+
+test('the attach icon points at the target: the corner facing it, whichever way it lies',
+	async ({ page, hg }) => {
+		// the user's layout: the box sits up-left of the text below it, so
+		// the icon lands on the box's bottom-right corner
+		hg.addObject('100000000001', downloadObject(50, 50, 100));
+		hg.addObject('100000000002', textObject(300, 200, 100), 'hello');
+		seedAsset(hg.pageName, 'sample.pdf', SAMPLE_BYTES);
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+
+		await byId(page, hg, '100000000001').click();
+		await byId(page, hg, '100000000002').click({ modifiers: ['Shift'] });
+		await expect(page.locator('#glue-contextmenu-download-attach')).toBeVisible();
+
+		const box = await byId(page, hg, '100000000001').boundingBox();
+		const icon = await page.locator('#glue-contextmenu-download-attach').boundingBox();
+		expect(icon.x).toBeCloseTo(box.x + box.width, 0);
+		expect(icon.y).toBeCloseTo(box.y + box.height, 0);
 	});
 
 test('detach clears the pair and the box returns at its position',

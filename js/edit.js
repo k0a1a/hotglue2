@@ -1518,6 +1518,49 @@ $.glue.contextmenu = function()
 				}
 			}
 		}
+		// the download's attach icon points at the wrap target while both
+		// are selected: it leaves the top row for the corner of the box
+		// that faces the target's centre, so the icon reads as the
+		// connection it is about to make (danja's call, 2026-09-24)
+		if (obj.classList.contains('download')) {
+			var attach_elem = false;
+			for (var k=0; k < top.length; k++) {
+				if (top[k].name == 'download-attach') {
+					attach_elem = top[k].elem;
+					break;
+				}
+			}
+			if (attach_elem) {
+				var target_el = false;
+				var sel_els = document.querySelectorAll('.glue-selected');
+				for (var l=0; l < sel_els.length; l++) {
+					if (sel_els[l] != obj && (sel_els[l].classList.contains('text') ||
+							sel_els[l].classList.contains('image'))) {
+						target_el = sel_els[l];
+						break;
+					}
+				}
+				if (target_el) {
+					var target_rect = target_el.getBoundingClientRect();
+					// which corner: the quadrant the target's centre sits in
+					// relative to the box's own centre. The class margins
+					// (the row's spacing) come off - the icon is alone in
+					// this state and sits flush against the corner it points
+					// at; the next row placement restores them below.
+					var face_right = (target_rect.left+target_rect.width/2) >=
+						(obj_rect.left+obj_rect.width/2);
+					var face_down = (target_rect.top+target_rect.height/2) >=
+						(obj_rect.top+obj_rect.height/2);
+					attach_elem.style.margin = '0';
+					attach_elem.style.left = (face_right ? obj_rect.right :
+						obj_rect.left-attach_elem.offsetWidth)+window.scrollX+'px';
+					attach_elem.style.top = (face_down ? obj_rect.bottom :
+						obj_rect.top-attach_elem.offsetHeight)+window.scrollY+'px';
+				} else {
+					attach_elem.style.margin = '';
+				}
+			}
+		}
 	};
 
 	return {
