@@ -296,7 +296,7 @@ function image_properties_popover(obj)
 	// --- nudge -----------------------------------------------------------
 	nudge = document.createElement('div');
 	nudge.className = 'glue-popover-problem';
-	nudge.textContent = 'this image has no description - screen readers will skip it';
+	nudge.textContent = 'this image has no description\nscreen readers will skip it';
 	pop.appendChild(nudge);
 
 	// --- reset -----------------------------------------------------------
