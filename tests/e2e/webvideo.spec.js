@@ -59,6 +59,59 @@ test('pasting a URL resolves, caches and embeds it', async ({ page, hg }) => {
 		.toHaveAttribute('src', 'https://embed.stub.example/abc123');
 });
 
+test('the properties panel offers padding and the iframe obeys it', async ({ page, hg }) => {
+	hg.addObject('100000000001', {
+		type: 'text', module: 'text', 'object-left': '50px', 'object-top': '50px',
+		'object-width': '100px', 'object-height': '50px', 'object-zindex': '100',
+		'text-background-color': 'transparent',
+	}, 'seed');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	page.on('dialog', (d) => d.accept('https://stub.example/watch/abc123'));
+	await page.keyboard.press('Alt+o');
+	await page.locator('input[title="upload a file"]').first().waitFor({ state: 'attached' });
+	await page.getByTitle('embed a video or audio track').click();
+	await expect(page.locator('.webvideo.object')).toHaveCount(1, { timeout: 10000 });
+
+	// select the embed - the shield covers the upper part, and a click
+	// anywhere else would vanish into the cross-origin iframe - and open
+	// the properties panel
+	const obj = page.locator('.webvideo.object');
+	const bb = await obj.boundingBox();
+	await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height * 0.2);
+	await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
+	const panel = page.locator('.glue-popover.glue-properties-popover');
+	await expect(panel).toBeVisible();
+
+	// the padding section lives under the panel's one fold
+	await panel.locator('.glue-popover-disclosure').click();
+	await expect(panel.locator('.glue-popover-advanced')).toBeVisible();
+	const row = panel.locator('.glue-padding-row');
+	await row.locator('.glue-popover-field').fill('20');
+	await row.locator('.glue-popover-field').dispatchEvent('change');
+
+	// the uniform value stores as the x/y pair, the generic object format
+	const id = hg.ids().find((f) => f !== '100000000001' && f !== 'page');
+	await expect.poll(() => hg.readObject(id).attrs['object-padding-x'],
+		{ timeout: 5000 }).toBe('20px');
+
+	// and the published page insets the iframe by the padding - with the
+	// old absolutely-positioned iframe the embed would overflow the padded
+	// box instead (flush with the object, full width)
+	await page.goto(pageUrl(hg));
+	const boxes = await page.evaluate(() => {
+		const o = document.querySelector('.webvideo.object');
+		const i = o.querySelector('iframe');
+		const ob = o.getBoundingClientRect();
+		const ib = i.getBoundingClientRect();
+		return { ox: ob.x, ow: ob.width, oh: ob.height, ix: ib.x, iw: ib.width, ih: ib.height };
+	});
+	expect(boxes.ix - boxes.ox).toBeCloseTo(20, 0);
+	expect(boxes.ow - boxes.iw).toBeCloseTo(40, 0);
+	expect(boxes.oh - boxes.ih).toBeCloseTo(40, 0);
+});
+
 test('a provider that fails renders the fallback link, not a broken page',
 	async ({ page, hg }) => {
 		hg.addObject('100000000001', webvideoObject(100, 100, 100,

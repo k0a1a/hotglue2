@@ -1281,14 +1281,17 @@ function object_properties_popover(obj)
 	// object does not have is not a control that is waiting for something to
 	// arrive.
 	//
-	// The padding section belongs to text, image and video objects: the
-	// picture or footage letterboxes inside the padded content box, and the
-	// frame compensation the section does keeps the object's stored size the
-	// OUTER one. Text stores text-padding-* (module_text.inc.php), the other
-	// two object-padding-* (module_object.inc.php) - danja's call, 2026-09-23.
+	// The padding section belongs to text, image, video and webvideo
+	// objects: the picture or footage letterboxes inside the padded content
+	// box, and the frame compensation the section does keeps the object's
+	// stored size the OUTER one. Text stores text-padding-*
+	// (module_text.inc.php), the others object-padding-*
+	// (module_object.inc.php) - danja's call, 2026-09-23, webvideo joining
+	// on 2026-09-24.
 	var background = object_background_section(pop, icons, body, obj, save);
 	var padding = (obj.classList.contains('text') ||
-		obj.classList.contains('image') || obj.classList.contains('video')) ?
+		obj.classList.contains('image') || obj.classList.contains('video') ||
+		obj.classList.contains('webvideo')) ?
 		object_padding_section(body, obj, save) : null;
 	var flip = object_flip_section(icons, obj, save);
 	var transparency = object_transparency_section(body, obj, save);

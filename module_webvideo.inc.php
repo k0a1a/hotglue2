@@ -371,8 +371,8 @@ function webvideo_alter_render_early($args)
 			elem_attr($i, 'sandbox', elem_attr($c, 'sandbox'));
 			elem_attr($i, 'referrerpolicy', elem_attr($c, 'referrerpolicy'));
 			elem_css($i, 'border-width', '0px');
+			elem_css($i, 'display', 'block');
 			elem_css($i, 'height', '100%');
-			elem_css($i, 'position', 'absolute');
 			elem_css($i, 'width', '100%');
 			elem_append($elem, $i);
 			break;
