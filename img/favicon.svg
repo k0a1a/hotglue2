@@ -1,20 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <title>Hotglue</title>
-  <!-- Hotglue's default mark: a rounded-corner diamond in the brand orange.
-       Three parts, nothing else: the face (#ff7700), an underside nudged
-       down-right so only a band along the lower-right edge shows (#cc5f00,
-       20% darker), and the gloss (a capsule parallel to the upper-left edge
-       plus a dot below it, translucent white so it sits on the face without
-       a second colour to keep in sync).
-
-       Rendered from this file: favicon-32.png, apple-touch-icon.png (180),
-       icon-192.png, icon-512.png and the 32/48 layers of favicon.ico. The
-       16px png and the ico's 16 layer come from favicon-small.svg instead -
-       same mark with a thicker band and one thicker gloss stroke, no dot,
-       which holds up better at that size. See SOW-favicon-orange-diamond.md
-       for the design brief. -->
-  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#cc5f00" transform="translate(1.4 1.4) rotate(45 16 16)"/>
-  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#ff7700" transform="rotate(45 16 16)"/>
-  <rect x="8.25" y="11.4" width="8.5" height="3.2" rx="1.6" fill="#fff" fill-opacity="0.7" transform="rotate(-45 12.5 13)"/>
-  <circle cx="8.95" cy="19.35" r="0.9" fill="#fff" fill-opacity="0.7"/>
-</svg>
+<svg
+   width="96"
+   height="96"
+   viewBox="0 0 96 96"
+   xmlns="http://www.w3.org/2000/svg"><g
+     transform="translate(-74.074035,-92.295674)"><g
+       transform="matrix(1.2807235,0,0,1.2807235,-17.794322,-23.787211)"><ellipse
+         fill="#d4ff2a"
+         cx="110.19418"
+         cy="130.09709"
+         rx="27.912621"
+         ry="27.669903" /><path
+         fill="#00ffff"
+         d="m 102.9306,99.831579 c -23.586994,-0.974834 -24.61817,15.816201 -25.44134,2.003861 -0.127015,-2.131243 1.337019,-6.96585 2.879281,-8.136741 0.337727,-0.256404 1.404363,-0.471458 3.059383,-0.398664 0.675483,0.02971 0.669554,0.878727 1.321269,1.591975 0.943593,1.032684 1.033496,-0.627451 2.016364,-1.330297 1.056427,-0.755448 2.909225,-1.606163 4.580293,-1.126435 2.850534,0.818326 46.06526,-0.609334 46.02026,8.225732 -0.0181,3.56199 -6.87597,-0.934416 -8.28227,-0.37355 -0.47187,0.18819 -2.11386,-0.0885 -3.03598,-0.10814 -0.92212,-0.0196 -11.23049,0.14353 -23.11726,-0.347741 z" /><path
+         fill="#ff0000"
+         d="M 98.5,163.14965 C 76.911449,154.99299 67.958219,131.95582 78.488025,111.65771 79.949956,108.83958 81,105.13651 81,102.79902 c 0,-4.016411 0,-4.016411 25.75,-3.570195 27.15129,0.470499 29.25,0.759926 29.25,4.033775 0,1.12674 1.12445,3.52284 2.49877,5.32467 6.90586,9.05405 7.87399,27.97657 1.94884,38.0908 -1.5409,2.63032 -2.44761,5.72773 -2.44761,8.36129 0,4.18322 0,4.18322 -3.31104,3.56207 -2.4955,-0.46816 -4.52754,0.0293 -8.25,2.01957 -5.15443,2.75593 -23.05047,4.37564 -27.93896,2.52865 z m 22.16709,-10.20978 c 26.07212,-11.11383 18.95833,-49.8465 -9.16709,-49.91233 -9.59676,-0.0225 -13.387414,1.24925 -18.594006,6.23804 -21.252684,20.36365 0.854868,55.14367 27.761096,43.67429 z" /><path
+         fill="#222b00"
+         d="m 105.29034,141.03549 c -11.94562,-7.28362 -7.594329,-25.96847 6.05966,-26.02075 11.82461,-0.0453 15.69651,19.63994 5.05865,25.71881 -4.81772,2.75303 -7.00112,2.81232 -11.11831,0.30194 z" /></g></g></svg>

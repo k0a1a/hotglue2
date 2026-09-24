@@ -1,14 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <title>Hotglue</title>
-  <!-- The 16px variant of img/favicon.svg: same diamond, same two oranges,
-       but a thicker underside band and a single thicker gloss stroke with no
-       dot. At 16px the full mark's thin gloss turns to mud and its dot
-       disappears, so this trades the detail for legibility.
+  <!-- The 16px variant of img/favicon.svg: the same mark, scaled to a 32
+       viewBox - no hand-tuned variant yet (2026-09-24), the orange
+       diamond's thicker-band 16px tuning retired with that artwork. When
+       the new mark's thin details turn to mud at 16px, this file is where
+       the hand-tuning goes; favicon-16.png and the 16 layer of favicon.ico
+       currently render from img/favicon.svg directly.
 
-       Rendered to favicon-16.png and the 16 layer of favicon.ico. Not linked
-       anywhere on its own - browsers that draw the svg use favicon.svg at
-       every size. See SOW-favicon-orange-diamond.md. -->
-  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#cc5f00" transform="translate(1.7 1.7) rotate(45 16 16)"/>
-  <rect x="5" y="5" width="22" height="22" rx="4.8" fill="#ff7700" transform="rotate(45 16 16)"/>
-  <rect x="8.6" y="11.6" width="7.6" height="3.6" rx="1.8" fill="#fff" fill-opacity="0.75" transform="rotate(-45 12.4 13.4)"/>
+       Not linked anywhere on its own - browsers that draw the svg use
+       favicon.svg at every size. -->
+  <g transform="scale(0.33333333)">
+    <g transform="translate(-74.074035,-92.295674)"><g
+       transform="matrix(1.2807235,0,0,1.2807235,-17.794322,-23.787211)"><ellipse
+         fill="#d4ff2a"
+         cx="110.19418"
+         cy="130.09709"
+         rx="27.912621"
+         ry="27.669903" /><path
+         fill="#00ffff"
+         d="m 102.9306,99.831579 c -23.586994,-0.974834 -24.61817,15.816201 -25.44134,2.003861 -0.127015,-2.131243 1.337019,-6.96585 2.879281,-8.136741 0.337727,-0.256404 1.404363,-0.471458 3.059383,-0.398664 0.675483,0.02971 0.669554,0.878727 1.321269,1.591975 0.943593,1.032684 1.033496,-0.627451 2.016364,-1.330297 1.056427,-0.755448 2.909225,-1.606163 4.580293,-1.126435 2.850534,0.818326 46.06526,-0.609334 46.02026,8.225732 -0.0181,3.56199 -6.87597,-0.934416 -8.28227,-0.37355 -0.47187,0.18819 -2.11386,-0.0885 -3.03598,-0.10814 -0.92212,-0.0196 -11.23049,0.14353 -23.11726,-0.347741 z" /><path
+         fill="#ff0000"
+         d="M 98.5,163.14965 C 76.911449,154.99299 67.958219,131.95582 78.488025,111.65771 79.949956,108.83958 81,105.13651 81,102.79902 c 0,-4.016411 0,-4.016411 25.75,-3.570195 27.15129,0.470499 29.25,0.759926 29.25,4.033775 0,1.12674 1.12445,3.52284 2.49877,5.32467 6.90586,9.05405 7.87399,27.97657 1.94884,38.0908 -1.5409,2.63032 -2.44761,5.72773 -2.44761,8.36129 0,4.18322 0,4.18322 -3.31104,3.56207 -2.4955,-0.46816 -4.52754,0.0293 -8.25,2.01957 -5.15443,2.75593 -23.05047,4.37564 -27.93896,2.52865 z m 22.16709,-10.20978 c 26.07212,-11.11383 18.95833,-49.8465 -9.16709,-49.91233 -9.59676,-0.0225 -13.387414,1.24925 -18.594006,6.23804 -21.252684,20.36365 0.854868,55.14367 27.761096,43.67429 z" /><path
+         fill="#222b00"
+         d="m 105.29034,141.03549 c -11.94562,-7.28362 -7.594329,-25.96847 6.05966,-26.02075 11.82461,-0.0453 15.69651,19.63994 5.05865,25.71881 -4.81772,2.75303 -7.00112,2.81232 -11.11831,0.30194 z" /></g></g>
+  </g>
 </svg>
