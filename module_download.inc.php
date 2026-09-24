@@ -309,9 +309,13 @@ function download_serve_resource($args)
 }
 
 
-function download_upload_fallback($args)
+/**
+ *	create and render a download object for an uploaded file - the one path
+ *	the fallback ('nobody else cared') and the preferred 'upload a file'
+ *	call share
+ */
+function download_make_upload($args)
 {
-	// we handle everything
 	load_modules('glue');
 
 	$obj = create_object($args);
@@ -337,6 +341,13 @@ function download_upload_fallback($args)
 	}
 }
 
+
+function download_upload_fallback($args)
+{
+	// we handle everything
+	return download_make_upload($args);
+}
+
 // the wrap-targeted upload (2026-09-22, SOW-download-object): the text or
 // image menu's "attach" sends preferred_module 'download' plus the wrap
 // target's name; the uploaded file becomes a NEW download object wrapped
@@ -346,9 +357,15 @@ function download_upload_fallback($args)
 function download_upload($args)
 {
 	load_modules('glue');
-	if (!isset($args['preferred_module']) || $args['preferred_module'] != 'download' ||
-			empty($args['wrap'])) {
+	if (!isset($args['preferred_module']) || $args['preferred_module'] != 'download') {
 		return false;		// fall through to the generic pass / fallback
+	}
+	// no wrap target: the page menu's 'upload a file' - EVERY file lands as
+	// a download object, including ones other modules would claim, so the
+	// preferred call has to answer it here rather than fall through to the
+	// image/video/audio pass
+	if (empty($args['wrap'])) {
+		return download_make_upload($args);
 	}
 	$t = load_object(['name'=>$args['wrap']]);
 	if ($t['#error']) {
