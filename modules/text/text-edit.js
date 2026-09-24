@@ -2613,10 +2613,14 @@ $.glue.text.set_heading = function(obj, level) {
 	var selected = obj.classList.contains('glue-selected');
 	// the heading panel stays open across the choice (danja's call,
 	// 2026-09-24): the swap below kills the node the panel points at, so it
-	// is re-opened on the new node once that exists
-	var reopen = $.glue.popover.current() &&
-		$.glue.owner($.glue.popover.current()) === obj &&
-		$.glue.popover.current().classList.contains('glue-heading-popover');
+	// is re-opened on the new node once that exists - at the SAME position:
+	// show() would re-place it by the pointer (the toggle just clicked), so
+	// the old place is captured and put back on the re-opened panel
+	var reopen_pos = false;
+	var cur = $.glue.popover.current();
+	if (cur && $.glue.owner(cur) === obj && cur.classList.contains('glue-heading-popover')) {
+		reopen_pos = { left: cur.style.left, top: cur.style.top };
+	}
 	$.glue.popover.close();
 	var neu = document.createElement(tag);
 	for (var i = 0; i < obj.attributes.length; i++) {
@@ -2636,8 +2640,13 @@ $.glue.text.set_heading = function(obj, level) {
 	// NOTE: the undo WeakMap is keyed by element, so this first save reads
 	// as a 'create' rather than an 'update' - a cosmetic, accepted gap.
 	$.glue.object.save(neu);
-	if (reopen) {
+	if (reopen_pos) {
 		text_heading_popover(neu);
+		var re = $.glue.popover.current();
+		if (re) {
+			re.style.left = reopen_pos.left;
+			re.style.top = reopen_pos.top;
+		}
 	}
 };
 

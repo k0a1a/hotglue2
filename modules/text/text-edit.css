@@ -225,13 +225,13 @@
 
 .glue-heading-normal-glyph {
 	/* the heading panel's plain-text choice: a half-white/half-black
-	   circle, the two states it toggles between, no letter inside
+	   square, the two states it toggles between, no letter inside
 	   (danja's call, 2026-09-24) */
 	display: inline-block;
 	width: 14px;
 	height: 14px;
 	border: 1px solid #000;
-	border-radius: 50%;
+	border-radius: 2px;
 	background: linear-gradient(135deg, #fff 0 49%, #000 50% 100%);
 	vertical-align: middle;
 }
