@@ -137,6 +137,19 @@ function audio_poll_encode(obj) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+	// A save clones the object (to_html) and the clone's media must not
+	// play: a detached clone of <audio> with a src starts fetching - and,
+	// with autoplay, playing - in Firefox, the same hazard the video
+	// module guards against. The clone is only ever read for its
+	// attributes, so stripping the src off it leaves the stored format
+	// untouched and the clone with nothing to fetch or play.
+	$.glue.object.register_alter_pre_save('audio', function(clone, orig) {
+		var a = clone.querySelector(':scope > audio');
+		if (a) {
+			a.removeAttribute('src');
+		}
+	});
+
 	// resume polling for any objects that were already mid-encode when this
 	// page was loaded (e.g. reopened the editor before a previous upload's
 	// encode had finished)
