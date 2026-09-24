@@ -1,5 +1,5 @@
 // Semantic headings (SOW-accessibility.md, Feature 4): a text object can
-// render as h1/h2/h3, so screen readers get a structure to navigate by.
+// render as h1..h6, so screen readers get a structure to navigate by.
 //
 // The stored text-heading-level key maps to the wrapper's TAG: render sets
 // the tag from the key, save maps the tag back to the key. reset.css
@@ -83,3 +83,31 @@ test('the popover marks the object\'s current level', async ({ page, hg }) => {
 	await expect(pop(page).locator('.glue-heading-toggle.glue-font-toggle-on'))
 		.toHaveText('H3');
 });
+
+test('the full h1-h6 ladder is offered, and the reset rides a row, pushed right',
+	async ({ page, hg }) => {
+		const id = hg.addObject('100000000001', ATTRS, 'title');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		// each rung: set_heading replaces the object node and closes the
+		// popover, so it is reopened for the next one
+		await openPopover(page, id);
+		for (const l of ['H1', 'H2', 'H3', 'H4', 'H5', 'H6']) {
+			await pop(page).locator('.glue-heading-toggle', { hasText: l }).click();
+			await expect.poll(() => attrs(hg)['text-heading-level'])
+				.toBe(l.toLowerCase());
+			await expect(byId(page, id)).toHaveJSProperty('tagName', l);
+			if (l !== 'H6') {
+				await openPopover(page, id);
+			}
+		}
+
+		// the reset does not span the panel: it is the small frame riding
+		// its own row, pushed to the panel's right end
+		await openPopover(page, id);
+		const pb = await pop(page).boundingBox();
+		const rb = await pop(page).locator('.glue-popover-reset').boundingBox();
+		expect(rb.width).toBeLessThan(pb.width / 2);
+		expect(rb.x + rb.width).toBeGreaterThan(pb.x + pb.width - 20);
+	});

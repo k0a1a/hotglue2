@@ -2611,7 +2611,8 @@ function text_heading_popover(obj)
 	}
 
 	var row = $.glue.popover.row('heading');
-	var levels = [['normal', 'div'], ['H1', 'h1'], ['H2', 'h2'], ['H3', 'h3']];
+	var levels = [['normal', 'div'], ['H1', 'h1'], ['H2', 'h2'], ['H3', 'h3'],
+		['H4', 'h4'], ['H5', 'h5'], ['H6', 'h6']];
 	levels.forEach(function(level) {
 		var b = document.createElement('div');
 		b.className = 'glue-font-toggle glue-heading-toggle';
@@ -2629,9 +2630,13 @@ function text_heading_popover(obj)
 	});
 	pop.appendChild(row);
 
-	pop.appendChild($.glue.popover.reset('back to a plain text object', function() {
+	// the reset rides a row of its own, like every other panel's: appended
+	// to the bare popover column it would stretch the whole panel width
+	var footer = $.glue.popover.row(false);
+	footer.appendChild($.glue.popover.reset('back to a plain text object', function() {
 		$.glue.text.set_heading(obj, 'div');
 	}));
+	pop.appendChild(footer);
 
 	$.glue.popover.show(pop);
 }
