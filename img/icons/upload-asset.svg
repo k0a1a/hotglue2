@@ -5,153 +5,41 @@
    xmlns="http://www.w3.org/2000/svg">
   
   
-  <g transform="translate(-30.002076,0.02055969)">
-    <path
-       style="fill:#000"
-       d="m 34.004152,15.964695 v 10 h 22 v -10 h -2 v 8 h -18 v -8 z" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-       d="m 4.9428824,14.72567 c 0,0 6.8479516,0 6.8479516,0"
-       transform="matrix(0.87617442,0,0,-1,29.669173,29.713458)" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-       d="m 4.9428824,14.72567 c 0,0 6.8479516,0 6.8479516,0"
-       transform="matrix(0.87617442,0,0,-1,45.669173,29.713458)" />
-    <g transform="rotate(135,31.986715,16.419621)">
-      <g transform="translate(0.9999999,-1.0030976)">
-        <path
-           style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-           d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
-           transform="matrix(0,-1.0912502,1,0,21.255251,41.563912)" />
-        <path
-           style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-           d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
-           transform="matrix(1.0912502,0,0,1,-11.563912,23.255251)" />
-      </g>
+  <path
+     style="fill:#000"
+     d="m 4.002076,15.985255 v 10 h 22 v -10 h -2 v 8 h -18 v -8 z" />
+  <g transform="rotate(135,16.981419,10.216267)">
+    <g transform="translate(0.9999999,-1.0030976)">
       <path
-         style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:1.98268;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-         d="m 12.702551,28.551606 c 4.922896,0 9.845791,0 14.768686,0"
-         transform="matrix(0.71745301,-0.71873574,0.7078561,0.70915619,-14.622186,4.2000266)" />
+         style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+         d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
+         transform="matrix(0,-1.0912502,1,0,21.255251,41.563912)" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+         d="m 22.509881,-7.2552508 c 2.74914,0 5.498281,0 8.247421,0"
+         transform="matrix(1.0912502,0,0,1,-11.563912,23.255251)" />
     </g>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000;stroke-width:1.98268;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="m 12.702551,28.551606 c 4.922896,0 9.845791,0 14.768686,0"
+       transform="matrix(0.71745301,-0.71873574,0.7078561,0.70915619,-14.622186,4.2000266)" />
   </g>
   <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="7"
-     y="18" />
+     style="fill:#000;stroke-width:0.432049;paint-order:fill markers stroke"
+     width="7"
+     height="10"
+     x="4.0083618"
+     y="13.993527" />
   <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="7"
-     y="20" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="7"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="9"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="11"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="13"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="15"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="17"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
+     style="fill:#000;stroke-width:0.432049;paint-order:fill markers stroke"
+     width="7"
+     height="10"
      x="19"
+     y="14" />
+  <rect
+     style="fill:#000;stroke-width:0.342539;paint-order:fill markers stroke"
+     width="22"
+     height="2"
+     x="4"
      y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="21"
-     y="22" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="21"
-     y="20" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="21"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="19"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="9"
-     y="20" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="9"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="9"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="11"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="17"
-     y="18" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="19"
-     y="20" />
-  <rect
-     style="fill:#000;stroke-width:0.4;paint-order:fill markers stroke"
-     width="1"
-     height="1"
-     x="11"
-     y="20" />
 </svg>
