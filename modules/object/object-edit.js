@@ -1322,26 +1322,21 @@ function object_properties_popover(obj)
 		}, false);
 	}
 
-	// --- take it off, or put it back --------------------------------------
+	// --- put it back -------------------------------------------------------
 	//
-	// Delete is the background's own - the picture is the only thing in here
-	// that can be taken off the object - and the reset is every section's, run
-	// in the order they were drawn with one save at the end of it: one write,
-	// and nothing left behind that the save happened before. Each section's
-	// reset clears only what is set, so a reset on an object nobody has touched
-	// writes nothing at all.
+	// The reset is every section's, run in the order they were drawn with one
+	// save at the end of it: one write, and nothing left behind that the save
+	// happened before. Each section's reset clears only what is set, so a reset
+	// on an object nobody has touched writes nothing at all. A background
+	// picture is taken off by the colour button instead, which clears it first
+	// with its confirm - one way to remove is enough, and the delete button
+	// went (2026-09-24, danja).
 	//
-	// Both are the fold's last row rather than a footer under the panel, and
-	// the delete is therefore behind a fold when the panel opens: that is the
-	// house style's one cost, and it is the price of a panel that opens on the
-	// five things you came for rather than on the ten you did not.
+	// The reset is the fold's last row rather than a footer under the panel,
+	// and is therefore behind a fold when the panel opens: that is the house
+	// style's one cost, and it is the price of a panel that opens on the five
+	// things you came for rather than on the ten you did not.
 	var footer = $.glue.popover.row(false);
-	if (background) {
-		footer.appendChild($.glue.popover.delete('remove the background image', function() {
-			background.remove();
-			$.glue.popover.close();
-		}));
-	}
 	footer.appendChild($.glue.popover.reset(
 		'reset tiling, scale, position, padding, flip and transparency to their defaults',
 		function() {
