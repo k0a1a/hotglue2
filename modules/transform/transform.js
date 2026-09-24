@@ -164,3 +164,21 @@ $.glue.live('.object', 'glue-deselect', function(e) {
 		m.rotatable = false;
 	}
 });
+
+// The rotation handle hides while the object moves and comes back once it
+// stops, following the resize handles (js/edit.js) and the context menu -
+// every object in a multi-object move drops its handle for the duration
+// (danja's call, 2026-09-24).
+$.glue.live('.object', 'glue-movestart', function(e) {
+	var m = $.glue.object.moveable_of(this);
+	if (m) {
+		m.rotatable = false;
+	}
+});
+
+$.glue.live('.object', 'glue-movestop', function(e) {
+	var m = $.glue.object.moveable_of(this);
+	if (m && !this.classList.contains('locked') && !this.classList.contains('download') && this.classList.contains('glue-selected')) {
+		m.rotatable = true;
+	}
+});

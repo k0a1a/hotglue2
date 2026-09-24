@@ -2303,6 +2303,27 @@ $.glue.object = function()
 		}
 	});
 
+	// The resize handles go away while the object moves and are drawn again
+	// once it stops - the context menu hides on glue-movestart and comes back
+	// on glue-movestop for exactly this reason, and the handles follow it
+	// (danja's call, 2026-09-24). glue-movestart reaches every object in a
+	// multi-object move, so each one drops its handles for the duration.
+	$.glue.live('.object', 'glue-movestart', function(e) {
+		var m = moveables.get(this);
+		if (m) {
+			m.resizable = false;
+		}
+	});
+	$.glue.live('.object', 'glue-movestop', function(e) {
+		var m = moveables.get(this);
+		if (m && this.classList.contains('resizable') && !this.classList.contains('locked') && this.classList.contains('glue-selected')) {
+			// the same re-show glue-select does
+			m.resizable = true;
+			m.updateRect();
+			place_handles_soon(this);
+		}
+	});
+
 	document.addEventListener('DOMContentLoaded', function() {
 		// A selected object is stored without the class that says so. There
 		// used to be a coordinate fixup here too, undoing the half-border
