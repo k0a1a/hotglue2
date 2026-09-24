@@ -402,7 +402,34 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	var page_bg_has = function() {
 		var bg = getComputedStyle(document.documentElement).backgroundImage;
-		return bg.length != 0 && bg != 'none';
+		return (bg.length != 0 && bg != 'none') || !!page_bg_video_mode();
+	};
+	// The video background's element, created on the page by the render
+	// (page_render_page_late); the client makes one itself when a video is
+	// dropped in with the panel open. Below the objects (z-index 0), out
+	// of the pointer's way in the editor.
+	var page_bg_video_el = function() {
+		var v = document.querySelector('video.page-background-video');
+		if (!v) {
+			v = document.createElement('video');
+			v.className = 'page-background-video';
+			v.muted = true;
+			v.loop = true;
+			v.autoplay = true;
+			v.setAttribute('playsinline', 'playsinline');
+			v.style.position = 'absolute';
+			v.style.left = '0px';
+			v.style.top = '0px';
+			v.style.width = '100%';
+			v.style.zIndex = '0';
+			v.style.pointerEvents = 'none';
+			document.body.prepend(v);
+		}
+		return v;
+	};
+	var page_bg_video_mode = function() {
+		var v = document.querySelector('video.page-background-video');
+		return !!(v && v.getAttribute('src'));
 	};
 	// Take the picture off the page, and everything that described it off the
 	// page object. The panel's remove button and its colour button both do
@@ -414,6 +441,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		doc.style.backgroundRepeat = '';
 		doc.style.backgroundPosition = '';
 		doc.style.backgroundSize = '';
+		// the video layer goes with the rest
+		var v = document.querySelector('video.page-background-video');
+		if (v) {
+			v.remove();
+		}
 		$.glue.backend({ method: 'page.clear_background_img', page: $.glue.page }, function(data) {
 			// the file and its settings are gone with it
 			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
@@ -425,6 +457,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	// browser resolves '0% 0%', 'left top' and the pairs with only one number
 	// into something with two of them.
 	var page_background_position = function() {
+		if (page_bg_video_mode()) {
+			var v = page_bg_video_el();
+			var vx = parseInt(v.style.left);
+			var vy = parseInt(v.style.top);
+			return {
+				x: isNaN(vx) ? 0 : vx,
+				y: isNaN(vy) ? 0 : vy
+			};
+		}
 		var start = getComputedStyle(document.documentElement).backgroundPosition.split(' ');
 		var x = parseInt(start[0]);
 		var y = parseInt(start[1]);
@@ -533,6 +574,12 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else if (data['#error']) {
 					$.glue.error('There was a problem uploading the file ('+data['#data']+')');
 				} else {
+					// the video the panel used to describe is gone - the
+					// picture replaces it
+					var v = document.querySelector('video.page-background-video');
+					if (v) {
+						v.remove();
+					}
 					// the timestamp here is to trick any caching going on
 					doc.style.backgroundImage = 'url('+$.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime())+')';
 					// the two toggles have something to act on now. sync_has is
@@ -542,6 +589,43 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 		icons.appendChild(image);
+
+		// The moving picture, next to the still one: a video background
+		// uploads the same way and the server (page_upload) tells the two
+		// apart by the file's mime. What you do next - moving, sizing,
+		// fixing - is the same rows as the image's. The glyph is the embed
+		// set's until the icon set has its own.
+		var video_btn = $.glue.popover.icon_button('embed-webvideo', 'set page background video');
+		video_btn.classList.add('glue-background-video');
+		$.glue.upload.button(video_btn, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
+			tooltip: 'set page background video',
+			error: function(e) {
+				if (e && e.target && e.target.status) {
+					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
+				} else {
+					$.glue.error('There was a problem uploading a file. Make sure you are not exceeding the file size limits set in the server configuration.');
+					// DEBUG
+					console.error(e);
+				}
+			},
+			finish: function(data) {
+				if (!data) {
+					$.glue.error('There was a problem communicating with the server');
+				} else if (data['#error']) {
+					$.glue.error('There was a problem uploading the file ('+data['#data']+')');
+				} else {
+					// the picture the panel used to describe is gone - the
+					// video replaces it
+					document.documentElement.style.backgroundImage = '';
+					var v = page_bg_video_el();
+					// the timestamp here is to trick any caching going on
+					v.src = $.glue.base_url+'?'+$.glue.page+'.page&'+(new Date().getTime());
+					v.play();
+					sync_has();
+				}
+			}
+		});
+		icons.appendChild(video_btn);
 
 		// --- tiled or once, scrolling or fixed --------------------------------
 		//
@@ -558,8 +642,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		var sync_repeat = function() {
 			repeat.classList.toggle('glue-btn-active',
 				getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1);
-		};
-		repeat.addEventListener('click', function() {
+		};		repeat.addEventListener('click', function() {
 			var tiled = getComputedStyle(doc).backgroundRepeat.indexOf('no-repeat') == -1;
 			doc.style.backgroundRepeat = tiled ? 'no-repeat' : 'repeat';
 			sync_repeat();
@@ -580,10 +663,29 @@ document.addEventListener('DOMContentLoaded', function() {
 		var scroll = $.glue.popover.icon_button('background-scroll', 'scroll page background image');
 		scroll.classList.add('glue-background-scroll');
 		var sync_scroll = function() {
-			scroll.classList.toggle('glue-btn-active',
-				getComputedStyle(doc).backgroundAttachment != 'fixed');
+			if (page_bg_video_mode()) {
+				scroll.classList.toggle('glue-btn-active',
+					page_bg_video_el().style.position != 'fixed');
+			} else {
+				scroll.classList.toggle('glue-btn-active',
+					getComputedStyle(doc).backgroundAttachment != 'fixed');
+			}
 		};
 		scroll.addEventListener('click', function() {
+			if (page_bg_video_mode()) {
+				var v = page_bg_video_el();
+				var fixed = v.style.position == 'fixed';
+				// emptied rather than set to 'scroll', so going back to the
+				// default leaves no inline style behind
+				v.style.position = fixed ? 'absolute' : 'fixed';
+				sync_scroll();
+				if (fixed) {
+					$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page', attr: 'page-background-attachment' });
+				} else {
+					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-attachment': 'fixed' });
+				}
+				return;
+			}
 			var fixed = getComputedStyle(doc).backgroundAttachment == 'fixed';
 			// emptied rather than set to 'scroll', so going back to the
 			// default leaves no inline style behind
@@ -597,14 +699,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		icons.appendChild(scroll);
 
-		// Both toggles are about the picture: with none on the page they would
-		// be toggling a background that is not there. So they grey out and go
-		// inert until one arrives - the upload above calls this too, so a
-		// picture dropped in while the panel is open wakes them where they
-		// stand.
+		// Both toggles are about the background: with none on the page they
+		// would be toggling a background that is not there. So they grey out
+		// and go inert until one arrives - the uploads above call this too,
+		// so a picture or video dropped in while the panel is open wakes
+		// them where they stand. The tile toggle has nothing to say about a
+		// VIDEO background (a moving picture cannot repeat), so it stays
+		// greyed while one is up.
 		var sync_has = function() {
 			var off = !page_bg_has();
-			repeat.classList.toggle('glue-background-off', off);
+			repeat.classList.toggle('glue-background-off', off || page_bg_video_mode());
 			scroll.classList.toggle('glue-background-off', off);
 		};
 		sync_repeat();
@@ -624,7 +728,13 @@ document.addEventListener('DOMContentLoaded', function() {
 		// does everywhere else in this panel.
 		var at = page_background_position();
 		var write_at = function() {
-			doc.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
+			if (page_bg_video_mode()) {
+				var v = page_bg_video_el();
+				v.style.left = (at.x == 0) ? '0px' : at.x+'px';
+				v.style.top = (at.y == 0) ? '0px' : at.y+'px';
+			} else {
+				doc.style.backgroundPosition = (at.x == 0 && at.y == 0) ? '' : at.x+'px '+at.y+'px';
+			}
 		};
 		var save_at = function() {
 			if (at.x == 0 && at.y == 0) {
@@ -679,13 +789,25 @@ document.addEventListener('DOMContentLoaded', function() {
 		// touched, and a zero clears the attribute again.
 		var scale_row = $.glue.popover.number_row('scale', {
 			min: 10, max: 300, step: 1, unit: '%',
-			value: parseFloat(doc.style.backgroundSize) || 100,
+			value: page_bg_video_mode() ?
+				(parseFloat(page_bg_video_el().style.width) || 100) :
+				(parseFloat(doc.style.backgroundSize) || 100),
 			apply: function(pct, commit) {
-				if (!pct || pct < 0) {
-					doc.style.backgroundSize = '';
-					scale_row.set(0);
+				if (page_bg_video_mode()) {
+					var v = page_bg_video_el();
+					if (!pct || pct < 0) {
+						v.style.width = '100%';
+						scale_row.set(100);
+					} else {
+						v.style.width = pct+'%';
+					}
 				} else {
-					doc.style.backgroundSize = pct+'% auto';
+					if (!pct || pct < 0) {
+						doc.style.backgroundSize = '';
+						scale_row.set(0);
+					} else {
+						doc.style.backgroundSize = pct+'% auto';
+					}
 				}
 				if (commit) {
 					if (!pct || pct < 0) {
@@ -716,6 +838,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			doc.style.backgroundRepeat = '';
 			doc.style.backgroundPosition = '';
 			doc.style.backgroundSize = '';
+			if (page_bg_video_mode()) {
+				var v = page_bg_video_el();
+				v.style.left = '0px';
+				v.style.top = '0px';
+				v.style.width = '100%';
+			}
 			// and the panel says so: the rows, the tile toggle (the page's
 			// default IS repeat, so it lights) and the scale field
 			at.x = 0;

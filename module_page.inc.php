@@ -50,6 +50,10 @@ function page_clear_background_img($args)
 		delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
 		// and remove attributes
 		return object_remove_attr(['name'=>$obj['name'], 'attr'=>['page-background-file', 'page-background-mime']]);
+	} elseif (!empty($obj['page-background-video-file'])) {
+		// same for the video background (2026-09-24)
+		delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-video-file'], 'max_cnt'=>1]);
+		return object_remove_attr(['name'=>$obj['name'], 'attr'=>['page-background-video-file', 'page-background-video-mime']]);
 	} else {
 		return response(true);
 	}
@@ -181,6 +185,8 @@ function page_has_reference($args)
 	}
 
 	if (!empty($obj['page-background-file']) && $obj['page-background-file'] == $args['file']) {
+		return true;
+	} elseif (!empty($obj['page-background-video-file']) && $obj['page-background-video-file'] == $args['file']) {
 		return true;
 	} elseif (!empty($obj['page-favicon-file']) && $obj['page-favicon-file'] == $args['file']) {
 		return true;
@@ -332,6 +338,58 @@ function _page_body_offset($set = NULL)
  */
 function page_render_page_late($args)
 {
+	// a video background is an element, not a css property: it sits behind
+	// the objects (their z-index starts well above 0), goes with the page
+	// unless the attachment says fixed, and honours the same position and
+	// scale keys the picture does (danja's call, 2026-09-24)
+	load_modules('glue');
+	$page_obj = load_object(['name'=>$args['page'].'.page']);
+	if (!$page_obj['#error'] && !empty($page_obj['#data']['page-background-video-file'])) {
+		$o = $page_obj['#data'];
+		$v = elem('video');
+		elem_add_class($v, 'page-background-video');
+		// kept relative (not prefixed with base_url()) so it still resolves
+		// correctly when viewed through a different domain than the one
+		// configured/detected as the base url - the same rationale as the
+		// image background above
+		if (SHORT_URLS) {
+			elem_attr($v, 'src', urlencode($args['page'].'.page'));
+		} else {
+			elem_attr($v, 'src', '?'.urlencode($args['page'].'.page'));
+		}
+		elem_attr($v, 'autoplay', 'autoplay');
+		elem_attr($v, 'muted', 'muted');
+		elem_attr($v, 'loop', 'loop');
+		elem_attr($v, 'playsinline', 'playsinline');
+		if (!empty($o['page-background-attachment']) && $o['page-background-attachment'] == 'fixed') {
+			elem_css($v, 'position', 'fixed');
+		} else {
+			elem_css($v, 'position', 'absolute');
+		}
+		elem_css($v, 'left', '0px');
+		elem_css($v, 'top', '0px');
+		elem_css($v, 'width', '100%');
+		elem_css($v, 'z-index', '0');
+		if (!empty($o['page-background-image-position'])) {
+			$p = expl(' ', $o['page-background-image-position']);
+			if (2 <= count($p)) {
+				elem_css($v, 'left', $p[0]);
+				elem_css($v, 'top', $p[1]);
+			}
+		}
+		if (!empty($o['page-background-size'])) {
+			$s = expl(' ', $o['page-background-size']);
+			elem_css($v, 'width', $s[0]);
+		}
+		// in the editor the video must never swallow the clicks meant for
+		// the canvas and the objects
+		if ($args['edit']) {
+			elem_css($v, 'pointer-events', 'none');
+		}
+		$bdy = &body();
+		elem_append($bdy, $v);
+	}
+
 	$layout = page_layout($args['page']);
 	if ($args['edit']) {
 		html_add_js_var('$.glue.conf.page.layout_mode', $layout['mode']);
@@ -343,8 +401,6 @@ function page_render_page_late($args)
 		// back through glue.update_object). Per page, unlike the last
 		// typeface/font size memory in module_text.inc.php which is
 		// site-wide: a palette belongs to the design of one page.
-		load_modules('glue');
-		$page_obj = load_object(['name'=>$args['page'].'.page']);
 		if (!$page_obj['#error'] && !empty($page_obj['#data']['page-recent-colors'])) {
 			html_add_js_var('$.glue.conf.page.recent_colors',
 				$page_obj['#data']['page-recent-colors']);
@@ -443,6 +499,15 @@ function page_serve_resource($args)
 		$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['page-background-file'];
 		if (isset($obj['page-background-mime'])) {
 			$mime = $obj['page-background-mime'];
+		} else {
+			$mime = '';
+		}
+		serve_file($fn, false, $mime);
+	} elseif (!empty($obj['page-background-video-file'])) {
+		// the video background is served the same way (2026-09-24)
+		$fn = CONTENT_DIR.'/'.$pn.'/shared/'.$obj['page-background-video-file'];
+		if (isset($obj['page-background-video-mime'])) {
+			$mime = $obj['page-background-video-mime'];
 		} else {
 			$mime = '';
 		}
@@ -750,29 +815,59 @@ function page_upload($args)
 	if (empty($args['preferred_module']) || $args['preferred_module'] != 'page') {
 		return false;
 	}
-	// check if supported file
-	if (!in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) || ($args['mime'] == '' && !in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
+	// images set the picture, videos the moving picture - each replaces
+	// the other, and the old file goes with it (danja's call, 2026-09-24)
+	if (in_array($args['mime'], ['image/jpeg', 'image/png', 'image/gif']) || ($args['mime'] == '' && in_array(filext($args['file']), ['jpg', 'jpeg', 'png', 'gif']))) {
+		$video = false;
+	} elseif (in_array($args['mime'], ['video/mp4', 'video/webm', 'video/ogg']) || ($args['mime'] == '' && in_array(filext($args['file']), ['mp4', 'webm', 'ogg']))) {
+		// the formats browsers play natively; a background video is served
+		// as-is, not transcoded
+		$video = true;
+	} elseif (in_array($args['mime'], ['video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/x-ms-wmv']) || in_array(filext($args['file']), ['mov', 'qt', 'avi', 'mkv', 'wmv'])) {
+		// a video, but not one browsers play: claimed here so it does not
+		// fall through to the video module and become an object while the
+		// author is in the background panel - and the uploaded file goes
+		// with the refusal
+		load_modules('glue');
+		delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$args['file'], 'max_cnt'=>0]);
+		return response('This video format cannot be a page background - use mp4 or webm', 400);
+	} else {
 		return false;
 	}
 
-	// check if there is already a background-image and delete it
+	// check if there is already a background and delete its file
 	$obj = load_object(['name'=>$args['page'].'.page']);
 	if (!$obj['#error']) {
 		$obj = $obj['#data'];
-		if (!empty($obj['page-background-file'])) {
-			delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj['page-background-file'], 'max_cnt'=>1]);
+		foreach (['page-background-file', 'page-background-video-file'] as $attr) {
+			if (!empty($obj[$attr])) {
+				delete_upload(['pagename'=>get_first_item(expl('.', $args['page'])), 'file'=>$obj[$attr], 'max_cnt'=>1]);
+			}
 		}
 	}
 
-	// set as background-image in page object
+	// set as background in page object
 	$obj = [];
 	$obj['name'] = $args['page'].'.page';
-	$obj['page-background-file'] = $args['file'];
-	$obj['page-background-mime'] = $args['mime'];
-
-	// update page object
-	load_modules('glue');
-	$ret = update_object($obj);
+	if ($video) {
+		$obj['page-background-video-file'] = $args['file'];
+		$obj['page-background-video-mime'] = $args['mime'];
+		load_modules('glue');
+		$ret = update_object($obj);
+		if (!$ret['#error']) {
+			$ret = object_remove_attr(['name'=>$args['page'].'.page',
+				'attr'=>['page-background-file', 'page-background-mime']]);
+		}
+	} else {
+		$obj['page-background-file'] = $args['file'];
+		$obj['page-background-mime'] = $args['mime'];
+		load_modules('glue');
+		$ret = update_object($obj);
+		if (!$ret['#error']) {
+			$ret = object_remove_attr(['name'=>$args['page'].'.page',
+				'attr'=>['page-background-video-file', 'page-background-video-mime']]);
+		}
+	}
 	if ($ret['#error']) {
 		log_msg('page_upload: error updating page object: '.quot($ret['#data']));
 		return false;
