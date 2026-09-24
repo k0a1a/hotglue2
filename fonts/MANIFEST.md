@@ -22,6 +22,10 @@ record is the one SOW-font-bundle.md asks for: font → license → source → f
 | Rubik Glitch | OFL 1.1 | fonts.googleapis.com (ofl/rubikglitch) | 400 |
 | Rubik Wet Paint | OFL 1.1 | fonts.googleapis.com (ofl/rubikwetpaint) | 400 |
 | Rubik Puddles | OFL 1.1 | fonts.googleapis.com (ofl/rubikpuddles) | 400 |
+| LatinModern | GUST Font License 1.0 | gust.org.pl (lmsans10) | 400, 400i, 700, 700i |
+| DejaVuSans | Bitstream Vera + PD additions | dejavu-fonts.github.io | 400, 400i, 700, 700i |
+| DejaVuSerif | Bitstream Vera + PD additions | dejavu-fonts.github.io | 400, 400i, 700, 700i |
+| DejaVuSansMono | Bitstream Vera + PD additions | dejavu-fonts.github.io | 400, 400i, 700, 700i |
 
 Notes:
 
@@ -38,3 +42,8 @@ Notes:
   SOW's 12–18.
 - No dafont-sourced fonts are in this bundle, so no per-font license archaeology
   beyond the OFL.txt checks was needed.
+- **The legacy defaults joined the bundle (2026-09-24)**: the LatinModern and
+  DejaVu* woff files moved out of img/ into their own directories here, with
+  their licenses (GUST Font License 1.0, DejaVu) shipped alongside. They stay
+  in the picker after the curated set, so old pages that stored one of them
+  keep resolving.
