@@ -142,6 +142,23 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
+	// A save clones the object (to_html) and the clone's media must not
+	// play: a detached clone of a <video> with a src starts loading - and,
+	// with autoplay, PLAYING - in Firefox, so every save of a touched video
+	// (a move, the mute toggle, any panel) stacked another soundtrack.
+	// The clone is only ever read for its attributes - the server's
+	// video_alter_save() parses autoplay/loop/controls/muted, the src comes
+	// from video-file - so stripping the src (and the poster) off the clone
+	// leaves the stored format untouched and the clone with nothing to
+	// fetch or play.
+	$.glue.object.register_alter_pre_save('video', function(clone, orig) {
+		var v = clone.querySelector(':scope > video');
+		if (v) {
+			v.removeAttribute('src');
+			v.removeAttribute('poster');
+		}
+	});
+
 	//
 	// turn video upload into an object
 	//
