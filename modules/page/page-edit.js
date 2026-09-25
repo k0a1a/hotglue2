@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.menu.hide();
 		page_settings_popover();
 	});
-	$.glue.menu.register('page', elem);
+	$.glue.menu.register('page', elem, 3);
 
 	// reading order (SOW-accessibility.md, Feature 2): the sequence screen
 	// readers follow. The server emits objects in visual reading order by
@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// the reading-order button gave the layout toggle its centre slot in
 	// the top row and took the row's end in exchange (danja's call,
 	// 2026-09-25)
-	$.glue.menu.register('page', elem, 14);
+	$.glue.menu.register('page', elem, 8);
 
 	// (the colour button that used to sit here is in the background panel now,
 	// next to the picture it shares the background with - see
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			window.location = $.glue.base_url+'?'+pn+'/edit';
 		});
 	});
-	$.glue.menu.register('page', elem);
+	$.glue.menu.register('page', elem, 1);
 
 	//
 	// page background: one panel, the object properties panel's background
@@ -976,7 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		page_background_popover();
 		e.stopPropagation();
 	});
-	$.glue.menu.register('page', page_bg_button);
+	$.glue.menu.register('page', page_bg_button, 4);
 
 	// (the scroll toggle that used to sit in this menu is in the panel above
 	// now, with the rest of the background's settings - see
@@ -1110,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		grid_popover();
 	});
-	$.glue.menu.register('page', elem, 13);
+	$.glue.menu.register('page', elem, 7);
 	grid_btn = elem;
 
 	// centered/infinite layout toggle
@@ -1127,27 +1127,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.menu.hide();
 		page_layout_toggle();
 	});
-	$.glue.menu.register('page', elem, 10);
+	$.glue.menu.register('page', elem, 2);
 
-	// 'upload an asset': only files the other modules recognize - image,
-	// video, sound - which is what the picker offers, and what the generic
-	// upload pass hands to those modules. 'upload a file' below is the
-	// anything-goes sibling: every file lands as a download object.
-	var asset_upload = $.glue.upload.default_upload_handling();
-	asset_upload.multiple = true;
-	// the picker only offers what the modules can take; the tooltip would
-	// otherwise default to 'upload a file' (upload.button)
-	asset_upload.accept = 'image/*,video/*,audio/*';
-	asset_upload.tooltip = 'upload an asset: an image, video or sound file';
-	var asset_elem = $.glue.icon('upload-asset', 'upload an asset: an image, video or sound file');
-	$.glue.upload.button(asset_elem, { method: 'glue.upload_files', page: $.glue.page }, asset_upload);
-	asset_elem.addEventListener('click', function(e) {
-		// update x, y - the same spawn_coords the new menu's upload uses
-		var p = $.glue.menu.spawn_coords();
-		asset_upload.x = p.x;
-		asset_upload.y = p.y;
-	});
-	$.glue.menu.register('page', asset_elem, 11);
+	// the page menu's own upload button is gone (danja's call, 2026-09-25):
+	// the new menu's 'upload an asset' is the way in, and it was a second
+	// door to the same thing
 
 	// container edge handles, in centered mode only
 	if ($.glue.canvas.wrapper()) {

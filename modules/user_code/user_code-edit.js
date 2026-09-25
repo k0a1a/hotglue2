@@ -16,5 +16,5 @@ document.addEventListener('DOMContentLoaded', function() {
 		// blocker applies
 		window.open($.glue.base_url+'?'+$.glue.page+'/code', '_blank');
 	});
-	$.glue.menu.register('page', elem, 12);
+	$.glue.menu.register('page', elem, 6);
 });
