@@ -2085,7 +2085,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.register('object', 'object-adjust', elem, 7, true);
 
 	// border properties and effects: rounded corners, style, shadow and glow
-	elem = $.glue.icon('border-radius1', 'object border properties and effects: rounded corners, style, shadow and glow');
+	elem = $.glue.icon('object-border-properties', 'object border properties and effects: rounded corners, style, shadow and glow');
 	elem.addEventListener('click', function(e) {
 		object_edge_popover($.glue.owner(this));
 		e.stopPropagation();
