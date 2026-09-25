@@ -21,5 +21,5 @@ document.addEventListener('DOMContentLoaded', function() {
 		// blocker applies
 		window.open($.glue.base_url+'?options', '_blank');
 	});
-	$.glue.menu.register('page', elem, 5);
+	$.glue.menu.register('page', elem, 7);
 });

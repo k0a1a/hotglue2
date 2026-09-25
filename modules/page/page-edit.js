@@ -1110,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		grid_popover();
 	});
-	$.glue.menu.register('page', elem, 7);
+	$.glue.menu.register('page', elem, 5);
 	grid_btn = elem;
 
 	// centered/infinite layout toggle
