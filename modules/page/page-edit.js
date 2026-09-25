@@ -529,13 +529,13 @@ document.addEventListener('DOMContentLoaded', function() {
 		// which is also why this is not the shared button with a hook on it.
 		// (It also sizes itself to the panel's 26px, and this row is not.)
 		//
-		// The glyph is the shared one, though - color-26, what every other
+		// The glyph is the shared one, though - color, what every other
 		// colour button in the editor wears. It wore background-color for a day
 		// to say "this one replaces the background rather than recolouring
 		// something", and danja's call on 09-16 was that a colour button is a
 		// colour button: the difference is in what the click does, which the
 		// tooltip says, not in the drawing.
-		var colour = $.glue.popover.icon_button('color-26', 'set page background color');
+		var colour = $.glue.popover.icon_button('color', 'set page background color');
 		colour.classList.add('glue-background-color');
 		colour.addEventListener('click', function(e) {
 			e.stopPropagation();
