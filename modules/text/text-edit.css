@@ -365,6 +365,6 @@
 	   alignments it follows at half-again the row's spacing */
 	margin-left: 12px;
 	flex: 0 0 auto;
-	cursor: ew-resize;
+	cursor: all-scroll;
 	touch-action: none;
 }

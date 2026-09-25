@@ -2478,10 +2478,25 @@ function text_panel_build(pop, obj)
 				});
 			shadow.radius = 0;
 			write_shadow(false);
+			// the padding rows moved into this panel, so its reset is
+			// theirs too
+			if (pad_section) {
+				pad_section.reset();
+			}
 			save();
 			// every control now says something that is no longer true
 			sync();
 		}));
+	// --- padding: the manual rows, moved here from the object properties
+	// panel (danja's call, 2026-09-25) --------------------------------------
+	// The per-side numbers sit under the fold with the rest of the type,
+	// and the drag button up on the align row is the quick version of the
+	// same thing. The section is the object panel's own (it stores
+	// text-padding-* for text objects), shared rather than rebuilt. Above
+	// the reset, which stays the fold's last row.
+	var pad_section = (typeof object_padding_section == 'function') ?
+		object_padding_section(adv, obj, save) : null;
+
 	adv.appendChild(reset_row);
 
 	// --- sync: every control, in step with the target ----------------------

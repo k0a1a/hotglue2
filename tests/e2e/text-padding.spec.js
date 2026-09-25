@@ -1,16 +1,11 @@
 // Padding: one slider-plus-field for all four sides, a row per side under it,
-// and a reset back to flush - all of it inside the object properties panel's
-// one "more knobs" fold.
-//
-// The rows are a section of the OBJECT PROPERTIES panel, not a panel of their
-// own. They were the text menu's "change padding" button until 2026-09-16: the
-// text's inset from the object's sides is a property of the object, not
-// typography, which is what the text-controls SOW said when the Font and
-// Spacing panels were built. The section is still the text module's to build -
-// text-padding-x / text-padding-y is the only padding hotglue stores, so
-// object_properties_popover() in modules/object/object-edit.js only draws it
-// for a text object - and the panel's one reset runs its reset with the other
-// sections'.
+// and a reset back to flush - all of it inside the FONT popout's "more knobs"
+// fold, where it moved from the object properties panel on 2026-09-25
+// (danja's call: the text's inset from its box's sides sits with the type it
+// pads). The section is still the object panel's to build and the text
+// module's to store - text-padding-x / text-padding-y is the only padding
+// hotglue stores - and the font popout's reset runs the section's reset with
+// its own.
 //
 // The four sides were a fold of their own until 2026-09-17 (also "more knobs"),
 // and are rows of the panel's fold now - a panel may hold only one disclosure,
@@ -40,7 +35,9 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const panel = (page) => page.locator('.glue-popover.glue-properties-popover');
+const panel = (page) => page.locator('.glue-font-popover');
+// the object properties panel, for the kinds that still draw the section there
+const propsPanel = (page) => page.locator('.glue-popover.glue-properties-popover');
 // the uniform row, named: the panel it lives in has an x, a y, a scale and an
 // opacity row besides, so a bare .glue-popover-row would match the wrong one
 const uniform = (page) => panel(page).locator('.glue-padding-row');
@@ -68,7 +65,7 @@ async function openPanel(page, hg) {
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await byId(page, `${hg.pageName}.${ID}`).click();
-	await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
+	await page.getByTitle(/font: face, size and style/).click();
 	await expect(panel(page)).toBeVisible();
 	return `${hg.pageName}.${ID}`;		// the DOM id the object element carries
 }
@@ -169,21 +166,22 @@ test('the panel only draws the section for a text object, and there it is flush 
 		await waitForEditor(page, 1);
 		await byId(page, `${hg.pageName}.${ID}`).click();
 		await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
-		await expect(panel(page)).toBeVisible();
+		await expect(propsPanel(page)).toBeVisible();
 
-		await expect(panel(page).locator('.glue-padding-row')).toHaveCount(0);
-		await expect(panel(page).locator('.glue-padding-top')).toHaveCount(0);
+		await expect(propsPanel(page).locator('.glue-padding-row')).toHaveCount(0);
+		await expect(propsPanel(page).locator('.glue-padding-top')).toHaveCount(0);
 		// the panel's own fold is there, though - it holds the background rows,
 		// the transparency and the reset for every object, and an iframe is an
 		// object. What is absent is the padding INSIDE it, which is the absence
 		// that matters: a section this kind of object cannot have is not built,
 		// rather than built greyed.
-		await expect(panel(page).locator('.glue-popover-disclosure')).toHaveCount(1);
-		await openFold(page);
-		await expect(knobs(page).locator('.glue-padding-row')).toHaveCount(0);
+		await expect(propsPanel(page).locator('.glue-popover-disclosure')).toHaveCount(1);
+		await propsPanel(page).locator('.glue-popover-disclosure').click();
+		await expect(propsPanel(page).locator('.glue-popover-advanced')).toBeVisible();
+		await expect(propsPanel(page).locator('.glue-popover-advanced .glue-padding-row')).toHaveCount(0);
 		// and the panel is still the panel: the flip and the transparency
 		await expect(page.getByTitle('flip vertically')).toBeVisible();
-		await expect(panel(page).locator('.glue-opacity-row')).toBeVisible();
+		await expect(propsPanel(page).locator('.glue-opacity-row')).toBeVisible();
 	});
 
 test('reset goes back to no padding without moving the box',
