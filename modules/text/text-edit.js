@@ -2028,10 +2028,8 @@ function text_panel_build(pop, obj)
 		var b = $.glue.icon(s[3], s[2]);
 		b.classList.add('glue-font-size');
 		b.classList.add('glue-font-size-'+s[0]);
-		// the panel's icons are 26px; the toolbar's are 32 (the align
-		// buttons' precedent)
-		b.style.width = '26px';
-		b.style.height = '26px';
+		// the popout icons' own 32px box, like the align row (danja's
+		// call, 2026-09-25)
 		b.dataset.size = s[1];
 		b.addEventListener('click', function() {
 			set_size(s[1], true);
