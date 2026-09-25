@@ -203,16 +203,18 @@
 }
 
 .glue-font-toggle {
-	/* each toggle is the letter T wearing the effect it applies */
-	width: 26px;
-	height: 26px;
+	/* each toggle is the letter T wearing the effect it applies - the
+	   popout icons' own 32px box, like the align buttons beside them
+	   (danja's call, 2026-09-25) */
+	width: 32px;
+	height: 32px;
 	box-sizing: border-box;
 	border: 1px solid #000;
 	background: #fff;
 	color: #000;
 	font-family: serif;
 	font-size: 15px;
-	line-height: 24px;
+	line-height: 30px;
 	text-align: center;
 	cursor: pointer;
 }
@@ -241,17 +243,15 @@
 
 .glue-align-btn {
 	/* the toolbar's own icon buttons, reused inside the panel so alignment
-	   looks like what it looks like everywhere else - but at the size of the
-	   font panel's style toggles, which they sit beside in spirit. The box is
-	   26px (set where they are built, since $.glue.icon sizes them inline),
-	   so the artwork comes down from 30 to match. */
+	   looks like what it looks like everywhere else - the popout icons' own
+	   32px box, no bring-down any more (danja's call, 2026-09-25) */
 	flex: 0 0 auto;
 	cursor: pointer;
 }
 
 .glue-align-btn::before {
-	-webkit-mask-size: 22px 22px;
-	mask-size: 22px 22px;
+	-webkit-mask-size: 30px 30px;
+	mask-size: 30px 30px;
 }
 
 .glue-align-on::before {

@@ -2120,10 +2120,8 @@ function text_panel_build(pop, obj)
 	].forEach(function(a) {
 		var b = $.glue.icon(a[1], a[2]);
 		b.classList.add('glue-align-btn');
-		// the toolbar's icons are 32px; in here they sit next to the font
-		// panel's 26px style toggles and should match those instead
-		b.style.width = '26px';
-		b.style.height = '26px';
+		// the toolbar's own size, like every other popout icon now
+		// (danja's call, 2026-09-25)
 		b.dataset.align = a[0];
 		b.addEventListener('click', function() {
 			obj.style.textAlign = a[0];
