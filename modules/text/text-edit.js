@@ -2162,7 +2162,13 @@ function text_panel_build(pop, obj)
 		// the object panel's clamp: padding cannot eat more than half the
 		// shorter side without collapsing the content box
 		var max = Math.floor(Math.min(pad_outer_w, pad_outer_h)/2);
-		var pad = Math.max(0, Math.min(max, pad_start + (e.clientX - pad_start_x)));
+		// the drag follows whichever way the pointer went: the dominant
+		// axis is the slider - right or UP increases, the way a slider
+		// reads in either orientation (danja's call, 2026-09-25)
+		var dx = e.clientX - pad_start_x;
+		var dy = e.clientY - pad_start_y;
+		var d = (Math.abs(dx) >= Math.abs(dy)) ? dx : -dy;
+		var pad = Math.max(0, Math.min(max, pad_start + d));
 		obj.style.paddingTop = obj.style.paddingRight = obj.style.paddingBottom = obj.style.paddingLeft = pad+'px';
 		// the frame compensation: the stored size stays the OUTER one
 		obj.style.width = (pad_outer_w - 2*pad)+'px';

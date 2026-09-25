@@ -814,8 +814,20 @@ test('the padding button drags all four sides at once, and back',
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBe('40px');
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-y']).toBe('40px');
 
+		// a vertical drag works the same way: the dominant axis is the
+		// slider, so up or down adjusts exactly like left or right
+		await page.mouse.move(cx, cy);
+		await page.mouse.down();
+		await page.mouse.move(cx, cy - 30, { steps: 4 });
+		await page.mouse.up();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBe('30px');
+		await page.mouse.move(cx, cy - 30);
+		await page.mouse.down();
+		await page.mouse.move(cx, cy, { steps: 4 });
+		await page.mouse.up();
+
 		// and back to nothing
-		await page.mouse.move(cx + 40, cy);
+		await page.mouse.move(cx, cy);
 		await page.mouse.down();
 		await page.mouse.move(cx, cy, { steps: 4 });
 		await page.mouse.up();

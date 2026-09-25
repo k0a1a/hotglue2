@@ -361,9 +361,9 @@
 }
 
 .glue-font-padding {
-	/* the padding drag button on the align row, at double the distance -
-	   the row's own tool, set apart from the four alignments it follows */
-	margin-left: 24px;
+	/* the padding drag button on the align row, set apart from the four
+	   alignments it follows at half-again the row's spacing */
+	margin-left: 12px;
 	flex: 0 0 auto;
 	cursor: ew-resize;
 	touch-action: none;
