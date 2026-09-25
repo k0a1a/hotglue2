@@ -367,7 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.menu.hide();
 		page_reading_order_popover();
 	});
-	$.glue.menu.register('page', elem, 10);
+	// the reading-order button gave the layout toggle its centre slot in
+	// the top row and took the row's end in exchange (danja's call,
+	// 2026-09-25)
+	$.glue.menu.register('page', elem, 14);
 
 	// (the colour button that used to sit here is in the background panel now,
 	// next to the picture it shares the background with - see
@@ -1124,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.menu.hide();
 		page_layout_toggle();
 	});
-	$.glue.menu.register('page', elem, 14);
+	$.glue.menu.register('page', elem, 10);
 
 	// 'upload an asset': only files the other modules recognize - image,
 	// video, sound - which is what the picker offers, and what the generic
