@@ -2108,7 +2108,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// background alone. The icon is unchanged - a filled square is what an
 	// object's properties panel looks like from here, and the button's place in
 	// the row has not moved.
-	elem = $.glue.icon('background-set', 'object properties: background color/image, transparency, padding, flip, link');
+	elem = $.glue.icon('object-properties', 'object properties: background color/image, transparency, padding, flip, link');
 	elem.addEventListener('click', function(e) {
 		object_properties_popover($.glue.owner(this));
 		e.stopPropagation();
