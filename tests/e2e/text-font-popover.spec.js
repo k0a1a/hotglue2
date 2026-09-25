@@ -786,3 +786,39 @@ test('the fold says where new fonts come from', async ({ page, hg }) => {
 	await expect(link).toHaveText('site settings');
 	expect(await link.getAttribute('href')).toContain('?pages');
 });
+
+test('the padding button drags all four sides at once, and back',
+	async ({ page, hg }) => {
+		const id = hg.addObject('100000000001', ATTRS, 'padded');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, id);
+
+		const btn = page.locator('.glue-font-padding');
+		const b = await btn.boundingBox();
+		const cx = b.x + b.width / 2;
+		const cy = b.y + b.height / 2;
+
+		// drag right 40px: the padding follows the distance, all four sides
+		await page.mouse.move(cx, cy);
+		await page.mouse.down();
+		await page.mouse.move(cx + 40, cy, { steps: 4 });
+		await page.mouse.up();
+
+		const pads = await page.evaluate((i) => {
+			const el = document.getElementById(i);
+			const c = getComputedStyle(el);
+			return [c.paddingTop, c.paddingRight, c.paddingBottom, c.paddingLeft, el.offsetWidth].join(',');
+		}, id);
+		expect(pads).toBe('40px,40px,40px,40px,220');	// the frame compensation keeps the outer size
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBe('40px');
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-y']).toBe('40px');
+
+		// and back to nothing
+		await page.mouse.move(cx + 40, cy);
+		await page.mouse.down();
+		await page.mouse.move(cx, cy, { steps: 4 });
+		await page.mouse.up();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBeUndefined();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-y']).toBeUndefined();
+	});

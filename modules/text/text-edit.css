@@ -359,3 +359,12 @@
 	cursor: pointer;
 	flex: 0 0 auto;
 }
+
+.glue-font-padding {
+	/* the padding drag button on the align row, at double the distance -
+	   the row's own tool, set apart from the four alignments it follows */
+	margin-left: 24px;
+	flex: 0 0 auto;
+	cursor: ew-resize;
+	touch-action: none;
+}

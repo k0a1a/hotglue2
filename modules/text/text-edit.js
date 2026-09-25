@@ -2131,6 +2131,52 @@ function text_panel_build(pop, obj)
 	});
 	sync_align();
 
+	// --- padding: one drag, all four sides ---------------------------------
+	//
+	// Press and drag: the drag distance from the press is the padding,
+	// every side at once (the object panel's per-side rows are the fine
+	// tool - this is the quick one). The frame compensation is the object
+	// panel's own: the outer size stays what it was, the content box
+	// shrinks. The button sits on the align row at double the distance.
+	// (danja's call, 2026-09-25)
+	var pad_btn = $.glue.icon('padding', 'padding: press and drag to set it on all sides');
+	pad_btn.classList.add('glue-font-padding');
+	var pad_start = 0;
+	var pad_start_x = 0;
+	var pad_outer_w = 0;
+	var pad_outer_h = 0;
+	var pad_dragging = false;
+	pad_btn.addEventListener('pointerdown', function(e) {
+		e.preventDefault();
+		pad_dragging = true;
+		pad_start_x = e.clientX;
+		pad_start = parseInt(getComputedStyle(obj).paddingLeft) || 0;
+		pad_outer_w = obj.offsetWidth;
+		pad_outer_h = obj.offsetHeight;
+		pad_btn.setPointerCapture(e.pointerId);
+	});
+	pad_btn.addEventListener('pointermove', function(e) {
+		if (!pad_dragging) {
+			return;
+		}
+		// the object panel's clamp: padding cannot eat more than half the
+		// shorter side without collapsing the content box
+		var max = Math.floor(Math.min(pad_outer_w, pad_outer_h)/2);
+		var pad = Math.max(0, Math.min(max, pad_start + (e.clientX - pad_start_x)));
+		obj.style.paddingTop = obj.style.paddingRight = obj.style.paddingBottom = obj.style.paddingLeft = pad+'px';
+		// the frame compensation: the stored size stays the OUTER one
+		obj.style.width = (pad_outer_w - 2*pad)+'px';
+		obj.style.height = (pad_outer_h - 2*pad)+'px';
+	});
+	pad_btn.addEventListener('pointerup', function(e) {
+		if (!pad_dragging) {
+			return;
+		}
+		pad_dragging = false;
+		save();
+	});
+	align_row.appendChild(pad_btn);
+
 	pop.appendChild(align_row);
 
 	// the face, out in the open above the fold (danja's call, 2026-09-18 -
