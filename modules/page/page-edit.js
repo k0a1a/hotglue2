@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under it, and what each of them does. The glyph followed the name on
 	// 09-16: background-set, the half-filled frame, which says "the background
 	// is set" where the old one only said "there is a picture back here".
-	var page_bg_button = $.glue.icon('background-set', 'set page background');
+	var page_bg_button = $.glue.icon('page-background', 'set page background');
 	page_bg_button.addEventListener('click', function(e) {
 		page_background_popover();
 		e.stopPropagation();
