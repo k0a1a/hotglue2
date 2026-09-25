@@ -1323,11 +1323,6 @@ function text_panel_open(obj) {
 	if (!pop) {
 		return;
 	}
-	// The object counts as part of the panel: clicking it is the gesture that
-	// starts editing it, and that click must not close the panel on the way
-	// in (keep_open_target, js/edit.js). For the panel's whole life rather
-	// than for one gesture, because the click that keeps arriving is on the
-	// render the object contains.
 	pop.keep_open_target = obj;
 	pop.on_close = text_panel_state_clear;
 	text_panel_rebuild(pop, obj);
@@ -2633,6 +2628,50 @@ function text_panel_build(pop, obj)
 		// the alignments: the object's own, and only lit for it
 		sync_align();
 	};
+	// --- the fold's layout: two columns, a rule, then the rest ------------
+	//
+	// left: size, line, letter, word - right: the padding section's five
+	// rows - a rule - then shadow, fade and the text colour (which moves
+	// down here from the icon row). The shadow colour button joins the
+	// shadow row it colours. The reset stays the fold's last row.
+	// (danja's call, 2026-09-25)
+	var knobs_grid = document.createElement('div');
+	knobs_grid.className = 'glue-font-knobs-grid';
+	var knobs_left = document.createElement('div');
+	knobs_left.className = 'glue-font-knobs-col';
+	var knobs_right = document.createElement('div');
+	knobs_right.className = 'glue-font-knobs-col';
+	// the first four rows of the fold are the left column, in order
+	for (var ki = 0; ki < 4; ki++) {
+		knobs_left.appendChild(adv.children[0]);
+	}
+	// the padding section's five named rows are the right column
+	['glue-padding-row', 'glue-padding-top', 'glue-padding-right',
+		'glue-padding-bottom', 'glue-padding-left'].forEach(function(cls) {
+		var r = adv.querySelector(':scope > .'+cls);
+		if (r) {
+			knobs_right.appendChild(r);
+		}
+	});
+	knobs_grid.appendChild(knobs_left);
+	knobs_grid.appendChild(knobs_right);
+	adv.insertBefore(knobs_grid, adv.firstChild);
+	var knobs_rule = document.createElement('hr');
+	knobs_rule.className = 'glue-font-knobs-rule';
+	adv.insertBefore(knobs_rule, adv.firstChild.nextSibling);
+	// the shadow colour joins the shadow row it colours
+	shadow_radius.row.appendChild(shadow_color_btn);
+	// the text colour leaves the icon row for a row of its own below the
+	// rule
+	var color_row = $.glue.popover.row(false);
+	color_row.appendChild(color_btn);
+	adv.insertBefore(color_row, reset_row);
+
+	// The object counts as part of the panel: clicking it is the gesture that
+	// starts editing it, and that click must not close the panel on the way
+	// in (keep_open_target, js/edit.js). For the panel's whole life rather
+	// than for one gesture, because the click that keeps arriving is on the
+	// render the object contains.
 	text_panel_sync_fn = sync;
 	// the wheel's first centre must wait for the panel to be in the
 	// document - the build's own sync ran against an unattached list, so
