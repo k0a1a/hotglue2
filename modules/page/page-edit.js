@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.menu.hide();
 		page_reading_order_popover();
 	});
-	$.glue.menu.register('page', elem);
+	$.glue.menu.register('page', elem, 10);
 
 	// (the colour button that used to sit here is in the background panel now,
 	// next to the picture it shares the background with - see
