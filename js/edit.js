@@ -451,7 +451,7 @@ $.glue.popover = function()
 		// change(col) .. called live as the picker is dragged
 		// done(col) .. called once when the picker closes
 		color_button: function(title, current, change, done) {
-			var b = $.glue.icon('color', title);
+			var b = $.glue.icon('color-26', title);
 			b.classList.add('glue-popover-color');
 			// the panels' own controls are 26px; the toolbar's are 32
 			b.style.width = '26px';
