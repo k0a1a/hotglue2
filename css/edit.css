@@ -1183,7 +1183,7 @@
 .glue-btn-icon.glue-sheep::after {
 	/* The sheep's blink. Its eyes are two holes in the mask, so they paint
 	   in the button's own pale fill; the eyelid from the sheep's artwork
-	   (the hidden "eyelids" layer of sheep-icon5, extracted into its own
+	   (the hidden "eyelids" layer of clone-object, extracted into its own
 	   mask file - sheep-eyelid.svg - because nothing inside an SVG used
 	   as a mask can be shown from outside it) painted in the face's
 	   colour (#333) covers the eye row, making the eyes vanish: that is
