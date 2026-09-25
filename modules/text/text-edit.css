@@ -134,6 +134,14 @@
 	cursor: ns-resize;
 }
 
+.glue-font-face-list:focus {
+	/* the drum is focusable for the keyboard (tabindex 0), but the pick
+	   is the pointer's - the browser's default focus ring only ever drew
+	   where the selection already was, so it goes the way the panel's
+	   fields' outlines went */
+	outline: none;
+}
+
 .glue-font-face-arrow {
 	/* the up-down affordance, drawn on the wheel's own right end exactly
 	   where the number rows draw their ↔ - and like that one, the
