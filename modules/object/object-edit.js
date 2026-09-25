@@ -2121,7 +2121,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under an object, and how it is flipped, is as much a property of it as
 	// the id is. What this action is about is the object as an element: what it
 	// is called, what classes it carries, what it points at.
-	elem = $.glue.icon('object-props', 'object HTML attributes: id, class and custom values');
+	elem = $.glue.icon('object-html-attributes', 'object HTML attributes: id, class and custom values');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
