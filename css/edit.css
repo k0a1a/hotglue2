@@ -1238,8 +1238,8 @@
 }
 
 .glue-popover-color::before {
-	-webkit-mask-size: 22px 22px;
-	mask-size: 22px 22px;
+	-webkit-mask-size: 30px 30px;
+	mask-size: 30px 30px;
 }
 
 .glue-popover-disclosure {
@@ -1276,11 +1276,10 @@
 }
 
 .glue-popover-icon::before {
-	/* the mask comes down with the box: the artwork is drawn at 30px, and the
-	   frame's 1px border leaves 24px of padding box at 26 - so 22, the same
-	   bring-down .glue-popover-color and .glue-align-btn do */
-	-webkit-mask-size: 22px 22px;
-	mask-size: 22px 22px;
+	/* the mask rides the box at the menu's own size: the artwork is drawn at
+	   30px and the frame's 1px border leaves 30px of padding box at 32 */
+	-webkit-mask-size: 30px 30px;
+	mask-size: 30px 30px;
 }
 
 .glue-popover-advanced {

@@ -453,9 +453,6 @@ $.glue.popover = function()
 		color_button: function(title, current, change, done) {
 			var b = $.glue.icon('color-26', title);
 			b.classList.add('glue-popover-color');
-			// the panels' own controls are 26px; the toolbar's are 32
-			b.style.width = '26px';
-			b.style.height = '26px';
 			b.addEventListener('click', function(e) {
 				$.glue.colorpicker.show(current(), false, change, done);
 				e.stopPropagation();
@@ -531,18 +528,14 @@ $.glue.popover = function()
 			row.classList.add('glue-popover-icons');
 			return row;
 		},
-		// One action in such a row: $.glue.icon() with the panel's own 26px box
-		// - the size every other control in a panel is, the colour buttons and
-		// the font panel's toggles alike; $.glue.icon() sizes its own box at the
-		// toolbar's 32, so this is the bring-down, and the mask follows it in
-		// css/edit.css (.glue-popover-icon::before). Plus the class that says
-		// which row the button belongs to, so a panel cannot add an action and
-		// forget either.
+		// One action in such a row: $.glue.icon() at the menu's own size -
+		// the popout actions wear the same 32px box and 30px mask the menu
+		// buttons do (danja's call, 2026-09-25). The class says which row
+		// the button belongs to, so a panel cannot add an action and forget
+		// it.
 		icon_button: function(name, title) {
 			var b = $.glue.icon(name, title);
 			b.classList.add('glue-popover-icon');
-			b.style.width = '26px';
-			b.style.height = '26px';
 			return b;
 		},
 		// A slider paired with a number field for the same value, kept in
