@@ -1425,9 +1425,9 @@ function object_background_section(pop, icons, body, obj, save)
 	// nothing had happened - hence the clear first, with the confirm it has
 	// always had. See page_background_popover() in modules/page/page-edit.js
 	// for the long version of why this is not $.glue.popover.color_button().
-	// The glyph is the shared color-swatch, the same as the page panel's and
+	// The glyph is the shared color, the same as the page panel's and
 	// every other colour button in the editor (danja's call, 09-16).
-	var colour = $.glue.popover.icon_button('color-swatch', 'set object background color');
+	var colour = $.glue.popover.icon_button('color', 'set object background color');
 	colour.classList.add('glue-background-color');
 	colour.addEventListener('click', function(e) {
 		e.stopPropagation();
