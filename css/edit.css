@@ -1488,8 +1488,8 @@
 }
 
 .glue-edge-2col .glue-border-style {
-	/* the style dropdown is full-width in its column */
-	grid-column: 1 / -1;
+	grid-column: 2;
+	width: 80px;
 }
 
 .glue-edge-2col .glue-edge-unit {
