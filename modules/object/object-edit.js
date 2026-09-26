@@ -977,7 +977,9 @@ function object_edge_popover(obj)
 	edge_top.className = 'glue-edge-top';
 	edge_top.appendChild(edge_top_rows);
 	edge_top.appendChild(clip);
-	pop.appendChild(edge_top);
+	// back where the rows always sat: above "more knobs", before the
+	// fold's toggle
+	pop.insertBefore(edge_top, fold.toggle);
 	if (clip_row.parentNode) {
 		clip_row.remove();
 	}
