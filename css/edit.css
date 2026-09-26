@@ -1410,6 +1410,13 @@
 	grid-template-columns: 1fr 1fr;
 	column-gap: 14px;
 	row-gap: 13px;
+	align-items: start;
+}
+
+.glue-edge-shadow-grid {
+	/* the blur row keeps the rows' standard 6px from the distance row
+	   below the grid (danja's call, 2026-09-26) */
+	margin-bottom: 6px;
 }
 
 .glue-edge-knobs-col {
