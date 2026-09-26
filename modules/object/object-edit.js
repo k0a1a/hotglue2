@@ -941,21 +941,21 @@ function object_edge_popover(obj)
 			r.remove();
 		}
 	});
-	// then the first two rows are the left column (glow and opacity -
-	// fade moved up under width), the next four the right one, of which
-	// distance and angle go below the rule (danja's call, 2026-09-26)
+	// the split danja named (2026-09-26): opacity and blur on the left
+	// (with the glow number, the fold's first row), the glow colours on
+	// the right with the spread and the inside toggle. The rows start in
+	// their build order - glow, opacity, then blur and spread of the
+	// drop shadow, distance and angle already headed below - so the left
+	// column takes the first two and blur, the right one spread and the
+	// rest.
 	for (var ei = 0; ei < 2; ei++) {
 		edge_left.appendChild(adv.children[0]);
 	}
-	for (var ej = 0; ej < 4; ej++) {
-		edge_right.appendChild(adv.children[0]);
-	}
-	// the glow colours and the inside toggle come up into the fold grid:
-	// the two colour cells under the glow rows, the toggle under the
-	// spread rows
-	edge_left.appendChild(cell_glow);
-	edge_left.appendChild(cell_duo);
+	edge_left.appendChild(adv.children[0]);		// blur
+	edge_right.appendChild(adv.children[0]);		// spread
 	edge_right.appendChild(cell_inside);
+	edge_right.appendChild(cell_glow);
+	edge_right.appendChild(cell_duo);
 	edge_grid.appendChild(edge_left);
 	edge_grid.appendChild(edge_right);
 	adv.insertBefore(edge_grid, adv.firstChild);
