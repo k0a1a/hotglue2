@@ -1450,7 +1450,7 @@
 
 .glue-edge-grid {
 	display: grid;
-	grid-template-columns: 84px minmax(52px, auto) max-content max-content;
+	grid-template-columns: 74px 48px max-content max-content;
 	column-gap: 7px;
 	row-gap: 6px;
 	align-items: center;
@@ -1484,8 +1484,8 @@
    same grid, the swatch column at the end */
 .glue-edge-shadow-grid {
 	display: grid;
-	grid-template-columns: 84px minmax(52px, auto) max-content
-		84px minmax(52px, auto) max-content max-content;
+	grid-template-columns: 74px 48px max-content
+		74px 48px max-content max-content;
 	column-gap: 7px;
 	row-gap: 6px;
 	align-items: center;
