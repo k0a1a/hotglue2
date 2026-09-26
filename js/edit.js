@@ -451,10 +451,44 @@ $.glue.popover = function()
 		// change(col) .. called live as the picker is dragged
 		// done(col) .. called once when the picker closes
 		color_button: function(title, current, change, done, before) {
-			var b = $.glue.icon('color', title);
-			b.classList.add('glue-popover-color');
+			// every colour button in every popout wears the same swatch: a
+			// 20x20 square of the four most recent palette colours, the
+			// click opening the picker (danja's call, 2026-09-26). before
+			// is the pre-click hook the two background buttons carry - a
+			// false return cancels the open.
+			var b = document.createElement('div');
+			b.className = 'glue-popover-color';
+			b.title = title;
+			var cells = [];
+			for (var i = 0; i < 4; i++) {
+				var cell = document.createElement('div');
+				cell.className = 'glue-popover-color-cell';
+				b.appendChild(cell);
+				cells.push(cell);
+			}
+			var sync = function() {
+				var recent = $.glue.colorpicker.recent();
+				cells.forEach(function(cell, i) {
+					// the palette head is the most recent; the cells fill
+					// in order, a neutral grey where the palette runs out
+					cell.style.backgroundColor = (recent && i < recent.length) ? recent[i] : '#eee';
+				});
+			};
+			sync();
 			b.addEventListener('click', function(e) {
-				$.glue.colorpicker.show(current(), false, change, done);
+				if (before && before() === false) {
+					e.stopPropagation();
+					return;
+				}
+				$.glue.colorpicker.show(current(), false, change,
+					function(col) {
+						if (done) {
+							done(col);
+						}
+						// the picked colour is the palette's head now -
+						// the swatch says so
+						sync();
+					});
 				e.stopPropagation();
 			});
 			return b;
