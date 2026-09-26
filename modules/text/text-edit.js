@@ -1647,6 +1647,9 @@ function text_panel_build(pop, obj)
 	color_btn.addEventListener('mousedown', function() {
 		text_strip_snapshot = text_strip_range_for();
 	});
+	// offset to the right like the padding button on the align row
+	// (danja's call, 2026-09-26)
+	color_btn.classList.add('glue-font-color');
 	icons.appendChild(color_btn);
 	read_state_object();
 
@@ -2661,12 +2664,6 @@ function text_panel_build(pop, obj)
 	adv.insertBefore(knobs_rule, adv.firstChild.nextSibling);
 	// the shadow colour joins the shadow row it colours
 	shadow_radius.row.appendChild(shadow_color_btn);
-	// the text colour leaves the icon row for a row of its own below the
-	// rule
-	var color_row = $.glue.popover.row(false);
-	color_row.appendChild(color_btn);
-	adv.insertBefore(color_row, reset_row);
-
 	// The object counts as part of the panel: clicking it is the gesture that
 	// starts editing it, and that click must not close the panel on the way
 	// in (keep_open_target, js/edit.js). For the panel's whole life rather

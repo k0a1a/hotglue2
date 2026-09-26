@@ -360,11 +360,16 @@
 	flex: 0 0 auto;
 }
 
-.glue-font-padding {
-	/* the padding drag button on the align row, set apart from the four
-	   alignments it follows at half-again the row's spacing */
+.glue-font-padding,
+.glue-font-color {
+	/* set apart from the row's other buttons, the padding drag on the
+	   align row and the colour button on the style row */
 	margin-left: 12px;
 	flex: 0 0 auto;
+}
+
+.glue-font-padding {
+	/* the drag's own cursor and gesture */
 	cursor: all-scroll;
 	touch-action: none;
 }
