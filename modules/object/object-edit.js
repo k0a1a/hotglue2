@@ -1005,6 +1005,11 @@ function object_edge_popover(obj)
 	edge_top_rows.appendChild(fade.row);
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-top';
+	// the first section says what it is (danja's call, 2026-09-26)
+	var border_title = document.createElement('div');
+	border_title.className = 'glue-edge-section-title';
+	border_title.textContent = 'border';
+	edge_top.appendChild(border_title);
 	edge_top.appendChild(edge_top_rows);
 	// the clip's label, left of the button (danja's call, 2026-09-26)
 	var clip_cell = document.createElement('div');
@@ -1015,12 +1020,6 @@ function object_edge_popover(obj)
 	clip_cell.appendChild(clip_label);
 	clip_cell.appendChild(clip);
 	edge_top.appendChild(clip_cell);
-	// the first section says what it is, above the style row that leads
-	// it (danja's call, 2026-09-26)
-	var border_title = document.createElement('div');
-	border_title.className = 'glue-edge-section-title';
-	border_title.textContent = 'border';
-	pop.insertBefore(border_title, style_row);
 	// back where the rows always sat: above "more knobs", before the
 	// fold's toggle
 	pop.insertBefore(edge_top, fold.toggle);
