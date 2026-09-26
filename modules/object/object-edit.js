@@ -1936,7 +1936,24 @@ function object_padding_section(body, obj, save)
 	var bottom = knob('bottom', 'bottom');
 	var left = knob('left', 'left');
 
+	// the rows read the object's live padding again - after this section's
+	// own rows, and after the font popout's drag button, which writes the
+	// same four sides behind the rows' back (danja's call, 2026-09-26)
+	var sync = function() {
+		var c = getComputedStyle(obj);
+		pad.top = parseInt(c.paddingTop);
+		pad.right = parseInt(c.paddingRight);
+		pad.bottom = parseInt(c.paddingBottom);
+		pad.left = parseInt(c.paddingLeft);
+		all.set(pad.left);
+		top.set(pad.top);
+		right.set(pad.right);
+		bottom.set(pad.bottom);
+		left.set(pad.left);
+	};
+
 	return {
+		sync: sync,
 		reset: function() {
 			// Only when there is padding to clear: the compensation below writes
 			// the object's width and height, and an object nobody has padded

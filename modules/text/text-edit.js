@@ -2179,6 +2179,11 @@ function text_panel_build(pop, obj)
 			return;
 		}
 		pad_dragging = false;
+		// the section's rows read the new padding - the drag writes all
+		// four sides, the rows must say so
+		if (pad_section && pad_section.sync) {
+			pad_section.sync();
+		}
 		save();
 	});
 	align_row.appendChild(pad_btn);
