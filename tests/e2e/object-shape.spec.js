@@ -329,8 +329,9 @@ test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 // a background and leaves the text sharp - which is the whole point of it.
 
 const advanced = (page) => pop(page).locator('.glue-popover-advanced');
-// the fold's own fields, below the panel's three: 0 spread, 1 opacity,
-// 2 distance, 3 angle, 4 blur, 5 drop spread
+// the fold's own fields, in the two-column order (danja's call,
+// 2026-09-26): 0 glow spread, 1 opacity, 2 blur, 3 drop spread - the
+// left column - then 4 distance, 5 angle below the rule
 const advField = (page, n) => advanced(page).locator('.glue-popover-field').nth(n);
 
 async function setAdvRow(page, n, value) {
@@ -653,7 +654,7 @@ test('the drop shadow casts at a distance and an angle, and stores both',
 		// on the reload
 		await open(page, a);
 		await pop(page).locator('.glue-popover-disclosure').click();
-		await setAdvRow(page, 3, 135);
+		await setAdvRow(page, 5, 135);
 		await expect.poll(() => attrs(hg)['object-drop-angle']).toBe('135deg');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -700,8 +701,8 @@ test('drop shadow knobs without a colour store nothing', async ({ page, hg }) =>
 	await open(page, a);
 	await pop(page).locator('.glue-popover-disclosure').click();
 
-	await setAdvRow(page, 2, 30);
-	await setAdvRow(page, 3, 45);
+	await setAdvRow(page, 4, 30);
+	await setAdvRow(page, 5, 45);
 	expect(JSON.stringify(attrs(hg))).not.toContain('object-drop');
 	await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
 });

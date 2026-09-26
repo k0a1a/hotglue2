@@ -1517,34 +1517,26 @@ function object_background_section(pop, icons, body, obj, save)
 	// for the long version of why this is not $.glue.popover.color_button().
 	// The glyph is the shared color, the same as the page panel's and
 	// every other colour button in the editor (danja's call, 09-16).
-	var colour = $.glue.popover.icon_button('color', 'set object background color');
-	colour.classList.add('glue-background-color');
-	colour.addEventListener('click', function(e) {
-		e.stopPropagation();
-		var cleared = false;
-		if (object_has_background(obj)) {
-			if (!confirm('Do you want to clear the current background image?')) {
+	var colour = $.glue.popover.color_button('set object background color',
+		function() {
+			return getComputedStyle(obj).backgroundColor;
+		},
+		function(col) {
+			obj.style.backgroundColor = col;
+		},
+		function(col) {
+			save();
+		},
+		function() {
+			if (!object_has_background(obj)) {
 				return;
 			}
+			if (!confirm('Do you want to clear the current background image?')) {
+				return false;
+			}
 			bg_clear();
-			cleared = true;
-		}
-		// the object is passed as the picker's blend object - it is what the
-		// colour is being picked against
-		$.glue.colorpicker.show(getComputedStyle(obj).backgroundColor, false,
-			function(col) {
-				obj.style.backgroundColor = col;
-			},
-			function(col) {
-				save();
-			}, obj);
-		if (cleared) {
-			// the picture the rest of this panel describes has just gone, so
-			// the panel goes with it rather than sitting there showing rows
-			// about a background that is not there any more
-			$.glue.popover.close();
-		}
-	});
+		});
+	colour.classList.add('glue-background-color');
 	icons.appendChild(colour);
 
 	// The picture: a file picker $.glue.upload.button() lays over the icon, so

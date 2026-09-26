@@ -535,34 +535,37 @@ document.addEventListener('DOMContentLoaded', function() {
 		// something", and danja's call on 09-16 was that a colour button is a
 		// colour button: the difference is in what the click does, which the
 		// tooltip says, not in the drawing.
-		var colour = $.glue.popover.icon_button('color', 'set page background color');
-		colour.classList.add('glue-background-color');
-		colour.addEventListener('click', function(e) {
-			e.stopPropagation();
-			var cleared = false;
-			if (page_bg_has()) {
-				if (!confirm('Do you want to clear the current background image?')) {
+		// the shared swatch button, with the panel's own pre-click: a colour
+		// sits BEHIND an opaque picture, so picking one while a picture is
+		// up would look like nothing had happened - the clear comes first,
+		// with the confirm it has always had
+		var colour = $.glue.popover.color_button('set page background color',
+			function() {
+				return getComputedStyle(doc).backgroundColor;
+			},
+			function(col) {
+				doc.style.backgroundColor = col;
+			},
+			function(col) {
+				// update grid as well
+				$.glue.grid.update(true);
+				$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-color': col });
+			},
+			function() {
+				if (!page_bg_has()) {
 					return;
 				}
+				if (!confirm('Do you want to clear the current background image?')) {
+					return false;
+				}
 				page_bg_clear();
-				cleared = true;
-			}
-			$.glue.colorpicker.show(getComputedStyle(doc).backgroundColor, false,
-				function(col) {
-					doc.style.backgroundColor = col;
-				},
-				function(col) {
-					// update grid as well
-					$.glue.grid.update(true);
-					$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page', 'page-background-color': col });
-				});
-			if (cleared) {
-				// the picture the rest of this panel describes has just gone,
-				// so the panel goes with it rather than sitting there showing
-				// rows about a background that is not there any more
+				// the picture the rest of this panel describes has just
+				// gone, so the panel goes with it rather than sitting
+				// there showing rows about a background that is not there
+				// any more
 				$.glue.popover.close();
-			}
-		});
+			});
+		colour.classList.add('glue-background-color');
 		icons.appendChild(colour);
 
 		// The picture itself: the page menu's upload, moved in with the rest.

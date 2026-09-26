@@ -450,7 +450,7 @@ $.glue.popover = function()
 		// current() .. the colour to open on
 		// change(col) .. called live as the picker is dragged
 		// done(col) .. called once when the picker closes
-		color_button: function(title, current, change, done) {
+		color_button: function(title, current, change, done, before) {
 			var b = $.glue.icon('color', title);
 			b.classList.add('glue-popover-color');
 			b.addEventListener('click', function(e) {
