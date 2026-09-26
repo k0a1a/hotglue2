@@ -919,6 +919,14 @@
 	width: 180px;
 }
 
+.glue-glow-inner-toggle {
+	/* the inside toggle at the swatch's own 20x20 (danja's call,
+	   2026-09-26) */
+	width: 20px;
+	height: 20px;
+	line-height: 18px;
+}
+
 .glue-glyph-empty-square {
 	/* the "nothing set" placeholder of a panel's plain/decorative toggle
 	   (the heading panel's first option, the image panel's decorative):
