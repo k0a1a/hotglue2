@@ -980,7 +980,8 @@ function object_edge_popover(obj)
 	angle.row.classList.add('glue-col-r', 'glue-r2');
 	shadow_grid.appendChild(angle.row);
 	var shadow_colour_row = $.glue.popover.row('shadow color');
-	shadow_colour_row.classList.add('glue-col-s', 'glue-r1');
+	// its own row below angle (danja's call, 2026-09-27)
+	shadow_colour_row.classList.add('glue-col-l', 'glue-r3');
 	shadow_colour_row.appendChild(drop_colour);
 	shadow_grid.appendChild(shadow_colour_row);
 	adv.insertBefore(shadow_grid, shadow_title.nextSibling);
