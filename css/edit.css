@@ -1327,6 +1327,19 @@
 	pointer-events: none;
 }
 
+.glue-edge-top {
+	/* the round and width rows with the clip icon at their right */
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.glue-edge-top-rows {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+}
+
 .glue-edge-knobs-grid {
 	/* the edge fold's two columns: the type knobs left, the shadow knobs
 	   right, and below the rule the colours in the same split (danja's

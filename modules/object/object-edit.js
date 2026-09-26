@@ -966,6 +966,22 @@ function object_edge_popover(obj)
 	colour_grid.appendChild(colour_right);
 	adv.insertBefore(colour_grid, footer);
 
+	// --- the clip joins the two top numbers -------------------------------
+	// The round and width rows stack on the left, the clip icon sits at
+	// their right (danja's call, 2026-09-26) - the clip's old row goes.
+	var edge_top_rows = document.createElement('div');
+	edge_top_rows.className = 'glue-edge-top-rows';
+	edge_top_rows.appendChild(radius.row);
+	edge_top_rows.appendChild(border.row);
+	var edge_top = document.createElement('div');
+	edge_top.className = 'glue-edge-top';
+	edge_top.appendChild(edge_top_rows);
+	edge_top.appendChild(clip);
+	pop.appendChild(edge_top);
+	if (clip_row.parentNode) {
+		clip_row.remove();
+	}
+
 	$.glue.popover.show(pop);
 }
 
