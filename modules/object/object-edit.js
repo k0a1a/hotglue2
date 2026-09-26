@@ -596,7 +596,16 @@ function object_edge_popover(obj)
 			save();
 		});
 	colour.classList.add('glue-border-color');
-	style_row.appendChild(colour);
+	// the swatch says what it is, at the row's right (danja's call,
+	// 2026-09-26)
+	var colour_label = document.createElement('div');
+	colour_label.className = 'glue-popover-label';
+	colour_label.textContent = 'color';
+	var colour_wrap = document.createElement('div');
+	colour_wrap.className = 'glue-edge-border-colour';
+	colour_wrap.appendChild(colour_label);
+	colour_wrap.appendChild(colour);
+	style_row.appendChild(colour_wrap);
 
 	// --- what the panel shows ---------------------------------------------
 	//
@@ -931,6 +940,7 @@ function object_edge_popover(obj)
 	edge_top.appendChild(border.row);
 	edge_top.appendChild(fade.row);
 	var clip_row = $.glue.popover.row('clip');
+	clip_row.classList.add('glue-edge-clip-row');
 	clip_row.appendChild(clip);
 	edge_top.appendChild(clip_row);
 	pop.insertBefore(edge_top, fold.toggle);

@@ -1482,6 +1482,29 @@
 	grid-column: 2 / 4;
 }
 
+.glue-edge-border-colour {
+	/* the border colour's label and swatch, at the row's right */
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.glue-edge-clip-row {
+	/* the clip, at the row's right, icon at the swatch's 20x20 */
+	grid-column: 3 / -1;
+	justify-self: end;
+}
+
+.glue-edge-clip-row .glue-btn-icon {
+	width: 20px;
+	height: 20px;
+}
+
+.glue-edge-clip-row .glue-btn-icon::before {
+	-webkit-mask-size: 18px 18px;
+	mask-size: 18px 18px;
+}
+
 .glue-edge-grid > .glue-popover-row > .glue-popover-color,
 .glue-edge-grid > .glue-popover-row > .glue-font-toggle {
 	/* a control whose row has no label starts at the field column */
