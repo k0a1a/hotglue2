@@ -1448,106 +1448,63 @@
 /* [label][field][unit][swatch], rows as subgrids so every label, field,
    unit and swatch lines up by structure, not by hand */
 
-.glue-edge-grid {
+.glue-edge-2col {
+	/* every section is two columns of [label][field][unit] with a swatch
+	   column at the right; rows are subgrids placed by class (danja's
+	   call, 2026-09-26) */
 	display: grid;
-	grid-template-columns: 74px 48px max-content max-content;
+	grid-template-columns: 74px 48px max-content 74px 48px max-content max-content;
 	column-gap: 7px;
 	row-gap: 6px;
-	align-items: center;
+	align-items: start;
 }
 
-.glue-edge-grid > .glue-popover-row {
+.glue-edge-2col > .glue-popover-row {
 	display: grid;
 	grid-template-columns: subgrid;
-	grid-column: 1 / -1;
 	margin-bottom: 0;
 }
 
-.glue-edge-grid .glue-popover-label {
+.glue-edge-2col > .glue-popover-row.glue-col-l {
+	grid-column: 1 / 4;
+}
+
+.glue-edge-2col > .glue-popover-row.glue-col-r {
+	grid-column: 4 / 7;
+}
+
+.glue-edge-2col > .glue-popover-row.glue-col-s {
+	grid-column: 7;
+}
+
+.glue-edge-2col > .glue-popover-row.glue-r1 { grid-row: 1; }
+.glue-edge-2col > .glue-popover-row.glue-r2 { grid-row: 2; }
+.glue-edge-2col > .glue-popover-row.glue-r3 { grid-row: 3; }
+
+.glue-edge-2col .glue-popover-label {
 	justify-self: end;
 	text-align: right;
 	line-height: 1;
 }
 
-.glue-edge-grid > .glue-edge-section-title,
-.glue-edge-grid > .glue-edge-knobs-rule {
+.glue-edge-2col .glue-border-style {
+	/* the style dropdown is full-width in its column */
 	grid-column: 1 / -1;
 }
 
-.glue-edge-grid .glue-edge-unit {
+.glue-edge-2col .glue-edge-unit {
 	justify-self: start;
 }
 
-.glue-edge-grid .glue-border-style {
-	grid-column: 2 / 4;
+.glue-edge-2col > .glue-edge-section-title,
+.glue-edge-2col > .glue-edge-knobs-rule {
+	grid-column: 1 / -1;
 }
 
-.glue-edge-clip-row {
-	/* the clip, at the row's right, icon at the swatch's 20x20 */
-	grid-column: 3 / -1;
-	justify-self: end;
-}
-
-.glue-edge-clip-row .glue-btn-icon {
-	width: 20px;
-	height: 20px;
-}
-
-.glue-edge-clip-row .glue-btn-icon::before {
-	-webkit-mask-size: 18px 18px;
-	mask-size: 18px 18px;
-}
-
-.glue-edge-grid > .glue-popover-row > .glue-popover-color,
-.glue-edge-grid > .glue-popover-row > .glue-font-toggle {
+.glue-edge-2col > .glue-popover-row > .glue-popover-color,
+.glue-edge-2col > .glue-popover-row > .glue-font-toggle {
 	/* a control whose row has no label starts at the field column */
 	grid-column: 2;
 }
 
-/* the shadow group's 2x2: two label/field/unit triples side by side on the
-   same grid, the swatch column at the end */
-.glue-edge-shadow-grid {
-	display: grid;
-	grid-template-columns: 74px 48px max-content
-		74px 48px max-content max-content;
-	column-gap: 7px;
-	row-gap: 6px;
-	align-items: center;
-}
 
-.glue-edge-shadow-grid > .glue-popover-row {
-	display: grid;
-	grid-template-columns: subgrid;
-	grid-column: 1 / -1;
-	margin-bottom: 0;
-}
-
-.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-a {
-	grid-column: 1 / 4;
-	grid-row: 1;
-}
-
-.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-b {
-	grid-column: 4 / 7;
-	grid-row: 1;
-}
-
-.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-c {
-	grid-column: 1 / 4;
-	grid-row: 2;
-}
-
-.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-d {
-	grid-column: 4 / 7;
-	grid-row: 2;
-}
-
-.glue-edge-shadow-grid .glue-popover-label {
-	justify-self: end;
-}
-
-.glue-edge-shadow-grid > .glue-shadow-swatch {
-	grid-column: 7;
-	grid-row: 1;
-	justify-self: start;
-}
