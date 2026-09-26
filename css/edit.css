@@ -1331,10 +1331,12 @@
 .glue-edge-top {
 	/* two columns above "more knobs": the round and width rows left, the
 	   clip icon right, left-aligned in its column (danja's call,
-	   2026-09-26) */
+	   2026-09-26). The rows' own 6px bottom margin, so the disclosure
+	   below sits where it does in every other popout */
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	column-gap: 10px;
+	margin-bottom: 6px;
 }
 
 .glue-edge-clip {
