@@ -676,8 +676,11 @@
 
 .glue-popover-pair-cell .glue-popover-label {
 	/* a two-word label stays one line - wrapping dropped the second word
-	   onto a line of its own under the button (danja's call, 2026-09-26) */
+	   onto a line of its own under the button (danja's call, 2026-09-26).
+	   The labels that break on purpose (second<br>glow) ride a half
+	   line-height so the two lines read as the one label they are */
 	white-space: nowrap;
+	line-height: 0.6;
 }
 
 
