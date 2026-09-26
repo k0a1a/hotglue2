@@ -1326,3 +1326,24 @@
 	opacity: 0.35;
 	pointer-events: none;
 }
+
+.glue-edge-knobs-grid {
+	/* the edge fold's two columns: the type knobs left, the shadow knobs
+	   right, and below the rule the colours in the same split (danja's
+	   call, 2026-09-26) */
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 14px;
+}
+
+.glue-edge-knobs-col {
+	display: flex;
+	flex-direction: column;
+}
+
+.glue-edge-knobs-rule {
+	border: none;
+	border-top: 1px solid #ccc;
+	margin: 10px 0;
+	width: 100%;
+}
