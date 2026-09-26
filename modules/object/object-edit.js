@@ -976,7 +976,15 @@ function object_edge_popover(obj)
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-top';
 	edge_top.appendChild(edge_top_rows);
-	edge_top.appendChild(clip);
+	// the clip's label, left of the button (danja's call, 2026-09-26)
+	var clip_cell = document.createElement('div');
+	clip_cell.className = 'glue-edge-clip';
+	var clip_label = document.createElement('div');
+	clip_label.className = 'glue-popover-label';
+	clip_label.textContent = 'clip';
+	clip_cell.appendChild(clip_label);
+	clip_cell.appendChild(clip);
+	edge_top.appendChild(clip_cell);
 	// back where the rows always sat: above "more knobs", before the
 	// fold's toggle
 	pop.insertBefore(edge_top, fold.toggle);

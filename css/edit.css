@@ -1337,7 +1337,11 @@
 	column-gap: 10px;
 }
 
-.glue-edge-top > .glue-btn-icon {
+.glue-edge-clip {
+	/* the label and the button, left-aligned in their column */
+	display: flex;
+	align-items: center;
+	gap: 7px;
 	justify-self: start;
 	align-self: center;
 }
