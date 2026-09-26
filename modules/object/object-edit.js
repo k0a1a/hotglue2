@@ -939,15 +939,20 @@ function object_edge_popover(obj)
 			r.remove();
 		}
 	});
-	// the fold's sections split (danja's call, 2026-09-26): the border
-	// glow grid - the two glow numbers left, the colours and the inside
-	// toggle right - then the object shadow grid - blur and spread -
-	// then the distance, angle and shadow colour below
+	// the split danja named (2026-09-26): opacity and blur on the left
+	// (with the glow number, the fold's first row), the glow colours on
+	// the right with the spread and the inside toggle. The rows start in
+	// their build order - glow, opacity, then blur and spread of the
+	// drop shadow, distance and angle already headed below - so the left
+	// column takes the first two and blur, the right one spread and the
+	// rest.
 	for (var ei = 0; ei < 2; ei++) {
 		edge_left.appendChild(adv.children[0]);
 	}
+	edge_left.appendChild(adv.children[0]);		// blur
+	edge_right.appendChild(adv.children[0]);		// spread
 	edge_right.appendChild(cell_glow);
-	// inside sits right under the glow colour
+	// inside sits right under the glow colour (danja's call, 2026-09-26)
 	edge_right.appendChild(cell_inside);
 	edge_right.appendChild(cell_duo);
 	// the fold's first section says what it is (danja's call, 2026-09-26)
@@ -961,25 +966,8 @@ function object_edge_popover(obj)
 	var edge_rule = document.createElement('hr');
 	edge_rule.className = 'glue-edge-knobs-rule';
 	adv.insertBefore(edge_rule, edge_grid.nextSibling);
-	// the object shadow section: its own grid, blur and spread, led by
-	// its subtitle (danja's call, 2026-09-26)
-	var shadow_title = document.createElement('div');
-	shadow_title.className = 'glue-edge-section-title';
-	shadow_title.textContent = 'object shadow';
-	adv.insertBefore(shadow_title, edge_rule.nextSibling);
-	var shadow_grid = document.createElement('div');
-	shadow_grid.className = 'glue-edge-knobs-grid';
-	var shadow_left = document.createElement('div');
-	shadow_left.className = 'glue-edge-knobs-col';
-	var shadow_right = document.createElement('div');
-	shadow_right.className = 'glue-edge-knobs-col';
-	shadow_left.appendChild(adv.children[0]);	// blur
-	shadow_right.appendChild(adv.children[0]);	// spread
-	shadow_grid.appendChild(shadow_left);
-	shadow_grid.appendChild(shadow_right);
-	adv.insertBefore(shadow_grid, shadow_title.nextSibling);
-	// below: distance and angle on the left, the shadow colour on the
-	// right
+	// below the rule: distance and angle on the left, the shadow colour
+	// on the right
 	var colour_grid = document.createElement('div');
 	colour_grid.className = 'glue-edge-knobs-grid';
 	var colour_left = document.createElement('div');
@@ -989,6 +977,11 @@ function object_edge_popover(obj)
 	colour_left.appendChild(distance.row);
 	colour_left.appendChild(angle.row);
 	colour_right.appendChild(cell_drop);
+	// the second section says what it is (danja's call, 2026-09-26)
+	var shadow_title = document.createElement('div');
+	shadow_title.className = 'glue-edge-section-title';
+	shadow_title.textContent = 'object shadow';
+	colour_grid.appendChild(shadow_title);
 	colour_grid.appendChild(colour_left);
 	colour_grid.appendChild(colour_right);
 	adv.insertBefore(colour_grid, footer);
