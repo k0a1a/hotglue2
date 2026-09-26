@@ -823,14 +823,7 @@ function object_edge_popover(obj)
 		});
 	drop_colour.classList.add('glue-drop-color');
 
-	var cell_glow = pair_cell('glow', glow_colour);
-	var cell_inside = pair_cell('inside', inner_toggle);
-	var cell_duo = pair_cell('second<br>glow', duotone);
-	var cell_drop = pair_cell('shadow<br>color', drop_colour);
-	var pair_glow = pair_row(cell_glow, cell_inside);
-	var pair_duo = pair_row(cell_duo, cell_drop);
-	adv.appendChild(pair_glow);
-	adv.appendChild(pair_duo);
+
 
 	var distance = $.glue.popover.number_row('distance', {
 		min: 0, max: 100, step: 1, unit: 'px',
