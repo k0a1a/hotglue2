@@ -922,9 +922,10 @@
 	width: 180px;
 }
 
-.glue-glow-inner-toggle {
-	/* the inside toggle at the swatch's own 20x20 (danja's call,
-	   2026-09-26) */
+.glue-edge-popover .glue-glow-inner-toggle {
+	/* the inside toggle at the swatch's own 20x20 - scoped to beat the
+	   .glue-font-toggle 32px the module css loads after this file
+	   (danja's call, 2026-09-26) */
 	width: 20px;
 	height: 20px;
 	line-height: 18px;
