@@ -826,7 +826,7 @@ function object_edge_popover(obj)
 
 	var cell_glow = pair_cell('glow', glow_colour);
 	var cell_inside = pair_cell('inside', inner_toggle);
-	var cell_duo = pair_cell('2nd glow', duotone);
+	var cell_duo = pair_cell('glow 2', duotone);
 	var cell_drop = pair_cell('shadow', drop_colour);
 	// the word colour right before the icon (danja's call, 2026-09-26)
 	var drop_color_label = document.createElement('div');
@@ -956,8 +956,9 @@ function object_edge_popover(obj)
 	}
 	edge_left.appendChild(adv.children[0]);		// blur
 	edge_right.appendChild(adv.children[0]);		// spread
-	edge_right.appendChild(cell_inside);
 	edge_right.appendChild(cell_glow);
+	// inside sits right under the glow colour (danja's call, 2026-09-26)
+	edge_right.appendChild(cell_inside);
 	edge_right.appendChild(cell_duo);
 	edge_grid.appendChild(edge_left);
 	edge_grid.appendChild(edge_right);
