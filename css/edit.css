@@ -1413,12 +1413,6 @@
 	align-items: start;
 }
 
-.glue-edge-shadow-grid {
-	/* the blur row keeps the rows' standard 6px from the distance row
-	   below the grid (danja's call, 2026-09-26) */
-	margin-bottom: 6px;
-}
-
 .glue-edge-knobs-col {
 	display: flex;
 	flex-direction: column;
@@ -1448,4 +1442,88 @@
 .glue-border-colour-cell {
 	width: 10px;
 	height: 10px;
+}
+
+/* --- the edge popover's grid (SOW-popover-grid.md) ---------------------- */
+/* [label][field][unit][swatch], rows as subgrids so every label, field,
+   unit and swatch lines up by structure, not by hand */
+
+.glue-edge-grid {
+	display: grid;
+	grid-template-columns: 84px minmax(52px, auto) max-content max-content;
+	column-gap: 7px;
+	row-gap: 6px;
+	align-items: center;
+}
+
+.glue-edge-grid > .glue-popover-row {
+	display: grid;
+	grid-template-columns: subgrid;
+	grid-column: 1 / -1;
+	margin-bottom: 0;
+}
+
+.glue-edge-grid .glue-popover-label {
+	justify-self: end;
+}
+
+.glue-edge-grid > .glue-edge-section-title,
+.glue-edge-grid > .glue-edge-knobs-rule {
+	grid-column: 1 / -1;
+}
+
+.glue-edge-grid .glue-edge-unit {
+	justify-self: start;
+}
+
+.glue-edge-grid .glue-border-style {
+	grid-column: 2 / 4;
+}
+
+/* the shadow group's 2x2: two label/field/unit triples side by side on the
+   same grid, the swatch column at the end */
+.glue-edge-shadow-grid {
+	display: grid;
+	grid-template-columns: 84px minmax(52px, auto) max-content
+		84px minmax(52px, auto) max-content max-content;
+	column-gap: 7px;
+	row-gap: 6px;
+	align-items: center;
+}
+
+.glue-edge-shadow-grid > .glue-popover-row {
+	display: grid;
+	grid-template-columns: subgrid;
+	grid-column: 1 / -1;
+	margin-bottom: 0;
+}
+
+.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-a {
+	grid-column: 1 / 4;
+	grid-row: 1;
+}
+
+.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-b {
+	grid-column: 4 / 7;
+	grid-row: 1;
+}
+
+.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-c {
+	grid-column: 1 / 4;
+	grid-row: 2;
+}
+
+.glue-edge-shadow-grid > .glue-popover-row.glue-shadow-row-d {
+	grid-column: 4 / 7;
+	grid-row: 2;
+}
+
+.glue-edge-shadow-grid .glue-popover-label {
+	justify-self: end;
+}
+
+.glue-edge-shadow-grid > .glue-shadow-swatch {
+	grid-column: 7;
+	grid-row: 1;
+	justify-self: start;
 }
