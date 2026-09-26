@@ -718,7 +718,7 @@ function object_edge_popover(obj)
 		cell.className = 'glue-popover-pair-cell';
 		var l = document.createElement('div');
 		l.className = 'glue-popover-label';
-		l.textContent = label;
+		l.innerHTML = label;
 		cell.appendChild(l);
 		cell.appendChild(control);
 		return cell;
@@ -826,13 +826,8 @@ function object_edge_popover(obj)
 
 	var cell_glow = pair_cell('glow', glow_colour);
 	var cell_inside = pair_cell('inside', inner_toggle);
-	var cell_duo = pair_cell('glow 2', duotone);
-	var cell_drop = pair_cell('shadow', drop_colour);
-	// the word colour right before the icon (danja's call, 2026-09-26)
-	var drop_color_label = document.createElement('div');
-	drop_color_label.className = 'glue-popover-label';
-	drop_color_label.textContent = 'color';
-	cell_drop.insertBefore(drop_color_label, drop_colour);
+	var cell_duo = pair_cell('second<br>glow', duotone);
+	var cell_drop = pair_cell('shadow<br>color', drop_colour);
 	var pair_glow = pair_row(cell_glow, cell_inside);
 	var pair_duo = pair_row(cell_duo, cell_drop);
 	adv.appendChild(pair_glow);
