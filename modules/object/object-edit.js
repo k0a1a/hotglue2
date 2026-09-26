@@ -581,18 +581,42 @@ function object_edge_popover(obj)
 	});
 	style_row.appendChild(select);
 
-	var colour = $.glue.popover.color_button('border colour',
-		function() {
-			return getComputedStyle(obj).borderTopColor;
-		},
-		function(col) {
-			obj.style.borderColor = col;
-			ensure_width();
-		},
-		function(col) {
-			save();
+	// The border colour: a 24x24 swatch of the four most recent colours
+	// from the picker's palette, four 12x12 squares (danja's call,
+	// 2026-09-26). The click is the same picker the old glyph opened.
+	var colour = document.createElement('div');
+	colour.className = 'glue-border-colour';
+	colour.title = 'border colour';
+	var swatch_cells = [];
+	for (var si = 0; si < 4; si++) {
+		var cell = document.createElement('div');
+		cell.className = 'glue-border-colour-cell';
+		colour.appendChild(cell);
+		swatch_cells.push(cell);
+	}
+	var swatch_sync = function() {
+		var recent = $.glue.colorpicker.recent();
+		swatch_cells.forEach(function(cell, i) {
+			// the palette head is the most recent; the cells fill in
+			// order, a neutral grey where the palette runs out
+			cell.style.backgroundColor = (recent && i < recent.length) ? recent[i] : '#eee';
 		});
-	colour.classList.add('glue-border-color');
+	};
+	swatch_sync();
+	colour.addEventListener('click', function(e) {
+		e.stopPropagation();
+		$.glue.colorpicker.show(getComputedStyle(obj).borderTopColor, false,
+			function(col) {
+				obj.style.borderColor = col;
+				ensure_width();
+			},
+			function(col) {
+				save();
+				// the picked colour is the palette's head now - the
+				// swatch says so
+				swatch_sync();
+			});
+	});
 	style_row.appendChild(colour);
 
 	// --- what the panel shows ---------------------------------------------

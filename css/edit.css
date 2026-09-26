@@ -1386,3 +1386,22 @@
 	margin: 10px 0;
 	width: 100%;
 }
+
+.glue-border-colour {
+	/* the border colour's swatch: a 24x24 square of the four most recent
+	   palette colours, four 12x12 squares (danja's call, 2026-09-26) */
+	width: 24px;
+	height: 24px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	flex: 0 0 auto;
+	cursor: pointer;
+	border: 1px solid #666;
+	box-sizing: content-box;
+}
+
+.glue-border-colour-cell {
+	width: 12px;
+	height: 12px;
+}
