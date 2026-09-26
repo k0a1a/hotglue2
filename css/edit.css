@@ -1400,6 +1400,12 @@
 	margin-bottom: 13px;
 }
 
+.glue-edge-shadow-grid {
+	/* the shadow grid keeps the sections' own 13px from the distance and
+	   angle rows below it (danja's call, 2026-09-26) */
+	margin-bottom: 13px;
+}
+
 .glue-edge-knobs-grid {
 	/* the edge fold's two columns: the type knobs left, the shadow knobs
 	   right, and below the rule the colours in the same split (danja's
