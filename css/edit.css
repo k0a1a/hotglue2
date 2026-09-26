@@ -674,6 +674,12 @@
 	padding-block-end: 8px;
 }
 
+.glue-popover-pair-cell .glue-popover-label {
+	/* a two-word label stays one line - wrapping dropped the second word
+	   onto a line of its own under the button (danja's call, 2026-09-26) */
+	white-space: nowrap;
+}
+
 
 .glue-popover-label {
 	/* Content-sized, NO fixed width: a width squeezes the control on the
