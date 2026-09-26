@@ -965,10 +965,18 @@ function object_edge_popover(obj)
 	// obviously the colour (danja's call, 2026-09-26)
 	var controls_grid = document.createElement('div');
 	controls_grid.className = 'glue-edge-grid';
-	var shadow_colour_row = $.glue.popover.row(false);
+	var shadow_colour_row = $.glue.popover.row('shadow color');
 	shadow_colour_row.appendChild(drop_colour);
 	controls_grid.appendChild(shadow_colour_row);
 	adv.insertBefore(controls_grid, edge_rule.nextSibling);
+	// every two-word label breaks onto two lines (danja's call,
+	// 2026-09-26)
+	[spread.row, glow2_row, shadow_colour_row].forEach(function(r) {
+		var l = r.querySelector(':scope > .glue-popover-label');
+		if (l) {
+			l.innerHTML = l.textContent.replace(' ', '<br>');
+		}
+	});
 
 	// the object shadow group: the four numbers 2x2 on one grid, the
 	// shadow colour on the swatch column of the first pair

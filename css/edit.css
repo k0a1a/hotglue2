@@ -1465,6 +1465,8 @@
 
 .glue-edge-grid .glue-popover-label {
 	justify-self: end;
+	text-align: right;
+	line-height: 1;
 }
 
 .glue-edge-grid > .glue-edge-section-title,
