@@ -949,17 +949,31 @@ function object_edge_popover(obj)
 	glow_title.className = 'glue-edge-section-title';
 	glow_title.textContent = 'border glow';
 	edge_grid.appendChild(glow_title);
-	spread.row.appendChild(glow_colour);
 	edge_grid.appendChild(spread.row);
-	strength.row.appendChild(duotone);
 	edge_grid.appendChild(strength.row);
-	var inside_row = $.glue.popover.row('inside');
-	inside_row.appendChild(inner_toggle);
-	edge_grid.appendChild(inside_row);
 	adv.insertBefore(edge_grid, adv.firstChild);
 	var edge_rule = document.createElement('hr');
 	edge_rule.className = 'glue-edge-knobs-rule';
 	adv.insertBefore(edge_rule, edge_grid.nextSibling);
+
+	// the four effect controls, one section of their own above the shadow
+	// numbers: the two glow swatches, the inside toggle, the shadow colour
+	// (danja's call, 2026-09-26)
+	var controls_grid = document.createElement('div');
+	controls_grid.className = 'glue-edge-grid';
+	var glow_row = $.glue.popover.row('glow');
+	glow_row.appendChild(glow_colour);
+	controls_grid.appendChild(glow_row);
+	var glow2_row = $.glue.popover.row('second glow');
+	glow2_row.appendChild(duotone);
+	controls_grid.appendChild(glow2_row);
+	var inside_row = $.glue.popover.row('inside');
+	inside_row.appendChild(inner_toggle);
+	controls_grid.appendChild(inside_row);
+	var shadow_colour_row = $.glue.popover.row('shadow color');
+	shadow_colour_row.appendChild(drop_colour);
+	controls_grid.appendChild(shadow_colour_row);
+	adv.insertBefore(controls_grid, edge_rule.nextSibling);
 
 	// the object shadow group: the four numbers 2x2 on one grid, the
 	// shadow colour on the swatch column of the first pair
@@ -977,10 +991,6 @@ function object_edge_popover(obj)
 	shadow_grid.appendChild(drop_spread.row);
 	shadow_grid.appendChild(distance.row);
 	shadow_grid.appendChild(angle.row);
-	var shadow_swatch_row = $.glue.popover.row(false);
-	shadow_swatch_row.className += ' glue-shadow-swatch';
-	shadow_swatch_row.appendChild(drop_colour);
-	shadow_grid.appendChild(shadow_swatch_row);
 	adv.insertBefore(shadow_grid, shadow_title.nextSibling);
 
 	$.glue.popover.show(pop);
