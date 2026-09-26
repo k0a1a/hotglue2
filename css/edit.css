@@ -671,6 +671,7 @@
 	gap: 7px;
 	flex: 1 1 0;
 	min-width: 0;
+	padding-block-end: 8px;
 }
 
 
