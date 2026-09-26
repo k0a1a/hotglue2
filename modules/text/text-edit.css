@@ -390,7 +390,7 @@
 .glue-font-knobs-rule {
 	/* the divider between the columns and the shadow/fade/colour rows */
 	border: none;
-	border-top: 1px solid #ccc;
+	border-top: 1px solid #666;	/* 50% darker than the old #ccc, danja's call 2026-09-26 */
 	margin: 10px 0;
 	width: 100%;
 }

@@ -1292,7 +1292,7 @@
 .glue-popover-advanced {
 	/* set off from the rows above it, since it is a different mechanism
 	   rather than more of the same */
-	border-top: 1px solid #ddd;
+	border-top: 1px solid #666;	/* 50% darker than the old #ddd, danja's call 2026-09-26 */
 	padding-top: 5px;
 	margin-bottom: 5px;
 }
@@ -1354,7 +1354,7 @@
 	gap: 7px;
 	justify-self: start;
 	align-self: center;
-	border-left: 1px solid #ddd;
+	border-left: 1px solid #666;	/* 50% darker than the old #ddd, danja's call 2026-09-26 */
 	padding-left: 10px;
 }
 
@@ -1382,7 +1382,7 @@
 
 .glue-edge-knobs-rule {
 	border: none;
-	border-top: 1px solid #ccc;
+	border-top: 1px solid #666;	/* 50% darker than the old #ccc, danja's call 2026-09-26 */
 	margin: 10px 0;
 	width: 100%;
 }
