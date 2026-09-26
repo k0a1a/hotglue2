@@ -1329,16 +1329,22 @@
 }
 
 .glue-edge-top {
-	/* the round and width rows with the clip icon at their right */
-	display: flex;
-	align-items: center;
-	gap: 10px;
+	/* two columns above "more knobs": the round and width rows left, the
+	   clip icon right, left-aligned in its column (danja's call,
+	   2026-09-26) */
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 10px;
+}
+
+.glue-edge-top > .glue-btn-icon {
+	justify-self: start;
+	align-self: center;
 }
 
 .glue-edge-top-rows {
 	display: flex;
 	flex-direction: column;
-	flex: 1 1 auto;
 }
 
 .glue-edge-knobs-grid {
