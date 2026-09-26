@@ -680,7 +680,7 @@
 	   The labels that break on purpose (second<br>glow) ride a half
 	   line-height so the two lines read as the one label they are */
 	white-space: nowrap;
-	line-height: 0.6;
+	line-height: 0.45;	/* the second line sits 2px higher (danja's call, 2026-09-26) */
 }
 
 
