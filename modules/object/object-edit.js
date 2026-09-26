@@ -941,9 +941,10 @@ function object_edge_popover(obj)
 			r.remove();
 		}
 	});
-	// then the first three rows are the left column, the next four the
-	// right one (the footer stays last, out of the grid)
-	for (var ei = 0; ei < 3; ei++) {
+	// then the first two rows are the left column (glow and opacity -
+	// fade moved up under width), the next four the right one (the footer
+	// stays last, out of the grid)
+	for (var ei = 0; ei < 2; ei++) {
 		edge_left.appendChild(adv.children[0]);
 	}
 	for (var ej = 0; ej < 4; ej++) {
@@ -978,6 +979,9 @@ function object_edge_popover(obj)
 	edge_top_rows.className = 'glue-edge-top-rows';
 	edge_top_rows.appendChild(radius.row);
 	edge_top_rows.appendChild(border.row);
+	// fade sits right under width, out of the fold (danja's call,
+	// 2026-09-26)
+	edge_top_rows.appendChild(fade.row);
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-top';
 	edge_top.appendChild(edge_top_rows);
