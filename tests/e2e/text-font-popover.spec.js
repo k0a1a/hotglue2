@@ -787,7 +787,7 @@ test('the fold says where new fonts come from', async ({ page, hg }) => {
 	expect(await link.getAttribute('href')).toContain('?pages');
 });
 
-test('the padding button drags all four sides at once, and back',
+test('the padding button drags the text by the cursor, side by side',
 	async ({ page, hg }) => {
 		const id = hg.addObject('100000000001', ATTRS, 'padded');
 		await page.goto(hg.editUrl());
@@ -799,7 +799,8 @@ test('the padding button drags all four sides at once, and back',
 		const cx = b.x + b.width / 2;
 		const cy = b.y + b.height / 2;
 
-		// drag right 40px: the padding follows the distance, all four sides
+		// drag right 40px: the LEFT padding follows the cursor, the other
+		// sides stay put
 		await page.mouse.move(cx, cy);
 		await page.mouse.down();
 		await page.mouse.move(cx + 40, cy, { steps: 4 });
@@ -810,27 +811,29 @@ test('the padding button drags all four sides at once, and back',
 			const c = getComputedStyle(el);
 			return [c.paddingTop, c.paddingRight, c.paddingBottom, c.paddingLeft, el.offsetWidth].join(',');
 		}, id);
-		expect(pads).toBe('40px,40px,40px,40px,220');	// the frame compensation keeps the outer size
-		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBe('40px');
-		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-y']).toBe('40px');
+		expect(pads).toBe('0px,0px,0px,40px,220');	// the frame compensation keeps the outer size
+		// the sides differ now, so the per-side key stores
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-left']).toBe('40px');
+		// and the fold's rows say the same four, not one stale number
+		await expect(pop(page).locator('.glue-padding-top .glue-popover-field')).toHaveValue('0');
+		await expect(pop(page).locator('.glue-padding-right .glue-popover-field')).toHaveValue('0');
+		await expect(pop(page).locator('.glue-padding-bottom .glue-popover-field')).toHaveValue('0');
+		await expect(pop(page).locator('.glue-padding-left .glue-popover-field')).toHaveValue('40');
 
-		// a vertical drag works the same way: the dominant axis is the
-		// slider, so up or down adjusts exactly like left or right
-		await page.mouse.move(cx, cy);
+		// drag down 30px: the TOP padding joins in, the left stays
+		await page.mouse.move(cx + 40, cy);
 		await page.mouse.down();
-		await page.mouse.move(cx, cy - 30, { steps: 4 });
+		await page.mouse.move(cx + 40, cy + 30, { steps: 4 });
 		await page.mouse.up();
-		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBe('30px');
-		await page.mouse.move(cx, cy - 30);
-		await page.mouse.down();
-		await page.mouse.move(cx, cy, { steps: 4 });
-		await page.mouse.up();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-top']).toBe('30px');
+		expect(await page.evaluate((i) =>
+			getComputedStyle(document.getElementById(i)).paddingLeft, id)).toBe('40px');
 
 		// and back to nothing
-		await page.mouse.move(cx, cy);
+		await page.mouse.move(cx + 40, cy + 30);
 		await page.mouse.down();
 		await page.mouse.move(cx, cy, { steps: 4 });
 		await page.mouse.up();
-		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-x']).toBeUndefined();
-		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-y']).toBeUndefined();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-left']).toBeUndefined();
+		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-top']).toBeUndefined();
 	});

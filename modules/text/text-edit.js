@@ -2129,17 +2129,21 @@ function text_panel_build(pop, obj)
 	});
 	sync_align();
 
-	// --- padding: one drag, all four sides ---------------------------------
+	// --- padding: one drag, the text follows the cursor --------------------
 	//
-	// Press and drag: the drag distance from the press is the padding,
-	// every side at once (the object panel's per-side rows are the fine
-	// tool - this is the quick one). The frame compensation is the object
-	// panel's own: the outer size stays what it was, the content box
-	// shrinks. The button sits on the align row at double the distance.
-	// (danja's call, 2026-09-25)
-	var pad_btn = $.glue.icon('padding', 'padding: press and drag to set it on all sides');
+	// Press and drag: the cursor's own movements position the text inside
+	// the object - the horizontal drag IS the left padding, the vertical
+	// one IS the top padding, and the right and bottom sides keep the
+	// values the number rows gave them (danja's call, 2026-09-26). The
+	// frame compensation is the object panel's own: the outer size stays
+	// what it was, the content box shrinks. The button sits on the align
+	// row at double the distance.
+	var pad_btn = $.glue.icon('padding', 'press and drag to position the text inside the object');
 	pad_btn.classList.add('glue-font-padding');
-	var pad_start = 0;
+	var pad_left = 0;
+	var pad_top = 0;
+	var pad_right = 0;
+	var pad_bottom = 0;
 	var pad_start_x = 0;
 	var pad_start_y = 0;
 	var pad_outer_w = 0;
@@ -2150,7 +2154,11 @@ function text_panel_build(pop, obj)
 		pad_dragging = true;
 		pad_start_x = e.clientX;
 		pad_start_y = e.clientY;
-		pad_start = parseInt(getComputedStyle(obj).paddingLeft) || 0;
+		var c = getComputedStyle(obj);
+		pad_left = parseInt(c.paddingLeft) || 0;
+		pad_top = parseInt(c.paddingTop) || 0;
+		pad_right = parseInt(c.paddingRight) || 0;
+		pad_bottom = parseInt(c.paddingBottom) || 0;
 		pad_outer_w = obj.offsetWidth;
 		pad_outer_h = obj.offsetHeight;
 		pad_btn.setPointerCapture(e.pointerId);
@@ -2162,17 +2170,17 @@ function text_panel_build(pop, obj)
 		// the object panel's clamp: padding cannot eat more than half the
 		// shorter side without collapsing the content box
 		var max = Math.floor(Math.min(pad_outer_w, pad_outer_h)/2);
-		// the drag follows whichever way the pointer went: the dominant
-		// axis is the slider - right or UP increases, the way a slider
-		// reads in either orientation (danja's call, 2026-09-25)
-		var dx = e.clientX - pad_start_x;
-		var dy = e.clientY - pad_start_y;
-		var d = (Math.abs(dx) >= Math.abs(dy)) ? dx : -dy;
-		var pad = Math.max(0, Math.min(max, pad_start + d));
-		obj.style.paddingTop = obj.style.paddingRight = obj.style.paddingBottom = obj.style.paddingLeft = pad+'px';
+		pad_left = Math.max(0, Math.min(max, pad_left + (e.clientX - pad_start_x)));
+		pad_top = Math.max(0, Math.min(max, pad_top + (e.clientY - pad_start_y)));
+		pad_start_x = e.clientX;
+		pad_start_y = e.clientY;
+		obj.style.paddingLeft = pad_left+'px';
+		obj.style.paddingTop = pad_top+'px';
+		obj.style.paddingRight = pad_right+'px';
+		obj.style.paddingBottom = pad_bottom+'px';
 		// the frame compensation: the stored size stays the OUTER one
-		obj.style.width = (pad_outer_w - 2*pad)+'px';
-		obj.style.height = (pad_outer_h - 2*pad)+'px';
+		obj.style.width = (pad_outer_w - pad_left - pad_right)+'px';
+		obj.style.height = (pad_outer_h - pad_top - pad_bottom)+'px';
 	});
 	pad_btn.addEventListener('pointerup', function(e) {
 		if (!pad_dragging) {
