@@ -998,6 +998,11 @@ function object_edge_popover(obj)
 	edge_top_rows.appendChild(fade.row);
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-top';
+	// the first section says what it is (danja's call, 2026-09-26)
+	var border_title = document.createElement('div');
+	border_title.className = 'glue-edge-section-title';
+	border_title.textContent = 'border';
+	edge_top.appendChild(border_title);
 	edge_top.appendChild(edge_top_rows);
 	// the clip's label, left of the button (danja's call, 2026-09-26)
 	var clip_cell = document.createElement('div');
