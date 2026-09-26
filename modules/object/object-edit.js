@@ -659,7 +659,7 @@ function object_edge_popover(obj)
 		}
 	};
 
-	var spread = $.glue.popover.number_row('glow', {
+	var spread = $.glue.popover.number_row('glow spread', {
 		// the halo's blur radius, in px; a tenth of a px is finer than the
 		// eye can judge, but it keeps the step that found the values it did
 		// hard floor at 0: it is a radius, and a negative one is what the
@@ -977,6 +977,11 @@ function object_edge_popover(obj)
 	colour_left.appendChild(distance.row);
 	colour_left.appendChild(angle.row);
 	colour_right.appendChild(cell_drop);
+	// the second section says what it is (danja's call, 2026-09-26)
+	var shadow_title = document.createElement('div');
+	shadow_title.className = 'glue-edge-section-title';
+	shadow_title.textContent = 'object shadow';
+	colour_grid.appendChild(shadow_title);
 	colour_grid.appendChild(colour_left);
 	colour_grid.appendChild(colour_right);
 	adv.insertBefore(colour_grid, footer);
