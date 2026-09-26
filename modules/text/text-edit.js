@@ -2141,6 +2141,7 @@ function text_panel_build(pop, obj)
 	pad_btn.classList.add('glue-font-padding');
 	var pad_start = 0;
 	var pad_start_x = 0;
+	var pad_start_y = 0;
 	var pad_outer_w = 0;
 	var pad_outer_h = 0;
 	var pad_dragging = false;
@@ -2148,6 +2149,7 @@ function text_panel_build(pop, obj)
 		e.preventDefault();
 		pad_dragging = true;
 		pad_start_x = e.clientX;
+		pad_start_y = e.clientY;
 		pad_start = parseInt(getComputedStyle(obj).paddingLeft) || 0;
 		pad_outer_w = obj.offsetWidth;
 		pad_outer_h = obj.offsetHeight;
