@@ -1330,10 +1330,13 @@
 .glue-edge-knobs-grid {
 	/* the edge fold's two columns: the type knobs left, the shadow knobs
 	   right, and below the rule the colours in the same split (danja's
-	   call, 2026-09-26) */
+	   call, 2026-09-26). The row-gap is the number rows' own 13px - the
+	   pair cells keep the same breathing room stacked as the inputs have
+	   (danja's call, 2026-09-26) */
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	column-gap: 14px;
+	row-gap: 13px;
 }
 
 .glue-edge-knobs-col {
