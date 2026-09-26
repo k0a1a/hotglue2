@@ -596,16 +596,6 @@ function object_edge_popover(obj)
 			save();
 		});
 	colour.classList.add('glue-border-color');
-	// the swatch says what it is, at the row's right (danja's call,
-	// 2026-09-26)
-	var colour_label = document.createElement('div');
-	colour_label.className = 'glue-popover-label';
-	colour_label.textContent = 'color';
-	var colour_wrap = document.createElement('div');
-	colour_wrap.className = 'glue-edge-border-colour';
-	colour_wrap.appendChild(colour_label);
-	colour_wrap.appendChild(colour);
-	style_row.appendChild(colour_wrap);
 
 	// --- what the panel shows ---------------------------------------------
 	//
@@ -936,6 +926,9 @@ function object_edge_popover(obj)
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-grid';
 	edge_top.appendChild(style_row);
+	var border_colour_row = $.glue.popover.row('color');
+	border_colour_row.appendChild(colour);
+	edge_top.appendChild(border_colour_row);
 	edge_top.appendChild(radius.row);
 	edge_top.appendChild(border.row);
 	edge_top.appendChild(fade.row);
@@ -953,12 +946,12 @@ function object_edge_popover(obj)
 	glow_title.textContent = 'border glow';
 	edge_grid.appendChild(glow_title);
 	edge_grid.appendChild(spread.row);
-	edge_grid.appendChild(strength.row);
-	// the glow swatches and the inside toggle belong to the border glow
-	// group (danja's call, 2026-09-26)
+	// each swatch gets its own row under its control (danja's call,
+	// 2026-09-26)
 	var glow_row = $.glue.popover.row('glow');
 	glow_row.appendChild(glow_colour);
 	edge_grid.appendChild(glow_row);
+	edge_grid.appendChild(strength.row);
 	var glow2_row = $.glue.popover.row('second glow');
 	glow2_row.appendChild(duotone);
 	edge_grid.appendChild(glow2_row);

@@ -1482,13 +1482,6 @@
 	grid-column: 2 / 4;
 }
 
-.glue-edge-border-colour {
-	/* the border colour's label and swatch, at the row's right */
-	display: flex;
-	align-items: center;
-	gap: 7px;
-}
-
 .glue-edge-clip-row {
 	/* the clip, at the row's right, icon at the swatch's 20x20 */
 	grid-column: 3 / -1;
