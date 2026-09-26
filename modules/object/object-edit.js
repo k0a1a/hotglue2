@@ -942,31 +942,36 @@ function object_edge_popover(obj)
 		}
 	});
 	// then the first two rows are the left column (glow and opacity -
-	// fade moved up under width), the next four the right one (the footer
-	// stays last, out of the grid)
+	// fade moved up under width), the next four the right one, of which
+	// distance and angle go below the rule (danja's call, 2026-09-26)
 	for (var ei = 0; ei < 2; ei++) {
 		edge_left.appendChild(adv.children[0]);
 	}
 	for (var ej = 0; ej < 4; ej++) {
 		edge_right.appendChild(adv.children[0]);
 	}
+	// the glow colours and the inside toggle come up into the fold grid:
+	// the two colour cells under the glow rows, the toggle under the
+	// spread rows
+	edge_left.appendChild(cell_glow);
+	edge_left.appendChild(cell_duo);
+	edge_right.appendChild(cell_inside);
 	edge_grid.appendChild(edge_left);
 	edge_grid.appendChild(edge_right);
 	adv.insertBefore(edge_grid, adv.firstChild);
 	var edge_rule = document.createElement('hr');
 	edge_rule.className = 'glue-edge-knobs-rule';
 	adv.insertBefore(edge_rule, edge_grid.nextSibling);
-	// the colours below the rule, grouped by danja's columns: the pair
-	// cells regroup - glow colours left, inside and shadow right
+	// below the rule: distance and angle on the left, the shadow colour
+	// on the right
 	var colour_grid = document.createElement('div');
 	colour_grid.className = 'glue-edge-knobs-grid';
 	var colour_left = document.createElement('div');
 	colour_left.className = 'glue-edge-knobs-col';
 	var colour_right = document.createElement('div');
 	colour_right.className = 'glue-edge-knobs-col';
-	colour_left.appendChild(cell_glow);
-	colour_left.appendChild(cell_duo);
-	colour_right.appendChild(cell_inside);
+	colour_left.appendChild(distance.row);
+	colour_left.appendChild(angle.row);
 	colour_right.appendChild(cell_drop);
 	colour_grid.appendChild(colour_left);
 	colour_grid.appendChild(colour_right);
