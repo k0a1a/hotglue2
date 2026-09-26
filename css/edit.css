@@ -1393,6 +1393,13 @@
 	font-weight: bold;
 }
 
+.glue-edge-popover > .glue-edge-section-title,
+.glue-popover-advanced > .glue-edge-section-title {
+	/* the standalone titles (border, object shadow) keep the grid
+	   titles' own 13px row-gap below them (danja's call, 2026-09-26) */
+	margin-bottom: 13px;
+}
+
 .glue-edge-knobs-grid {
 	/* the edge fold's two columns: the type knobs left, the shadow knobs
 	   right, and below the rule the colours in the same split (danja's
