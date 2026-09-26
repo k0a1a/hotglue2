@@ -1385,10 +1385,12 @@
 }
 
 .glue-edge-section-title {
-	/* a fold's section says what it is, spanning the columns */
+	/* a section says what it is, spanning the columns, bold (danja's
+	   call, 2026-09-26) */
 	grid-column: 1 / -1;
 	font-size: 11px;
 	color: #666;
+	font-weight: bold;
 }
 
 .glue-edge-knobs-grid {
