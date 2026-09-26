@@ -1346,12 +1346,16 @@
 }
 
 .glue-edge-clip {
-	/* the label and the button, left-aligned in their column */
+	/* the label and the button, left-aligned in their column, set off
+	   from the rows on the left by a vertical rule (danja's call,
+	   2026-09-26) */
 	display: flex;
 	align-items: center;
 	gap: 7px;
 	justify-self: start;
 	align-self: center;
+	border-left: 1px solid #ddd;
+	padding-left: 10px;
 }
 
 .glue-edge-top-rows {
