@@ -955,6 +955,11 @@ function object_edge_popover(obj)
 	// inside sits right under the glow colour (danja's call, 2026-09-26)
 	edge_right.appendChild(cell_inside);
 	edge_right.appendChild(cell_duo);
+	// the fold's first section says what it is (danja's call, 2026-09-26)
+	var glow_title = document.createElement('div');
+	glow_title.className = 'glue-edge-section-title';
+	glow_title.textContent = 'border glow';
+	edge_grid.appendChild(glow_title);
 	edge_grid.appendChild(edge_left);
 	edge_grid.appendChild(edge_right);
 	adv.insertBefore(edge_grid, adv.firstChild);

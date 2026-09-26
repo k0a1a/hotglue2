@@ -1384,6 +1384,13 @@
 	flex-direction: column;
 }
 
+.glue-edge-section-title {
+	/* a fold's section says what it is, spanning the columns */
+	grid-column: 1 / -1;
+	font-size: 11px;
+	color: #666;
+}
+
 .glue-edge-knobs-grid {
 	/* the edge fold's two columns: the type knobs left, the shadow knobs
 	   right, and below the rule the colours in the same split (danja's
