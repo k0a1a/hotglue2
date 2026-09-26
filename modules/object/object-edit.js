@@ -953,13 +953,15 @@ function object_edge_popover(obj)
 	edge_grid.appendChild(strength.row);
 	// the glow swatches and the inside toggle belong to the border glow
 	// group (danja's call, 2026-09-26)
-	var glow_row = $.glue.popover.row('glow');
+	// the group heading already says what these are - no labels (danja's
+	// call, 2026-09-26)
+	var glow_row = $.glue.popover.row(false);
 	glow_row.appendChild(glow_colour);
 	edge_grid.appendChild(glow_row);
-	var glow2_row = $.glue.popover.row('second glow');
+	var glow2_row = $.glue.popover.row(false);
 	glow2_row.appendChild(duotone);
 	edge_grid.appendChild(glow2_row);
-	var inside_row = $.glue.popover.row('inside');
+	var inside_row = $.glue.popover.row(false);
 	inside_row.appendChild(inner_toggle);
 	edge_grid.appendChild(inside_row);
 	adv.insertBefore(edge_grid, adv.firstChild);
@@ -971,7 +973,7 @@ function object_edge_popover(obj)
 	// (danja's call, 2026-09-26)
 	var controls_grid = document.createElement('div');
 	controls_grid.className = 'glue-edge-grid';
-	var shadow_colour_row = $.glue.popover.row('shadow color');
+	var shadow_colour_row = $.glue.popover.row(false);
 	shadow_colour_row.appendChild(drop_colour);
 	controls_grid.appendChild(shadow_colour_row);
 	adv.insertBefore(controls_grid, edge_rule.nextSibling);

@@ -1480,6 +1480,12 @@
 	grid-column: 2 / 4;
 }
 
+.glue-edge-grid > .glue-popover-row > .glue-popover-color,
+.glue-edge-grid > .glue-popover-row > .glue-font-toggle {
+	/* a control whose row has no label starts at the field column */
+	grid-column: 2;
+}
+
 /* the shadow group's 2x2: two label/field/unit triples side by side on the
    same grid, the swatch column at the end */
 .glue-edge-shadow-grid {
