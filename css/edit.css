@@ -1239,14 +1239,23 @@
 }
 
 .glue-popover-color {
-	/* the colour button a panel puts next to whatever it colours */
+	/* the colour button every panel puts next to whatever it colours: a
+	   20x20 swatch of the four most recent palette colours, four 10x10
+	   squares (danja's call, 2026-09-26) */
+	width: 20px;
+	height: 20px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
 	flex: 0 0 auto;
 	cursor: pointer;
+	border: 1px solid #666;
+	box-sizing: content-box;
 }
 
-.glue-popover-color::before {
-	-webkit-mask-size: 30px 30px;
-	mask-size: 30px 30px;
+.glue-popover-color-cell {
+	width: 10px;
+	height: 10px;
 }
 
 .glue-popover-disclosure {
