@@ -83,7 +83,7 @@ test('one button opens the panel, and the three it replaced are gone',
 		await expect(pop(page).locator('.glue-popover-icon[data-fmt]')).toHaveCount(4);
 		await expect(page.locator('.glue-align-btn')).toHaveCount(4);
 		// and no track among the panel's own rows: the size is folded now, and
-		// the six knobs in the fold are scrubs - rows you drag, not sliders
+		// the knobs in the fold are scrubs - rows you drag, not sliders
 		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
 		// the face wheel is out in the open above the fold (the button that
 		// opened it is gone, 2026-09-21); the exact size and the reset are
@@ -92,7 +92,9 @@ test('one button opens the panel, and the three it replaced are gone',
 		await expect(page.locator('.glue-font-face-list')).toBeVisible();
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
-		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(6);
+		// size, line, letter and word; the padding section's five rows, in
+		// the fold since 2026-09-25; the shadow and its fade
+		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(11);
 		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
 
@@ -266,7 +268,7 @@ test('the row shows its arrow, and Escape takes a typed value back',
 		// one arrow per knob row, drawn inside the field's own right end
 		// since 2026-09-17 (where the browser's steppers used to be), and a
 		// numeric keyboard when a finger taps the field
-		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(6);
+		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(11);
 		await expect(row.locator('.glue-popover-scrub-arrow')).toHaveText('↔');
 		await expect(field).toHaveAttribute('inputmode', 'decimal');
 		expect(await row.evaluate((e) => getComputedStyle(e).cursor),
@@ -713,10 +715,12 @@ test('the text shadow stores its ingredients and reaches the published page',
 		await pop(page).locator('.glue-popover-disclosure').click();
 
 		const fold = pop(page).locator('.glue-popover-advanced');
-		// the fold's fields in order: size, line, letter, word, shadow, fade -
-		// the shadow's radius is the fifth, two places further down than it was
-		// before the size joined them (2026-09-17)
-		const radius = fold.locator('.glue-popover-field').nth(4);
+		// the shadow's radius is the row labelled 'shadow' - by its label,
+		// since its position moved every time the fold took more rows (the
+		// size on 2026-09-17, the padding on 2026-09-25)
+		const radius = fold.locator('.glue-popover-scrub')
+			.filter({ has: page.locator('.glue-popover-label:text-is("shadow")') })
+			.locator('.glue-popover-field');
 		await radius.fill('8');
 		await radius.dispatchEvent('input');
 		await radius.dispatchEvent('change');
@@ -764,7 +768,9 @@ test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 	await open(page, a);
 	await pop(page).locator('.glue-popover-disclosure').click();
 
-	const radius = pop(page).locator('.glue-popover-advanced .glue-popover-field').nth(4);
+	const radius = fold(page).locator('.glue-popover-scrub')
+		.filter({ has: page.locator('.glue-popover-label:text-is("shadow")') })
+		.locator('.glue-popover-field');
 	await radius.fill('0');
 	await radius.dispatchEvent('input');
 	await radius.dispatchEvent('change');
@@ -820,19 +826,21 @@ test('the padding button drags the text by the cursor, side by side',
 		await expect(pop(page).locator('.glue-padding-bottom .glue-popover-field')).toHaveValue('0');
 		await expect(pop(page).locator('.glue-padding-left .glue-popover-field')).toHaveValue('40');
 
-		// drag down 30px: the TOP padding joins in, the left stays
-		await page.mouse.move(cx + 40, cy);
+		// drag down 30px: the TOP padding joins in, the left stays. Each drag
+		// starts on the button again - it does not follow the cursor, the
+		// text does
+		await page.mouse.move(cx, cy);
 		await page.mouse.down();
-		await page.mouse.move(cx + 40, cy + 30, { steps: 4 });
+		await page.mouse.move(cx, cy + 30, { steps: 4 });
 		await page.mouse.up();
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-top']).toBe('30px');
 		expect(await page.evaluate((i) =>
 			getComputedStyle(document.getElementById(i)).paddingLeft, id)).toBe('40px');
 
 		// and back to nothing
-		await page.mouse.move(cx + 40, cy + 30);
+		await page.mouse.move(cx, cy);
 		await page.mouse.down();
-		await page.mouse.move(cx, cy, { steps: 4 });
+		await page.mouse.move(cx - 40, cy - 30, { steps: 4 });
 		await page.mouse.up();
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-left']).toBeUndefined();
 		await expect.poll(() => hg.readObject('100000000001').attrs['text-padding-top']).toBeUndefined();
