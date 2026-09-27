@@ -2111,22 +2111,24 @@ function text_panel_build(pop, obj)
 			b.classList.toggle('glue-align-on', b.dataset.align == cur);
 		});
 	};
-	// The icon names are the SuperGlue set's, and two of them are swapped at
-	// source: align-left.svg draws lines CENTRED on a common axis, while
-	// align-center.svg draws them flush against a left margin rule. Mapped by
-	// what the artwork shows rather than by what the file is called - a
-	// button that says "centre" and looks like "left" is worse than an odd
-	// pairing in here. Fix the names upstream and this table follows.
+	// danja's 22x22 redraws, each named for what it draws (2026-09-27). The
+	// 30px SuperGlue set they replace had two swapped at source -
+	// align-left.svg drew centred lines and align-center.svg flush-left
+	// ones - and this table used to map them crosswise; the redraws need
+	// no such pairing.
 	[
-		['left', 'align-center', 'align left'],
-		['center', 'align-left', 'align centre'],
-		['right', 'align-right', 'align right'],
-		['justify', 'align-justify', 'justify']
+		['left', 'align-left-22', 'align left'],
+		['center', 'align-center-22', 'align centre'],
+		['right', 'align-right-22', 'align right'],
+		['justify', 'align-justify-22', 'justify']
 	].forEach(function(a) {
 		var b = $.glue.icon(a[1], a[2]);
 		b.classList.add('glue-align-btn');
-		// the toolbar's own size, like every other popout icon now
-		// (danja's call, 2026-09-25)
+		// shown 1:1: the box comes down from the 32px $.glue.icon() sets
+		// inline, and .glue-align-btn in text-edit.css sizes the glyph's
+		// mask to match (danja's call, 2026-09-27)
+		b.style.width = '22px';
+		b.style.height = '22px';
 		b.dataset.align = a[0];
 		b.addEventListener('click', function() {
 			obj.style.textAlign = a[0];

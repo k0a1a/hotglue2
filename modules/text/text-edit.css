@@ -259,16 +259,20 @@
 }
 
 .glue-align-btn {
-	/* the toolbar's own icon buttons, reused inside the panel so alignment
-	   looks like what it looks like everywhere else - the popout icons' own
-	   32px box, no bring-down any more (danja's call, 2026-09-25) */
+	/* the four alignments, .glue-btn-icon masks like the size row's. Since
+	   2026-09-27 they wear danja's 22x22 redraws (img/icons/align-*-22.svg)
+	   at 1:1 in a 22x22 box, set where they are built since $.glue.icon
+	   sizes them inline */
 	flex: 0 0 auto;
 	cursor: pointer;
 }
 
-.glue-align-btn::before {
-	-webkit-mask-size: 30px 30px;
-	mask-size: 30px 30px;
+.glue-btn-icon.glue-align-btn::before {
+	/* the 22px art at 1:1, centred on the 20px padding box - the art keeps
+	   its own margin, so the frame loses only empty rows of it (danja's
+	   call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
 }
 
 .glue-align-on::before {
