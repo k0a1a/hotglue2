@@ -617,7 +617,12 @@ function object_edge_popover(obj)
 	// pressed-in frame the flip toggles use, and the tooltip says what is
 	// true now.
 	var clip_row = $.glue.popover.row('clip');
-	var clip = $.glue.popover.icon_button('clip', '');
+	// its own 20x20 artwork, shown 1:1: the box comes down from the 32px
+	// $.glue.icon() sets inline, and .glue-edge-clip in css/edit.css sizes
+	// the glyph's mask to match (danja's call, 2026-09-27)
+	var clip = $.glue.popover.icon_button('clip-20', '');
+	clip.style.width = '20px';
+	clip.style.height = '20px';
 	var clip_sync = function() {
 		var on = object_overflow_hidden(obj);
 		clip.classList.toggle('glue-btn-active', on);
