@@ -923,11 +923,12 @@ function object_edge_popover(obj)
 
 	// --- the fold's layout: sections, each in its own grid ---------------
 	//
-	// border glow: the two glow numbers left, the colours and the inside
-	// toggle right. object shadow: blur and spread, led by the subtitle.
-	// Below the rule: distance, angle and the shadow colour. Everything
-	// moves by its own reference - the rows were built above, the appends
-	// here are the layout and nothing else (danja's call, 2026-09-26).
+	// border glow: the two glow numbers and the inside toggle under them
+	// left, the two colours right (danja's call, 2026-09-27). object
+	// shadow: blur and spread, led by the subtitle. Below the rule:
+	// distance, angle and the shadow colour. Everything moves by its own
+	// reference - the rows were built above, the appends here are the
+	// layout and nothing else (danja's call, 2026-09-26).
 	var edge_grid = document.createElement('div');
 	edge_grid.className = 'glue-edge-knobs-grid';
 	var glow_title = document.createElement('div');
@@ -936,13 +937,18 @@ function object_edge_popover(obj)
 	edge_grid.appendChild(glow_title);
 	var edge_left = document.createElement('div');
 	edge_left.className = 'glue-edge-knobs-col';
+	// the glow spread's label breaks onto two lines, as 'second glow'
+	// does (danja's call, 2026-09-27) - the class is what takes it to
+	// the pair cells' tight line-height in css/edit.css
+	spread.row.classList.add('glue-glow-spread');
+	spread.row.querySelector('.glue-popover-label').innerHTML = 'glow<br>spread';
 	edge_left.appendChild(spread.row);	// the glow spread
 	edge_left.appendChild(strength.row);	// the opacity
+	edge_left.appendChild(cell_inside);
 	edge_grid.appendChild(edge_left);
 	var edge_right = document.createElement('div');
 	edge_right.className = 'glue-edge-knobs-col';
 	edge_right.appendChild(cell_glow);
-	edge_right.appendChild(cell_inside);
 	edge_right.appendChild(cell_duo);
 	edge_grid.appendChild(edge_right);
 	adv.insertBefore(edge_grid, adv.firstChild);

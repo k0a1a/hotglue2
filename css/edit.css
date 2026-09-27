@@ -922,6 +922,14 @@
 	width: 180px;
 }
 
+.glue-edge-popover .glue-glow-spread .glue-popover-label {
+	/* 'glow spread' breaks onto two lines (glow<br>spread): the pair
+	   cells' line-height of 1, so the two lines read as one label and the
+	   row stays close to its neighbours' height instead of doubling their
+	   19px line (danja's call, 2026-09-27) */
+	line-height: 1;
+}
+
 .glue-edge-popover .glue-glow-inner-toggle {
 	/* the inside toggle at the swatch's own 20x20 - scoped to beat the
 	   .glue-font-toggle 32px the module css loads after this file
