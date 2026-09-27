@@ -374,6 +374,21 @@
 	touch-action: none;
 }
 
+.glue-font-shadow-color {
+	/* the shadow colour and its two-line label, at the end of the shadow
+	   row they colour (danja's call, 2026-09-27): set apart from the row's
+	   unit as the colour and padding buttons are from theirs, the label at
+	   the tight line-height of the edge panel's two-line labels. The pair
+	   is not part of the row's scrub, so it does not wear its grab hand */
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin-left: 12px;
+	flex: 0 0 auto;
+	line-height: 1;
+	cursor: default;
+}
+
 .glue-font-knobs-grid {
 	/* the fold's two columns: the type rows left, the padding rows right
 	   (danja's call, 2026-09-25) */
@@ -388,7 +403,7 @@
 }
 
 .glue-font-knobs-rule {
-	/* the divider between the columns and the shadow/fade/colour rows */
+	/* the divider between the columns and the shadow and fade rows */
 	border: none;
 	border-top: 1px solid #666;	/* 50% darker than the old #ccc, danja's call 2026-09-26 */
 	margin: 10px 0;

@@ -2649,9 +2649,8 @@ function text_panel_build(pop, obj)
 	// --- the fold's layout: two columns, a rule, then the rest ------------
 	//
 	// left: size, line, letter, word - right: the padding section's five
-	// rows - a rule - then shadow, fade and the text colour (which moves
-	// down here from the icon row). The shadow colour button joins the
-	// shadow row it colours. The reset stays the fold's last row.
+	// rows - a rule - then shadow and fade. The shadow colour button joins
+	// the shadow row it colours. The reset stays the fold's last row.
 	// (danja's call, 2026-09-25)
 	var knobs_grid = document.createElement('div');
 	knobs_grid.className = 'glue-font-knobs-grid';
@@ -2677,8 +2676,25 @@ function text_panel_build(pop, obj)
 	var knobs_rule = document.createElement('hr');
 	knobs_rule.className = 'glue-font-knobs-rule';
 	adv.insertBefore(knobs_rule, adv.firstChild.nextSibling);
-	// the shadow colour joins the shadow row it colours
-	shadow_radius.row.appendChild(shadow_color_btn);
+	// the shadow colour joins the shadow row it colours, beside a two-line
+	// label of its own (danja's call, 2026-09-27). The pair is not part of
+	// the row's scrub: a press on it must not drag the radius, nor a click
+	// put the caret in the radius field. The row it was built in is left
+	// holding only its old 'color' label, so that goes.
+	var shadow_color_cell = document.createElement('div');
+	shadow_color_cell.className = 'glue-font-shadow-color';
+	var shadow_color_label = document.createElement('div');
+	shadow_color_label.className = 'glue-popover-label';
+	shadow_color_label.innerHTML = 'shadow<br>color';
+	shadow_color_cell.appendChild(shadow_color_label);
+	shadow_color_cell.appendChild(shadow_color_btn);
+	['pointerdown', 'click'].forEach(function(type) {
+		shadow_color_cell.addEventListener(type, function(e) {
+			e.stopPropagation();
+		});
+	});
+	shadow_radius.row.appendChild(shadow_color_cell);
+	shadow_row.remove();
 	// The object counts as part of the panel: clicking it is the gesture that
 	// starts editing it, and that click must not close the panel on the way
 	// in (keep_open_target, js/edit.js). For the panel's whole life rather
