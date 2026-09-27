@@ -206,17 +206,19 @@ test('a finger scrubs the opacity row in the properties panel, and the page stay
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
 
-test('a finger scrubs the padding row in the properties panel without scrolling the page',
+test('a finger scrubs the padding row in the font panel without scrolling the page',
 	async ({ page, hg, browserName }) => {
 		test.skip(browserName !== 'chromium',
 			'no way to synthesise a touch drag outside Chromium');
 		// the padding button used to be a drag target itself, then a button
 		// opening a panel of its own (the way the transparency button became a
-		// slider in the adjustment popout), and it is a section of the object
-		// properties panel now. Its row is a scrub since 2026-09-17 - the
-		// editor's own drag rather than a native range input - so this is the
-		// padding's turn at the two things a scrub owes a finger, the same two
-		// the opacity test above spells out.
+		// slider in the adjustment popout), then a section of the object
+		// properties panel - and for a text object that section lives in the
+		// font panel's fold since 2026-09-25, beside the type it pads. Its row
+		// is a scrub since 2026-09-17 - the editor's own drag rather than a
+		// native range input - so this is the padding's turn at the two things
+		// a scrub owes a finger, the same two the opacity test above spells
+		// out.
 		const a = hg.addObject('100000000001', ATTRS, 'hello world');
 		// a second object far down the page, so the page genuinely can scroll
 		// - the scrollY assertion below only proves something if it could
@@ -232,8 +234,8 @@ test('a finger scrubs the padding row in the properties panel without scrolling 
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		await page.getByTitle('object properties').tap();
-		const panel = page.locator('.glue-popover.glue-properties-popover');
+		await page.getByTitle(/font: face, size and style/).tap();
+		const panel = page.locator('.glue-popover.glue-font-popover');
 		await expect(panel).toBeVisible();
 		// the padding row is in the panel's fold; the disclosure is tapped open
 		// before anything is measured, because opening it re-places the panel
@@ -244,7 +246,8 @@ test('a finger scrubs the padding row in the properties panel without scrolling 
 			const el = document.getElementById(i);
 			return el.offsetWidth+','+el.offsetHeight;
 		}, a);
-		// named: the panel has an x, a y, a scale and an opacity row besides
+		// named: the fold has the type's rows, the four sides and the shadow's
+		// besides
 		const row = panel.locator('.glue-padding-row');
 		const box = await row.boundingBox();
 		const cdp = await page.context().newCDPSession(page);
