@@ -121,8 +121,11 @@ test('with no image, the button opens the panel and the picker is in it',
 		await expect(pop(page)).toBeVisible();
 		// the row of five: set the colour, set the picture, tile it, flip it
 		// both ways - the panel from the outside, and one action more than the
-		// page's panel has, which is the flip the page has no use for
-		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(5);
+		// page's panel has, which is the flip the page has no use for. The
+		// colour is the shared swatch since 2026-09-26, so the five are the
+		// swatch and four icon buttons
+		await expect(pop(page).locator('.glue-popover-icons > *')).toHaveCount(5);
+		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(4);
 		await expect(pop(page).locator('.glue-background-color')).toHaveCount(1);
 		// and everything with a label is behind the one fold, closed to start
 		// with: opening the panel on what you came for, not on ten rows
@@ -321,7 +324,8 @@ test('an image object has the full panel, background section included',
 		// the flip pair in the row and, in the fold, the padding, the
 		// transparency and the reset - the padding section came to image
 		// objects with the video's in 2026-09-23
-		await expect(p.locator('.glue-popover-icon')).toHaveCount(5);
+		await expect(p.locator('.glue-popover-icons > *')).toHaveCount(5);
+		await expect(p.locator('.glue-popover-icon')).toHaveCount(4);
 		await expect(flipV(page)).toBeVisible();
 		await expect(flipH(page)).toBeVisible();
 		await openFold(page);
@@ -472,7 +476,7 @@ test('with an image, the panel opens onto the image it describes',
 
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(5);
+		await expect(pop(page).locator('.glue-popover-icons > *')).toHaveCount(5);
 		await expect(pop(page).locator('.glue-background-tile')).toHaveCount(1);
 		// nothing stored about the tiling, so it is the renderer's own default
 		// - no-repeat - and the toggle is lit only when the image repeats
@@ -592,7 +596,7 @@ test('scale sizes the image, stores the bare number, and zero removes it',
 		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
 	});
 
-test('deleting it takes the image off the object', async ({ page, hg }) => {
+test('the colour button takes the image off the object, after asking', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001',
 		{ ...ATTRS, 'object-background-file': 'sample.png',
 			'object-background-mime': 'image/png' }, 'A');
@@ -605,14 +609,25 @@ test('deleting it takes the image off the object', async ({ page, hg }) => {
 	await select(page, a);
 	await propsBtn(page).click();
 	await expect(pop(page)).toBeVisible();
-	// the delete is the fold's last row now, with the reset - the house style's
-	// one cost, and the reason this test has to go looking for it
-	await openFold(page);
+	// the delete button went on 2026-09-24: a picture comes off through the
+	// colour button, which asks first - a colour sits behind an opaque
+	// picture, so picking one with the picture up would look like nothing
+	// had happened. Declined, the picture stays
+	const colour = pop(page).locator('.glue-background-color');
+	page.once('dialog', (d) => d.dismiss());
+	await colour.click();
+	await expect(page.locator('.picker_wrapper')).toBeHidden();
+	expect(attrs(hg)['object-background-file']).toBe('sample.png');
+	expect(await cssOf(page, a, 'backgroundImage')).not.toBe('none');
 
-	await pop(page).locator('.glue-popover-delete').click();
-	await expect(pop(page)).toHaveCount(0);
+	// accepted, the picture and the settings that described it come off,
+	// and the picker opens for the colour that takes its place
+	page.once('dialog', (d) => d.accept());
+	await colour.click();
 	await expect.poll(() => attrs(hg)['object-background-file']).toBe(undefined);
 	expect(await cssOf(page, a, 'backgroundImage')).toBe('none');
+	await expect(page.locator('.picker_wrapper')).toBeVisible();
+	await expect(pop(page)).toBeVisible();
 });
 
 test('reset puts tiling, scale and move back to defaults, keeping the image',
