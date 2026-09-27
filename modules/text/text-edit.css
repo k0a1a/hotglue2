@@ -193,11 +193,20 @@
 	   click each, with the number in the tooltip. The letters that wore
 	   their own sizes went on 2026-09-21, when danja drew the font_small /
 	   font_normal / font_big / font_extra_big artwork; the buttons are
-	   .glue-btn-icon masks now, like the align row's, and at that row's
-	   26px (set where they are built, since $.glue.icon sizes them
-	   inline). */
+	   .glue-btn-icon masks now, like the align row's. Since 2026-09-27
+	   they wear danja's 22x22 redraws (img/icons/font-*-22.svg) at 1:1 in
+	   a 22x22 box, set where they are built since $.glue.icon sizes them
+	   inline; the glyph's mask is sized below. */
 	flex: 0 0 auto;
 	cursor: pointer;
+}
+
+.glue-btn-icon.glue-font-size::before {
+	/* the 22px art at 1:1, centred on the 20px padding box - the art keeps
+	   its own margin, so the frame loses only empty rows of it (danja's
+	   call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
 }
 
 .glue-font-size-on::before {

@@ -2024,16 +2024,19 @@ function text_panel_build(pop, obj)
 	var size_buttons = [];
 	var size_preset_row = $.glue.popover.row(false);
 	[
-		['s', 14, 'small: 14px', 'font-small'],
-		['n', 24, 'normal: 24px', 'font-normal'],
-		['b', 32, 'big: 32px', 'font-big'],
-		['x', 48, 'extra: 48px', 'font-extra-big']
+		['s', 14, 'small: 14px', 'font-small-22'],
+		['n', 24, 'normal: 24px', 'font-normal-22'],
+		['b', 32, 'big: 32px', 'font-big-22'],
+		['x', 48, 'extra: 48px', 'font-extra-big-22']
 	].forEach(function(s) {
 		var b = $.glue.icon(s[3], s[2]);
 		b.classList.add('glue-font-size');
 		b.classList.add('glue-font-size-'+s[0]);
-		// the popout icons' own 32px box, like the align row (danja's
-		// call, 2026-09-25)
+		// the 22x22 redraws, shown 1:1: the box comes down from the 32px
+		// $.glue.icon() sets inline, and .glue-font-size in text-edit.css
+		// sizes the glyph's mask to match (danja's call, 2026-09-27)
+		b.style.width = '22px';
+		b.style.height = '22px';
 		b.dataset.size = s[1];
 		b.addEventListener('click', function() {
 			set_size(s[1], true);
