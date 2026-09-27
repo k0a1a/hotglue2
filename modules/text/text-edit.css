@@ -360,6 +360,17 @@
 	flex: 0 0 auto;
 }
 
+.glue-btn-icon.glue-font-style::before {
+	/* bold, italic, underline and strikethrough wear their 22x22 redraws
+	   (img/icons/font-style-*-22.svg) at 1:1 in a 22x22 box - text-edit.js
+	   brings the box down from $.glue.icon()'s inline 32. The art keeps a
+	   3px margin, so a mask centred on the padding box (20px, or 18px
+	   pressed in) loses only empty rows to the frame, and the pressed-in
+	   frame still clears the glyph (danja's call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
 .glue-font-padding,
 .glue-font-color {
 	/* set apart from the row's other buttons, the padding drag on the
