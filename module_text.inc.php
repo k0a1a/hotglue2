@@ -402,11 +402,17 @@ function text_alter_save($args)
 			$pad[$side] = elem_css($elem, 'padding-'.$side);
 		}
 	}
-	// left/right -> text-padding-x, or the two longhands when they differ
+	// left/right -> text-padding-x, or the two longhands when they differ -
+	// and whichever form is written, the other one goes: the render reads
+	// the longhands first, so a stale text-padding-left outranked the pair,
+	// and a padding dragged back to 0 came back on reload (2026-09-27)
 	if ($pad['left'] !== NULL || $pad['right'] !== NULL) {
 		if ($pad['left'] !== NULL && $pad['right'] !== NULL && $pad['left'] == $pad['right']) {
 			$obj['text-padding-x'] = $pad['left'];
+			unset($obj['text-padding-left']);
+			unset($obj['text-padding-right']);
 		} else {
+			unset($obj['text-padding-x']);
 			if ($pad['left'] !== NULL) {
 				$obj['text-padding-left'] = $pad['left'];
 			} else {
@@ -427,7 +433,10 @@ function text_alter_save($args)
 	if ($pad['top'] !== NULL || $pad['bottom'] !== NULL) {
 		if ($pad['top'] !== NULL && $pad['bottom'] !== NULL && $pad['top'] == $pad['bottom']) {
 			$obj['text-padding-y'] = $pad['top'];
+			unset($obj['text-padding-top']);
+			unset($obj['text-padding-bottom']);
 		} else {
+			unset($obj['text-padding-y']);
 			if ($pad['top'] !== NULL) {
 				$obj['text-padding-top'] = $pad['top'];
 			} else {
