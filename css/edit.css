@@ -1388,14 +1388,14 @@
 }
 
 .glue-edge-clip .glue-btn-icon::before {
-	/* the clip's own 20x20 artwork (img/icons/clip-20.svg) at 1:1 in its
-	   20x20 box - object-edit.js brings the box down from $.glue.icon()'s
-	   32. The art keeps a 2px margin, so a mask centred on the padding box
-	   (18px, or 16px pressed in) loses only empty rows to the frame, and
-	   the glyph does not move when the border thickens (danja's call,
-	   2026-09-27) */
-	-webkit-mask-size: 20px 20px;
-	mask-size: 20px 20px;
+	/* the clip's own 22x22 artwork (img/icons/clip-22.svg) at 1:1 in its
+	   22x22 box - object-edit.js brings the box down from $.glue.icon()'s
+	   32. The art keeps a 3px margin, so a mask centred on the padding box
+	   (20px, or 18px pressed in) loses only empty rows to the frame, the
+	   glyph does not move when the border thickens, and the pressed-in
+	   frame still clears it by a pixel (danja's call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
 }
 
 .glue-edge-top-rows {
