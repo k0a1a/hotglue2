@@ -1453,9 +1453,9 @@
 	   column at the right; rows are subgrids placed by class (danja's
 	   call, 2026-09-26) */
 	display: grid;
-	grid-template-columns: 74px 48px max-content 74px 48px max-content max-content;
-	column-gap: 7px;
-	row-gap: 6px;
+	grid-template-columns: 64px 44px max-content 64px 44px max-content max-content;
+	column-gap: 6px;
+	row-gap: 5px;
 	align-items: start;
 }
 
@@ -1510,6 +1510,17 @@
 .glue-edge-2col > .glue-popover-row > .glue-font-toggle {
 	/* a control whose row has no label starts at the field column */
 	grid-column: 2;
+}
+
+.glue-edge-2col .glue-btn-icon {
+	/* the clip at the swatch's 20x20 (danja's call, 2026-09-27) */
+	width: 20px;
+	height: 20px;
+}
+
+.glue-edge-2col .glue-btn-icon::before {
+	-webkit-mask-size: 18px 18px;
+	mask-size: 18px 18px;
 }
 
 
