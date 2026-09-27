@@ -398,6 +398,14 @@
 	touch-action: none;
 }
 
+.glue-btn-icon.glue-font-padding::before {
+	/* danja's 22x22 redraw (img/icons/padding-22.svg) at 1:1 in its 22x22
+	   box, centred on the 20px padding box - the art keeps its own margin,
+	   so the frame loses only empty rows of it (danja's call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
 .glue-font-shadow-color {
 	/* the shadow colour and its two-line label, at the end of the shadow
 	   row they colour (danja's call, 2026-09-27): set apart from the row's

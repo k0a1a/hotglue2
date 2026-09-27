@@ -2149,7 +2149,12 @@ function text_panel_build(pop, obj)
 	// frame compensation is the object panel's own: the outer size stays
 	// what it was, the content box shrinks. The button sits on the align
 	// row at double the distance.
-	var pad_btn = $.glue.icon('padding', 'press and drag to position the text inside the object');
+	// danja's 22x22 redraw, shown 1:1: the box comes down from the 32px
+	// $.glue.icon() sets inline, and .glue-font-padding in text-edit.css
+	// sizes the glyph's mask to match (danja's call, 2026-09-27)
+	var pad_btn = $.glue.icon('padding-22', 'press and drag to position the text inside the object');
+	pad_btn.style.width = '22px';
+	pad_btn.style.height = '22px';
 	pad_btn.classList.add('glue-font-padding');
 	var pad_left = 0;
 	var pad_top = 0;
