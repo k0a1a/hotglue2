@@ -92,9 +92,10 @@ test('the fold holds all of it, and the buttons it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
-		// the size, line, letter, word - plus the text shadow's radius and fade,
-		// six knobs and no tracks among them any more
-		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(6);
+		// the size, line, letter, word; the padding section's five rows, in
+		// the fold since 2026-09-25; the text shadow's radius and fade -
+		// eleven knobs and no tracks among them any more
+		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(11);
 		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 		// and the alignments are NOT in here: they are one of the six things the
@@ -326,8 +327,13 @@ test('a click outside closes it, and Escape closes it', async ({ page, hg }) => 
 	await open(page, a);
 
 	// the panel itself, not the fold: `pop` names the fold, and the fold would
-	// be gone with the panel either way - an assertion that cannot fail
-	await page.mouse.click(30, 30);
+	// be gone with the panel either way - an assertion that cannot fail.
+	// Outside is measured, not assumed: with its fold open the panel is tall
+	// enough to be placed in the top-left corner, where a fixed (30, 30) is a
+	// click on the panel. Just past its right edge, level with its top, is
+	// clear of it and of the object below and to the right
+	const box = await panel(page).boundingBox();
+	await page.mouse.click(box.x + box.width + 20, box.y + 10);
 	await expect(panel(page)).toHaveCount(0);
 
 	await open(page, a);
