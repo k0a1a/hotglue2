@@ -1480,6 +1480,11 @@
 .glue-edge-2col > .glue-popover-row.glue-r1 { grid-row: 1; }
 .glue-edge-2col > .glue-popover-row.glue-r2 { grid-row: 2; }
 .glue-edge-2col > .glue-popover-row.glue-r3 { grid-row: 3; }
+.glue-edge-2col > .glue-popover-row.glue-r4 { grid-row: 4; }
+
+.glue-edge-2col > .glue-edge-section-title {
+	grid-row: 1;
+}
 
 .glue-edge-2col .glue-popover-label {
 	justify-self: end;
