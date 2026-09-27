@@ -11,11 +11,11 @@
 // here, so the tests check what is STORED as well as what is drawn.
 //
 // The panel is the house style's shape since 2026-09-17 (danja's call): what it
-// SHOWS is the border's style and colour and the two numbers they act on - how
-// round the box is, how thick the line - and everything else is under "more
-// knobs". The fade is the one that moved in there with the glow and the drop
-// shadow, which is why several tests below open the fold before they type: the
-// rows are in the DOM either way, but a folded field has no box to fill.
+// SHOWS is the border's style and colour and the numbers they act on - how
+// round the box is, how thick the line, and since 2026-09-26 the fade, stacked
+// beside the clip - and the glow and the drop shadow are under "more knobs",
+// which is why several tests below open the fold before they type: the rows
+// are in the DOM either way, but a folded field has no box to fill.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -35,9 +35,9 @@ const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
 // field() is document order across the whole panel, so it runs out front first
-// and then into the fold: round and width are the panel's (the style row above
-// them has a select and a colour button, neither of which is a field) and the
-// fade is now the fold's first row, ahead of the glow's knobs
+// and then into the fold: round, width and fade are the panel's three rows
+// above it (the style row has a select and a colour button, neither of which
+// is a field)
 const ROUND = 0, WIDTH = 1, FADE = 2;
 
 async function open(page, id) {
@@ -64,12 +64,13 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 	await waitForEditor(page, 1);
 	await open(page, a);
 
-	// two on the panel itself - round and width, the numbers the style and the
-	// colour above them act on - and the fade is not one of them any more
-	await expect(pop(page).locator(':scope > .glue-popover-scrub'))
-		.toHaveCount(2);
+	// three on the panel itself, stacked beside the clip - round and width,
+	// the numbers the style and the colour above them act on, and the fade,
+	// out of the fold since 2026-09-26
+	await expect(pop(page).locator('.glue-edge-top-rows > .glue-popover-scrub'))
+		.toHaveCount(3);
 	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-scrub'))
-		.toHaveCount(7);	// the fade, the glow and the drop shadow
+		.toHaveCount(6);	// the glow's two and the drop shadow's four
 	// and the reset is in the fold with them, not under the rows above it
 	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-reset'))
 		.toHaveCount(0);
@@ -329,10 +330,16 @@ test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 // a background and leaves the text sharp - which is the whole point of it.
 
 const advanced = (page) => pop(page).locator('.glue-popover-advanced');
-// the fold's own fields, in the two-column order (danja's call,
-// 2026-09-26): 0 glow spread, 1 opacity, 2 blur, 3 drop spread - the
-// left column - then 4 distance, 5 angle below the rule
+// the fold's own fields in document order: 0 glow spread, 1 opacity, then
+// the drop shadow's 2 blur, 3 spread, 4 distance, 5 angle. Positions move
+// whenever the fold is laid out again, so a test that means one knob can
+// find it by its label instead (knobField, below)
 const advField = (page, n) => advanced(page).locator('.glue-popover-field').nth(n);
+// a fold row's field by its label, matched whole: 'spread' is the drop
+// shadow's, the glow's reads 'glow spread' over two lines
+const knobField = (page, label) => advanced(page).locator('.glue-popover-scrub')
+	.filter({ has: page.locator('.glue-popover-label', { hasText: new RegExp(`^${label}$`) }) })
+	.locator('.glue-popover-field');
 
 async function setAdvRow(page, n, value) {
 	const f = advField(page, n);
@@ -351,12 +358,12 @@ test('the advanced section is folded away until it is asked for',
 		await expect(advanced(page)).toBeHidden();
 		await pop(page).locator('.glue-popover-disclosure').click();
 		await expect(advanced(page)).toBeVisible();
-		// the fade, the glow (spread + strength) and the drop shadow's
-		// distance, angle, blur and spread
-		await expect(advanced(page).locator('.glue-popover-scrub')).toHaveCount(7);
+		// the glow (spread + strength) and the drop shadow's blur, spread,
+		// distance and angle - the fade sits above the fold since 2026-09-26
+		await expect(advanced(page).locator('.glue-popover-scrub')).toHaveCount(6);
 	});
 
-test('the four face controls sit in a 2x2 grid, not four rows',
+test('the face controls sit in their sections, labelled and content-sized',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', ATTRS, 'A');
 		await page.goto(hg.editUrl());
@@ -364,18 +371,22 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 		await open(page, a);
 		await pop(page).locator('.glue-popover-disclosure').click();
 
-		// the glow, its inside toggle, the duotone and the drop shadow's
-		// colour - two labels and a 26px button each, so they share rows
-		await expect(advanced(page)
-			.locator('.glue-popover-pair .glue-popover-label'))
-			.toHaveText(['glow', 'glow inside', '2nd glow', 'shadow']);
+		// the four small controls are each a label beside a swatch or a
+		// toggle (2026-09-27): the inside toggle under the glow's opacity,
+		// the glow's two colours beside its numbers, and the drop shadow's
+		// colour beside its distance and angle
+		const cells = advanced(page).locator('.glue-popover-pair-cell .glue-popover-label');
+		await expect(cells).toHaveText(['inside', 'glow', 'second glow', 'shadow color'],
+			{ useInnerText: true });
 
 		// the labels are content-sized - no fixed column width to squeeze
 		// the controls on the same row (the colorpicker's opacity slider
 		// was the victim). Prove it: each label's box is exactly as wide
-		// as its text (same font, padding and spacing in a probe span)
+		// as its text (same font, padding and spacing in a probe span, and
+		// the same markup, so a two-line label is measured by its longer
+		// line)
 		const widths = await advanced(page).evaluate(() =>
-			[...document.querySelectorAll('.glue-popover-pair .glue-popover-label')]
+			[...document.querySelectorAll('.glue-popover-pair-cell .glue-popover-label')]
 				.map((l) => {
 					const cs = getComputedStyle(l);
 					const probe = document.createElement('span');
@@ -387,7 +398,7 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 						'white-space: nowrap',
 						'display: inline-block',
 					].join(';');
-					probe.textContent = l.textContent;
+					probe.innerHTML = l.innerHTML;
 					document.body.appendChild(probe);
 					const d = l.offsetWidth - probe.offsetWidth;
 					probe.remove();
@@ -395,18 +406,25 @@ test('the four face controls sit in a 2x2 grid, not four rows',
 				}));
 		expect(widths).toEqual([0, 0, 0, 0]);
 
-		// the pairs sit two per row: labels are content-sized, so the rows
-		// do NOT line up as shared columns - each pair is its own
-		// label-plus-controls unit, stacked two by two
-		const ys = await advanced(page).evaluate(() => {
-			const y = (i) => Math.round(document.querySelectorAll(
-				'.glue-popover-pair .glue-popover-label')[i]
-				.getBoundingClientRect().y);
-			return [y(0), y(1), y(2), y(3)];
+		// the border glow's two columns: the inside toggle in the left one,
+		// under the opacity, and the two colours stacked in the right one
+		const at = await advanced(page).evaluate(() => {
+			const box = (el) => el.getBoundingClientRect();
+			const cells = [...document.querySelectorAll('.glue-popover-pair-cell')];
+			const opacity = [...document.querySelectorAll('.glue-popover-advanced .glue-popover-label')]
+				.find((l) => l.textContent == 'opacity');
+			return {
+				opacity: [box(opacity).x, box(opacity).y],
+				inside: [box(cells[0]).x, box(cells[0]).y],
+				glow: [box(cells[1]).x, box(cells[1]).y],
+				second: [box(cells[2]).x, box(cells[2]).y],
+			};
 		});
-		expect(ys[0]).toBe(ys[1]);	// glow and glow inside share row 1
-		expect(ys[2]).toBe(ys[3]);	// 2nd glow and shadow share row 2
-		expect(ys[2]).toBeGreaterThan(ys[1]);	// and row 2 is below row 1
+		expect(Math.round(at.inside[0])).toBe(Math.round(at.opacity[0]));
+		expect(at.inside[1]).toBeGreaterThan(at.opacity[1]);
+		expect(at.glow[0]).toBeGreaterThan(at.opacity[0]);
+		expect(Math.round(at.second[0])).toBe(Math.round(at.glow[0]));
+		expect(at.second[1]).toBeGreaterThan(at.glow[1]);
 
 		// and the whole fold fits its 42vh cage, so nothing hides below it
 		const cage = await advanced(page).evaluate((el) => ({
@@ -524,10 +542,10 @@ test('zero removes the attributes rather than storing them', async ({ page, hg }
 	await expect.poll(() => attrs(hg)['object-drop-blur']).toBe(undefined);
 	await expect.poll(() => attrs(hg)['object-drop-spread']).toBe(undefined);
 	// and the new knobs are back at the defaults a shadow is born with
-	await expect(advField(page, 2)).toHaveValue('12');
-	await expect(advField(page, 3)).toHaveValue('135');
-	await expect(advField(page, 4)).toHaveValue('16');
-	await expect(advField(page, 5)).toHaveValue('0');
+	await expect(knobField(page, 'distance')).toHaveValue('12');
+	await expect(knobField(page, 'angle')).toHaveValue('135');
+	await expect(knobField(page, 'blur')).toHaveValue('16');
+	await expect(knobField(page, 'spread')).toHaveValue('0');
 	await expect(advanced(page).locator('.glue-glow-inner-toggle'))
 		.not.toHaveClass(/glue-font-toggle-on/);
 });
