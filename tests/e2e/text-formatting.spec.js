@@ -367,7 +367,11 @@ test('the shadow wraps the selected run', async ({ page, hg }) => {
 	await openPanel(page, a);
 	await select(page, a, 'world');
 	await openFold(page);
-	const shadowField = panel(page).locator('.glue-popover-advanced .glue-popover-field').nth(4);
+	// by its label: the padding rows that joined the fold on 2026-09-25 took
+	// the position this used to find it at
+	const shadowField = panel(page).locator('.glue-popover-advanced .glue-popover-scrub')
+		.filter({ has: page.locator('.glue-popover-label:text-is("shadow")') })
+		.locator('.glue-popover-field');
 	await shadowField.click();
 	await shadowField.fill('6');
 	await shadowField.dispatchEvent('input');
