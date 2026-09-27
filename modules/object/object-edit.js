@@ -1413,6 +1413,14 @@ function object_properties_popover(obj)
 	var flip = object_flip_section(icons, obj, save);
 	var transparency = object_transparency_section(body, obj, save);
 	var sections = [background, padding, flip, transparency];
+	// the row's icons - background image, tile and the two flips - wear
+	// danja's 22x22 redraws, shown 1:1: the boxes come down from the 32px
+	// $.glue.icon() sets inline, and css/edit.css sizes their masks to
+	// match (danja's call, 2026-09-27)
+	icons.querySelectorAll(':scope > .glue-btn-icon').forEach(function(b) {
+		b.style.width = '22px';
+		b.style.height = '22px';
+	});
 
 	// --- make the object a link --------------------------------------------
 	//
@@ -1571,7 +1579,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// 'object', not 'object-background': upload_files() dispatches by calling
 	// "{preferred_module}_upload", so the name has to be the module's own or
 	// the file falls through to the image module and becomes a new object.
-	var image = $.glue.popover.icon_button('background-image', 'set object background image');
+	var image = $.glue.popover.icon_button('background-image-22', 'set object background image');
 	image.classList.add('glue-background-image');
 	$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page,
 		preferred_module: 'object', object: obj.id }, {
@@ -1637,7 +1645,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// (object_alter_render_early()'s own default when the attribute is absent),
 	// so an empty inline style here would tile the picture live until the next
 	// load. The reset button below sets no-repeat for the same reason.
-	var repeat = $.glue.popover.icon_button('tile', 'tile object background image');
+	var repeat = $.glue.popover.icon_button('tile-22', 'tile object background image');
 	repeat.classList.add('glue-background-tile');
 	var sync_repeat = function() {
 		repeat.classList.toggle('glue-btn-active',
@@ -2037,13 +2045,13 @@ function object_padding_section(body, obj, save)
 // Returns an object with the section's reset.
 function object_flip_section(icons, obj, save)
 {
-	// The artwork is danja's pair: flip-h.svg draws the shape reflected
-	// across a horizontal dashed line, flip-v.svg the same drawing turned
-	// on its side - each file depicts the flip its own click performs
-	// (2026-09-23, the earlier names were crossed because the old art
-	// read opposite to the action).
-	var flip_h = $.glue.popover.icon_button('flip-h', 'flip horizontally');
-	var flip_v = $.glue.popover.icon_button('flip-v', 'flip vertically');
+	// The artwork is danja's 22x22 pair (2026-09-27): flip-h-22.svg draws
+	// the shape mirrored across a vertical dashed line - left for right,
+	// which is what the h axis does (transform_set_flip's a=-1) - and
+	// flip-v-22.svg mirrored across a horizontal one. The 30px pair before
+	// it had the two lines the other way round.
+	var flip_h = $.glue.popover.icon_button('flip-h-22', 'flip horizontally');
+	var flip_v = $.glue.popover.icon_button('flip-v-22', 'flip vertically');
 	var flip_sync = function() {
 		var axes = (typeof transform_flip_axes === 'function') ?
 			transform_flip_axes(obj) : { h: false, v: false };

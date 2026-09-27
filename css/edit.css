@@ -1318,6 +1318,17 @@
 	mask-size: 30px 30px;
 }
 
+.glue-properties-popover .glue-popover-icons > .glue-btn-icon::before {
+	/* the object properties panel's icons - background image, tile and the
+	   two flips - wear danja's 22x22 redraws (img/icons/*-22.svg) at 1:1 in
+	   22x22 boxes, which object_properties_popover() brings down from
+	   $.glue.icon()'s inline 32. Scoped to this panel: the page background
+	   panel shares the image and tile classes and keeps its 30px art
+	   (danja's call, 2026-09-27) */
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
 .glue-popover-advanced {
 	/* set off from the rows above it, since it is a different mechanism
 	   rather than more of the same */
@@ -1344,8 +1355,8 @@
 	overflow-y: auto;
 }
 
-/* .glue-background-popover and .glue-properties-popover have no rules of their
-   own any more: both pinned a width (200px and 230px) until 2026-09-17, when
+/* .glue-background-popover and .glue-properties-popover have no width rules of
+   their own any more: both pinned one (200px and 230px) until 2026-09-17, when
    panels became as wide as their content - see .glue-popover above. The classes
    stay on the panels, as the name each one is opened by. */
 
