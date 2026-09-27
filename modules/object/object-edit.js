@@ -596,6 +596,7 @@ function object_edge_popover(obj)
 			save();
 		});
 	colour.classList.add('glue-border-color');
+	style_row.appendChild(colour);
 
 	// --- what the panel shows ---------------------------------------------
 	//
@@ -630,6 +631,7 @@ function object_edge_popover(obj)
 		clip_sync();
 	});
 	clip_row.appendChild(clip);
+	pop.appendChild(clip_row);
 	clip_sync();
 
 	// --- more knobs: the fade and the glow --------------------------------
@@ -822,7 +824,14 @@ function object_edge_popover(obj)
 		});
 	drop_colour.classList.add('glue-drop-color');
 
-
+	var cell_glow = pair_cell('glow', glow_colour);
+	var cell_inside = pair_cell('inside', inner_toggle);
+	var cell_duo = pair_cell('second<br>glow', duotone);
+	var cell_drop = pair_cell('shadow<br>color', drop_colour);
+	var pair_glow = pair_row(cell_glow, cell_inside);
+	var pair_duo = pair_row(cell_duo, cell_drop);
+	adv.appendChild(pair_glow);
+	adv.appendChild(pair_duo);
 
 	var distance = $.glue.popover.number_row('distance', {
 		min: 0, max: 100, step: 1, unit: 'px',
@@ -912,93 +921,105 @@ function object_edge_popover(obj)
 		}));
 	adv.appendChild(footer);
 
-	// --- the popover's grid (SOW-popover-grid.md) -------------------------
+	// --- the fold's layout: sections, each in its own grid ---------------
 	//
-	// Every section is two columns of [label][field][unit] with a swatch
-	// column at the right; the colour cells sit in the right column
-	// (danja's call, 2026-09-26).
-	// the popover's own title leads the first section (danja's call,
-	// 2026-09-27)
-	var pop_title = document.createElement('div');
-	pop_title.className = 'glue-edge-section-title';
-	pop_title.textContent = 'border properties';
-	pop.insertBefore(pop_title, edge_top);
-	var edge_top = document.createElement('div');
-	edge_top.className = 'glue-edge-2col';
-	style_row.classList.add('glue-col-l', 'glue-r1');
-	edge_top.appendChild(style_row);
-	var border_colour_row = $.glue.popover.row('color');
-	border_colour_row.classList.add('glue-col-r', 'glue-r1');
-	border_colour_row.appendChild(colour);
-	edge_top.appendChild(border_colour_row);
-	radius.row.classList.add('glue-col-l', 'glue-r2');
-	edge_top.appendChild(radius.row);
-	fade.row.classList.add('glue-col-r', 'glue-r2');
-	edge_top.appendChild(fade.row);
-	border.row.classList.add('glue-col-l', 'glue-r3');
-	edge_top.appendChild(border.row);
-	clip_row.classList.add('glue-col-r', 'glue-r3');
-	edge_top.appendChild(clip_row);
-	pop.insertBefore(edge_top, fold.toggle);
-
-	// the border glow section
+	// border glow: the two glow numbers left, the colours and the inside
+	// toggle right. object shadow: blur and spread, led by the subtitle.
+	// Below the rule: distance, angle and the shadow colour. Everything
+	// moves by its own reference - the rows were built above, the appends
+	// here are the layout and nothing else (danja's call, 2026-09-26).
 	var edge_grid = document.createElement('div');
-	edge_grid.className = 'glue-edge-2col';
+	edge_grid.className = 'glue-edge-knobs-grid';
 	var glow_title = document.createElement('div');
 	glow_title.className = 'glue-edge-section-title';
 	glow_title.textContent = 'border glow';
 	edge_grid.appendChild(glow_title);
-	spread.row.classList.add('glue-col-l', 'glue-r2');
-	edge_grid.appendChild(spread.row);
-	var glow_row = $.glue.popover.row('glow');
-	glow_row.classList.add('glue-col-r', 'glue-r2');
-	glow_row.appendChild(glow_colour);
-	edge_grid.appendChild(glow_row);
-	strength.row.classList.add('glue-col-l', 'glue-r3');
-	edge_grid.appendChild(strength.row);
-	var glow2_row = $.glue.popover.row('second glow');
-	glow2_row.classList.add('glue-col-r', 'glue-r3');
-	glow2_row.appendChild(duotone);
-	edge_grid.appendChild(glow2_row);
-	var inside_row = $.glue.popover.row('inside');
-	inside_row.classList.add('glue-col-l', 'glue-r4');
-	inside_row.appendChild(inner_toggle);
-	edge_grid.appendChild(inside_row);
+	var edge_left = document.createElement('div');
+	edge_left.className = 'glue-edge-knobs-col';
+	edge_left.appendChild(spread.row);	// the glow spread
+	edge_left.appendChild(strength.row);	// the opacity
+	edge_grid.appendChild(edge_left);
+	var edge_right = document.createElement('div');
+	edge_right.className = 'glue-edge-knobs-col';
+	edge_right.appendChild(cell_glow);
+	edge_right.appendChild(cell_inside);
+	edge_right.appendChild(cell_duo);
+	edge_grid.appendChild(edge_right);
 	adv.insertBefore(edge_grid, adv.firstChild);
 	var edge_rule = document.createElement('hr');
 	edge_rule.className = 'glue-edge-knobs-rule';
 	adv.insertBefore(edge_rule, edge_grid.nextSibling);
 
-	// the object shadow section: the four numbers two-by-two, the shadow
-	// colour on the swatch column
 	var shadow_title = document.createElement('div');
 	shadow_title.className = 'glue-edge-section-title';
 	shadow_title.textContent = 'object shadow';
 	adv.insertBefore(shadow_title, edge_rule.nextSibling);
 	var shadow_grid = document.createElement('div');
-	shadow_grid.className = 'glue-edge-2col';
-	blur.row.classList.add('glue-col-l', 'glue-r1');
-	shadow_grid.appendChild(blur.row);
-	drop_spread.row.classList.add('glue-col-r', 'glue-r1');
-	shadow_grid.appendChild(drop_spread.row);
-	distance.row.classList.add('glue-col-l', 'glue-r2');
-	shadow_grid.appendChild(distance.row);
-	angle.row.classList.add('glue-col-r', 'glue-r2');
-	shadow_grid.appendChild(angle.row);
-	var shadow_colour_row = $.glue.popover.row('shadow color');
-	// its own row below angle (danja's call, 2026-09-27)
-	shadow_colour_row.classList.add('glue-col-l', 'glue-r3');
-	shadow_colour_row.appendChild(drop_colour);
-	shadow_grid.appendChild(shadow_colour_row);
+	shadow_grid.className = 'glue-edge-knobs-grid glue-edge-shadow-grid';
+	var shadow_left = document.createElement('div');
+	shadow_left.className = 'glue-edge-knobs-col';
+	shadow_left.appendChild(blur.row);
+	shadow_grid.appendChild(shadow_left);
+	var shadow_right = document.createElement('div');
+	shadow_right.className = 'glue-edge-knobs-col';
+	shadow_right.appendChild(drop_spread.row);
+	shadow_grid.appendChild(shadow_right);
 	adv.insertBefore(shadow_grid, shadow_title.nextSibling);
-	// every two-word label breaks onto two lines (danja's call,
-	// 2026-09-26)
-	[spread.row, glow2_row, shadow_colour_row].forEach(function(r) {
-		var l = r.querySelector(':scope > .glue-popover-label');
-		if (l) {
-			l.innerHTML = l.textContent.replace(' ', '<br>');
+
+	var colour_grid = document.createElement('div');
+	colour_grid.className = 'glue-edge-knobs-grid';
+	var colour_left = document.createElement('div');
+	colour_left.className = 'glue-edge-knobs-col';
+	colour_left.appendChild(distance.row);
+	colour_left.appendChild(angle.row);
+	colour_grid.appendChild(colour_left);
+	var colour_right = document.createElement('div');
+	colour_right.className = 'glue-edge-knobs-col';
+	colour_right.appendChild(cell_drop);
+	colour_grid.appendChild(colour_right);
+	adv.insertBefore(colour_grid, footer);
+	// the two colour pair rows the build laid down are regrouped into the
+	// sections above - drop their empty shells
+	[pair_glow, pair_duo].forEach(function(r) {
+		if (r.parentNode) {
+			r.remove();
 		}
 	});
+
+	// --- the clip joins the two top numbers -------------------------------
+	// The round and width rows stack on the left, the clip icon sits at
+	// their right (danja's call, 2026-09-26) - the clip's old row goes.
+	var edge_top_rows = document.createElement('div');
+	edge_top_rows.className = 'glue-edge-top-rows';
+	edge_top_rows.appendChild(radius.row);
+	edge_top_rows.appendChild(border.row);
+	// fade sits right under width, out of the fold (danja's call,
+	// 2026-09-26)
+	edge_top_rows.appendChild(fade.row);
+	var edge_top = document.createElement('div');
+	edge_top.className = 'glue-edge-top';
+	// the first section says what it is, above the style dropdown that
+	// leads it (danja's call, 2026-09-26)
+	var border_title = document.createElement('div');
+	border_title.className = 'glue-edge-section-title';
+	border_title.textContent = 'border';
+	pop.insertBefore(border_title, style_row);
+	edge_top.appendChild(edge_top_rows);
+	// the clip's label, left of the button (danja's call, 2026-09-26)
+	var clip_cell = document.createElement('div');
+	clip_cell.className = 'glue-edge-clip';
+	var clip_label = document.createElement('div');
+	clip_label.className = 'glue-popover-label';
+	clip_label.textContent = 'clip';
+	clip_cell.appendChild(clip_label);
+	clip_cell.appendChild(clip);
+	edge_top.appendChild(clip_cell);
+	// back where the rows always sat: above "more knobs", before the
+	// fold's toggle
+	pop.insertBefore(edge_top, fold.toggle);
+	if (clip_row.parentNode) {
+		clip_row.remove();
+	}
 
 	$.glue.popover.show(pop);
 }

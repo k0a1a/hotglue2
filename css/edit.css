@@ -1413,6 +1413,12 @@
 	align-items: start;
 }
 
+.glue-edge-shadow-grid {
+	/* the blur row keeps the rows' standard 6px from the distance row
+	   below the grid (danja's call, 2026-09-26) */
+	margin-bottom: 6px;
+}
+
 .glue-edge-knobs-col {
 	display: flex;
 	flex-direction: column;
@@ -1443,84 +1449,3 @@
 	width: 10px;
 	height: 10px;
 }
-
-/* --- the edge popover's grid (SOW-popover-grid.md) ---------------------- */
-/* [label][field][unit][swatch], rows as subgrids so every label, field,
-   unit and swatch lines up by structure, not by hand */
-
-.glue-edge-2col {
-	/* every section is two columns of [label][field][unit] with a swatch
-	   column at the right; rows are subgrids placed by class (danja's
-	   call, 2026-09-26) */
-	display: grid;
-	grid-template-columns: 64px 44px max-content 64px 44px max-content max-content;
-	column-gap: 6px;
-	row-gap: 5px;
-	align-items: start;
-}
-
-.glue-edge-2col > .glue-popover-row {
-	display: grid;
-	grid-template-columns: subgrid;
-	margin-bottom: 0;
-}
-
-.glue-edge-2col > .glue-popover-row.glue-col-l {
-	grid-column: 1 / 4;
-}
-
-.glue-edge-2col > .glue-popover-row.glue-col-r {
-	grid-column: 4 / 7;
-}
-
-.glue-edge-2col > .glue-popover-row.glue-col-s {
-	grid-column: 7;
-}
-
-.glue-edge-2col > .glue-popover-row.glue-r1 { grid-row: 1; }
-.glue-edge-2col > .glue-popover-row.glue-r2 { grid-row: 2; }
-.glue-edge-2col > .glue-popover-row.glue-r3 { grid-row: 3; }
-.glue-edge-2col > .glue-popover-row.glue-r4 { grid-row: 4; }
-
-.glue-edge-2col > .glue-edge-section-title {
-	grid-row: 1;
-}
-
-.glue-edge-2col .glue-popover-label {
-	justify-self: end;
-	text-align: right;
-	line-height: 1;
-}
-
-.glue-edge-2col .glue-border-style {
-	grid-column: 2;
-	width: 80px;
-}
-
-.glue-edge-2col .glue-edge-unit {
-	justify-self: start;
-}
-
-.glue-edge-2col > .glue-edge-section-title,
-.glue-edge-2col > .glue-edge-knobs-rule {
-	grid-column: 1 / -1;
-}
-
-.glue-edge-2col > .glue-popover-row > .glue-popover-color,
-.glue-edge-2col > .glue-popover-row > .glue-font-toggle {
-	/* a control whose row has no label starts at the field column */
-	grid-column: 2;
-}
-
-.glue-edge-2col .glue-btn-icon {
-	/* the clip at the swatch's 20x20 (danja's call, 2026-09-27) */
-	width: 20px;
-	height: 20px;
-}
-
-.glue-edge-2col .glue-btn-icon::before {
-	-webkit-mask-size: 18px 18px;
-	mask-size: 18px 18px;
-}
-
-
