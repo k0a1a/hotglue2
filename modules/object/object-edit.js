@@ -917,6 +917,12 @@ function object_edge_popover(obj)
 	// Every section is two columns of [label][field][unit] with a swatch
 	// column at the right; the colour cells sit in the right column
 	// (danja's call, 2026-09-26).
+	// the popover's own title leads the first section (danja's call,
+	// 2026-09-27)
+	var pop_title = document.createElement('div');
+	pop_title.className = 'glue-edge-section-title';
+	pop_title.textContent = 'border properties';
+	pop.insertBefore(pop_title, edge_top);
 	var edge_top = document.createElement('div');
 	edge_top.className = 'glue-edge-2col';
 	style_row.classList.add('glue-col-l', 'glue-r1');
