@@ -1474,6 +1474,13 @@ function object_properties_popover(obj)
 		}));
 	body.appendChild(footer);
 
+	// the panel says what it is, above its first section - the edge
+	// panel's bold section title, the way 'border' leads that one (danja's
+	// call, 2026-09-27)
+	var title = document.createElement('div');
+	title.className = 'glue-edge-section-title';
+	title.textContent = 'object properties';
+	pop.appendChild(title);
 	pop.appendChild(icons);
 	if (link_ui) {
 		pop.appendChild(link_ui.row);

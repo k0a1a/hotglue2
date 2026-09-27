@@ -1416,7 +1416,8 @@
 
 .glue-edge-section-title {
 	/* a section says what it is, spanning the columns, bold (danja's
-	   call, 2026-09-26) */
+	   call, 2026-09-26). The object properties panel borrows it for the
+	   title over its first section (2026-09-27) */
 	grid-column: 1 / -1;
 	font-size: 11px;
 	color: #666;
@@ -1424,9 +1425,11 @@
 }
 
 .glue-edge-popover > .glue-edge-section-title,
+.glue-properties-popover > .glue-edge-section-title,
 .glue-popover-advanced > .glue-edge-section-title {
-	/* the standalone titles (border, object shadow) keep the grid
-	   titles' own 13px row-gap below them (danja's call, 2026-09-26) */
+	/* the standalone titles (border, object shadow, object properties)
+	   keep the grid titles' own 13px row-gap below them (danja's call,
+	   2026-09-26) */
 	margin-bottom: 13px;
 }
 
