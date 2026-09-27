@@ -1482,11 +1482,13 @@ function object_properties_popover(obj)
 	title.textContent = 'object properties';
 	pop.appendChild(title);
 	// and the fold's first section, under its rule, the way 'object
-	// shadow' leads its section of the edge fold (danja's call, 2026-09-27)
-	var position_title = document.createElement('div');
-	position_title.className = 'glue-edge-section-title';
-	position_title.textContent = 'object position';
-	body.insertBefore(position_title, body.firstChild);
+	// shadow' leads its section of the edge fold - its x, y and scale
+	// place and size the background picture, so the title says so (danja's
+	// call, 2026-09-27)
+	var background_title = document.createElement('div');
+	background_title.className = 'glue-edge-section-title';
+	background_title.textContent = 'background properties';
+	body.insertBefore(background_title, body.firstChild);
 	pop.appendChild(icons);
 	if (link_ui) {
 		pop.appendChild(link_ui.row);
