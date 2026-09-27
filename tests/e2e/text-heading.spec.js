@@ -68,9 +68,11 @@ test('the popover swaps the tag and stores the level', async ({ page, hg }) => {
 	await expect.poll(() => attrs(hg)['text-heading-level']).toBe('h2');
 	await expect(byId(page, id)).toHaveJSProperty('tagName', 'H2');
 
-	// back to a plain text object: the key must go away entirely
+	// back to a plain text object: the key must go away entirely. The plain
+	// choice wears the empty square rather than the word since 2026-09-24,
+	// so it is found by its class
 	await openPopover(page, id);
-	await pop(page).locator('.glue-heading-toggle', { hasText: 'normal' }).click();
+	await pop(page).locator('.glue-heading-normal').click();
 	await expect.poll(() => attrs(hg)['text-heading-level']).toBeUndefined();
 	await expect(byId(page, id)).toHaveJSProperty('tagName', 'DIV');
 });
