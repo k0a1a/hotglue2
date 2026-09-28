@@ -71,8 +71,10 @@ test('the page-menu panel stores the reordered sequence', async ({ page, hg }) =
 
 	// the page menu opens with alt+p (js/edit.js menu shortcuts)
 	await page.keyboard.press('Alt+P');
-	await expect(page.locator('[title="reading order"]')).toBeVisible();
-	await page.locator('[title="reading order"]').click();
+	// by the start of its tooltip, which goes on to say what the order is for
+	const button = page.getByTitle(/^reading order/);
+	await expect(button).toBeVisible();
+	await button.click();
 	await expect(page.locator('.glue-reading-order-popover')).toBeVisible();
 
 	// the rows follow the current (automatic) order
