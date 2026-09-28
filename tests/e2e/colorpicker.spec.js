@@ -596,7 +596,10 @@ test('a new text object skips transparent and white swatches for a usable one',
 
 		await page.keyboard.press('Alt+o');
 		await page.getByTitle('create a text object').click();
-		const obj = page.locator('.text.object').last();
+		// the new object, not the seeded one: creation waits on the server, so
+		// a .last() read straight after the click can still be the seeded
+		// yellow object - which is what this read in Chromium
+		const obj = page.locator('.text.object:not([id$=".100000000001"])');
 		await expect(obj).toBeVisible();
 		expect(await obj.evaluate((e) => getComputedStyle(e).backgroundColor))
 			.toBe('rgb(255, 136, 68)');
@@ -612,7 +615,9 @@ test('a palette with nothing usable falls back to the global defaults',
 
 		await page.keyboard.press('Alt+o');
 		await page.getByTitle('create a text object').click();
-		const obj = page.locator('.text.object').last();
+		// the new object, not the seeded one (see the test above) - read too
+		// early, the seeded yellow could pass here too, yellow being a default
+		const obj = page.locator('.text.object:not([id$=".100000000001"])');
 		await expect(obj).toBeVisible();
 		const bg = await obj.evaluate((e) => getComputedStyle(e).backgroundColor);
 		// the random pick from the global defaults, converted to the
