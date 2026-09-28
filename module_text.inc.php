@@ -343,8 +343,9 @@ function text_alter_save($args)
 	} else {
 		unset($obj['text-font-weight']);
 	}
-	// the text shadow's ingredients (see text_render_object)
-	foreach (['radius', 'alpha', 'color'] as $part) {
+	// the text shadow's ingredients (see text_render_object) - the glow's
+	// three, and since 2026-09-28 the drop shadow's distance, angle and spread
+	foreach (['radius', 'alpha', 'color', 'distance', 'angle', 'spread'] as $part) {
 		if (elem_css($elem, '--glue-shadow-'.$part) !== NULL) {
 			$obj['text-shadow-'.$part] = elem_css($elem, '--glue-shadow-'.$part);
 		} else {
@@ -580,18 +581,24 @@ function text_alter_render_early($args)
 	if (!empty($obj['text-text-decoration'])) {
 		elem_css($elem, 'text-decoration', $obj['text-text-decoration']);
 	}
-	// a halo behind the text - see .glue-text-shadow in css/main.css. The
+	// a shadow behind the text - see .glue-text-shadow in css/main.css. The
 	// ingredients are stored and the shadow is composed there, so the value
 	// exists in one place rather than in the editor and the renderer both.
-	if (!empty($obj['text-shadow-radius'])) {
-		elem_css($elem, '--glue-shadow-radius', $obj['text-shadow-radius']);
-		if (!empty($obj['text-shadow-alpha'])) {
-			elem_css($elem, '--glue-shadow-alpha', $obj['text-shadow-alpha']);
-		}
-		if (!empty($obj['text-shadow-color'])) {
-			elem_css($elem, '--glue-shadow-color', $obj['text-shadow-color']);
+	// It is on while it has a blur, a distance or a spread: a hard drop
+	// shadow is a distance with no blur (2026-09-28). A part that is absent
+	// is the rule's own default, and the spread draws its ring of copies
+	// only under its own class.
+	if (!empty($obj['text-shadow-radius']) || !empty($obj['text-shadow-distance'])
+			|| !empty($obj['text-shadow-spread'])) {
+		foreach (['radius', 'alpha', 'color', 'distance', 'angle', 'spread'] as $part) {
+			if (!empty($obj['text-shadow-'.$part])) {
+				elem_css($elem, '--glue-shadow-'.$part, $obj['text-shadow-'.$part]);
+			}
 		}
 		elem_add_class($elem, 'glue-text-shadow');
+		if (!empty($obj['text-shadow-spread'])) {
+			elem_add_class($elem, 'glue-text-shadow-spread');
+		}
 	}
 	// letter-spacing
 	if (!empty($obj['text-letter-spacing'])) {

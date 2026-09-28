@@ -93,8 +93,9 @@ test('one button opens the panel, and the three it replaced are gone',
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
 		// size, line, letter and word; the padding section's five rows, in
-		// the fold since 2026-09-25; the shadow and its fade
-		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(11);
+		// the fold since 2026-09-25; the shadow's radius, fade, distance,
+		// angle and spread (the last three since 2026-09-28)
+		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(14);
 		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
 
@@ -268,7 +269,7 @@ test('the row shows its arrow, and Escape takes a typed value back',
 		// one arrow per knob row, drawn inside the field's own right end
 		// since 2026-09-17 (where the browser's steppers used to be), and a
 		// numeric keyboard when a finger taps the field
-		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(11);
+		await expect(fold(page).locator('.glue-popover-scrub-arrow')).toHaveCount(14);
 		await expect(row.locator('.glue-popover-scrub-arrow')).toHaveText('↔');
 		await expect(field).toHaveAttribute('inputmode', 'decimal');
 		expect(await row.evaluate((e) => getComputedStyle(e).cursor),
@@ -778,6 +779,63 @@ test('a shadow radius of zero takes the shadow off', async ({ page, hg }) => {
 	await expect.poll(() => hg.readObject('100000000001').attrs['text-shadow-radius'])
 		.toBe(undefined);
 });
+
+test('the text shadow falls at a distance and an angle, spreads, and reaches the published page',
+	async ({ page, hg }) => {
+		// the drop shadow's three knobs on the text shadow (2026-09-28): a
+		// distance in a direction moves the three layers together, and a
+		// spread draws a ring of copies under a class of its own. No blur
+		// here, so this is a hard shadow - on without a radius
+		const a = hg.addObject('100000000001', ATTRS, 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await openFold(page);
+		const knob = (label) => fold(page).locator('.glue-popover-scrub')
+			.filter({ has: page.locator(`.glue-popover-label:text-is("${label}")`) })
+			.locator('.glue-popover-field');
+		const commit = async (label, value) => {
+			const f = knob(label);
+			await f.fill(String(value));
+			await f.dispatchEvent('input');
+			await f.dispatchEvent('change');
+		};
+		await commit('distance', 4);
+		await commit('angle', 0);
+		await commit('spread', 2);
+
+		await expect(byId(page, a)).toHaveClass(/glue-text-shadow-spread/);
+		// the layers 4px along x with no blur, and the ring's first copy 2px
+		// further out
+		const drawn = await cssOf(page, a, 'textShadow');
+		expect(drawn).toContain('4px 0px 0px');
+		expect(drawn).toContain('6px 0px 0px');
+		const attrs = () => hg.readObject('100000000001').attrs;
+		await expect.poll(() => attrs()['text-shadow-spread']).toBe('2');
+		expect(attrs()['text-shadow-distance']).toBe('4');
+		expect(attrs()['text-shadow-angle']).toBe('0deg');
+		// no blur, so no radius stored: absent is the rule's own 0
+		expect(attrs()['text-shadow-radius']).toBe(undefined);
+
+		// a reload reads the three back into their rows
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await open(page, a);
+		await openFold(page);
+		await expect(knob('distance')).toHaveValue('4.0');
+		await expect(knob('angle')).toHaveValue('0');
+		await expect(knob('spread')).toHaveValue('2.0');
+
+		// and the published page draws the same shadow
+		await page.goto(`/?${hg.pageName}`);
+		const published = await page.evaluate(() => {
+			const el = document.querySelector('.object');
+			return [el.className, getComputedStyle(el).textShadow];
+		});
+		expect(published[0]).toContain('glue-text-shadow-spread');
+		expect(published[1]).toContain('4px 0px 0px');
+		expect(published[1]).toContain('6px 0px 0px');
+	});
 
 test('the fold says where new fonts come from', async ({ page, hg }) => {
 	// the dropdown lists what is installed; uploading is site-wide and lives

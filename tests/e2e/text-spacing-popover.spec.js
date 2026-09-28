@@ -93,9 +93,10 @@ test('the fold holds all of it, and the buttons it replaced are gone',
 		await open(page, a);
 
 		// the size, line, letter, word; the padding section's five rows, in
-		// the fold since 2026-09-25; the text shadow's radius and fade -
-		// eleven knobs and no tracks among them any more
-		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(11);
+		// the fold since 2026-09-25; the text shadow's radius, fade,
+		// distance, angle and spread - fourteen knobs and no tracks among
+		// them any more
+		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(14);
 		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(0);
 		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
 		// and the alignments are NOT in here: they are one of the six things the

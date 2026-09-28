@@ -153,27 +153,76 @@ a, a:link, a:visited, a:active, a:hover {
 }
 
 .glue-text-shadow {
-	/* A halo behind the text itself. Like the glow above it, what is stored
-	   is the ingredients - a radius, a strength and a colour - and the value
-	   is composed here, once. text-shadow has no spread of its own, so the
-	   radius is the blur and the strength is the colour's alpha.
+	/* A shadow behind the text itself. Like the glow above it, what is stored
+	   is the ingredients - a radius, a strength and a colour, and since
+	   2026-09-28 the drop shadow's distance, angle and spread - and the value
+	   is composed here, once. The radius is the blur and the strength is the
+	   colour's alpha.
 
 	   A single blur at any radius reads as a soft fog - the ink is spread
 	   over the whole blur - so the SAME shadow is layered at half and
 	   quarter radii: dense at the glyph, fading outward. That is what makes
 	   a heavy shadow achievable from the same three ingredients (2026-09-22,
-	   danja's "cannot achieve heavy text shadow"). */
-	--glue-shadow-radius: 6;
+	   danja's "cannot achieve heavy text shadow").
+
+	   The distance moves all three layers together, in the direction of the
+	   stored angle resolved to x/y offsets by cos()/sin() here, as the drop
+	   shadow's is (the angle keeps its unit, so the trig sees an angle). At
+	   distance 0 it is the halo it always was. The radius defaults to 0
+	   because a shadow can be on without one now: a hard drop shadow is a
+	   distance and no blur. Every variable has a default, and must - a
+	   single undefined one invalidates the whole text-shadow. */
+	--glue-shadow-radius: 0;
 	--glue-shadow-alpha: 80;
 	--glue-shadow-color: #000;
+	--glue-shadow-distance: 0;
+	--glue-shadow-angle: 0deg;
+	--glue-shadow-spread: 0;
+	--glue-shadow-x: calc(var(--glue-shadow-distance) * cos(var(--glue-shadow-angle)) * 1px);
+	--glue-shadow-y: calc(var(--glue-shadow-distance) * sin(var(--glue-shadow-angle)) * 1px);
+	--glue-shadow-ink: color-mix(in srgb, var(--glue-shadow-color)
+		calc(var(--glue-shadow-alpha) * 1%), transparent);
+	/* the quarter-radius layer: the dense core, and what the spread copies */
+	--glue-shadow-core: calc(var(--glue-shadow-radius) * 0.25px) var(--glue-shadow-ink);
 	text-shadow:
-		0 0 calc(var(--glue-shadow-radius) * 1px)
-			color-mix(in srgb, var(--glue-shadow-color)
-				calc(var(--glue-shadow-alpha) * 1%), transparent),
-		0 0 calc(var(--glue-shadow-radius) * 0.5px)
-			color-mix(in srgb, var(--glue-shadow-color)
-				calc(var(--glue-shadow-alpha) * 1%), transparent),
-		0 0 calc(var(--glue-shadow-radius) * 0.25px)
-			color-mix(in srgb, var(--glue-shadow-color)
-				calc(var(--glue-shadow-alpha) * 1%), transparent);
+		var(--glue-shadow-x) var(--glue-shadow-y)
+			calc(var(--glue-shadow-radius) * 1px) var(--glue-shadow-ink),
+		var(--glue-shadow-x) var(--glue-shadow-y)
+			calc(var(--glue-shadow-radius) * 0.5px) var(--glue-shadow-ink),
+		var(--glue-shadow-x) var(--glue-shadow-y) var(--glue-shadow-core);
+}
+
+.glue-text-shadow.glue-text-shadow-spread {
+	/* text-shadow has no spread of its own, so the spread is drawn: sixteen
+	   copies of the core layer in a ring around it, --glue-shadow-reach out,
+	   which thickens the shadow the way a box-shadow's spread does. Clean up
+	   to a few pixels; past 10 the copies begin to show as copies, which is
+	   where the panel's drag stops. The class is on only while a spread is
+	   stored, so a shadow without one draws its three layers and no more -
+	   and so a spread of 0 cannot stack sixteen copies on the core. With a
+	   spread the copies overlap, so the strength reads heavier than the same
+	   number without one. */
+	--glue-shadow-reach: calc(var(--glue-shadow-spread) * 1px);
+	text-shadow:
+		var(--glue-shadow-x) var(--glue-shadow-y)
+			calc(var(--glue-shadow-radius) * 1px) var(--glue-shadow-ink),
+		var(--glue-shadow-x) var(--glue-shadow-y)
+			calc(var(--glue-shadow-radius) * 0.5px) var(--glue-shadow-ink),
+		var(--glue-shadow-x) var(--glue-shadow-y) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 1) var(--glue-shadow-y) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.9239) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.3827) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.7071) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.7071) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.3827) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.9239) var(--glue-shadow-core),
+		var(--glue-shadow-x) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 1) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.3827) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.9239) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.7071) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.7071) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.9239) calc(var(--glue-shadow-y) + var(--glue-shadow-reach) * 0.3827) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 1) var(--glue-shadow-y) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.9239) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.3827) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.7071) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.7071) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) - var(--glue-shadow-reach) * 0.3827) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.9239) var(--glue-shadow-core),
+		var(--glue-shadow-x) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 1) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.3827) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.9239) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.7071) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.7071) var(--glue-shadow-core),
+		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.9239) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.3827) var(--glue-shadow-core);
 }

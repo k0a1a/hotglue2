@@ -1070,11 +1070,81 @@ function text_strip_apply_style(render, prop, value) {
 	})();
 }
 
-// The run's shadow, as the object's shadow is stored: a radius, a strength
-// and a colour. The span carries the COMPOSED value - text-shadow with a
-// color-mix alpha - because a run has no css rule of its own to compose in
-// (the object's composition lives in css/main.css, .glue-text-shadow).
-// Parsing it back is this regex's job.
+// The text shadow's ingredients, as the object stores them: a radius, a
+// strength and a colour - the glow's three - and since 2026-09-28 the drop
+// shadow's distance, angle and spread. These are the defaults a shadow is
+// born with; a zero radius, distance and spread is no shadow at all.
+function text_shadow_none() {
+	return { radius: 0, color: '#000000', alpha: 80, distance: 0, angle: 135, spread: 0 };
+}
+
+// A shadow is on while it has a blur, a distance or a spread: a hard drop
+// shadow is a distance with no blur, and a spread alone is an outline.
+function text_shadow_on(shadow) {
+	return 0 < shadow.radius || 0 < shadow.distance || 0 < shadow.spread;
+}
+
+// A composed text-shadow back into its ingredients. The engines serialize it
+// their own way - the colour first or the lengths first, the colour as
+// #000000 or rgb(0, 0, 0) - so each layer is read as its color-mix and the
+// three lengths beside it. The FIRST layer carries the ingredients the next
+// two share (the same shadow at half and quarter radii); a fourth layer is
+// the spread ring's first copy, pushed straight out along x, so its x less
+// the first's is the spread.
+function text_shadow_parse(value) {
+	// the layers, split on the commas outside the colours' parentheses
+	var layers = [];
+	var depth = 0;
+	var start = 0;
+	for (var i = 0; i < value.length; i++) {
+		var ch = value.charAt(i);
+		if (ch == '(') {
+			depth++;
+		} else if (ch == ')') {
+			depth--;
+		} else if (ch == ',' && depth == 0) {
+			layers.push(value.slice(start, i));
+			start = i + 1;
+		}
+	}
+	layers.push(value.slice(start));
+	var read = function(layer) {
+		var m = layer.match(/color-mix\(in srgb, (.+?) ([\d.]+)%, transparent\)/);
+		if (!m) {
+			return null;
+		}
+		var len = layer.replace(m[0], ' ').trim().split(/\s+/).map(parseFloat);
+		if (len.length < 3 || len.some(isNaN)) {
+			return null;
+		}
+		return { color: m[1], alpha: parseFloat(m[2]), x: len[0], y: len[1], blur: len[2] };
+	};
+	var first = read(layers[0]);
+	if (!first) {
+		return null;
+	}
+	var shadow = text_shadow_none();
+	shadow.radius = first.blur;
+	shadow.color = first.color;
+	shadow.alpha = first.alpha;
+	shadow.distance = Math.round(Math.sqrt(first.x*first.x + first.y*first.y) * 10) / 10;
+	if (0 < shadow.distance) {
+		shadow.angle = Math.round(Math.atan2(first.y, first.x) * 180 / Math.PI);
+		if (shadow.angle < 0) {
+			shadow.angle += 360;
+		}
+	}
+	var ring = (3 < layers.length) ? read(layers[3]) : null;
+	if (ring) {
+		shadow.spread = Math.round((ring.x - first.x) * 10) / 10;
+	}
+	return shadow;
+}
+
+// The run's shadow. The span carries the COMPOSED value - text-shadow layers
+// with a color-mix alpha - because a run has no css rule of its own to
+// compose in (the object's composition lives in css/main.css,
+// .glue-text-shadow); text_shadow_parse() reads it back.
 function text_strip_run_shadow() {
 	var render = text_strip_render;
 	var range = text_strip_range_for();
@@ -1085,40 +1155,48 @@ function text_strip_run_shadow() {
 	var el = (node && node.nodeType == 3) ? node.parentElement : node;
 	for (var cur = el; cur && cur !== render; cur = cur.parentElement) {
 		if (cur.tagName == 'SPAN' && cur.style.textShadow) {
-			// the engines serialize the composed value their own way: the
-			// colour first with zero-padded offsets, or the offsets first;
-			// the colour as #000000 or rgb(0, 0, 0)
-			// the composed value layers the same shadow at shrinking radii;
-			// the FIRST layer carries the ingredients the rest share
-			var m = cur.style.textShadow.match(
-				/^color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\) 0px 0px ([\d.]+)px/) ||
-				cur.style.textShadow.match(
-				/^0 0 ([\d.]+)px color-mix\(in srgb, (\S+) ([\d.]+)%, transparent\)/);
-			if (m) {
-				return m[4] ? { radius: parseFloat(m[4]), color: m[1], alpha: parseFloat(m[2]) }
-					: { radius: parseFloat(m[1]), color: m[2], alpha: parseFloat(m[3]) };
+			var s = text_shadow_parse(cur.style.textShadow);
+			if (s) {
+				return s;
 			}
 		}
 	}
-	return { radius: 0, color: '#000000', alpha: 80 };
+	return text_shadow_none();
 }
 
-// radius 0 takes the shadow off the run; anything above it writes the
-// composed value onto the run's span. The colour's own path raises a
-// zeroed radius to 6, exactly as the object's does - a colour with no
-// radius shows nothing, and giving it one is the honest reading of "I
-// picked a colour".
+// Off takes the shadow off the run; anything else writes the composed value
+// onto the run's span - the layers css/main.css composes for an object, with
+// the numbers worked out here. The colour's own path raises a shadow that is
+// off to a radius of 6, exactly as the object's does - a colour with nothing
+// to colour shows nothing, and giving it something is the honest reading of
+// "I picked a colour".
 function text_strip_apply_shadow(render, shadow) {
 	var value = '';
-	if (shadow.radius > 0) {
+	if (text_shadow_on(shadow)) {
+		var ink = 'color-mix(in srgb, ' + shadow.color + ' ' + shadow.alpha + '%, transparent)';
+		var r2 = function(v) {
+			return Math.round(v * 100) / 100;
+		};
+		var rad = shadow.angle * Math.PI / 180;
+		var x = shadow.distance * Math.cos(rad);
+		var y = shadow.distance * Math.sin(rad);
+		var layer = function(dx, dy, blur) {
+			return r2(dx) + 'px ' + r2(dy) + 'px ' + r2(blur) + 'px ' + ink;
+		};
 		// layered like the object's composition: the same shadow at half
 		// and quarter radii, dense at the glyph (2026-09-22)
-		var layer = function(r) {
-			return '0 0 ' + r + 'px color-mix(in srgb, ' + shadow.color +
-				' ' + shadow.alpha + '%, transparent)';
-		};
-		value = layer(shadow.radius) + ', ' + layer(shadow.radius * 0.5) +
-			', ' + layer(shadow.radius * 0.25);
+		var layers = [layer(x, y, shadow.radius), layer(x, y, shadow.radius * 0.5),
+			layer(x, y, shadow.radius * 0.25)];
+		// and the spread as the object's is drawn: a ring of sixteen copies
+		// of the core layer, the first pushed straight out along x
+		if (0 < shadow.spread) {
+			for (var i = 0; i < 16; i++) {
+				var a = i * Math.PI / 8;
+				layers.push(layer(x + shadow.spread * Math.cos(a),
+					y + shadow.spread * Math.sin(a), shadow.radius * 0.25));
+			}
+		}
+		value = layers.join(', ');
 	}
 	text_strip_apply_style(render, 'textShadow', value);
 }
@@ -2362,27 +2440,38 @@ function text_panel_build(pop, obj)
 	});
 	adv.appendChild(word.row);
 
-	// --- a halo behind the text ------------------------------------------
+	// --- a shadow behind the text ----------------------------------------
 	//
-	// text-shadow with no offset: a glow around the letters rather than a
-	// shadow beside them. Same three ingredients as the object glow, and
-	// the object stores them the same way - a radius, a strength and a
-	// colour, composed in css/main.css. A run's span carries the COMPOSED
-	// value instead (it has no rule of its own to compose in), and
-	// text_strip_run_shadow() parses it back.
-	var shadow = { radius: 0, color: '#000000', alpha: 80 };
+	// text-shadow, built from the object glow's three ingredients - a
+	// radius, a strength and a colour - and since 2026-09-28 the object
+	// drop shadow's three knobs as well: a distance, an angle and a spread
+	// (danja's call). At distance 0 it is the halo it always was, a glow
+	// around the letters rather than a shadow beside them. The object
+	// stores the ingredients and css/main.css composes them; a run's span
+	// carries the COMPOSED value instead (it has no rule of its own to
+	// compose in), and text_shadow_parse() reads it back.
+	var shadow = text_shadow_none();
 	var read_shadow = function() {
 		if (run_active() && text_strip_render) {
-			var s = text_strip_run_shadow();
-			shadow.radius = s ? s.radius : 0;
-			shadow.color = s ? s.color : '#000000';
-			shadow.alpha = s ? s.alpha : 80;
+			var s = text_strip_run_shadow() || text_shadow_none();
+			shadow.radius = s.radius;
+			shadow.color = s.color;
+			shadow.alpha = s.alpha;
+			shadow.distance = s.distance;
+			shadow.angle = s.angle;
+			shadow.spread = s.spread;
 			return;
 		}
 		shadow.radius = parseFloat(obj.style.getPropertyValue('--glue-shadow-radius')) || 0;
 		var a = parseFloat(obj.style.getPropertyValue('--glue-shadow-alpha'));
 		shadow.alpha = isNaN(a) ? 80 : a;
 		shadow.color = obj.style.getPropertyValue('--glue-shadow-color').trim() || '#000000';
+		shadow.distance = parseFloat(obj.style.getPropertyValue('--glue-shadow-distance')) || 0;
+		// the angle keeps its unit ('135deg'), as the drop shadow's does -
+		// the composed rule's trig sees an angle rather than a number
+		var ang = parseFloat(obj.style.getPropertyValue('--glue-shadow-angle'));
+		shadow.angle = isNaN(ang) ? 135 : ang;
+		shadow.spread = parseFloat(obj.style.getPropertyValue('--glue-shadow-spread')) || 0;
 	};
 	read_shadow();
 	var write_shadow = function(commit) {
@@ -2396,17 +2485,26 @@ function text_panel_build(pop, obj)
 			}
 			return;
 		}
-		if (shadow.radius <= 0) {
-			obj.style.removeProperty('--glue-shadow-radius');
-			obj.style.removeProperty('--glue-shadow-alpha');
-			obj.style.removeProperty('--glue-shadow-color');
-			obj.classList.remove('glue-text-shadow');
-		} else {
-			obj.style.setProperty('--glue-shadow-radius', shadow.radius);
-			obj.style.setProperty('--glue-shadow-alpha', shadow.alpha);
-			obj.style.setProperty('--glue-shadow-color', shadow.color);
-			obj.classList.add('glue-text-shadow');
-		}
+		// every ingredient is stored only while it says something: off takes
+		// them all off, a zero is the rule's own default, and the angle means
+		// nothing without a distance - so an untouched object and a reset one
+		// store exactly what they always did
+		var on = text_shadow_on(shadow);
+		var put = function(part, value, keep) {
+			if (keep) {
+				obj.style.setProperty('--glue-shadow-'+part, value);
+			} else {
+				obj.style.removeProperty('--glue-shadow-'+part);
+			}
+		};
+		put('radius', shadow.radius, on && 0 < shadow.radius);
+		put('alpha', shadow.alpha, on);
+		put('color', shadow.color, on);
+		put('distance', shadow.distance, on && 0 < shadow.distance);
+		put('angle', shadow.angle+'deg', on && 0 < shadow.distance);
+		put('spread', shadow.spread, on && 0 < shadow.spread);
+		obj.classList.toggle('glue-text-shadow', on);
+		obj.classList.toggle('glue-text-shadow-spread', on && 0 < shadow.spread);
 		$.glue.undo.begin_batch();
 		object_clear_runs('textShadow', commit);
 		if (commit) {
@@ -2441,7 +2539,7 @@ function text_panel_build(pop, obj)
 			// a strength with no shadow shows nothing: give it one, the
 			// colour button's courtesy for the same situation (2026-09-22,
 			// danja's call - the row felt inert without it)
-			if (shadow.radius <= 0) {
+			if (!text_shadow_on(shadow)) {
 				shadow.radius = 6;
 				shadow_radius.set(6);
 			}
@@ -2449,6 +2547,49 @@ function text_panel_build(pop, obj)
 		}
 	});
 	adv.appendChild(shadow_alpha.row);
+
+	// where it falls: a distance in a direction, the object drop shadow's
+	// pair, and a spread that thickens it (danja's call, 2026-09-28). At a
+	// distance of 0 the shadow is the halo it was.
+	var shadow_distance = $.glue.popover.number_row('distance', {
+		// floored at 0, unlike the drop shadow's: a negative distance is only
+		// the angle turned round, and a run's composed value, read back,
+		// could not tell the two apart. 40 is a fence, as the radius's is
+		min: 0, max: 40, step: 0.5, decimals: 1, unit: 'px', hard: [0, null],
+		value: shadow.distance,
+		apply: function(px, commit) {
+			shadow.distance = px;
+			write_shadow(commit);
+		}
+	});
+	adv.appendChild(shadow_distance.row);
+
+	var shadow_angle = $.glue.popover.number_row('angle', {
+		// read the way the drop shadow's is: 0 is to the right and 90 is
+		// down, resolved to x and y by the composed rule's cos() and sin()
+		min: 0, max: 360, step: 1, unit: '\u00b0',
+		value: shadow.angle,
+		apply: function(deg, commit) {
+			shadow.angle = deg;
+			write_shadow(commit);
+		}
+	});
+	adv.appendChild(shadow_angle.row);
+
+	var shadow_spread = $.glue.popover.number_row('spread', {
+		// text-shadow has no spread of its own, so the composed rule draws
+		// one: a ring of sixteen copies of the shadow's core around it, which
+		// thickens the shadow the way a box-shadow's spread does. Past 10 the
+		// copies begin to show as copies, so that is where the drag stops - a
+		// fence, not a cap on typing. Floored at 0: a ring cannot shrink one
+		min: 0, max: 10, step: 0.5, decimals: 1, unit: 'px', hard: [0, null],
+		value: shadow.spread,
+		apply: function(px, commit) {
+			shadow.spread = px;
+			write_shadow(commit);
+		}
+	});
+	adv.appendChild(shadow_spread.row);
 
 	var shadow_row = $.glue.popover.row('color');
 	var shadow_color_btn = $.glue.popover.color_button('shadow colour',
@@ -2458,8 +2599,8 @@ function text_panel_build(pop, obj)
 		},
 		function(col) {
 			shadow.color = col;
-			// a colour with no radius shows nothing; give it one
-			if (shadow.radius <= 0) {
+			// a colour with no shadow shows nothing; give it one
+			if (!text_shadow_on(shadow)) {
 				shadow.radius = 6;
 				shadow_radius.set(6);
 			}
@@ -2484,7 +2625,8 @@ function text_panel_build(pop, obj)
 	// the press that starts a scrub takes focus and collapses the
 	// selection: the range is taken on pointerdown, for the run the rows
 	// will act on
-	[line, letter, word, shadow_radius, shadow_alpha].forEach(function(rw) {
+	[line, letter, word, shadow_radius, shadow_alpha, shadow_distance, shadow_angle,
+		shadow_spread].forEach(function(rw) {
 		rw.row.addEventListener('pointerdown', function() {
 			text_strip_snapshot = text_strip_range_for();
 		});
@@ -2505,7 +2647,13 @@ function text_panel_build(pop, obj)
 				.forEach(function(prop) {
 					obj.style[prop] = '';
 				});
-			shadow.radius = 0;
+			// the shadow off entirely: its blur, its distance and its spread
+			// back to none, and the angle to the one a shadow is born with
+			var none = text_shadow_none();
+			shadow.radius = none.radius;
+			shadow.distance = none.distance;
+			shadow.angle = none.angle;
+			shadow.spread = none.spread;
 			write_shadow(false);
 			// the padding rows moved into this panel, so its reset is
 			// theirs too
@@ -2653,6 +2801,12 @@ function text_panel_build(pop, obj)
 		if (document.activeElement !== sa_field) {
 			shadow_alpha.set(shadow.alpha);
 		}
+		[[shadow_distance, shadow.distance], [shadow_angle, shadow.angle],
+			[shadow_spread, shadow.spread]].forEach(function(p) {
+			if (document.activeElement !== p[0].row.querySelector('.glue-popover-field')) {
+				p[0].set(p[1]);
+			}
+		});
 
 		// the link row follows the selection; grayed means there is none
 		if (link_available() && text_strip_link_sync) {

@@ -388,6 +388,33 @@ test('the shadow wraps the selected run', async ({ page, hg }) => {
 		.toContain('6px');
 });
 
+test('a run\'s shadow falls at a distance, and reads back into the rows', async ({ page, hg }) => {
+	// the run's span carries the composed layers, their offsets worked out
+	// in the editor (2026-09-28): 3px at the default angle of 135, down and
+	// to the left. Selecting the run again reads the distance and the angle
+	// back out of them
+	const a = await add(page, hg, 'hello world');
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await openFold(page);
+	const knob = (label) => panel(page).locator('.glue-popover-advanced .glue-popover-scrub')
+		.filter({ has: page.locator(`.glue-popover-label:text-is("${label}")`) })
+		.locator('.glue-popover-field');
+	const distance = knob('distance');
+	await distance.click();
+	await distance.fill('3');
+	await distance.dispatchEvent('input');
+	await distance.dispatchEvent('change');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => stored(hg)).toMatch(/text-shadow:[^"]*-2\.12px 2\.12px 0px/);
+
+	await openPanel(page, a);
+	await select(page, a, 'world');
+	await openFold(page);
+	await expect(knob('distance')).toHaveValue('3.0');
+	await expect(knob('angle')).toHaveValue('135');
+});
+
 test('a face applied over differently-faced words takes them both',
 	async ({ page, hg }) => {
 	// the wrapper alone cannot beat the words' own spans - their faces
