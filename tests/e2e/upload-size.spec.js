@@ -27,9 +27,18 @@ test('the editor refuses an oversized file before uploading it', async ({ page, 
 	await page.keyboard.press('Alt+o');
 	const input = page.locator('input[title="upload an asset: an image, video or sound file"]').first();
 	await expect(input).toBeAttached();
-	const dialog = page.waitForEvent('dialog');
+	// the refusal is an alert raised inside the input's change handler, so it
+	// blocks the page until it is answered: it is answered here, by a handler
+	// that notes what it said, rather than awaited after setInputFiles - which
+	// cannot return while the alert is up. The wording is the server's, under
+	// $.glue.error()'s own prefix (2026-09-24)
+	let message = null;
+	page.once('dialog', async (d) => {
+		message = d.message();
+		await d.dismiss();
+	});
 	await input.setInputFiles(tooBig());
-	expect((await dialog).message()).toBe('file too large (max 195KB)');
+	await expect.poll(() => message).toBe('Hotglue message: file too large (max 195KB)');
 
 	// nothing was sent: no object, no file in shared
 	await page.waitForTimeout(300);
