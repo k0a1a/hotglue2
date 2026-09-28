@@ -89,7 +89,4 @@ test('the page-menu panel stores the reordered sequence', async ({ page, hg }) =
 	await expect.poll(() => hg.readObject('page').attrs['page-reading-order'])
 		.toBe('["100000000002","100000000001"]');
 
-	// reset drops the stored override entirely
-	await page.locator('.glue-reading-order-popover .glue-popover-reset').click();
-	await expect.poll(() => hg.readObject('page').attrs['page-reading-order']).toBeUndefined();
 });

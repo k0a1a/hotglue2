@@ -98,7 +98,8 @@ test('the fold holds all of it, and the buttons it replaced are gone',
 		// them any more
 		await expect(pop(page).locator('.glue-popover-scrub')).toHaveCount(14);
 		await expect(pop(page).locator('.glue-popover-slider')).toHaveCount(0);
-		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(1);
+		// and no reset - no popout has a reset since 2026-09-28 (danja's call)
+		await expect(panel(page).locator('.glue-popover-reset')).toHaveCount(0);
 		// and the alignments are NOT in here: they are one of the six things the
 		// panel shows, above the fold, so the count that used to be 4 here is 4
 		// on the panel and 0 in the fold
@@ -247,54 +248,6 @@ test('the four alignment buttons set alignment, and show which one is on',
 			await expect(alignBtn(page, 'left')).not.toHaveClass(/glue-align-on/);
 			await expect.poll(() => attrs(hg)['text-align']).toBe(which);
 		}
-	});
-
-test('the reset in the fold clears the whole panel, not just the spacing',
-	async ({ page, hg }) => {
-		// it is one panel now, so one reset: face, size, style, colour and
-		// spacing all go back to what an untouched object has
-		const a = hg.addObject('100000000001', {
-			...ATTRS, 'text-font-size': '40px', 'text-font-weight': 'bold',
-			'text-font-family': 'Georgia, serif', 'text-font-color': '#ff0000',
-			'text-letter-spacing': '0.2em', 'text-align': 'right',
-		}, 'A');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await open(page, a);
-
-		await pop(page).locator('.glue-popover-reset').click();
-		for (const gone of ['text-font-size', 'text-font-weight', 'text-font-family',
-			'text-font-color', 'text-letter-spacing', 'text-align']) {
-			await expect.poll(() => attrs(hg)[gone],
-				`${gone} survived the reset`).toBe(undefined);
-		}
-		// and the controls above the fold say so too
-		await expect(page.locator('.glue-popover-icon[title="bold"]'))
-			.not.toHaveClass(/glue-btn-active/);
-	});
-
-test('reset clears the properties rather than writing defaults into them',
-	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001', {
-			...ATTRS, 'text-line-height': '40px', 'text-letter-spacing': '0.2em',
-			'text-word-spacing': '0.4em', 'text-align': 'justify',
-		}, 'A');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await open(page, a);
-
-		await pop(page).locator('.glue-popover-reset').click();
-
-		for (const gone of ['text-line-height', 'text-letter-spacing',
-			'text-word-spacing', 'text-align']) {
-			await expect.poll(() => attrs(hg)[gone],
-				`${gone} was stored rather than cleared`).toBe(undefined);
-		}
-		// and the panel now says what is true, not what it said before
-		await expect(rowField(page, LETTER)).toHaveValue('0.00');
-		await expect(rowField(page, WORD)).toHaveValue('0.00');
-		await expect(alignBtn(page, 'justify')).not.toHaveClass(/glue-align-on/);
-		await expect(alignBtn(page, 'left')).toHaveClass(/glue-align-on/);
 	});
 
 test('the spacing survives a reload and reaches the published page',

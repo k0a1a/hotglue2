@@ -89,8 +89,6 @@ const sizeField = (page) => panel(page)
 	.locator('.glue-popover-advanced .glue-popover-field').first();
 const alignRow = (page) => panel(page).locator('.glue-popover-row')
 	.filter({ has: page.locator('.glue-align-btn') });
-const resetRow = (page) => panel(page).locator('.glue-popover-row')
-	.filter({ has: page.locator('.glue-popover-reset') });
 const linkRow = (page) => page.locator('.glue-text-strip-link');
 
 async function openFold(page) {
@@ -328,14 +326,12 @@ test('the bold toggle lights for a bold object, and not for its runs',
 });
 
 test('with a run selected, the object-only rows gray out', async ({ page, hg }) => {
-	// align and reset cannot retarget: text-align is a block property and
-	// a reset clears the object's attributes - they gray, and the link row
-	// (the run's own) comes alive
+	// align cannot retarget: text-align is a block property - it grays, and
+	// the link row (the run's own) comes alive
 	const a = await add(page, hg, 'hello world');
 	await openPanel(page, a);
 	await select(page, a, 'world');
 	await expect(alignRow(page)).toHaveClass(/glue-popover-disabled/);
-	await expect(resetRow(page)).toHaveClass(/glue-popover-disabled/);
 	await expect(linkRow(page)).not.toHaveClass(/glue-popover-disabled/);
 	for (const kind of ['bold', 'italic', 'underline', 'strikethrough']) {
 		await expect(fmtBtn(page, kind)).not.toHaveClass(/glue-popover-disabled/);

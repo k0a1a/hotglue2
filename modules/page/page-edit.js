@@ -354,10 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		render();
 
-		pop.appendChild($.glue.popover.reset('back to the automatic position order', function() {
-			$.glue.backend({ method: 'glue.object_remove_attr',
-				name: $.glue.page + '.page', attr: 'page-reading-order' });
-		}));
 
 		$.glue.popover.show(pop);
 	};
@@ -515,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// The panel is the house style since 2026-09-17 - the row of actions
 		// over one "more knobs" fold - and this row became the panel's icon row
 		// rather than a row in it. Where the picture sits and how big it is are
-		// the fold's, with the delete and the reset as its last row.
+		// the fold's, with the delete as its last row.
 		var icons = $.glue.popover.icon_row();
 		var fold = $.glue.popover.fold(pop, 'more knobs');
 		var body = fold.body;
@@ -922,41 +918,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		scale_row.row.classList.add('glue-background-scale');
 		body.appendChild(scale_row.row);
 
-		// --- take it off, or put it back --------------------------------------
+		// --- take it off ----------------------------------------------------
 		//
-		// The fold's last row, not a footer under the panel: the delete and the
-		// reset are the two things you do to the panel's work rather than to the
-		// page, and the house style keeps everything with a label in the fold.
+		// The fold's last row, not a footer under the panel: the delete is the
+		// one thing you do to the panel's work rather than to the page, and the
+		// house style keeps everything with a label in the fold. (It had a reset
+		// beside it until 2026-09-28, when danja took the reset off every
+		// popout.)
 		var footer = $.glue.popover.row(false);
 		footer.appendChild($.glue.popover.delete('remove the background image', function() {
 			page_bg_clear();
 			$.glue.popover.close();
-		}));
-		footer.appendChild($.glue.popover.reset('reset tiling, position and scale to their defaults', function() {
-			doc.style.backgroundRepeat = '';
-			doc.style.backgroundPosition = '';
-			doc.style.backgroundSize = '';
-			if (page_bg_video_mode()) {
-				var el = page_bg_video_layer();
-				el.style.left = '0px';
-				el.style.top = '0px';
-				if (el.tagName == 'CANVAS') {
-					el.removeAttribute('data-scale');
-				} else {
-					el.style.width = '100%';
-					el.style.height = '100%';
-					el.style.objectFit = 'cover';
-				}
-			}
-			// and the panel says so: the rows, the tile toggle (the page's
-			// default IS repeat, so it lights) and the scale field
-			at.x = 0;
-			at.y = 0;
-			sync_rows();
-			sync_repeat();
-			scale_row.set(100);
-			$.glue.backend({ method: 'glue.object_remove_attr', name: $.glue.page+'.page',
-				attr: ['page-background-repeat', 'page-background-image-position', 'page-background-size'] });
 		}));
 		body.appendChild(footer);
 

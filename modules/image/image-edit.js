@@ -301,23 +301,6 @@ function image_properties_popover(obj)
 	nudge.innerHTML = 'this image has no description<br>screen readers will skip it';
 	pop.appendChild(nudge);
 
-	// --- reset -----------------------------------------------------------
-	// a row of its own, like every other panel's reset: appended to the
-	// bare popover column it would stretch the whole panel width
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset(
-		'drop the description and the decorative mark',
-		function() {
-			if (t.tagName.toLowerCase() == 'img') {
-				t.removeAttribute('alt');
-			}
-			t.removeAttribute('role');
-			obj.removeAttribute('aria-label');
-			sync();
-			save();
-		}
-	));
-	pop.appendChild(footer);
 
 	sync();
 	$.glue.popover.show(pop);

@@ -493,21 +493,10 @@ $.glue.popover = function()
 			});
 			return b;
 		},
-		// The small "reset" a panel offers for its own properties: it clears
-		// them rather than writing defaults into them, so the object file
-		// drops the attributes and the object goes back to looking like one
-		// nobody ever touched. Sits at the end of a row, pushed right.
-		reset: function(title, fn) {
-			var b = document.createElement('div');
-			b.className = 'glue-popover-reset';
-			b.textContent = 'reset';
-			b.title = title;
-			b.addEventListener('click', fn);
-			return b;
-		},
-		// The destructive sibling of reset: same small frame, in the colour
-		// of the panel's problem notes, for the control that removes what
-		// the panel acts on rather than resetting it.
+		// The small frame for the control that removes what the panel acts
+		// on, in the colour of the panel's problem notes. (It had a sibling,
+		// the reset, until 2026-09-28, when danja took the reset off every
+		// popout.)
 		delete: function(title, fn) {
 			var b = document.createElement('div');
 			b.className = 'glue-popover-delete';
@@ -546,8 +535,8 @@ $.glue.popover = function()
 		//   * every value goes inside that fold, however central it is to the
 		//     panel: the icons are what the panel looks like from outside, the
 		//     fold is what it turns into when you work;
-		//   * the delete and the reset are the fold's last row, not a footer
-		//     under the panel;
+		//   * the delete is the fold's last row, not a footer under the
+		//     panel - and no panel has a reset (danja's call, 2026-09-28);
 		//   * a panel with nothing to fold has an icon row and no fold at all,
 		//     rather than an empty one;
 		//   * the one panel whose fold is not 'more knobs' is the link panel,
@@ -590,7 +579,7 @@ $.glue.popover = function()
 		//         field), apply(value, commit) - called live while dragging
 		//         with commit false, and once with true when it is settled
 		// returns { row: element, set: function(value) } - set() is for
-		// whoever changes the value behind the row's back (a reset button, a
+		// whoever changes the value behind the row's back (a panel's sync, a
 		// colour arriving from somewhere else)
 		slider_row: function(label, opts) {
 			var row = $.glue.popover.row(label);

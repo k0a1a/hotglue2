@@ -47,13 +47,13 @@ test('the popout opens, and the old hidden-gesture buttons are gone',
 		expect(await page.getByTitle(/change transparency/).count()).toBe(0);
 		expect(await page.getByTitle('bring object to foreground or background').count()).toBe(0);
 
-		// and the panel has the promised rows: the four z buttons and a reset,
-		// and nothing else - the flip toggles and the opacity slider are the
+		// and the panel has the promised rows: the four z buttons, and nothing
+		// else - no reset either, as no popout has a reset since 2026-09-28 (danja's call) - the flip toggles and the opacity slider are the
 		// properties panel's now, so neither is in here
 		for (const t of ['to top', 'level up', 'level down', 'to bottom']) {
 			await expect(page.getByTitle(t)).toBeVisible();
 		}
-		await expect(popover(page).locator('.glue-popover-reset')).toBeVisible();
+		await expect(popover(page).locator('.glue-popover-reset')).toHaveCount(0);
 		await expect(popover(page).locator('.glue-popover-slider')).toHaveCount(0);
 		expect(await page.getByTitle('flip vertically').count()).toBe(0);
 	});
@@ -160,36 +160,3 @@ test('an object without its own z swaps with the implicit 0',
 			.toBe(undefined);
 	});
 
-test('reset clears the z index, and only the z index',
-	async ({ page, hg }) => {
-		// It used to clear the flip and the transparency too. Both are the
-		// properties panel's now, and this panel's reset has to leave them
-		// alone: an object that is flipped and dimmed and then has its layer
-		// reset keeps being flipped and dimmed.
-		const a = hg.addObject('100000000001', {
-			...OBJ, 'object-zindex': '100',
-			'transform-flip': 'matrix(-1, 0, 0, -1, 0, 0)',
-			'object-opacity': '0.4',
-		}, 'A');
-		const b = hg.addObject('100000000002', {
-			...OBJ, 'object-left': '440px', 'object-top': '360px',
-			'object-zindex': '103',
-		}, 'B');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 2);
-		await selectAndOpen(page, a);
-
-		await page.getByTitle('to top').click();
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
-			.toBe('104');
-
-		await popover(page).locator('.glue-popover-reset').click();
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
-			.toBe(undefined);
-		expect(await zOf(page, a)).toBe('auto');
-		// untouched: the reset has no business with what this panel does not own
-		await expect.poll(() => hg.readObject('100000000001').attrs['transform-flip'])
-			.toBe('matrix(-1, 0, 0, -1, 0, 0)');
-		await expect.poll(() => hg.readObject('100000000001').attrs['object-opacity'])
-			.toBe('0.4');
-	});

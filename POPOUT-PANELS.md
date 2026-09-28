@@ -22,8 +22,8 @@ ship to a published page.
 > A panel opens as **one row of icon buttons** — the verbs, at the panel's own 26px, named
 > in their tooltips and nowhere else — and **one fold labelled "more knobs"** under it,
 > holding everything that is a value rather than an act: the scrub rows, the fields, the
-> delete, the reset. Exactly one fold per panel. A panel with nothing to fold has an icon
-> row and no fold, rather than an empty one.
+> delete. Exactly one fold per panel. A panel with nothing to fold has an icon row and no
+> fold, rather than an empty one. No panel has a reset (danja's call, 2026-09-28).
 
 Which control is which falls out of one question: **is it an act or a value?** Tile the
 picture is an act; how big the picture is, is a value. The acts are drawn as icons at the
@@ -33,7 +33,8 @@ the fold with the values, not in the icon row.
 ### The parts
 
 In `$.glue.popover` (`js/edit.js`), beside `row()`, `fold()`, `number_row()`, `slider_row()`,
-`color_button()`, `reset()` and `delete()`:
+`color_button()` and `delete()` (`reset()` was one of them until the reset came off every
+panel, 2026-09-28):
 
 - `icon_row()` — an unlabelled row carrying `.glue-popover-icons`. Fill it, then append it
   to the panel.
@@ -218,10 +219,10 @@ field rather than beside it, which is a different panel.
 
 | panel | built by | shows | folds |
 |---|---|---|---|
-| object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v, then a link row (url field + make/remove/update link) with its target select on a row of its own | x, y, scale, padding (text only), transparency, delete, reset |
-| page background | `page_background_popover()`, `modules/page/page-edit.js:387` | colour · picture · tile · scroll | x, y, scale, delete, reset |
-| font | `text_panel_build()`, `modules/text/text-edit.js` | one editor for both targets: B/I/U/S + colour · alignments · sizes s/n/b/x (14, 24, 32, 48) with the "Typeface" sample · face (a three-row ROLLER, always present in the panel — a fixed centre band is the selection window, wheel/drag/arrows spin the rows through it, the centred row is applied on settle, and the sample shows the centred face) + fonts note · link row with its target select on a row of its own. A run selected retargets every control onto the run; the alignments, the reset and the link row (and its target row) gray out when the target cannot take them | exact size, three spacings, shadow + its colour, reset |
-| edge | `object_edge_popover()`, `modules/object/object-edit.js:486` | style + colour · round · width · clip | fade, glow, drop shadow, reset |
+| object properties | `object_properties_popover()`, `modules/object/object-edit.js:998` | colour · picture · tile · flip-h · flip-v, then a link row (url field + make/remove/update link) with its target select on a row of its own | x, y, scale, padding (text only), transparency, delete |
+| page background | `page_background_popover()`, `modules/page/page-edit.js:387` | colour · picture · tile · scroll | x, y, scale, delete |
+| font | `text_panel_build()`, `modules/text/text-edit.js` | one editor for both targets: B/I/U/S + colour · alignments · sizes s/n/b/x (14, 24, 32, 48) with the "Typeface" sample · face (a three-row ROLLER, always present in the panel — a fixed centre band is the selection window, wheel/drag/arrows spin the rows through it, the centred row is applied on settle, and the sample shows the centred face) + fonts note · link row with its target select on a row of its own. A run selected retargets every control onto the run; the alignments and the link row (and its target row) gray out when the target cannot take them | exact size, three spacings, shadow + its colour |
+| edge | `object_edge_popover()`, `modules/object/object-edit.js:486` | style + colour · round · width · clip | fade, glow, drop shadow |
 | adjust (z-level) | `object_adjust_popover()`, `modules/object/object-edit.js:893` | four z buttons | nothing — an icon row and no fold |
 
 ### The exceptions, and why
@@ -232,7 +233,7 @@ field rather than beside it, which is a different panel.
   size stays folded — the four size buttons are what most objects want, and the number is
   for the rest.
 - **Two panels have no fold, and neither has an empty one.** The adjust panel is four acts
-  and a reset; the object link panel above is two rows and a delete. The convention asks for
+  and the x/y rows; the object link panel above is two rows and a delete. The convention asks for
   no fold rather than for an empty one, and these are what that looks like.
 - **One numeric control keeps its track** (`slider_row()`), and it is the only one: the
   colour picker's **alpha**. An alpha is a position on a bar, the bar is the picker's own
@@ -255,7 +256,7 @@ would mean inventing a glyph to justify a row.
 2. `var icons = $.glue.popover.icon_row();` and one `icon_button(name, title)` per act.
 3. `var fold = $.glue.popover.fold(pop, 'more knobs');` — one per panel.
 4. Draw the values into `fold.body` with `row()` / `number_row()` / `color_button()`, and
-   put the delete and the reset at the end of it.
+   put the delete, if the panel has one, at the end of it. No reset (2026-09-28).
 5. Append `icons`, `fold.toggle`, `fold.body` to `pop`, in that order, then
    `$.glue.popover.show(pop)`. Append order is the only thing that decides what the panel
    looks like, so a row may be built anywhere and appended where it belongs.

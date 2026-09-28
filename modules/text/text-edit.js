@@ -1491,10 +1491,9 @@ document.addEventListener('selectionchange', function() {
 // flip is a re-sync, not a rebuild (danja's call, 2026-09-18, merging the
 // two halves the panel used to swap between).
 //
-// Three controls cannot retarget and gray out instead:
-//   * the alignments and the reset - the object's own (text-align is a
-//     block property, and a reset clears the object's attributes) - gray
-//     while a run is selected;
+// Two controls cannot retarget and gray out instead:
+//   * the alignments - the object's own (text-align is a block
+//     property) - gray while a run is selected;
 //   * the link row - the run's own (it wraps a selection; the whole-object
 //     link is the object link panel) - grays while nothing is selected.
 //
@@ -2632,49 +2631,14 @@ function text_panel_build(pop, obj)
 		});
 	});
 
-	// One reset for the whole object, in the fold: everything about the
-	// type, including what the rows above set. The object's own - a run has
-	// no attribute set to clear - so the sync grays it while a run is
-	// selected. Clearing the properties rather than writing defaults into
-	// them is what makes the object file drop the attributes, so a reset
-	// object is byte-identical to one nobody ever touched.
-	var reset_row = $.glue.popover.row(false);
-	reset_row.appendChild($.glue.popover.reset(
-		'back to the default typeface, size, style, colour and spacing',
-		function() {
-			['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'textDecoration',
-				'color', 'lineHeight', 'letterSpacing', 'wordSpacing', 'textAlign']
-				.forEach(function(prop) {
-					obj.style[prop] = '';
-				});
-			// the shadow off entirely: its blur, its distance and its spread
-			// back to none, and the angle to the one a shadow is born with
-			var none = text_shadow_none();
-			shadow.radius = none.radius;
-			shadow.distance = none.distance;
-			shadow.angle = none.angle;
-			shadow.spread = none.spread;
-			write_shadow(false);
-			// the padding rows moved into this panel, so its reset is
-			// theirs too
-			if (pad_section) {
-				pad_section.reset();
-			}
-			save();
-			// every control now says something that is no longer true
-			sync();
-		}));
 	// --- padding: the manual rows, moved here from the object properties
 	// panel (danja's call, 2026-09-25) --------------------------------------
 	// The per-side numbers sit under the fold with the rest of the type,
 	// and the drag button up on the align row is the quick version of the
 	// same thing. The section is the object panel's own (it stores
-	// text-padding-* for text objects), shared rather than rebuilt. Above
-	// the reset, which stays the fold's last row.
+	// text-padding-* for text objects), shared rather than rebuilt.
 	var pad_section = (typeof object_padding_section == 'function') ?
 		object_padding_section(adv, obj, save) : null;
-
-	adv.appendChild(reset_row);
 
 	// --- sync: every control, in step with the target ----------------------
 	//
@@ -2685,7 +2649,6 @@ function text_panel_build(pop, obj)
 	var sync = function() {
 		var run = run_active();
 		set_gray(align_row, run);
-		set_gray(reset_row, run);
 		set_gray(link_row, !link_available());
 		set_gray(link_parts.target_row, !link_available());
 
@@ -2820,7 +2783,7 @@ function text_panel_build(pop, obj)
 	//
 	// left: size, line, letter, word - right: the padding section's five
 	// rows - a rule - then shadow and fade. The shadow colour button joins
-	// the shadow row it colours. The reset stays the fold's last row.
+	// the shadow row it colours.
 	// (danja's call, 2026-09-25)
 	var knobs_grid = document.createElement('div');
 	knobs_grid.className = 'glue-font-knobs-grid';
@@ -3037,13 +3000,6 @@ function text_heading_popover(obj)
 	});
 	pop.appendChild(row);
 
-	// the reset rides a row of its own, like every other panel's: appended
-	// to the bare popover column it would stretch the whole panel width
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset('back to a plain text object', function() {
-		$.glue.text.set_heading(obj, 'div');
-	}));
-	pop.appendChild(footer);
 
 	$.glue.popover.show(pop);
 }

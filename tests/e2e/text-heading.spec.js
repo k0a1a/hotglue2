@@ -86,7 +86,7 @@ test('the popover marks the object\'s current level', async ({ page, hg }) => {
 		.toHaveText('H3');
 });
 
-test('the full h1-h6 ladder is offered, and the reset rides a row, pushed right',
+test('the full h1-h6 ladder is offered',
 	async ({ page, hg }) => {
 		const id = hg.addObject('100000000001', ATTRS, 'title');
 		await page.goto(hg.editUrl());
@@ -104,12 +104,4 @@ test('the full h1-h6 ladder is offered, and the reset rides a row, pushed right'
 				await openPopover(page, id);
 			}
 		}
-
-		// the reset does not span the panel: it is the small frame riding
-		// its own row, pushed to the panel's right end
-		await openPopover(page, id);
-		const pb = await pop(page).boundingBox();
-		const rb = await pop(page).locator('.glue-popover-reset').boundingBox();
-		expect(rb.width).toBeLessThan(pb.width / 2);
-		expect(rb.x + rb.width).toBeGreaterThan(pb.x + pb.width - 20);
 	});

@@ -1011,9 +1011,10 @@
 }
 
 .glue-popover-reset {
-	/* small and out of the way: it undoes the panel's own properties, so it
-	   should not look like one of the controls. Pushed to the end of whatever
-	   row it rides on. */
+	/* small and out of the way, pushed to the end of whatever row it rides
+	   on. It was the reset's frame, and the reset is gone from every popout
+	   (danja's call, 2026-09-28); the page settings panel's password
+	   set/clear button still wears it. */
 	margin-left: auto;
 	padding: 2px 6px;
 	border: 1px solid #999;

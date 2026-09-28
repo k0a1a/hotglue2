@@ -331,7 +331,8 @@ test('an image object has the full panel, background section included',
 		await openFold(page);
 		await expect(p.locator('.glue-padding-row')).toHaveCount(1);
 		await expect(p.locator('.glue-opacity-row')).toBeVisible();
-		await expect(p.locator('.glue-popover-reset')).toBeVisible();
+		// and no reset - no popout has a reset since 2026-09-28 (danja's call)
+		await expect(p.locator('.glue-popover-reset')).toHaveCount(0);
 	});
 
 test('an image object renders and keeps its background colour',
@@ -630,60 +631,6 @@ test('the colour button takes the image off the object, after asking', async ({ 
 	await expect(pop(page)).toBeVisible();
 });
 
-test('reset puts tiling, scale and move back to defaults, keeping the image',
-	async ({ page, hg }) => {
-		const a = hg.addObject('100000000001',
-			{ ...ATTRS, 'object-background-file': 'sample.png',
-				'object-background-mime': 'image/png',
-				'object-background-repeat': 'repeat',
-				'object-background-position': '30px 20px',
-				'object-background-scale': '150' }, 'A');
-		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
-			{ recursive: true });
-		fs.copyFileSync(SAMPLE,
-			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await select(page, a);
-		await propsBtn(page).click();
-		await expect(pop(page)).toBeVisible();
-		// the panel is in the non-default state it was given, the position rows
-		// reading it back out of the stored attribute
-		await expect(pop(page).locator('.glue-background-tile'))
-			.toHaveClass(/glue-btn-active/);
-		// the two fields, addressed individually (a multi-element locator is a
-		// strict-mode violation for value assertions)
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(0))
-			.toHaveValue('30');
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(1))
-			.toHaveValue('20');
-		await openFold(page);
-
-		await pop(page).locator('.glue-popover-reset').click();
-		// only the delete button takes the image off; the panel stays open
-		await expect(pop(page)).toBeVisible();
-		await expect.poll(() => attrs(hg)['object-background-file']).toBe('sample.png');
-		expect(await cssOf(page, a, 'backgroundImage')).toContain('url(');
-		// tiling, scale and move are back to their defaults: no-repeat (the
-		// renderer's own default when the attribute is absent), the natural
-		// size, and the corner
-		await expect.poll(() => attrs(hg)['object-background-repeat'])
-			.toBe('no-repeat');
-		await expect.poll(() => attrs(hg)['object-background-position']).toBe(undefined);
-		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
-		expect(await cssOf(page, a, 'backgroundRepeat')).toBe('no-repeat');
-		await expect.poll(() => cssOf(page, a, 'backgroundSize')).toBe('auto');
-		// and the panel shows the defaults again
-		await expect(pop(page).locator('.glue-background-tile'))
-			.not.toHaveClass(/glue-btn-active/);
-		await expect(scaleField(page)).toHaveValue('100');
-		// the two position rows are back at the corner with it
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(0))
-			.toHaveValue('0');
-		await expect(pop(page).locator('.glue-background-pos .glue-popover-field').nth(1))
-			.toHaveValue('0');
-	});
-
 //
 // --- the flip ---------------------------------------------------------------
 //
@@ -785,83 +732,3 @@ test('transparency: typing applies live, the change commits',
 		expect(await field.inputValue()).toBe('60');
 	});
 
-test('the one reset clears every section it owns, in one save',
-	async ({ page, hg }) => {
-		// The panel's reset - the fold's last row, beside the delete - runs each
-		// section's own reset in the order the sections were drawn, then saves
-		// once. An object with all four sections set - a text object with a
-		// background picture, padding, a flip and a dim - is the case that
-		// exercises all of them.
-		const a = hg.addObject('100000000001',
-			{ ...ATTRS, 'object-background-file': 'sample.png',
-				'object-background-mime': 'image/png',
-				'object-background-repeat': 'repeat',
-				'object-background-position': '30px 20px',
-				'object-background-scale': '150',
-				'transform-flip': 'matrix(-1, 0, 0, -1, 0, 0)',
-				'object-opacity': '0.4' }, 'A');
-		fs.mkdirSync(path.join(CONTENT, hg.pageName.split('.')[0], 'shared'),
-			{ recursive: true });
-		fs.copyFileSync(SAMPLE,
-			path.join(CONTENT, hg.pageName.split('.')[0], 'shared', 'sample.png'));
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await select(page, a);
-		await propsBtn(page).click();
-		await expect(pop(page)).toBeVisible();
-		await openFold(page);
-
-		await pop(page).locator('.glue-popover-reset').click();
-
-		// the picture itself stays: only the delete button takes it off
-		await expect.poll(() => attrs(hg)['object-background-file']).toBe('sample.png');
-		expect(await cssOf(page, a, 'backgroundImage')).toContain('url(');
-		// and every section is back at its default
-		await expect.poll(() => attrs(hg)['object-background-repeat']).toBe('no-repeat');
-		await expect.poll(() => attrs(hg)['object-background-position']).toBe(undefined);
-		await expect.poll(() => attrs(hg)['object-background-scale']).toBe(undefined);
-		await expect.poll(() => attrs(hg)['transform-flip']).toBe(undefined);
-		await expect.poll(() => attrs(hg)['object-opacity']).toBe(undefined);
-		expect(await transformOf(page, a)).toBe('');
-		expect(await opacityOf(page, a)).toBe('1');
-		await expect(scaleField(page)).toHaveValue('100');
-		expect(await flipV(page).evaluate((el) =>
-			el.classList.contains('glue-btn-active'))).toBe(false);
-		expect(await flipH(page).evaluate((el) =>
-			el.classList.contains('glue-btn-active'))).toBe(false);
-		expect(await opacityField(page).inputValue()).toBe('100');
-	});
-
-test('reset writes nothing at all on an object nobody has touched',
-	async ({ page, hg }) => {
-		// Each section's reset clears only what is set, so a reset on an
-		// untouched object is a save that stores nothing new: the file stays
-		// byte-identical and the object is not handed a width and height it
-		// never asked for (the padding reset compensates the box, and only does
-		// so when there is padding to compensate).
-		const a = hg.addObject('100000000001', ATTRS, 'A');
-		await page.goto(hg.editUrl());
-		await waitForEditor(page, 1);
-		await select(page, a);
-		await propsBtn(page).click();
-		await expect(pop(page)).toBeVisible();
-		// the fold is opened before `before` is read, not after: opening it
-		// builds nothing and writes nothing, and reading the file with it open
-		// makes that part of what this test proves rather than an assumption
-		await openFold(page);
-
-		const before = hg.readObject('100000000001').attrs;
-		// the inline box is the one the render gave the object; the reset
-		// must leave it exactly as it was (the padding reset compensates the
-		// box, and only does so when there is padding to compensate)
-		const beforeBox = await byId(page, a).evaluate((el) =>
-			({ w: el.style.width, h: el.style.height, p: el.style.paddingLeft }));
-		await pop(page).locator('.glue-popover-reset').click();
-		await page.waitForTimeout(600);		// a save would have landed by now
-
-		expect(hg.readObject('100000000001').attrs, 'the reset wrote something')
-			.toEqual(before);
-		expect(await byId(page, a).evaluate((el) =>
-			({ w: el.style.width, h: el.style.height, p: el.style.paddingLeft })))
-			.toEqual(beforeBox);
-	});

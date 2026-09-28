@@ -103,7 +103,7 @@ test('the panel opens on four actions, with everything else folded away',
 			.toHaveClass(/glue-background-off/);
 	});
 
-test('with a picture, the fold holds the position, the scale and the two buttons',
+test('with a picture, the fold holds the position, the scale and the delete',
 	async ({ page, hg }) => {
 		withPicture(hg);
 		await page.goto(hg.editUrl());
@@ -111,11 +111,12 @@ test('with a picture, the fold holds the position, the scale and the two buttons
 		await openPanel(page);
 		await openFold(page);
 
-		// the rows the picture is described by, and the two ways out of it
+		// the rows the picture is described by, and the way out of it - the
+		// reset beside the delete went with every popout's (2026-09-28)
 		await expect(pop(page).locator('.glue-background-pos')).toHaveCount(2);
 		await expect(pop(page).locator('.glue-background-scale')).toHaveCount(1);
 		await expect(pop(page).locator('.glue-popover-delete')).toBeVisible();
-		await expect(pop(page).locator('.glue-popover-reset')).toBeVisible();
+		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(0);
 		// the toggles woke where they stand: there is a picture to tile now
 		await expect(pop(page).locator('.glue-background-tile'))
 			.not.toHaveClass(/glue-background-off/);

@@ -895,37 +895,6 @@ function object_edge_popover(obj)
 	});
 	adv.appendChild(drop_spread.row);
 
-	// The reset goes inside the fold, as the font panel's does: it clears
-	// more than the rows above it set, so it belongs with the knobs rather
-	// than sitting under them looking like it applies to the last one.
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset(
-		'back to square corners, a hard edge and no border', function() {
-			// everything this panel owns comes off, and THEN it is saved -
-			// one write, and nothing left behind that the save happened
-			// before
-			obj.style.borderRadius = '';
-			object_set_fade(obj, 0);
-			object_set_border(obj, 0);
-			object_set_glow(obj, false);
-			object_set_drop(obj, false);
-			save();
-			radius.set(0);
-			fade.set(0);
-			border.set(0);
-			select.value = 'solid';
-			glow = object_glow(obj);
-			spread.set(0);
-			strength.set(glow.alpha);
-			sync_inner();
-			drop = object_drop(obj);
-			distance.set(drop.distance);
-			angle.set(drop.angle);
-			blur.set(drop.blur);
-			drop_spread.set(drop.spread);
-		}));
-	adv.appendChild(footer);
-
 	// --- the fold's layout: sections, each in its own grid ---------------
 	//
 	// border glow: the two glow numbers and the inside toggle under them
@@ -988,7 +957,7 @@ function object_edge_popover(obj)
 	colour_right.className = 'glue-edge-knobs-col';
 	colour_right.appendChild(cell_drop);
 	colour_grid.appendChild(colour_right);
-	adv.insertBefore(colour_grid, footer);
+	adv.appendChild(colour_grid);
 	// the two colour pair rows the build laid down are regrouped into the
 	// sections above - drop their empty shells
 	[pair_glow, pair_duo].forEach(function(r) {
@@ -1114,18 +1083,6 @@ function object_adjust_popover(obj)
 	pop.appendChild(pos_row('x', 'x'));
 	pop.appendChild(pos_row('y', 'y'));
 
-	// The reset clears everything this panel owns, and only then saves - one
-	// write, and nothing left behind that the save happened before. Same
-	// ordering as the edge panel's footer. What it owns is the z-index alone
-	// now: it used to clear the flip and the opacity too, and those are the
-	// properties panel's to clear.
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset(
-		'no manual layer: back in the default stack', function() {
-			obj.style.zIndex = '';
-			save();
-		}));
-	pop.appendChild(footer);
 
 	$.glue.popover.show(pop);
 }
@@ -1150,9 +1107,9 @@ function object_adjust_popover(obj)
 // padding button. One panel per idea, and the idea here is the object's own
 // properties - so the panel is named for them.
 //
-// The panel is a list of sections. Each draws its own rows into the popover and
-// hands back the reset for what it owns; the footer runs them all and saves
-// once. A section can be absent, and absent means not drawn at all rather than
+// The panel is a list of sections, each drawing its own rows into the popover
+// (they have no reset since 2026-09-28: danja took the reset button off every
+// popout). A section can be absent, and absent means not drawn at all rather than
 // greyed: an image object has no background section (below), and only a text
 // object has a padding one (the text module is the only thing in hotglue that
 // stores padding).
@@ -1406,13 +1363,13 @@ function object_properties_popover(obj)
 	// popout's fold (danja's call, 2026-09-25) - there they sit next to the
 	// type they pad. Text stores text-padding-* (module_text.inc.php), the
 	// others object-padding-* (module_object.inc.php).
-	var background = object_background_section(pop, icons, body, obj, save);
-	var padding = (obj.classList.contains('image') ||
-		obj.classList.contains('video') || obj.classList.contains('webvideo')) ?
-		object_padding_section(body, obj, save) : null;
-	var flip = object_flip_section(icons, obj, save);
-	var transparency = object_transparency_section(body, obj, save);
-	var sections = [background, padding, flip, transparency];
+	object_background_section(pop, icons, body, obj, save);
+	if (obj.classList.contains('image') ||
+			obj.classList.contains('video') || obj.classList.contains('webvideo')) {
+		object_padding_section(body, obj, save);
+	}
+	object_flip_section(icons, obj, save);
+	object_transparency_section(body, obj, save);
 	// the row's icons - background image, tile and the two flips - wear
 	// danja's 22x22 redraws, shown 1:1: the boxes come down from the 32px
 	// $.glue.icon() sets inline, and css/edit.css sizes their masks to
@@ -1446,33 +1403,6 @@ function object_properties_popover(obj)
 			link_ui.set(stored['object-link'] || '', stored['object-target'] || '');
 		}, false);
 	}
-
-	// --- put it back -------------------------------------------------------
-	//
-	// The reset is every section's, run in the order they were drawn with one
-	// save at the end of it: one write, and nothing left behind that the save
-	// happened before. Each section's reset clears only what is set, so a reset
-	// on an object nobody has touched writes nothing at all. A background
-	// picture is taken off by the colour button instead, which clears it first
-	// with its confirm - one way to remove is enough, and the delete button
-	// went (2026-09-24, danja).
-	//
-	// The reset is the fold's last row rather than a footer under the panel,
-	// and is therefore behind a fold when the panel opens: that is the house
-	// style's one cost, and it is the price of a panel that opens on the five
-	// things you came for rather than on the ten you did not.
-	var footer = $.glue.popover.row(false);
-	footer.appendChild($.glue.popover.reset(
-		'reset tiling, scale, position, padding, flip and transparency to their defaults',
-		function() {
-			sections.forEach(function(section) {
-				if (section) {
-					section.reset();
-				}
-			});
-			save();
-		}));
-	body.appendChild(footer);
 
 	// the panel says what it is, above its first section - the edge
 	// panel's bold section title, the way 'border' leads that one (danja's
@@ -1522,10 +1452,6 @@ function object_properties_popover(obj)
 // the element's ordinary background-color: text objects have kept theirs in
 // text-background-color since long before there was a panel, and
 // object_alter_save() keeps it for every other kind of object.
-//
-// Returns the two things the panel's fold-footer needs: remove(), which takes
-// the picture and its settings off the object, and reset(), which puts the rows
-// it owns back to their defaults without touching the picture itself.
 function object_background_section(pop, icons, body, obj, save)
 {
 	// --- what the background is, and what it does -------------------------
@@ -1865,28 +1791,6 @@ function object_background_section(pop, icons, body, obj, save)
 		arm();
 	}
 
-	return {
-		remove: bg_clear,
-		reset: function() {
-			// Only what there is to reset: an object with no picture has no
-			// tiling, position or scale to put back, and writing no-repeat at it
-			// would store a setting about a picture that does not exist.
-			if (object_has_background(obj)) {
-				// no-repeat is the default tiling - the state a fresh upload
-				// leaves, and the one the renderer fills in when the attribute is
-				// absent; clearing the style to '' would tile the image live
-				// until the next load
-				obj.style.backgroundRepeat = 'no-repeat';
-				obj.style.backgroundPosition = '';
-				obj.style.backgroundSize = '';
-			}
-			at.x = 0;
-			at.y = 0;
-			sync_rows();
-			sync_repeat();
-			scale_row.set(100);
-		}
-	};
 }
 
 // The padding rows: the inset between the object's box and its content.
@@ -1910,7 +1814,8 @@ function object_background_section(pop, icons, body, obj, save)
 // the four sides under it. Building once is what makes the capture above safe -
 // the fold only sets display, it never rebuilds a row.
 //
-// Returns an object with the section's reset.
+// Returns an object with the section's sync, which reads the rows back from
+// the object - the font panel's padding drag calls it when a drag lands.
 function object_padding_section(body, obj, save)
 {
 	var outer_w = obj.offsetWidth;
@@ -2008,36 +1913,7 @@ function object_padding_section(body, obj, save)
 	};
 
 	return {
-		sync: sync,
-		reset: function() {
-			// Only when there is padding to clear: the compensation below writes
-			// the object's width and height, and an object nobody has padded
-			// should be left alone rather than have the size it already has
-			// written back at it.
-			if (!(pad.top || pad.right || pad.bottom || pad.left)) {
-				return;
-			}
-			// No module default any more: reset means flush, the way the
-			// historical engine renders a bare text object. Clearing the inline
-			// padding is also what removes the stored text-padding-* keys on
-			// save, and the box is compensated so nothing moves here either.
-			obj.style.paddingLeft = '';
-			obj.style.paddingRight = '';
-			obj.style.paddingTop = '';
-			obj.style.paddingBottom = '';
-			var c = getComputedStyle(obj);
-			pad.top = parseInt(c.paddingTop);
-			pad.right = parseInt(c.paddingRight);
-			pad.bottom = parseInt(c.paddingBottom);
-			pad.left = parseInt(c.paddingLeft);
-			obj.style.width = (outer_w-pad.left-pad.right)+'px';
-			obj.style.height = (outer_h-pad.top-pad.bottom)+'px';
-			all.set(pad.left);
-			top.set(pad.top);
-			right.set(pad.right);
-			bottom.set(pad.bottom);
-			left.set(pad.left);
-		}
+		sync: sync
 	};
 }
 
@@ -2056,8 +1932,6 @@ function object_padding_section(body, obj, save)
 //
 // The two toggles are the panel's last two actions, in the icon row after the
 // background's three - horizontal first, the order the concept names them in.
-//
-// Returns an object with the section's reset.
 function object_flip_section(icons, obj, save)
 {
 	// The artwork is danja's 22x22 pair (2026-09-27): flip-h-22.svg draws
@@ -2090,30 +1964,11 @@ function object_flip_section(icons, obj, save)
 	icons.appendChild(flip_h);
 	icons.appendChild(flip_v);
 	flip_sync();
-
-	return {
-		reset: function() {
-			if (typeof transform_set_flip == 'function') {
-				var axes = transform_flip_axes(obj);
-				// nothing flipped, nothing written: the transform is left
-				// exactly as it is, so an object nobody has flipped keeps the
-				// rotation it may have without a write putting the same value
-				// back. (set_flip edits its own term and would leave a rotation
-				// alone, but a write is a write.)
-				if (axes.h || axes.v) {
-					transform_set_flip(obj, false, false);
-				}
-			}
-			flip_sync();
-		}
-	};
 }
 
 // Transparency: the object's opacity as a percentage, on the shared
 // slider-plus-field row. It was the adjustments panel's until 2026-09-16, and
 // a menu button with a hidden drag-distance gesture before that.
-//
-// Returns an object with the section's reset.
 function object_transparency_section(body, obj, save)
 {
 	var opacity = $.glue.popover.number_row('opacity', {
@@ -2135,16 +1990,6 @@ function object_transparency_section(body, obj, save)
 	});
 	opacity.row.classList.add('glue-opacity-row');
 	body.appendChild(opacity.row);
-
-	return {
-		reset: function() {
-			// clearing the inline value, not writing 1 into it: that is what
-			// object_alter_save() reads as "no opacity" (unset on the way out),
-			// so an object nobody has dimmed keeps the file it had
-			obj.style.opacity = '';
-			opacity.set(100);
-		}
-	};
 }
 
 document.addEventListener('DOMContentLoaded', function() {

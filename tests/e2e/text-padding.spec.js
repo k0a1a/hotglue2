@@ -184,36 +184,3 @@ test('the panel only draws the section for a text object, and there it is flush 
 		await expect(propsPanel(page).locator('.glue-opacity-row')).toBeVisible();
 	});
 
-test('reset goes back to no padding without moving the box',
-	async ({ page, hg }) => {
-		const a = await openPanel(page, hg);
-		const before = await boxOf(page, a);
-		await openFold(page);
-
-		await fillRow(page, uniform(page), 40);
-		await expect.poll(() => page.evaluate((i) =>
-			getComputedStyle(document.getElementById(i)).paddingLeft, a)).toBe('40px');
-		expect(hg.readObject(ID).attrs['text-padding-x']).toBe('40px');
-
-		// there is no module default any more - reset means flush, like the
-		// historical engine renders a bare text object. The panel's reset is
-		// one button and runs every section's, of which this object has only
-		// the padding's to do anything with.
-		await panel(page).locator('.glue-popover-reset').click();
-		const pad = await page.evaluate((i) => {
-			const s = getComputedStyle(document.getElementById(i));
-			return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
-		}, a);
-		expect(pad).toEqual(['0px', '0px', '0px', '0px']);
-		await expect.poll(() => boxOf(page, a)).toBe(before);
-		// nothing padding-related is left in the object file
-		await expect.poll(() => {
-			const attrs = hg.readObject(ID).attrs;
-			return attrs['text-padding-x'] === undefined
-				&& attrs['text-padding-y'] === undefined
-				&& attrs['text-padding-top'] === undefined
-				&& attrs['text-padding-left'] === undefined;
-		}).toBe(true);
-		// and the row shows it, rather than still reading the old value
-		await expect(uniform(page).locator('.glue-popover-field')).toHaveValue('0');
-	});

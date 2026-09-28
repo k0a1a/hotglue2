@@ -86,9 +86,7 @@ test('one button opens the panel, and the three it replaced are gone',
 		// the knobs in the fold are scrubs - rows you drag, not sliders
 		await expect(own(page).locator('.glue-popover-slider')).toHaveCount(0);
 		// the face wheel is out in the open above the fold (the button that
-		// opened it is gone, 2026-09-21); the exact size and the reset are
-		// in the fold - the reset clears the whole panel, more than the rows
-		// above it set
+		// opened it is gone, 2026-09-21); the exact size is in the fold
 		await expect(page.locator('.glue-font-face-list')).toBeVisible();
 		await expect(fold(page)).toBeHidden();
 		await openFold(page);
@@ -97,7 +95,8 @@ test('one button opens the panel, and the three it replaced are gone',
 		// angle and spread (the last three since 2026-09-28)
 		await expect(fold(page).locator('.glue-popover-scrub')).toHaveCount(14);
 		await expect(fold(page).locator('.glue-popover-slider')).toHaveCount(0);
-		await expect(own(page).locator('.glue-popover-reset')).toHaveCount(0);
+		// and no reset, in the fold or out of it - no popout has a reset since 2026-09-28 (danja's call)
+		await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(0);
 
 		for (const gone of ['text-font-size', 'text-font-face', 'text-font-style']) {
 			expect(await page.locator(`#glue-contextmenu-${gone}`).count(),

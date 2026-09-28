@@ -58,7 +58,7 @@ async function setRow(page, n, value) {
 	await f.dispatchEvent('change');
 }
 
-test('one button opens a panel with both numbers and a reset', async ({ page, hg }) => {
+test('one button opens a panel with its numbers, and no reset', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', ATTRS, 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
@@ -71,11 +71,8 @@ test('one button opens a panel with both numbers and a reset', async ({ page, hg
 		.toHaveCount(3);
 	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-scrub'))
 		.toHaveCount(6);	// the glow's two and the drop shadow's four
-	// and the reset is in the fold with them, not under the rows above it
-	await expect(pop(page).locator(':scope > .glue-popover-row .glue-popover-reset'))
-		.toHaveCount(0);
-	await expect(pop(page).locator('.glue-popover-advanced .glue-popover-reset'))
-		.toHaveCount(1);
+	// and no reset anywhere in it - no popout has a reset since 2026-09-28 (danja's call)
+	await expect(pop(page).locator('.glue-popover-reset')).toHaveCount(0);
 	// the rows reach "fully round" and no further: half the shorter side of the
 	// object as it is actually drawn, padding and selection border included,
 	// which is not the same as the width and height it stores. The max is on the
@@ -332,14 +329,9 @@ test('the fade reaches all four edges, not just two', async ({ page, hg }) => {
 const advanced = (page) => pop(page).locator('.glue-popover-advanced');
 // the fold's own fields in document order: 0 glow spread, 1 opacity, then
 // the drop shadow's 2 blur, 3 spread, 4 distance, 5 angle. Positions move
-// whenever the fold is laid out again, so a test that means one knob can
-// find it by its label instead (knobField, below)
+// whenever the fold is laid out again - a test that means one knob is safer
+// finding it by its label
 const advField = (page, n) => advanced(page).locator('.glue-popover-field').nth(n);
-// a fold row's field by its label, matched whole: 'spread' is the drop
-// shadow's, the glow's reads 'glow spread' over two lines
-const knobField = (page, label) => advanced(page).locator('.glue-popover-scrub')
-	.filter({ has: page.locator('.glue-popover-label', { hasText: new RegExp(`^${label}$`) }) })
-	.locator('.glue-popover-field');
 
 async function setAdvRow(page, n, value) {
 	const f = advField(page, n);
@@ -504,50 +496,6 @@ test('the glow paints, and a glow of zero takes itself off', async ({ page, hg }
 	await expect(byId(page, a)).not.toHaveClass(/glue-glow/);
 	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
 	await expect.poll(() => attrs(hg)['object-glow-color']).toBe(undefined);
-});
-
-test('zero removes the attributes rather than storing them', async ({ page, hg }) => {
-	// an object dragged back to square should look exactly like one nobody
-	// ever touched
-	const a = hg.addObject('100000000001',
-		{ ...ATTRS, 'object-border-radius': '24px', 'object-edge-fade': '30px',
-			'object-border-width': '5px', 'object-glow-color': '#ff8c42',
-			'object-glow-spread': '40', 'object-glow-inner': '1',
-			'object-glow-color2': '#ff00ff',
-			'object-drop-color': '#000000', 'object-drop-distance': '20',
-			'object-drop-angle': '135deg', 'object-drop-blur': '16',
-			'object-drop-spread': '4' }, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await open(page, a);
-
-	// the reset lives in the fold now, with the knobs it also clears
-	await pop(page).locator('.glue-popover-disclosure').click();
-	await pop(page).locator('.glue-popover-reset').click();
-	await expect.poll(() => attrs(hg)['object-border-radius']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-edge-fade']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-border-width']).toBe(undefined);
-	await expect(byId(page, a)).not.toHaveClass(/glue-edge-fade/);
-	// and the panel says what is true now
-	await expect(field(page, ROUND)).toHaveValue('0');
-	await expect(field(page, FADE)).toHaveValue('0');
-	await expect(pop(page).locator('.glue-border-style')).toHaveValue('solid');
-	await expect.poll(() => attrs(hg)['object-glow-spread']).toBe(undefined);
-	// the glow's toggle and second colour, and the whole drop shadow
-	await expect.poll(() => attrs(hg)['object-glow-inner']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-glow-color2']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-drop-color']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-drop-distance']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-drop-angle']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-drop-blur']).toBe(undefined);
-	await expect.poll(() => attrs(hg)['object-drop-spread']).toBe(undefined);
-	// and the new knobs are back at the defaults a shadow is born with
-	await expect(knobField(page, 'distance')).toHaveValue('12');
-	await expect(knobField(page, 'angle')).toHaveValue('135');
-	await expect(knobField(page, 'blur')).toHaveValue('16');
-	await expect(knobField(page, 'spread')).toHaveValue('0');
-	await expect(advanced(page).locator('.glue-glow-inner-toggle'))
-		.not.toHaveClass(/glue-font-toggle-on/);
 });
 
 test('the glow is a stack of layers, not a single blur', async ({ page, hg }) => {
