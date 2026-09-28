@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { test, expect, waitForEditor, CONTENT } = require('./fixtures/hotglue.js');
+const { test, expect, waitForEditor, CONTENT, serializeObject, parseObject } = require('./fixtures/hotglue.js');
 
 const HASH = '$2y$12$wO8qXn0D4U796uB3d.6CyOAV682or2.uVqJNWlU.UOvqXDZufOXI6';
 const PASS = 'e2e-secret-pass';
@@ -152,38 +152,53 @@ test('the options set and clear the password', async ({ page, hg }) => {
 });
 
 test('the pages list sets and clears the password per page', async ({ page, hg }) => {
-	hg.addObject('100000000001', textObject, 'the secret text');
-	await page.goto('/?pages');
-	await expect(page.locator('.page_browser_entry').first()).toBeVisible();
+	// The list shows only pages that have a head revision - module_page_browser
+	// has filtered on it since 2012 - and its actions act on that revision,
+	// while this harness writes every page as <name>.default. So the page gets
+	// a head of its own here, and everything below reads and visits that one.
+	const name = hg.pageName.split('.')[0];
+	const head = path.join(CONTENT, name, 'head');
+	fs.mkdirSync(head, { recursive: true });
+	fs.writeFileSync(path.join(head, '100000000001'), serializeObject(textObject, 'the secret text'));
+	const headPassword = () => {
+		const f = path.join(head, 'page');
+		return fs.existsSync(f) ? parseObject(fs.readFileSync(f, 'utf8')).attrs['page-password'] : undefined;
+	};
+	const headUrl = `/?${name}.head`;
 
-	const entry = page.locator('.page_browser_entry', { hasText: hg.pageName.split('.')[0] });
+	// the list is part of the site options page (?pages reaches the same one)
+	await page.goto('/?options');
+	const entry = page.locator('.page_browser_entry', { hasText: name });
+	await expect(entry).toBeVisible();
 	// the actions appear on hover
 	await entry.hover();
 	await expect(entry.locator('.page_browser_password')).toBeVisible();
 
-	// set: the prompt is the house pattern the rename/copy actions use
-	page.on('dialog', (d) => d.accept('abc123'));
+	// set: the prompt is the house pattern the rename/copy actions use. One
+	// answer per prompt - a handler left registered would answer the next
+	// prompt too, with the wrong password
+	page.once('dialog', (d) => d.accept('abc123'));
 	await entry.locator('.page_browser_password').click();
-	await expect.poll(() => hg.readObject('page').attrs['page-password'] ?? '').toMatch(/^\$2y\$/);
+	await expect.poll(() => headPassword() ?? '').toMatch(/^\$2y\$/);
 	await expect(entry.locator('.page_browser_protected')).toBeVisible();
 
 	// the protected page prompts for the password
 	const stranger = await page.context().browser().newContext();
 	const strangerPage = await stranger.newPage();
-	await strangerPage.goto(pageUrl(hg));
+	await strangerPage.goto(headUrl);
 	await expect(strangerPage.locator('.glue-password')).toBeVisible();
 	await stranger.close();
 
 	// clear: the prompt's empty answer removes the protection
 	await entry.hover();
-	page.on('dialog', (d) => d.accept(''));
+	page.once('dialog', (d) => d.accept(''));
 	await entry.locator('.page_browser_password').click();
-	await expect.poll(() => hg.readObject('page').attrs['page-password']).toBeUndefined();
+	await expect.poll(() => headPassword()).toBeUndefined();
 	await expect(entry.locator('.page_browser_protected')).toHaveCount(0);
 
 	const stranger2 = await page.context().browser().newContext();
 	const strangerPage2 = await stranger2.newPage();
-	await strangerPage2.goto(pageUrl(hg));
+	await strangerPage2.goto(headUrl);
 	await expect(strangerPage2.getByText('the secret text')).toBeVisible();
 	await stranger2.close();
 });
