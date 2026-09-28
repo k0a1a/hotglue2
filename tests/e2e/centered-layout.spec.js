@@ -151,15 +151,18 @@ test('the toggle switches modes and stores infinite by absence', async ({ page, 
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 
-	// page menu opens on double-clicking the background
+	// page menu opens on double-clicking the background. The toggle's
+	// tooltip says which mode the page is in now, not what a click does
+	// (modules/page/page-edit.js) - so the unbounded page offers the one
+	// that says so, and the centered page the other
 	await page.mouse.dblclick(900, 500);
-	await page.getByTitle(/click to center it in a fixed-width container/).click();
+	await page.getByTitle(/page content sits on an unbounded canvas/).click();
 	await page.waitForLoadState('load');
 	await expect(page.locator('#hg-centered-wrapper')).toHaveCount(1);
 	expect(hg.readObject('page').attrs['page-layout-mode']).toBe('centered');
 
 	await page.mouse.dblclick(900, 500);
-	await page.getByTitle(/click for the unbounded canvas/).click();
+	await page.getByTitle(/center page content in a fixed-width container/).click();
 	await page.waitForLoadState('load');
 	await expect(page.locator('#hg-centered-wrapper')).toHaveCount(0);
 	expect(hg.readObject('page').attrs['page-layout-mode'],
