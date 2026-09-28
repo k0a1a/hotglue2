@@ -2846,11 +2846,12 @@ function text_panel_build(pop, obj)
 	var knobs_rule = document.createElement('hr');
 	knobs_rule.className = 'glue-font-knobs-rule';
 	adv.insertBefore(knobs_rule, adv.firstChild.nextSibling);
-	// the shadow colour joins the shadow row it colours, beside a two-line
-	// label of its own (danja's call, 2026-09-27). The pair is not part of
-	// the row's scrub: a press on it must not drag the radius, nor a click
-	// put the caret in the radius field. The row it was built in is left
-	// holding only its old 'color' label, so that goes.
+	// the shadow section in two columns, row by row (danja's call,
+	// 2026-09-28): the radius, fade and distance on the left; on the right
+	// the shadow colour beside a two-line label of its own (2026-09-27),
+	// then the angle and the spread, each level with its left-hand
+	// neighbour. The row the colour was built in is left holding only its
+	// old 'color' label, so that goes.
 	var shadow_color_cell = document.createElement('div');
 	shadow_color_cell.className = 'glue-font-shadow-color';
 	var shadow_color_label = document.createElement('div');
@@ -2858,12 +2859,13 @@ function text_panel_build(pop, obj)
 	shadow_color_label.innerHTML = 'shadow<br>color';
 	shadow_color_cell.appendChild(shadow_color_label);
 	shadow_color_cell.appendChild(shadow_color_btn);
-	['pointerdown', 'click'].forEach(function(type) {
-		shadow_color_cell.addEventListener(type, function(e) {
-			e.stopPropagation();
-		});
+	var shadow_grid = document.createElement('div');
+	shadow_grid.className = 'glue-font-shadow-grid';
+	adv.insertBefore(shadow_grid, shadow_radius.row);
+	[shadow_radius.row, shadow_color_cell, shadow_alpha.row, shadow_angle.row,
+		shadow_distance.row, shadow_spread.row].forEach(function(el) {
+		shadow_grid.appendChild(el);
 	});
-	shadow_radius.row.appendChild(shadow_color_cell);
 	shadow_row.remove();
 	// The object counts as part of the panel: clicking it is the gesture that
 	// starts editing it, and that click must not close the panel on the way

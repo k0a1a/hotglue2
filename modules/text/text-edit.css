@@ -406,19 +406,33 @@
 	mask-size: 22px 22px;
 }
 
+.glue-font-shadow-grid {
+	/* the shadow section in two columns, laid out row by row (danja's call,
+	   2026-09-28): the radius, fade and distance on the left, the colour,
+	   angle and spread on the right. A grid rather than the two stacked
+	   columns above it, so each right-hand control stays level with its
+	   left-hand neighbour; the same 1fr 1fr and gap as that grid, so the
+	   right column starts where the padding rows do. The gap between rows
+	   is the grid's own - the rows' margins would unlevel them */
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 14px;
+	row-gap: 6px;
+	align-items: center;
+}
+
+.glue-font-shadow-grid > * {
+	margin-bottom: 0;
+}
+
 .glue-font-shadow-color {
-	/* the shadow colour and its two-line label, at the end of the shadow
-	   row they colour (danja's call, 2026-09-27): set apart from the row's
-	   unit as the colour and padding buttons are from theirs, the label at
-	   the tight line-height of the edge panel's two-line labels. The pair
-	   is not part of the row's scrub, so it does not wear its grab hand */
+	/* the shadow colour and its two-line label, at the head of the shadow
+	   section's right column (danja's call, 2026-09-27/28), the label at
+	   the tight line-height of the edge panel's two-line labels */
 	display: flex;
 	align-items: center;
 	gap: 7px;
-	margin-left: 12px;
-	flex: 0 0 auto;
 	line-height: 1;
-	cursor: default;
 }
 
 .glue-font-knobs-grid {
