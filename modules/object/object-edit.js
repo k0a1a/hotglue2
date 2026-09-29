@@ -1378,6 +1378,23 @@ function object_properties_popover(obj)
 		b.style.width = '22px';
 		b.style.height = '22px';
 	});
+	// the fold's first rows in two columns, row by row (danja's call,
+	// 2026-09-28): the picture's x and y on the left, its scale and the
+	// object's opacity on the right, each level with its left-hand
+	// neighbour. The sections drew them as one column, and this regroups
+	// them by their classes; an image's or a video's padding rows follow
+	// under the pair.
+	var pos_rows = body.querySelectorAll(':scope > .glue-background-pos');
+	var scale_row = body.querySelector(':scope > .glue-background-scale');
+	var opacity_row = body.querySelector(':scope > .glue-opacity-row');
+	if (pos_rows.length == 2 && scale_row && opacity_row) {
+		var knobs = document.createElement('div');
+		knobs.className = 'glue-properties-grid';
+		body.insertBefore(knobs, pos_rows[0]);
+		[pos_rows[0], scale_row, pos_rows[1], opacity_row].forEach(function(el) {
+			knobs.appendChild(el);
+		});
+	}
 
 	// --- make the object a link --------------------------------------------
 	//

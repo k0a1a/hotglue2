@@ -587,7 +587,10 @@
 	box-sizing: border-box;
 	padding: 6px;
 	border: 1px solid #000;
-	background: rgba(255, 255, 255, 0.8);
+	/* 0.95 since 2026-09-28 (danja's call): the page still shows through,
+	   faintly, and the panel's rows read as the panel's rather than as
+	   whatever is under them - it was 0.8, the menu buttons' own fill */
+	background: rgba(255, 255, 255, 0.95);
 	/* As wide and as tall as what is in it, and no more: no panel pins a width
 	   of its own (they all did until 2026-09-17, and a panel that opens on a row
 	   of five icons was carrying the width of the knobs folded away under them).
@@ -1317,6 +1320,25 @@
 	   30px and the frame's 1px border leaves 30px of padding box at 32 */
 	-webkit-mask-size: 30px 30px;
 	mask-size: 30px 30px;
+}
+
+.glue-properties-grid {
+	/* the object properties fold's first rows in two columns, laid out row
+	   by row (danja's call, 2026-09-28): the picture's x and y on the left,
+	   its scale and the object's opacity on the right, each level with its
+	   neighbour. The gap between rows is the grid's own - the rows' margins
+	   would unlevel them - and the grid keeps a row's margin below it for
+	   whatever follows (an image's padding rows) */
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 14px;
+	row-gap: 6px;
+	align-items: center;
+	margin-bottom: 6px;
+}
+
+.glue-properties-grid > * {
+	margin-bottom: 0;
 }
 
 .glue-properties-popover .glue-popover-icons > .glue-btn-icon::before {
