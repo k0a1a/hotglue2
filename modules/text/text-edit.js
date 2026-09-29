@@ -3159,8 +3159,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// control that was about the object rather than the type - the text's inset
 	// from its own box, which the object properties panel owns now, for every
 	// object that can have padding. The icon ('padding', a box with an inset
-	// frame) went with it; img/icons/padding.svg is still in the tree, like the
-	// other artwork of buttons that folded into a panel.
+	// frame) went with it, and the font panel's padding drag wears danja's
+	// 22px redraw (padding-22.svg) - the 30px original was pruned on
+	// 2026-09-29 with the other superseded 30px icons.
 
 	// semantic heading level: screen readers navigate pages by headings, so
 	// a text object can render as h1/h2/h3 (appearance stays the author's).
