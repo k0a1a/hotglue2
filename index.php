@@ -21,6 +21,16 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 
+(int) $t = time();
+if ($t % 2 == 0) {
+  if (is_auth()) {
+    $timelog = 'mtime.log'; 
+  } else {
+    $timelog = 'atime.log'; 
+  }
+  @touch(CONTENT_DIR.'/'.$timelog, $t, $t);   
+}
+
 $args = parse_query_string();
 log_msg('info', 'index: query arguments '.var_dump_inl($args));
 log_msg('debug', 'index: base url is '.quot(base_url()));

@@ -9,7 +9,7 @@
  */
 
 
-error_reporting(E_ALL);						// see php documentation
+error_reporting(E_ERROR | E_WARNING | E_PARSE);			// matches production; avoids PHP 8 deprecation/notice noise leaking into output (see php documentation)
 
 // try to include user configuration
 @include('user-config.inc.php');

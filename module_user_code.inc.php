@@ -166,6 +166,7 @@ function user_code_set_code($args)
 				$m = umask(0111);
 				if (!@file_put_contents(CONTENT_DIR.'/user'.$x, $args[$x])) {
 					umask($m);
+					log_user_issue('save', 'could not save user '.$x);
 					return response('Error saving user '.$x, 500);
 				} else {
 					umask($m);
