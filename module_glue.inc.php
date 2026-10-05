@@ -1436,6 +1436,33 @@ register_service('glue.update_object', 'update_object', array('auth'=>true));
  *	@return array response
  *		array of rendered, newly created objects
  */
+/**
+ *	describe an upload failure from its PHP error code
+ *
+ *	@param array $f one $_FILES entry
+ *	@return string human readable message
+ */
+function upload_error_message($f)
+{
+	$name = !empty($f['name']) ? quot($f['name']) : 'a file';
+	switch ($f['error']) {
+		case UPLOAD_ERR_INI_SIZE:
+			return $name.' is too large (maximum upload size is '.ini_get('upload_max_filesize').')';
+		case UPLOAD_ERR_FORM_SIZE:
+			return $name.' is too large';
+		case UPLOAD_ERR_PARTIAL:
+			return 'upload of '.$name.' was interrupted, please retry';
+		case UPLOAD_ERR_NO_FILE:
+			return 'no file received for upload';
+		case UPLOAD_ERR_NO_TMP_DIR:
+			return 'server is missing its upload directory, please contact support';
+		case UPLOAD_ERR_CANT_WRITE:
+			return 'server could not store '.$name.', please contact support';
+		default:
+			return 'upload of '.$name.' failed (error '.$f['error'].')';
+	}
+}
+
 function upload_files($args)
 {
 	if (empty($args['page'])) {
@@ -1446,12 +1473,25 @@ function upload_files($args)
 	}
 	
 	$ret = array();
+	$upload_errors = array();
 	
 	log_msg('debug', 'upload_files: $_FILES is '.var_dump_inl($_FILES));
 	foreach ($_FILES as $f) {
 		$existed = false;
-		$fn = upload_file($f['tmp_name'], $args['page'], $f['name'], $existed);
+		// check the upload error code before trying to move the file: a
+		// failed upload (too large, interrupted, no temp space) has no
+		// temp file to move and used to surface as a misleading "could
+		// not move uploaded file" issue (2026-09-18)
+		if (!empty($f['error'])) {
+			$msg = upload_error_message($f);
+			$upload_errors[] = $msg;
+			log_msg('error', 'upload_files: '.$msg);
+			log_user_issue('upload', 'upload rejected: '.$f['name'].' (error='.$f['error'].' size='.$f['size'].')');
+			continue;
+		}
+		$fn = upload_file($f['tmp_name'], $args['page'], $f['name'], $existed, $f);
 		if ($fn === false) {
+			$upload_errors[] = quot($f['name']).' could not be stored on the server';
 			continue;
 		} else {
 			$args = array_merge($args, array('file'=>$fn, 'mime'=>$f['type'], 'size'=>$f['size']));
@@ -1503,6 +1543,10 @@ function upload_files($args)
 		}
 	}
 	
+	// report failed uploads instead of silently returning nothing
+	if (empty($ret) && !empty($upload_errors)) {
+		return response(implode('; ', $upload_errors), 400);
+	}
 	return response($ret);
 }
 

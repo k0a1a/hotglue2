@@ -747,7 +747,7 @@ function startpage()
  *	before
  *	@return filename inside the shared directory or false in case of error
  */
-function upload_file($fn, $page, $orig_fn = '', &$existed = false)
+function upload_file($fn, $page, $orig_fn = '', &$existed = false, $up_info = null)
 {
 	// default to the temporary filename
 	if ($orig_fn == '') {
@@ -787,7 +787,13 @@ function upload_file($fn, $page, $orig_fn = '', &$existed = false)
 		if (!@move_uploaded_file($fn, $d.'/'.$f)) {
 			umask($m);
 			log_msg('error', 'common: error moving uploaded file to '.quot($d.'/'.$f));
-			log_user_issue('upload', 'could not move uploaded file to '.$d.'/'.$f);
+			// include upload error code and size for diagnosis (2026-09-18)
+			$diag = '';
+			if (is_array($up_info)) {
+				$diag = ' (error='.(isset($up_info['error']) ? $up_info['error'] : '?')
+					.' size='.(isset($up_info['size']) ? $up_info['size'] : '?').')';
+			}
+			log_user_issue('upload', 'could not move uploaded file to '.$d.'/'.$f.$diag);
 			// not sure if we ought to remove the file in /tmp here (probably not)
 			return false;
 		} else {
