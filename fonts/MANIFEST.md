@@ -4,7 +4,7 @@ Every family below was downloaded from **Google Fonts** (self-hosted WOFF2, lati
 subset), and Google Fonts only carries fonts whose licenses permit redistribution,
 webfont serving and commercial use. Each family's authoritative **OFL.txt** ships
 in its directory (the OFL requires the license to travel with the font). This
-record is the one SOW-font-bundle.md asks for: font → license → source → files.
+record tracks font → license → source → files for the bundle.
 
 | family | license | source | files |
 |---|---|---|---|
