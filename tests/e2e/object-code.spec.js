@@ -49,7 +49,7 @@ test('the code is written in the panel, stored beside the object and applied',
 
 		// hotglue writes an object's own colours as inline styles, which beat any
 		// rule short of !important - so the author has to say it to override one
-		await styleBox(page).fill('background: rgb(1, 2, 3) !important;');
+		await styleBox(page).fill('& { background: rgb(1, 2, 3) !important; }');
 		await scriptBox(page).fill("el.setAttribute('data-ran', 'yes');");
 		await page.keyboard.press('Escape');
 		await expect(panel(page)).toHaveCount(0);
@@ -117,7 +117,7 @@ test('emptying both fields removes the code object', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', box(100), 'A');
 	hg.addObject('code100000000001', {
 		type: 'objcode', module: 'user_code',
-	}, '<style>\nbackground: rgb(9, 9, 9) !important;\n</style>');
+	}, '<style>\n& { background: rgb(9, 9, 9) !important; }\n</style>');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	expect(await rgb(page, a)).toBe('rgb(9, 9, 9)');
@@ -132,7 +132,7 @@ test('deleting the object deletes its code', async ({ page, hg }) => {
 	const a = hg.addObject('100000000001', box(100), 'A');
 	hg.addObject('code100000000001', {
 		type: 'objcode', module: 'user_code',
-	}, '<style>\ncolor: red;\n</style>');
+	}, '<style>\n& { color: red; }\n</style>');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	const res = await page.evaluate((n) => new Promise((ok) =>
@@ -146,7 +146,7 @@ test('a clone and a paste get their own copy of the code', async ({ page, hg }) 
 	const a = hg.addObject('100000000001', box(100), 'A');
 	hg.addObject('code100000000001', {
 		type: 'objcode', module: 'user_code',
-	}, '<style>\ncolor: red;\n</style>');
+	}, '<style>\n& { color: red; }\n</style>');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 
@@ -199,10 +199,10 @@ test('an example is added after what is already written, never over it',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await openCode(page, a);
-		await styleBox(page).fill('color: red;');
+		await styleBox(page).fill('& { color: red; }');
 		await insertExample(page, 'spin');
 		const value = await styleBox(page).inputValue();
-		expect(value.startsWith('color: red;')).toBe(true);
+		expect(value.startsWith('& { color: red; }')).toBe(true);
 		expect(value).toContain('@keyframes ex-spin');
 		// the dropdown is ready for the next one
 		await expect(examples(page)).toHaveValue('');
@@ -278,7 +278,7 @@ test('a selected object\'s animations stand still, and carry on when it is let g
 		const a = hg.addObject('100000000001', box(100), 'A');
 		hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
 			'<style>\n@keyframes ex-t { to { transform: rotate(360deg); } }\n'
-			+ 'animation: ex-t 8s linear infinite;\n</style>\n'
+			+ '& { animation: ex-t 8s linear infinite; }\n</style>\n'
 			+ '<script>\nel.animate([{ opacity: 1 }, { opacity: .5 }], '
 			+ '{ duration: 2000, iterations: Infinity, direction: "alternate" });\n</script>');
 		await page.goto(hg.editUrl());
@@ -371,18 +371,32 @@ test('the blend example steps through the modes and fades the colour', async ({ 
 	expect(mid).not.toBe('rgb(77, 159, 255)');
 });
 
-test('& { } is the object itself, the same as declarations written bare', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', box(100), 'A');
-	const b = hg.addObject('100000000002', box(400), 'B');
-	hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
-		'<style>\n& { outline: 3px solid rgb(1, 2, 3); }\n&.on { outline-color: rgb(4, 5, 6); }\n</style>');
-	hg.addObject('code100000000002', { type: 'objcode', module: 'user_code' },
-		'<style>\noutline: 3px solid rgb(7, 8, 9);\n</style>');
-	await page.goto(`/?${hg.pageName}`);
-	const outline = (id) => page.evaluate((i) =>
-		getComputedStyle(document.getElementById(i)).outlineColor, id);
-	expect(await outline(a)).toBe('rgb(1, 2, 3)');
-	expect(await outline(b), 'bare declarations still apply').toBe('rgb(7, 8, 9)');
-	await page.evaluate((i) => document.getElementById(i).classList.add('on'), a);
-	expect(await outline(a), '&.on is the same object with the class').toBe('rgb(4, 5, 6)');
-});
+test('& { } is the object itself; a declaration with no selector applies to nothing and is warned about',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', box(100), 'A');
+		const b = hg.addObject('100000000002', box(400), 'B');
+		hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
+			'<style>\n& { outline: 3px solid rgb(1, 2, 3); }\n&.on { outline-color: rgb(4, 5, 6); }\n</style>');
+		hg.addObject('code100000000002', { type: 'objcode', module: 'user_code' },
+			'<style>\noutline: 3px solid rgb(7, 8, 9);\n</style>');
+		await page.goto(`/?${hg.pageName}`);
+		const outline = (id) => page.evaluate((i) =>
+			getComputedStyle(document.getElementById(i)).outlineColor, id);
+		expect(await outline(a)).toBe('rgb(1, 2, 3)');
+		await page.evaluate((i) => document.getElementById(i).classList.add('on'), a);
+		expect(await outline(a), '&.on is the same object with the class').toBe('rgb(4, 5, 6)');
+		// no selector, nothing to apply it to
+		expect(await outline(b), 'a bare declaration must not apply').not.toBe('rgb(7, 8, 9)');
+
+		// and the panel says so, while still saving what was written
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+		await openCode(page, b);
+		await expect(styleBox(page)).toHaveValue('outline: 3px solid rgb(7, 8, 9);');
+		await styleBox(page).fill('color: red;');
+		await expect(panel(page).locator('.glue-code-problem')).toContainText('needs a selector');
+		await styleBox(page).fill('& { color: red; }');
+		await expect(panel(page).locator('.glue-code-problem')).toHaveText('');
+		await page.keyboard.press('Escape');
+		await expect.poll(() => hg.readObject('code100000000002').content).toContain('& { color: red; }');
+	});

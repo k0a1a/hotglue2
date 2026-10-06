@@ -198,6 +198,29 @@ function user_code_insert_example(example, style, script)
 	add(script, example.script);
 }
 
+// Is there a declaration (property: value;) outside any braces? Those apply to
+// nothing - a rule needs a selector - so the panel says so. Comments go first,
+// then every balanced {...} becomes a marker, so what is left between the
+// semicolons is selectors, at-rule heads and loose declarations. Only a piece
+// that ends in a semicolon counts: what follows the last one may be a selector
+// still being typed (a:hover), which looks just like a declaration.
+function user_code_has_bare_declaration(css)
+{
+	var s = css.replace(/\/\*[\s\S]*?\*\//g, '');
+	var prev;
+	do {
+		prev = s;
+		s = s.replace(/\{[^{}]*\}/g, '\u0001');
+	} while (s !== prev);
+	var pieces = s.split(';');
+	pieces.pop();
+	return pieces.some(function(piece) {
+		var tail = piece.slice(piece.lastIndexOf('\u0001') + 1).trim();
+		return tail !== '' && tail[0] !== '@' && tail.indexOf('{') == -1 &&
+			/^[a-zA-Z-]+\s*:/.test(tail);
+	});
+}
+
 function user_code_object_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-code-popover');
@@ -289,7 +312,14 @@ function user_code_object_popover(obj)
 			} else if (/<\/script/i.test(script.value)) {
 				bad = 'the script contains a closing script tag - write <\\/script> instead';
 			}
-			problem.textContent = bad || '';
+			// a declaration with no selector does nothing; the code is still
+			// saved, the warning says how to make it count
+			if (!bad && user_code_has_bare_declaration(style.value)) {
+				bad = null;
+				problem.textContent = 'A declaration needs a selector to apply: write & { ... } for this object.';
+			} else {
+				problem.textContent = bad || '';
+			}
 			if (bad || code === saved) {
 				return;
 			}
