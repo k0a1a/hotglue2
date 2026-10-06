@@ -229,16 +229,16 @@ test('the sheep blinks: an eyelid covers its eyes now and then',
 			.toBe('rgb(204, 204, 204)');
 	});
 
-test('the blink cycle is re-rolled at every wrap', async ({ page, hg }) => {
-		// The duration only needs to be in 3-30s; what makes the blinks
-		// wander is that the button rolls a fresh value every time the
-		// animation's cycle ends - and rewrites the keyframes too, because
-		// the fades are a fixed half second each and keyframes are
-		// fractions of whatever the cycle is. Speed the cycle up so a wrap
-		// lands quickly, then watch the rolled custom property change to a
-		// new value in range - if the listener were missing or pointed at
-		// the wrong element, the property would sit frozen at its first
-		// roll.
+test('blinks come at random gaps, each one switching the class on and off',
+	async ({ page, hg }) => {
+		// The gaps between blinks are timeouts (3-30s), and a blink is the
+		// class .glue-sheep-blinking for 0.6s. The page's clock is controlled
+		// here, so thirty seconds pass at once: a blink has to land inside
+		// them, the class has to come off again, and there has to be another
+		// after it - a sheep that blinks once and stops, or whose class
+		// sticks on, would show here. (Only timers are faked: the CSS
+		// animation itself is the next test's.)
+		await page.clock.install();
 		hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -246,48 +246,28 @@ test('the blink cycle is re-rolled at every wrap', async ({ page, hg }) => {
 
 		const sheep = page.locator('.glue-btn-icon.glue-sheep').first();
 		await expect(sheep).toBeVisible();
-		const rolled = () => sheep.evaluate((el) => {
-			const v = el.style.getPropertyValue('--glue-sheep-cycle');
-			const d = parseFloat(v);
-			return { v, ok: Number.isFinite(d) && d >= 3 && d <= 30 };
-		});
-		const first = await rolled();
-		expect(first.ok, 'the first roll is missing or out of range: ' + first.v)
-			.toBe(true);
+		const blinking = () => sheep.evaluate((el) =>
+			el.classList.contains('glue-sheep-blinking'));
 
-		// the roll also rewrites the injected @keyframes so the three
-		// phases - closing, fully down, opening - each measure 0.5s of
-		// the cycle that was rolled (the stylesheet's fallback curve is
-		// for 30s and would stretch or snap the fades at any other length)
-		const d = parseFloat(first.v);
-		const phases = await page.evaluate(() => {
-			const s = [...document.head.querySelectorAll('style')]
-				.find((s) => /@keyframes glue-sheep-blink/.test(s.textContent));
-			if (!s) return null;
-			const m = s.textContent.match(
-				/0%, ([\d.]+)% \{ opacity: 0; \} ([\d.]+)% \{ opacity: 1; \} ([\d.]+)%, 100% \{ opacity: 0; \} /);
-			return m ? [m[1], m[2], m[3]].map(parseFloat) : null;
-		});
-		expect(phases, 'the injected keyframes are missing').not.toBeNull();
-		const phase = (a, b) => Math.abs((b - a) / 100 * d - 0.5);
-		expect(phase(phases[0], phases[1]), 'closing is not ~0.5s').toBeLessThan(0.1);
-		expect(phase(phases[1], phases[2]), 'fully-down is not ~0.5s').toBeLessThan(0.1);
-		expect(phase(phases[2], 100), 'opening is not ~0.5s').toBeLessThan(0.1);
-
-		await page.addStyleTag({
-			content: '.glue-btn-icon.glue-sheep::after { animation-duration: 0.5s; }',
-		});
-		await expect.poll(async () => (await rolled()).ok
-			&& (await rolled()).v !== first.v, { timeout: 5000, intervals: [100] })
-			.toBe(true);
+		expect(await blinking(), 'blinking before the first gap has passed').toBe(false);
+		for (let n = 0; n < 3; n++) {
+			// a gap is at most 30s; the blink that ends it lasts 0.6s
+			let seen = false;
+			for (let t = 0; t < 31000 && !seen; t += 500) {
+				await page.clock.fastForward(500);
+				seen = await blinking();
+			}
+			expect(seen, 'no blink within 30s, round ' + n).toBe(true);
+			await page.clock.fastForward(700);
+			expect(await blinking(), 'the class did not come off, round ' + n).toBe(false);
+		}
 	});
 
 test('the sheep blink actually fires', async ({ page, hg }) => {
 		// The properties above only prove the blink is armed; the one thing
-		// they cannot show is that the animation RUNS. Speed the cycle up
-		// once the page is loaded - a duration change rescales the running
-		// cycle, so the next blink lands within a couple of seconds - and
-		// watch the lid's opacity spike for real, drop, and spike again.
+		// they cannot show is that the animation RUNS. Switch a blink on by
+		// hand and watch the lid's opacity rise to full and fall back to
+		// nothing within the blink's half second.
 		hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -295,26 +275,15 @@ test('the sheep blink actually fires', async ({ page, hg }) => {
 
 		const sheep = page.locator('.glue-btn-icon.glue-sheep').first();
 		await expect(sheep).toBeVisible();
-
-		await page.addStyleTag({
-			content: [
-				'.glue-btn-icon.glue-sheep::after { animation-duration: 6s; }',
-				// and a dwell long enough for a 100ms poll to land in -
-				// the real cycle's blink, sped up to 6s, would be over
-				// in an instant (the later @keyframes rule wins)
-				'@keyframes glue-sheep-blink { 0%, 50% { opacity: 0; } '
-					+ '60% { opacity: 1; } 90%, 100% { opacity: 0; } }',
-			].join('\n'),
-		});
-
 		const lid = () => sheep.evaluate((el) =>
 			parseFloat(getComputedStyle(el, '::after').opacity));
-		await expect.poll(lid, { timeout: 6000, intervals: [100] })
-			.toBeGreaterThan(0.5);
-		await expect.poll(lid, { timeout: 6000, intervals: [100] })
-			.toBeLessThan(0.5);
-		await expect.poll(lid, { timeout: 6000, intervals: [100] })
-			.toBeGreaterThan(0.5);
+		expect(await lid(), 'the lid is not invisible at rest').toBe(0);
+
+		await sheep.evaluate((el) => el.classList.add('glue-sheep-blinking'));
+		await expect.poll(lid, { timeout: 1000, intervals: [20] })
+			.toBeGreaterThan(0.9);
+		await expect.poll(lid, { timeout: 1000, intervals: [20] })
+			.toBeLessThan(0.1);
 	});
 
 test('the generated icon files are well-formed and stripped', async () => {
