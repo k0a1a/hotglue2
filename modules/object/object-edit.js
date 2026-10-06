@@ -108,7 +108,9 @@ function object_properties_modal_show(obj, data) {
 	// other name. This string is only the dialog's accessible name - nothing
 	// displays it - so it is here to keep the two in step rather than to be
 	// read off the screen.
-	var dialog = $.glue.modal.open('object attributes', 'glue-modal-tag');
+	var dialog = $.glue.modal.open('object attributes', 'glue-modal-tag', function() {
+		commit();
+	});
 	var modal = dialog.modal;
 	var close = dialog.close;
 
@@ -219,7 +221,7 @@ function object_properties_modal_show(obj, data) {
 		remove.title = 'remove this attribute';
 		remove.addEventListener('click', function() {
 			row.remove();
-			validate();
+			commit();
 		});
 		row.appendChild(remove);
 		attrs_wrap.appendChild(row);
@@ -250,18 +252,6 @@ function object_properties_modal_show(obj, data) {
 	var problem = document.createElement('div');
 	problem.className = 'glue-tag-problem';
 	modal.appendChild(problem);
-
-	var buttons = document.createElement('div');
-	buttons.className = 'glue-modal-buttons';
-	var ok = document.createElement('button');
-	ok.type = 'button';
-	ok.textContent = 'OK';
-	var cancel = document.createElement('button');
-	cancel.type = 'button';
-	cancel.textContent = 'Cancel';
-	buttons.appendChild(cancel);
-	buttons.appendChild(ok);
-	modal.appendChild(buttons);
 
 	// --- validation (feedback only - the server is the gate) --------------
 	function rows() {
@@ -295,7 +285,6 @@ function object_properties_modal_show(obj, data) {
 			}
 		});
 		problem.textContent = msg || '';
-		ok.disabled = !!msg;
 		return !msg;
 	}
 	class_input.addEventListener('input', validate);
@@ -306,10 +295,12 @@ function object_properties_modal_show(obj, data) {
 	validate();
 
 
-	ok.addEventListener('click', function() {
-		if (!validate()) {
-			return;
-		}
+	// There are no buttons: what the dialog holds is saved as it is changed
+	// (a field's change event, a removed row) and once more as it closes, by
+	// any door. Only a valid, different state is sent; an invalid one waits
+	// for the user to put it right and is dropped if they close on it.
+	var saved = JSON.stringify([custom_class.trim(), stored_attrs]);
+	function state() {
 		var attributes = {};
 		rows().forEach(function(row) {
 			var name = row.querySelector('.glue-tag-attr-name').value.toLowerCase().trim();
@@ -317,15 +308,32 @@ function object_properties_modal_show(obj, data) {
 				attributes[name] = row.querySelector('.glue-tag-attr-value').value;
 			}
 		});
+		return { classes: class_input.value.trim(), attributes: attributes };
+	}
+	function commit() {
+		if (!validate()) {
+			return;
+		}
+		var now = state();
+		var signature = JSON.stringify([now.classes, now.attributes]);
+		if (signature === saved) {
+			return;
+		}
+		saved = signature;
 		$.glue.backend({
 			method: 'object.set_properties',
 			name: obj.id,
-			classes: class_input.value.trim(),
-			attributes: attributes
+			classes: now.classes,
+			attributes: now.attributes
 		}, function(resp) {
 			if (resp['#error']) {
-				// the server refused - keep the modal open with the reason
+				// the server refused: say so where the dialog is still open,
+				// and let the next change try again
+				saved = '';
 				problem.textContent = resp['#data'] || resp['#error'];
+				if (!document.contains(modal)) {
+					$.glue.error(resp['#data'] || resp['#error']);
+				}
 				return;
 			}
 			// Reflect the class change live, so the editor shows what the
@@ -335,13 +343,17 @@ function object_properties_modal_show(obj, data) {
 			// nothing and the object loses its Moveable until a reload.
 			// Nothing about a class or attribute change needs re-registering.
 			custom_tokens.forEach(function(t) { obj.classList.remove(t); });
-			class_input.value.trim().split(/\s+/)
-				.filter(function(t) { return t !== ''; })
-				.forEach(function(t) { obj.classList.add(t); });
-			close();
+			custom_tokens = now.classes.split(/\s+/)
+				.filter(function(t) { return t !== ''; });
+			custom_tokens.forEach(function(t) { obj.classList.add(t); });
 		});
+	}
+	tag.addEventListener('change', commit);
+	tag.addEventListener('keydown', function(e) {
+		if (e.key == 'Enter' && e.target.tagName == 'INPUT') {
+			close();
+		}
 	});
-	cancel.addEventListener('click', close);
 	class_input.focus();
 }
 

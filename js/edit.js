@@ -2175,7 +2175,10 @@ $.glue.modal = function()
 	return {
 		// label ..	accessible name for the dialog
 		// cls ..	optional extra class on the dialog box
-		open: function(label, cls) {
+		// on_close ..	optional, called as the dialog closes by any door
+		//		(Escape, a click on the backdrop, close()) - for a
+		//		dialog with no buttons, which saves what it holds here
+		open: function(label, cls, on_close) {
 			var previously_focused = document.activeElement;
 
 			var backdrop = document.createElement('div');
@@ -2189,6 +2192,11 @@ $.glue.modal = function()
 			modal.tabIndex = -1;
 
 			function close() {
+				if (on_close) {
+					var f = on_close;
+					on_close = null;	// once, however many doors fire
+					f();
+				}
 				backdrop.remove();
 				if (previously_focused && document.contains(previously_focused)) {
 					previously_focused.focus();

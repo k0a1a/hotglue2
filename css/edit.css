@@ -451,9 +451,10 @@
 }
 
 .glue-tag-class-input {
-	/* the user's own classes: a line of its own, as wide as the tag */
-	flex: 1;
+	/* the user's own classes: a line of its own, three quarters of the tag */
+	flex: none;
 	margin-left: 2ch;
+	width: 75%;
 }
 
 .glue-tag-copy {

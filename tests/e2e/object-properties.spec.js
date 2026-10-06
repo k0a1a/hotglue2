@@ -69,7 +69,9 @@ test('user classes are appended to the system ones and persist', async ({ page, 
 	await openProperties(page, a);
 
 	await page.locator('.glue-tag-input').first().fill('mine other-one');
-	await page.locator('.glue-modal-buttons button:has-text("OK")').click();
+	// no buttons: the dialog saves as it closes (and as a field changes)
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-modal-tag')).toHaveCount(0);
 
 	await expect.poll(() => hg.readObject('100000000001').attrs['object-custom-class'])
 		.toBe('mine other-one');
@@ -93,7 +95,9 @@ test('a custom attribute round-trips to the page', async ({ page, hg }) => {
 	await page.locator('.glue-tag-add').click();
 	await page.locator('.glue-tag-attr-name').fill('data-note');
 	await page.locator('.glue-tag-attr-value').fill('hello world');
-	await page.locator('.glue-modal-buttons button:has-text("OK")').click();
+	// no buttons: the dialog saves as it closes (and as a field changes)
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-modal-tag')).toHaveCount(0);
 
 	await expect.poll(() => hg.readObject('100000000001').attrs['object-attributes'])
 		.toBe('{"data-note":"hello world"}');
@@ -112,11 +116,15 @@ test('the modal blocks a denied attribute before it can be saved', async ({ page
 	await page.locator('.glue-tag-add').click();
 	await page.locator('.glue-tag-attr-name').fill('onclick');
 	await expect(page.locator('.glue-tag-problem')).toContainText('event handlers');
-	await expect(page.locator('.glue-modal-buttons button:has-text("OK")')).toBeDisabled();
 
 	await page.locator('.glue-tag-attr-name').fill('style');
 	await expect(page.locator('.glue-tag-problem')).toContainText('managed by the object');
-	await expect(page.locator('.glue-modal-buttons button:has-text("OK")')).toBeDisabled();
+
+	// an invalid state is never sent: closing the dialog on it saves nothing
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-modal-tag')).toHaveCount(0);
+	await page.waitForTimeout(400);
+	expect(hg.readObject('100000000001').attrs['object-attributes']).toBeUndefined();
 });
 
 for (const [name, why] of [
@@ -227,7 +235,9 @@ test('every field can be clicked into, not just the focused one', async ({ page,
 	expect(await valueInput.inputValue()).toBe('hi');
 	expect(await classInput.inputValue()).toBe('mine');
 
-	await page.locator('.glue-modal-buttons button:has-text("OK")').click();
+	// no buttons: the dialog saves as it closes (and as a field changes)
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.glue-modal-tag')).toHaveCount(0);
 	await expect.poll(() => hg.readObject('100000000001').attrs['object-attributes'])
 		.toBe('{"data-note":"hi"}');
 	expect(hg.readObject('100000000001').attrs['object-custom-class']).toBe('mine');
