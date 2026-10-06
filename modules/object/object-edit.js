@@ -2083,8 +2083,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// note: elem is reused for every menu item in this scope, so the
 	// closure must capture the sheep itself, not the mutable elem
 	var sheep_elem = elem;
-	// One blink is a fixed 1.5s animation (0.5s to close, 0.5s down, 0.5s to
-	// open) that the class .glue-sheep-blinking switches on, and the gaps
+	// One blink is a fixed 0.75s animation (0.25s to close, 0.25s down, 0.25s
+	// to open) that the class .glue-sheep-blinking switches on, and the gaps
 	// between blinks are timeouts. The first version was one long infinite
 	// animation whose duration and keyframes were rewritten at every
 	// iteration; changing the duration of a running animation keeps the
@@ -2103,7 +2103,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// because a menu that is hidden mid-blink never sends one
 		setTimeout(function() {
 			sheep_elem.classList.remove('glue-sheep-blinking');
-		}, 1600);
+		}, 850);
 		schedule_blink();
 	};
 	schedule_blink();

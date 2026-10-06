@@ -1318,7 +1318,7 @@
 	   nothing animates; the sheep's JS adds .glue-sheep-blinking for the
 	   length of one blink, at random intervals (3-30s) so the pauses
 	   wander instead of ticking like a metronome. The blink is one fixed
-	   1.5s animation, played once - NOT a long cycle whose duration is
+	   0.75s animation, played once - NOT a long cycle whose duration is
 	   rewritten: changing the duration of a running animation keeps the
 	   time already elapsed and recomputes the progress against the new
 	   length, which dropped the lid into the middle of a blink (or into a
@@ -1340,10 +1340,10 @@
 }
 
 .glue-btn-icon.glue-sheep.glue-sheep-blinking::after {
-	animation: glue-sheep-blink 1.5s 1;
+	animation: glue-sheep-blink 0.75s 1;
 }
 
-/* 0.5s to close, 0.5s fully down, 0.5s to open */
+/* 0.25s to close, 0.25s fully down, 0.25s to open */
 @keyframes glue-sheep-blink {
 	0%, 100% { opacity: 0; }
 	33.3333%, 66.6667% { opacity: 1; }
