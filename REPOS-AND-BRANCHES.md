@@ -37,7 +37,7 @@ Local-only in `ng-src`: `server-capture` (the server's uncommitted state, alread
 | Where | Server path | Remote / branch |
 |---|---|---|
 | hotglue.me and all user sites | `/var/www-hotglue/src` | `hotglue2` / `dev` |
-| hotglue.me/ng (demo) | `/var/www-hotglue/hotglue.me-ng` | branch `ng` (remote NOT VERIFIED, see below) |
+| hotglue.me/ng (demo) | `/var/www-hotglue/hotglue.me-ng` | `hotglue2` / `ng-dev` |
 | hotglue.me/account | `/var/www-hotglue/account` | `hotglue-account` / `main` |
 
 Nothing on the server tracks `hotglue2-ng`. A commit on `ng` therefore reaches no server by
@@ -90,7 +90,7 @@ Publish, then update the demo:
 ```bash
 git push hotglue2 ng-dev
 git checkout ng
-# demo server: see "Open: demo checkout" below before relying on a pull
+# demo server: cd /var/www-hotglue/hotglue.me-ng && git pull   (run by hand)
 ```
 
 ### When to sync
@@ -118,18 +118,10 @@ not needed for docs-only, test-only or SOW-only commits, since those are strippe
   does nothing visible.
 - **`ng` is not live:** pushing `ng` to `origin` deploys nothing anywhere.
 
-## Open: demo checkout (`/var/www-hotglue/hotglue.me-ng`)
+## Demo checkout history (`/var/www-hotglue/hotglue.me-ng`)
 
-The demo checkout is on branch `ng` (not `ng-dev`), with uncommitted WIP that must never be
-clobbered. Its remote has not been verified since `ng` moved. If it points at `hotglue2`, its
-`ng` no longer exists there (deleted 2026-10-06), so `git pull` fails and the demo is frozen
-at its current code. To resolve, check `git remote -v` and `git status` in that directory,
-then either:
-
-- switch it to `hotglue2` / `ng-dev` (the public-safe way; the demo then follows the sync
-  flow above), after dealing with the WIP, or
-- point it at `hotglue2-ng` / `ng` with a read-only deploy key (the demo then runs the private
-  branch directly, including SOWs and tests in its tree).
-
-The sections above that say the demo follows `ng-dev` describe the intended flow, not the
-verified current state.
+Until 2026-10-06 the demo tracked `hotglue2`'s `ng` branch (at `807ada8`, clean tree). When
+`ng` moved to the private `hotglue2-ng` and was deleted from `hotglue2`, its pull target
+vanished. It was switched to `hotglue2` / `ng-dev` (`git checkout -B ng-dev origin/ng-dev`,
+a 48-commit fast-forward since `807ada8` is in `ng-dev`), and its stale local `ng` branch and
+`origin/ng` ref were removed. It now follows the sync flow above.
