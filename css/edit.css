@@ -428,6 +428,24 @@
 	padding: 1px 3px;
 }
 
+.glue-tag-class-input {
+	/* the user's own classes: a line of its own, as wide as the tag */
+	flex: 1;
+	margin-left: 2ch;
+}
+
+.glue-tag-copy {
+	/* the id's copy button: 22px, art at 1:1 (the box is set in JS, the mask
+	   here - see the note on $.glue.icon()'s inline size) */
+	flex: none;
+	margin-left: 6px;
+}
+
+.glue-tag-copy::before {
+	-webkit-mask-size: 22px 22px;
+	mask-size: 22px 22px;
+}
+
 .glue-tag-attr-name {
 	width: 110px;
 }
@@ -458,7 +476,7 @@
 
 .glue-tag-add {
 	font-size: 11px;
-	margin-top: 8px;
+	margin-left: 2ch;
 }
 
 .glue-tag-problem {

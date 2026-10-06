@@ -124,12 +124,45 @@ function object_properties_modal_show(obj, data) {
 	var tag = document.createElement('div');
 	tag.className = 'glue-tag';
 
+	// Four lines, each doing one thing: the tag with the id and a button to
+	// copy it, the classes hotglue gave the object, an input for the user's
+	// own, and (under the attribute rows) the way to add an attribute.
 	var line1 = document.createElement('div');
 	line1.className = 'glue-tag-line';
 	txt(line1, '<div', 'glue-tag-name');
 	txt(line1, ' id=');
 	var id_val = txt(line1, '"' + full_name + '"', 'glue-tag-fixed');
 	id_val.title = 'the object\'s id - select and copy it to target this object from the page\'s code';
+	var copy_id = $.glue.icon('copy-22', 'copy the object\'s id');
+	copy_id.classList.add('glue-tag-copy');
+	copy_id.style.width = '22px';
+	copy_id.style.height = '22px';
+	copy_id.setAttribute('role', 'button');
+	copy_id.setAttribute('aria-label', 'copy the object\'s id');
+	copy_id.addEventListener('click', function() {
+		var done = function() {
+			copy_id.title = 'copied';
+			setTimeout(function() { copy_id.title = 'copy the object\'s id'; }, 1200);
+		};
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(full_name).then(done, function() {
+				select_id();
+			});
+		} else {
+			select_id();
+		}
+	});
+	// no clipboard to write to (an insecure origin has none): select the id,
+	// so ctrl+c is the one keystroke left
+	function select_id() {
+		var range = document.createRange();
+		range.selectNodeContents(id_val);
+		var sel = window.getSelection();
+		sel.removeAllRanges();
+		sel.addRange(range);
+		copy_id.title = 'select done - press ctrl+c';
+	}
+	line1.appendChild(copy_id);
 	tag.appendChild(line1);
 
 	var line2 = document.createElement('div');
@@ -138,16 +171,19 @@ function object_properties_modal_show(obj, data) {
 	txt(line2, '"');
 	txt(line2, system_classes.join(' '), 'glue-tag-fixed').title =
 		'set by hotglue - these can\'t be changed, your own classes are added after them';
-	txt(line2, system_classes.length ? ' ' : '');
-	var class_input = document.createElement('input');
-	class_input.type = 'text';
-	class_input.className = 'glue-tag-input';
-	class_input.value = custom_class;
-	class_input.placeholder = 'your classes';
-	class_input.setAttribute('aria-label', 'your own classes, space separated');
-	line2.appendChild(class_input);
 	txt(line2, '"');
 	tag.appendChild(line2);
+
+	var line3 = document.createElement('div');
+	line3.className = 'glue-tag-line';
+	var class_input = document.createElement('input');
+	class_input.type = 'text';
+	class_input.className = 'glue-tag-input glue-tag-class-input';
+	class_input.value = custom_class;
+	class_input.placeholder = 'your own classes';
+	class_input.setAttribute('aria-label', 'your own classes, space separated');
+	line3.appendChild(class_input);
+	tag.appendChild(line3);
 
 	// --- custom attribute rows --------------------------------------------
 	var attrs_wrap = document.createElement('div');
@@ -190,12 +226,10 @@ function object_properties_modal_show(obj, data) {
 		return name_input;
 	}
 
-	var line_end = document.createElement('div');
-	line_end.className = 'glue-tag-line';
-	txt(line_end, '>', 'glue-tag-name');
-	tag.appendChild(line_end);
 	modal.appendChild(tag);
 
+	var line_add = document.createElement('div');
+	line_add.className = 'glue-tag-line';
 	var add = document.createElement('button');
 	add.type = 'button';
 	add.className = 'glue-tag-add';
@@ -203,7 +237,8 @@ function object_properties_modal_show(obj, data) {
 	add.addEventListener('click', function() {
 		add_attr_row('', '').focus();
 	});
-	modal.appendChild(add);
+	line_add.appendChild(add);
+	tag.appendChild(line_add);
 
 	var problem = document.createElement('div');
 	problem.className = 'glue-tag-problem';
