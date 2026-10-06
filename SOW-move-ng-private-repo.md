@@ -1,12 +1,14 @@
 # SOW — Move the `ng` branch to a new private repo `hotglue-ng`
 
-Status: done 2026-10-06 and `hotglue2-ng` confirmed Private. The repo is named
-`hotglue2-ng` (not `hotglue-ng`) and lives locally at `~/pro/hotglue/hotglue2-ng`; `ng-src` has
-`origin` = `hotglue2-ng` and `hotglue2` = the public repo. Move the `ng` branch out of the public `hotglue2` repo into a NEW
-PRIVATE repo `hotglue-ng` (private, like the `account` repo), preserving history, keeping the
-branch name `ng`. Then update the git remotes on the local clone(s) and the server so `ng`
-work tracks the new private repo. (Confirmed: there are NO secrets in the `ng` history, so
-this is clean housekeeping — no secret-rotation needed.)
+Status: done 2026-10-06; `hotglue2-ng` confirmed Private. The repo is named `hotglue2-ng`
+(not `hotglue-ng` as written below) and lives locally at `~/pro/hotglue/hotglue2-ng`. In
+`ng-src`, `origin` is `hotglue2-ng` and `hotglue2` is the public repo.
+
+Move the `ng` branch out of the public `hotglue2` repo into a NEW PRIVATE repo `hotglue-ng`
+(private, like the `account` repo), preserving history, keeping the branch name `ng`. Then
+update the git remotes on the local clone(s) and the server so `ng` work tracks the new
+private repo. (Confirmed: there are NO secrets in the `ng` history, so this is clean
+housekeeping — no secret-rotation needed.)
 
 ## Why
 
