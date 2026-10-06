@@ -9,16 +9,3 @@
 	background-color: darkgrey;
 	opacity: 0.5;
 }
-
-#glue-contextmenu-iframe-scroll {
-	/* overwrite the default greenish hue for .glue-menu-enabled */
-	background-color: transparent;
-}
-
-#glue-contextmenu-iframe-scroll.glue-menu-disabled {
-	background-image: url(iframe-scroll.png);
-}
-
-#glue-contextmenu-iframe-scroll.glue-menu-enabled {
-	background-image: url(iframe-scroll.png);
-}
