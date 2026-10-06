@@ -444,6 +444,12 @@
 	padding: 1px 3px;
 }
 
+.glue-tag-input:focus {
+	/* no focus ring on the dialog's fields (danja's call, 2026-10-06): the
+	   caret says where you are, and the frame stays the plain grey one */
+	outline: none;
+}
+
 .glue-tag-class-input {
 	/* the user's own classes: a line of its own, as wide as the tag */
 	flex: 1;
