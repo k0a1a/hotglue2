@@ -1664,3 +1664,30 @@
 	font-size: 11px;
 	line-height: 1.4;
 }
+
+.glue-code-examples {
+	/* the examples dropdown, above the two fields */
+	box-sizing: border-box;
+	font-size: 11px;
+	margin-bottom: 8px;
+	width: 100%;
+}
+
+.object.glue-selected,
+.object.glue-selected * {
+	/* An object that an animation keeps moving or resizing is a poor thing to
+	   edit - it slips out from under the pointer, and its menu and panels are
+	   open exactly while it is selected. So while it is selected, the css
+	   animations on it and inside it stand still, and run on from where they
+	   stopped when it is let go. The animations a script started (el.animate)
+	   and the script's timers are held in js/edit.js and by module_user_code. */
+	animation-play-state: paused !important;
+}
+
+.glue-code-help {
+	/* a line of how-to under a field's label */
+	color: #666;
+	font-size: 11px;
+	line-height: 1.4;
+	margin-bottom: 3px;
+}

@@ -103,7 +103,7 @@ function user_code_render_object($args)
 {
 	$obj = $args['obj'];
 	if (isset($obj['type']) && $obj['type'] == 'objcode') {
-		return user_code_render_object_code($obj);
+		return user_code_render_object_code($obj, !empty($args['edit']));
 	}
 	if (!isset($obj['type']) || !($obj['type'] == 'userhead' or $obj['type'] == 'userbody')) {
 		return false;
@@ -496,10 +496,16 @@ function user_code_object_css($raw, $name)
  *	other script and can reach everything on it. They are handed el, the
  *	object's element (also this), so that "this object" needs no id.
  *
+ *	In the editor the script is handed timers that stand still while the
+ *	object is selected (see user_code_hold_timers()), so that an object moved by
+ *	a timer can be taken hold of and edited. On a published page it gets the
+ *	page's own.
+ *
  *	@param array $obj the code object
+ *	@param bool $edit are we editing or not
  *	@return string empty - nothing is placed in the body
  */
-function user_code_render_object_code($obj)
+function user_code_render_object_code($obj, $edit = false)
 {
 	$target = user_code_object_of_code($obj['name']);
 	if ($target === false || empty($obj['content'])) {
@@ -516,9 +522,47 @@ function user_code_render_object_code($obj)
 	$js = trim(implode("\n", $blocks['script']));
 	if ($js !== '') {
 		$id = json_encode($target, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES);
-		html_add_head_inline('<script>document.addEventListener("DOMContentLoaded",function(){var el=document.getElementById('.$id.');if(!el){return;}(function(el){'.nl().$js.nl().'}).call(el,el);});</script>', 5);
+		if ($edit) {
+			html_add_head_inline('<script>document.addEventListener("DOMContentLoaded",function(){var el=document.getElementById('.$id.');if(!el){return;}'.user_code_hold_timers().'(function(el,setInterval,clearInterval,setTimeout,clearTimeout,requestAnimationFrame,cancelAnimationFrame){'.nl().$js.nl().'}).call(el,el,hold.setInterval,hold.clearInterval,hold.setTimeout,hold.clearTimeout,hold.requestAnimationFrame,hold.cancelAnimationFrame);});</script>', 5);
+		} else {
+			html_add_head_inline('<script>document.addEventListener("DOMContentLoaded",function(){var el=document.getElementById('.$id.');if(!el){return;}(function(el){'.nl().$js.nl().'}).call(el,el);});</script>', 5);
+		}
 	}
 	return '';
+}
+
+
+/**
+ *	javascript: timers that stand still while the object is selected
+ *
+ *	An object that a script keeps moving or resizing is hard to select, drag or
+ *	edit, and its menu and panels are open exactly while it is selected. So in
+ *	the editor the script's setInterval, setTimeout and requestAnimationFrame
+ *	(and their clear/cancel pairs) are shadowed by these: a callback that comes
+ *	due while the object is selected does not run - an interval skips its tick,
+ *	a timeout or frame waits and runs when the object is let go - and
+ *	everything runs as usual after that.
+ *
+ *	The limits: only these three timers, and only as the script calls them by
+ *	those names (window.setInterval is the page's own); event handlers,
+ *	promises and the like are not held. Animations are held separately, by
+ *	css/edit.css and js/edit.js.
+ *
+ *	@return string javascript that declares a variable named hold
+ */
+function user_code_hold_timers()
+{
+	return 'var hold=(function(){'
+		.'var held=function(){return el.classList.contains("glue-selected");};'
+		.'var gone={};'
+		.'return {'
+		.'setInterval:function(f,t){var a=[].slice.call(arguments,2);return window.setInterval(function(){if(!held()){f.apply(null,a);}},t);},'
+		.'clearInterval:function(i){window.clearInterval(i);},'
+		.'setTimeout:function(f,t){var a=[].slice.call(arguments,2);var id=window.setTimeout(function run(){if(gone[id]){return;}if(held()){window.setTimeout(run,200);}else{f.apply(null,a);}},t);return id;},'
+		.'clearTimeout:function(i){gone[i]=true;window.clearTimeout(i);},'
+		.'requestAnimationFrame:function(f){var id=window.requestAnimationFrame(function frame(n){if(gone["f"+id]){return;}if(held()){window.requestAnimationFrame(frame);}else{f(n);}});return id;},'
+		.'cancelAnimationFrame:function(i){gone["f"+i]=true;window.cancelAnimationFrame(i);}'
+		.'};})();';
 }
 
 
