@@ -351,7 +351,9 @@ function user_code_css_split($str, $sep)
  *	- a rule gets the scope in front of each of its selectors: .a, .b becomes
  *	  #id .a, #id .b. A selector that starts with : or & belongs to the
  *	  element itself (:hover -> #id:hover, &.on -> #id.on)
- *	- declarations written with no selector at all apply to the element
+ *	- & on its own is the element: & { color: red; } (the form the panel's
+ *	  examples use). Declarations written with no selector at all apply to it
+ *	  as well, which keeps code stored before that working
  *	- @media, @supports, @layer and @container are scoped inside
  *	- @keyframes, @font-face, @property, @page, @import, @charset and the like
  *	  pass through untouched. Keyframe names are global to the page.

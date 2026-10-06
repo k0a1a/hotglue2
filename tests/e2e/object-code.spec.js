@@ -370,3 +370,19 @@ test('the blend example steps through the modes and fades the colour', async ({ 
 	expect(mid).not.toBe('rgb(255, 77, 77)');
 	expect(mid).not.toBe('rgb(77, 159, 255)');
 });
+
+test('& { } is the object itself, the same as declarations written bare', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', box(100), 'A');
+	const b = hg.addObject('100000000002', box(400), 'B');
+	hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
+		'<style>\n& { outline: 3px solid rgb(1, 2, 3); }\n&.on { outline-color: rgb(4, 5, 6); }\n</style>');
+	hg.addObject('code100000000002', { type: 'objcode', module: 'user_code' },
+		'<style>\noutline: 3px solid rgb(7, 8, 9);\n</style>');
+	await page.goto(`/?${hg.pageName}`);
+	const outline = (id) => page.evaluate((i) =>
+		getComputedStyle(document.getElementById(i)).outlineColor, id);
+	expect(await outline(a)).toBe('rgb(1, 2, 3)');
+	expect(await outline(b), 'bare declarations still apply').toBe('rgb(7, 8, 9)');
+	await page.evaluate((i) => document.getElementById(i).classList.add('on'), a);
+	expect(await outline(a), '&.on is the same object with the class').toBe('rgb(4, 5, 6)');
+});
