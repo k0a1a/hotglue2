@@ -256,7 +256,12 @@ icon row, and a fold would hide the one thing the panel is. It has no OK: what i
 saved a moment after typing stops, when a field is left, and when the panel closes by any
 door, the last through `pop.on_close` (a removed field's blur is not reliable, see the trap
 on commits above). SOW-object-code.md has the storage design - the code lives in an object of
-its own, `<rev>/code<id>`, not in the object's file.
+its own, `<rev>/code<id>`, not in the object's file. An "insert an example" dropdown at the top
+adds one of six snippets (`USER_CODE_EXAMPLES` in `user_code-edit.js`) after what is already in
+the fields, never over it. Two rules for adding one: a script must not write the object's left,
+top, width or height - the editor saves what it finds, so the movers use `el.animate()` or the
+`translate` property, neither of which hotglue keeps - and keyframe names carry an `ex-` prefix,
+because they are global to the page.
 
 ## Building the next one
 

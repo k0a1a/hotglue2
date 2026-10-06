@@ -1664,3 +1664,11 @@
 	font-size: 11px;
 	line-height: 1.4;
 }
+
+.glue-code-examples {
+	/* the examples dropdown, above the two fields */
+	box-sizing: border-box;
+	font-size: 11px;
+	margin-bottom: 8px;
+	width: 100%;
+}

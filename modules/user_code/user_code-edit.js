@@ -88,6 +88,96 @@ function user_code_apply_css(name, css)
 	el.textContent = '\n' + css + '\n';
 }
 
+// Examples the author can insert from the panel. Each is a style, a script or
+// both, and explains itself in a comment, so a snippet is something to read as
+// well as to run. Written for how code reaches the page (see the notes above
+// and in module_user_code.inc.php): the CSS is confined to the object, "&" is
+// the object itself, a declaration with no selector applies to it, and what
+// hotglue sets inline needs !important; the script is handed the object as el.
+//
+// Two rules for what goes in here, both learnt from how an object is saved: a
+// script must not write the object's left, top, width or height (the editor
+// saves what it finds, so an animation that wrote them would be stored where
+// it happened to be stopped), and so the movers use the Web Animations API or
+// the translate property, neither of which hotglue keeps. And keyframe names
+// are global to the page, so the ones here carry an ex- prefix.
+var USER_CODE_EXAMPLES = [
+	{
+		name: 'fade when the pointer is over it',
+		style: '/* Fade this object while the pointer is over it. */\n'
+			+ 'transition: opacity .3s;\n'
+			+ ':hover { opacity: .4 !important; }'
+	},
+	{
+		name: 'spin',
+		style: '/* Turn once every six seconds. Keyframe names are shared by the whole\n'
+			+ '   page, so give yours a name nobody else will use. */\n'
+			+ '@keyframes ex-spin { to { transform: rotate(360deg); } }\n'
+			+ 'animation: ex-spin 6s linear infinite;'
+	},
+	{
+		name: 'orbit in a circle',
+		style: '/* Go round in a circle of 60px radius, keeping upright. */\n'
+			+ '@keyframes ex-orbit {\n'
+			+ '  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }\n'
+			+ '  to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }\n'
+			+ '}\n'
+			+ 'animation: ex-orbit 4s linear infinite;'
+	},
+	{
+		name: 'breathe: grow and shrink by 20px, staying centred',
+		script: '// Grow by 20px in both directions and back. The size grows by 20 and the\n'
+			+ '// corner moves by 10, which is what keeps the middle where it is. Read from\n'
+			+ '// the object as it is, so it follows the object when you move or resize it.\n'
+			+ '// el.animate() draws the change without writing it into the object.\n'
+			+ 'var cs = getComputedStyle(el);\n'
+			+ 'var l = parseFloat(cs.left), t = parseFloat(cs.top);\n'
+			+ 'var w = parseFloat(cs.width), h = parseFloat(cs.height);\n'
+			+ 'el.animate([\n'
+			+ '  { left: l + "px", top: t + "px", width: w + "px", height: h + "px" },\n'
+			+ '  { left: (l - 10) + "px", top: (t - 10) + "px", width: (w + 20) + "px", height: (h + 20) + "px" }\n'
+			+ '], { duration: 1000, iterations: Infinity, direction: "alternate", easing: "ease-in-out" });'
+	},
+	{
+		name: 'switch a class on and off by clicking',
+		style: '/* "&" is the object itself: this applies while it has the class "on".\n'
+			+ '   !important is what lets it beat the colours hotglue sets on the object. */\n'
+			+ 'transition: background .3s;\n'
+			+ '&.on { background: gold !important; }',
+		script: '// Click the object to put the class "on" on it, and again to take it off.\n'
+			+ 'el.addEventListener("click", function() {\n'
+			+ '  el.classList.toggle("on");\n'
+			+ '});'
+	},
+	{
+		name: 'wander about at random',
+		style: '/* Move smoothly to wherever the script sends it. translate is an offset\n'
+			+ '   on top of the object\'s position, so the position itself is never touched. */\n'
+			+ 'transition: translate 1.5s ease-in-out;',
+		script: '// Every two seconds, drift to a random spot within 100px of where it is.\n'
+			+ 'setInterval(function() {\n'
+			+ '  var x = Math.round((Math.random() - .5) * 200);\n'
+			+ '  var y = Math.round((Math.random() - .5) * 200);\n'
+			+ '  el.style.translate = x + "px " + y + "px";\n'
+			+ '}, 2000);'
+	}
+];
+
+// put an example into the fields: added after what is there, never over it
+function user_code_insert_example(example, style, script)
+{
+	var add = function(field, text) {
+		if (!text) {
+			return;
+		}
+		field.value = field.value.replace(/\s+$/, '');
+		field.value += (field.value === '' ? '' : '\n\n') + text;
+		field.dispatchEvent(new Event('input', { bubbles: true }));
+	};
+	add(style, example.style);
+	add(script, example.script);
+}
+
 function user_code_object_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-code-popover');
@@ -130,6 +220,29 @@ function user_code_object_popover(obj)
 		style.placeholder = 'background: gold;\n:hover { opacity: .8 }\n.inner { color: red }';
 		var script = field('script', 'JavaScript; el is this object', parts.script, 8);
 		script.placeholder = 'el.addEventListener("click", function() {\n\tel.classList.toggle("on");\n});';
+		var examples = document.createElement('select');
+		examples.className = 'glue-code-examples';
+		examples.setAttribute('aria-label', 'insert an example');
+		var first = document.createElement('option');
+		first.value = '';
+		first.textContent = 'insert an example\u2026';
+		examples.appendChild(first);
+		USER_CODE_EXAMPLES.forEach(function(example, i) {
+			var o = document.createElement('option');
+			o.value = String(i);
+			o.textContent = example.name;
+			examples.appendChild(o);
+		});
+		examples.addEventListener('change', function() {
+			if (examples.value !== '') {
+				var example = USER_CODE_EXAMPLES[parseInt(examples.value, 10)];
+				user_code_insert_example(example, style, script);
+				examples.value = '';
+				// into the field it went to: the style, unless it is script only
+				(example.style ? style : script).focus();
+			}
+		});
+		pop.insertBefore(examples, pop.firstChild);
 		var problem = document.createElement('div');
 		problem.className = 'glue-code-problem';
 		pop.appendChild(problem);

@@ -25,6 +25,10 @@ const styleBox = (page) => panel(page).getByLabel('style');
 const scriptBox = (page) => panel(page).getByLabel('script');
 
 async function openCode(page, id) {
+	// an object that is moving or changing size is never "stable" to Playwright,
+	// so the examples' animations are held still before it is clicked (they are
+	// still the object's animations, only paused)
+	await page.evaluate(() => document.getAnimations().forEach((a) => a.pause()));
 	await byId(page, id).click();
 	await expect(codeBtn(page)).toBeVisible();
 	await page.waitForTimeout(400);		// the menu fades in
@@ -176,4 +180,89 @@ test('only a numbered object can carry code', async ({ page, hg }) => {
 		const res = await call({ method: 'user_code.set_object_code', name, code: '<style>a{b:c}</style>' });
 		expect(res['#error'], name).toBeTruthy();
 	}
+});
+
+// The examples dropdown. An example is added to the fields after whatever is
+// there and goes through the same save as typed code, so each one is checked
+// by what it does to the object once it has been saved and the page reloaded.
+
+const examples = (page) => panel(page).getByLabel('insert an example');
+
+async function insertExample(page, label) {
+	await examples(page).selectOption({ label });
+	await page.waitForTimeout(100);
+}
+
+test('an example is added after what is already written, never over it',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', box(100), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openCode(page, a);
+		await styleBox(page).fill('color: red;');
+		await insertExample(page, 'spin');
+		const value = await styleBox(page).inputValue();
+		expect(value.startsWith('color: red;')).toBe(true);
+		expect(value).toContain('@keyframes ex-spin');
+		// the dropdown is ready for the next one
+		await expect(examples(page)).toHaveValue('');
+		await insertExample(page, 'orbit in a circle');
+		expect(await styleBox(page).inputValue()).toContain('@keyframes ex-orbit');
+		expect(await styleBox(page).inputValue()).toContain('@keyframes ex-spin');
+	});
+
+test('the style examples animate the object', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', box(100), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openCode(page, a);
+	await insertExample(page, 'spin');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => hg.readObject('code100000000001').content).toContain('ex-spin');
+	await page.reload();
+	await waitForEditor(page, 1);
+	const anim = () => page.evaluate((i) => {
+		const s = getComputedStyle(document.getElementById(i));
+		return [s.animationName, s.animationDuration];
+	}, a);
+	expect(await anim()).toEqual(['ex-spin', '6s']);
+
+	// the orbit swaps in for it
+	await openCode(page, a);
+	await styleBox(page).fill('');
+	await insertExample(page, 'orbit in a circle');
+	await page.keyboard.press('Escape');
+	await expect.poll(async () => (await anim())[0]).toBe('ex-orbit');
+});
+
+test('the script examples act on the object', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', box(100), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	// breathe: one running animation, drawn without writing the object's own
+	// position or size
+	await openCode(page, a);
+	await insertExample(page, 'breathe: grow and shrink by 20px, staying centred');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => hg.readObject('code100000000001').content).toContain('el.animate');
+	await page.reload();
+	await waitForEditor(page, 1);
+	await expect.poll(() => page.evaluate((i) =>
+		document.getElementById(i).getAnimations().length, a)).toBeGreaterThan(0);
+	expect(await page.evaluate((i) => document.getElementById(i).style.width, a))
+		.toBe('160px');
+
+	// the class toggle: a click puts the class on, and the style shows it
+	await openCode(page, a);
+	await scriptBox(page).fill('');
+	await insertExample(page, 'switch a class on and off by clicking');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => hg.readObject('code100000000001').content).toContain('toggle');
+	await page.reload();
+	await waitForEditor(page, 1);
+	await page.evaluate(() => document.getAnimations().forEach((x) => x.pause()));
+	await byId(page, a).click();
+	await expect(byId(page, a)).toHaveClass(/\bon\b/);
+	await expect.poll(() => rgb(page, a)).toBe('rgb(255, 215, 0)');
 });
