@@ -37,6 +37,40 @@ test('a locked object renders with the locked class', async ({ page, hg }) => {
 	await expect(byId(page, a)).toHaveClass(/\blocked\b/);
 });
 
+test('clicking a locked text object does not enter editing', async ({ page, hg }) => {
+	const a = seedLocked(hg);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	await byId(page, a).click();		// selects - that is how the lock is reached
+	await byId(page, a).click();		// the editing click: nothing may happen
+	await expect(byId(page, a)).not.toHaveClass(/glue-text-editing/);
+	expect(await page.locator('.glue-font-popover').count()).toBe(0);
+	// and the stored content is untouched
+	expect(hg.readObject('100000000001').content).toBe('LOCKED');
+});
+
+test('locking an object mid-edit stops the editing', async ({ page, hg }) => {
+	const a = seedFree(hg);
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+
+	await byId(page, a).click();
+	await byId(page, a).click();
+	await expect.poll(() => page.evaluate((i) =>
+		document.querySelector(`[id="${i}"] > .glue-text-render`).isContentEditable, a)).toBe(true);
+	await page.waitForTimeout(400);		// the menu fades in
+	await page.locator('#glue-contextmenu-object-lock').click();
+
+	await expect(byId(page, a)).toHaveClass(/\blocked\b/);
+	await expect(byId(page, a)).not.toHaveClass(/glue-text-editing/);
+	const editable = await page.evaluate((i) =>
+		document.querySelector(`[id="${i}"] > .glue-text-render`).isContentEditable, a);
+	expect(editable, 'the render stayed contenteditable behind the lock').toBe(false);
+	// the panel the editing opened is gone with it
+	expect(await page.locator('.glue-font-popover').count()).toBe(0);
+});
+
 test('a locked object cannot be dragged', async ({ page, hg }) => {
 	const a = seedLocked(hg);
 	await page.goto(hg.editUrl());
@@ -100,11 +134,11 @@ test('the lock glyph swaps with the state', async ({ page, hg }) => {
 		return (v.match(/icons\/([a-z0-9-]+)\.svg/) || [])[1] || null;
 	});
 
-	// unlocked: the open padlock
-	expect(await glyph(), 'unlocked objects show the open padlock').toBe('unlock');
+	// unlocked: the closed padlock, the action the click performs
+	expect(await glyph(), 'unlocked objects show the closed padlock').toBe('lock');
 
 	await page.locator('#glue-contextmenu-object-lock').click();
 	await expect(byId(page, a)).toHaveClass(/\blocked\b/);
 	// the menu stays open on the locked object, and the glyph re-syncs
-	await expect.poll(glyph, 'locked objects show the closed padlock').toBe('lock');
+	await expect.poll(glyph, 'locked objects show the open padlock').toBe('unlock');
 });

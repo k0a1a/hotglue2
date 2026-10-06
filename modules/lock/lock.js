@@ -40,13 +40,14 @@ $.glue.live('.object', 'glue-object-lock', function(e) {
 	}
 });
 
-// The padlock glyph swaps with the state the way the page layout toggle
-// swaps artwork: unlock.svg (the open padlock) while the object is
-// unlocked, lock.svg once it is locked. Both live at module scope since
-// Alpine evaluates its expressions as global strings.
+// The padlock glyph shows the ACTION the click performs, not the state the
+// object is in (danja's call, 2026-10-06): lock.svg (the closed padlock)
+// while the object is unfrozen - click to freeze it - and unlock.svg (the
+// open padlock) once it is frozen - click to unfreeze it. The two live at
+// module scope since Alpine evaluates its expressions as global strings.
 function lock_set_icon(el, locked) {
 	var url = new URL($.glue.base_url+'img/icons/' +
-		(locked ? 'lock' : 'unlock')+'.svg', document.baseURI).href;
+		(locked ? 'unlock' : 'lock')+'.svg', document.baseURI).href;
 	el.style.setProperty('--glue-icon', 'url("'+url+'")');
 	Alpine.$data(el).locked = locked;
 }
@@ -78,6 +79,13 @@ function lock_toggle(iconElem) {
 		}
 		nowLocked = false;
 	} else {
+		// an object locked mid-edit stops being editable: stop_editing
+		// commits the session's content first, and the lock makes the
+		// object inert - a text block left contenteditable would keep
+		// accepting keystrokes behind the lock's back
+		if (obj.classList.contains('glue-text-editing')) {
+			$.glue.text.stop_editing(obj);
+		}
 		obj.classList.add('locked');
 		if (m) {
 			m.draggable = false;
@@ -110,10 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.contextmenu.hide();
 
 	// Alpine drives the tooltip text from the same state the glyph uses
-	var elem = $.glue.icon('unlock');
+	var elem = $.glue.icon('lock');
 
 	elem.setAttribute('x-data', '{ locked: false }');
-	elem.setAttribute('x-bind:title', "locked ? 'object is locked, click to unlock it' : 'lock object'");
+	elem.setAttribute('x-bind:title', "locked ? 'object is frozen, click to unfreeze it' : 'freeze object'");
 	elem.setAttribute('x-on:glue-menu-activate', 'lock_sync($el)');
 	elem.setAttribute('x-on:click', 'lock_set_icon($el, lock_toggle($el))');
 
