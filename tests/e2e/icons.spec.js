@@ -163,8 +163,7 @@ test('the sheep blinks: an eyelid covers its eyes now and then',
 		// gets the one animation: the eyelid from the icon's artwork
 		// (sheep-eyelid.svg, the hidden "eyelids" layer extracted into a
 		// mask of its own - nothing inside an SVG used as a mask can be
-		// shown from outside it) paints over the eyes for three quarters of
-		// a second. A blink is ONE fixed animation, played once while the
+		// shown from outside it) paints over the eyes for half a second. A blink is ONE fixed animation, played once while the
 		// class .glue-sheep-blinking is on, and the gaps between blinks are
 		// random timeouts (3-30s) - so only the shape of a blink can be
 		// asserted here, by switching the class on by hand. It used to be a
@@ -192,11 +191,11 @@ test('the sheep blinks: an eyelid covers its eyes now and then',
 		// at rest nothing animates: no running animation to fall out of step
 		await sheep.evaluate((el) => el.classList.remove('glue-sheep-blinking'));
 		expect((await read()).name).toBe('none');
-		// a blink is a fixed 0.75s, once - never a cycle that is rewritten
+		// a blink is a fixed 0.5s, once - never a cycle that is rewritten
 		await sheep.evaluate((el) => el.classList.add('glue-sheep-blinking'));
 		const blink = await read();
 		expect(blink.name).toBe('glue-sheep-blink');
-		expect(blink.duration).toBe('0.75s');
+		expect(blink.duration).toBe('0.5s');
 		expect(blink.iterations).toBe('1');
 		// the eyelid is the FACE's paint, not the button's fill: the eyes
 		// are holes in the mask, so covering them with the face colour
