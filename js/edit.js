@@ -947,6 +947,10 @@ $.glue.popover = function()
 	};
 }();
 
+// Whether the press now in progress began inside the open panel (or its colour
+// picker), so the click that ends it is not read as a click outside.
+var press_began_in_panel = false;
+
 // A panel is closed by a click anywhere outside it, by Escape, by its object
 // being deselected, and by that object being dragged out from under it.
 // Capture phase for the click, so it closes even when something else stops
@@ -970,8 +974,22 @@ document.documentElement.addEventListener('click', function(e) {
 	}
 	var pop = $.glue.popover.current();
 	if (!pop) {
+		press_began_in_panel = false;
 		return;
 	}
+	// A press that began inside the panel and was released outside it is a
+	// drag (a slider, a field's text selection, the colour picker's handle),
+	// not a click outside: the trailing click is dispatched at the common
+	// ancestor of the two ends, which is out here. It must not close the panel,
+	// nor reach the page, where it would read as "deselect" - the same two
+	// things the scrub's flag above guards against, for every control.
+	if (press_began_in_panel && !pop.contains(e.target)) {
+		press_began_in_panel = false;
+		e.stopPropagation();
+		e.preventDefault();
+		return;
+	}
+	press_began_in_panel = false;
 	// A panel can name an element that counts as part of it for this purpose.
 	// Two do. The background panel's armed move mode does: its whole point is
 	// that you drag the object itself, and a pointerup on the object still
@@ -998,8 +1016,11 @@ document.documentElement.addEventListener('click', function(e) {
 
 // A gesture anywhere starts a new account of what is being dragged, so the
 // swallowed click a previous drag was waiting for is no longer coming.
-document.documentElement.addEventListener('pointerdown', function() {
+document.documentElement.addEventListener('pointerdown', function(e) {
 	$.glue.popover.clear_swallowed_click();
+	var pop = $.glue.popover.current();
+	press_began_in_panel = !!pop && (pop.contains(e.target) ||
+		!!e.target.closest('.picker_wrapper'));
 }, true);
 
 document.documentElement.addEventListener('keydown', function(e) {

@@ -676,6 +676,37 @@ test('a click outside closes it, and Escape closes it', async ({ page, hg }) => 
 	await expect(pop(page)).toHaveCount(0);
 });
 
+test('a press inside the panel released outside it does not close it',
+	async ({ page, hg }) => {
+	// the trailing click of a drag is dispatched at the common ancestor of the
+	// press and the release - out on the page - so a panel that read it as a
+	// click outside closed under every drag that ended off its edge, and the
+	// page read it as "deselect" as well
+	const a = hg.addObject('100000000001', ATTRS, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await open(page, a);
+
+	// on a button, and on the panel's own padding: neither is a scrub row,
+	// which has a flag of its own for this
+	for (const [target, corner] of [[sizeBtn(page, 'b'), false], [pop(page), true]]) {
+		const box = await target.boundingBox();
+		const from = corner
+			? { x: box.x + 2, y: box.y + 2 }
+			: { x: box.x + box.width/2, y: box.y + box.height/2 };
+		await page.mouse.move(from.x, from.y);
+		await page.mouse.down();
+		await page.mouse.move(30, 30, { steps: 8 });
+		await page.mouse.up();
+		await expect(pop(page)).toBeVisible();
+		await expect(byId(page, a)).toHaveClass(/glue-selected/);
+	}
+
+	// and a click that starts outside still closes it
+	await page.mouse.click(30, 30);
+	await expect(pop(page)).toHaveCount(0);
+});
+
 test('the text colour lives in the panel now, not in the menu',
 	async ({ page, hg }) => {
 		// it was a button of its own until this panel existed; the colour of

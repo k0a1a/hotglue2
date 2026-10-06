@@ -316,6 +316,11 @@ would mean inventing a glyph to justify a row.
   the next `pointerdown` (`clear_swallowed_click()`), since a drag released off the window
   sends no click at all and the flag would otherwise lie in wait for one somebody makes
   later.
+  Every other control gets the same treatment from a second, general rule (2026-10-06): the
+  `pointerdown` handler records whether the press began inside the panel or its colour
+  picker, and the click handler swallows a click whose press began inside and whose target is
+  outside - so a slider, a button or a text selection released off the panel's edge no longer
+  closes it. A click that *starts* outside still closes it.
 - **`touch-action: pan-y` on a scrub row, NOT `none`.** Every other drag in the editor says
   `none` — nothing scrolls under it and the browser must not claim the gesture. A scrub lives
   in a fold with `max-height: 42vh; overflow-y: auto`, so `none` would take the fold's scroll
