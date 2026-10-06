@@ -10,11 +10,11 @@ How the code is split across repos and branches, where each piece is deployed, a
 | Repo | Visibility | Local clone | Holds |
 |---|---|---|---|
 | `k0a1a/hotglue2` | public | server: `/var/www-hotglue/src` | The original hotglue2 and the public self-host branch |
-| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/ng-src` (`~/pro/hotglue/hotglue2-ng` is a second clone made for the initial push) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
+| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/hotglue2-ng` (main working clone; `~/pro/hotglue/src-ng` is a second one) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
 | `k0a1a/hotglue-account` | private | `~/pro/hotglue/account` | hotglue.me/account admin and registration tooling |
 
-In `ng-src` the remotes are named: `origin` = `hotglue2-ng` (private), `hotglue2` = public
-repo, `server-src` = the server's `/var/www-hotglue/src` over SSH.
+In `hotglue2-ng` the remotes are named: `origin` = `hotglue2-ng` (private), `hotglue2` =
+public repo.
 
 ## Branches
 
@@ -29,8 +29,8 @@ repo, `server-src` = the server's `/var/www-hotglue/src` over SSH.
   demo at hotglue.me/ng runs.
 - `master`, `db-auth-wip` — older lines, not part of the current flow.
 
-Local-only in `ng-src`: `server-capture` (the server's uncommitted state, already merged into
-`ng` in `1002088`).
+Local `ng-dev` tracks `hotglue2/ng-dev`. (The old `server-capture` branch, the server's
+uncommitted state, was merged into `ng` in `1002088`.)
 
 ## Where each branch runs
 
@@ -64,7 +64,7 @@ values never go public. db-auth *code* is public (off by default); the real
 Direction is one way: **`ng` → `ng-dev`**. Never commit features on `ng-dev`; never merge
 `ng-dev` back into `ng` (the strip commits would delete the SOWs and tests there).
 
-Run from `ng-src`, with a clean working tree:
+Run from `hotglue2-ng`, with a clean working tree:
 
 ```bash
 git push origin ng                 # ng goes to the private repo first
