@@ -2193,7 +2193,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			object_properties_modal_show(obj, data['#data']);
 		}, false);
 	});
-	$.glue.contextmenu.register('object', 'object-target', elem);
+	// 8 and not the default 10, so the code button can sit between it and the
+	// symlink button (user_code-edit.js, 9): two items on the default would
+	// have nothing to be put between
+	$.glue.contextmenu.register('object', 'object-target', elem, 8);
 
 	elem = $.glue.icon('shared-w-other-pages', 'make this object appear on all pages');
 	elem.addEventListener('click', function(e) {
