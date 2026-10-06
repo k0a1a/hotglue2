@@ -124,19 +124,20 @@ function object_properties_modal_show(obj, data) {
 	var tag = document.createElement('div');
 	tag.className = 'glue-tag';
 
-	// Four lines, each doing one thing: the tag with the id and a button to
+	// Lines, each doing one thing: the tag with the id and a button to
 	// copy it, the classes hotglue gave the object, an input for the user's
-	// own, and (under the attribute rows) the way to add an attribute.
+	// own, and (under the attribute rows) the way to add an attribute - then
+	// the tag's closing line.
 	var line1 = document.createElement('div');
 	line1.className = 'glue-tag-line';
 	txt(line1, '<div', 'glue-tag-name');
 	txt(line1, ' id=');
 	var id_val = txt(line1, '"' + full_name + '"', 'glue-tag-fixed');
 	id_val.title = 'the object\'s id - select and copy it to target this object from the page\'s code';
-	var copy_id = $.glue.icon('copy-22', 'copy the object\'s id');
+	var copy_id = $.glue.icon('copy-12', 'copy the object\'s id');
 	copy_id.classList.add('glue-tag-copy');
-	copy_id.style.width = '11px';
-	copy_id.style.height = '11px';
+	copy_id.style.width = '12px';
+	copy_id.style.height = '12px';
 	copy_id.setAttribute('role', 'button');
 	copy_id.setAttribute('aria-label', 'copy the object\'s id');
 	copy_id.addEventListener('click', function() {
@@ -240,6 +241,11 @@ function object_properties_modal_show(obj, data) {
 	});
 	line_add.appendChild(add);
 	tag.appendChild(line_add);
+
+	var line_close = document.createElement('div');
+	line_close.className = 'glue-tag-line';
+	txt(line_close, '</div>', 'glue-tag-name');
+	tag.appendChild(line_close);
 
 	var problem = document.createElement('div');
 	problem.className = 'glue-tag-problem';

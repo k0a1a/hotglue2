@@ -451,7 +451,7 @@
 }
 
 .glue-tag-copy {
-	/* the id's copy button: 11px, no frame - a glyph beside the text, not a
+	/* the id's copy button: 12px, no frame - a glyph beside the text, not a
 	   button on its own plate. The box is set in JS, the mask here (see the
 	   note on $.glue.icon()'s inline size); the frame comes off here, where
 	   it would beat .glue-btn-icon's one class with two. */
@@ -466,8 +466,8 @@
 }
 
 .glue-tag .glue-tag-copy::before {
-	-webkit-mask-size: 11px 11px;
-	mask-size: 11px 11px;
+	-webkit-mask-size: 12px 12px;
+	mask-size: 12px 12px;
 	background-color: #666;
 }
 
