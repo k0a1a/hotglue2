@@ -17,14 +17,6 @@
 	*/
 }
 
-#glue-contextmenu-text-font-face.glue-text-font-family {
-	background-image: url(text-font-family.png);
-}
-
-#glue-contextmenu-text-font-face.glue-text-font-face {
-	background-image: url(text-font-face.png);
-}
-
 .glue-text-input {
 	/* this is the textarea for editing */
 	/* inherit as much as possible */

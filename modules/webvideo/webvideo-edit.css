@@ -22,28 +22,3 @@
 	   obscure the embed when the user isn't interacting with it */
 	opacity: 0.5;
 }
-
-#glue-contextmenu-webvideo-autoplay {
-	/* overwrite the default greenish hue for .glue-menu-enabled */
-	background-color: transparent;
-}
-
-#glue-contextmenu-webvideo-autoplay.glue-menu-disabled {
-	background-image: url(webvideo-autoplay-off.png);
-}
-
-#glue-contextmenu-webvideo-autoplay.glue-menu-enabled {
-	background-image: url(webvideo-autoplay-on.png);
-}
-
-#glue-contextmenu-webvideo-loop {
-	background-color: transparent;
-}
-
-#glue-contextmenu-webvideo-loop.glue-menu-disabled {
-	background-image: url(webvideo-loop-off.png);
-}
-
-#glue-contextmenu-webvideo-loop.glue-menu-enabled {
-	background-image: url(webvideo-loop-on.png);
-}
