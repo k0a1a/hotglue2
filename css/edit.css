@@ -737,10 +737,10 @@
 
 .glue-popover-disabled {
 	/* a control that exists but cannot act on the current target: the
-	   text panel's gray-out (2026-09-18) - the alignments and the reset
-	   while a run is selected, the link row while nothing is. The whole
-	   row or button wears it, and pointer-events: none is what makes the
-	   gray honest rather than just pale. */
+	   text panel's gray-out (2026-09-18) - the alignment buttons and the
+	   reset while a run is selected, the link row while nothing is. The
+	   whole row or button wears it, and pointer-events: none is what makes
+	   the gray honest rather than just pale. */
 	opacity: 0.4;
 	pointer-events: none;
 }
@@ -1246,13 +1246,15 @@
 	user-select: none;
 }
 
-.glue-btn-icon.glue-clipboard-full::after {
-	/* The copy button's "there is something on the clipboard" dot. A badge in
-	   the icon's own ink (#333, the glyph's colour), not a fill: it is the
-	   one thing on this button that says something about the editor rather
-	   than about the object whose menu it is in, and a corner mark reads that
-	   way while a green button does not. 2px is small on purpose - it is a
-	   reminder that the buffer is not empty, not a control. ::after is free
+.glue-btn-icon.glue-clipboard-full::after,
+.glue-btn-icon.glue-text-source-on::after {
+	/* The state dots: the copy button's "there is something on the
+	   clipboard" and the source toggle's "the object is in source mode".
+	   A badge in the icon's own ink (#333, the glyph's colour), not a
+	   fill: it says something about the editor's state rather than about
+	   the object whose menu it is in, and a corner mark reads that way
+	   while a green button does not. 2px is small on purpose - it is a
+	   reminder that the slot is not empty, not a control. ::after is free
 	   here: the glyph is ::before, and the only other ::after on an icon
 	   button is the sheep's eyelid, on a class this one never has. */
 	content: '';

@@ -222,3 +222,37 @@ a, a:link, a:visited, a:active, a:hover {
 		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.7071) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.7071) var(--glue-shadow-core),
 		calc(var(--glue-shadow-x) + var(--glue-shadow-reach) * 0.9239) calc(var(--glue-shadow-y) - var(--glue-shadow-reach) * 0.3827) var(--glue-shadow-core);
 }
+
+.text ul, .text ol {
+	/* Lists inside text objects. css/reset.css strips list markers AND all
+	   margin/padding, so a list built with the panel's list buttons would
+	   render on the published page as bare, markerless text. Re-assert the
+	   indent under .text, which contains both the published render
+	   (module_text.inc.php appends the content directly into the object
+	   element) and the editing render (.glue-text-render is a child of the
+	   object), so one rule serves both. The author's own CSS loads after
+	   main.css and can override. padding-left rather than margin: an
+	   authored object padding is the object's own.
+
+	   The indent is in em, not px: an outside marker hangs to the LEFT of
+	   the item, as wide as its digits, and that width grows with the font. A
+	   fixed 20px held the default 13px font's marker and let a larger one
+	   poke out of the object's left edge - at 28px the "1." of a numbered list
+	   was already outside the box, and "10." at 56px was far out. 2.5em is
+	   room for a three-character marker such as "99." with its gap, at any
+	   size. */
+	list-style-position: outside;
+	padding-left: 2.5em;
+	margin: 0;
+}
+
+.text ul li {
+	/* The marker belongs to the item, and reset.css's li { list-style:
+	   none; } targets it directly - an inherited value from the ul would
+	   lose to that rule, so the marker is re-asserted on the li itself. */
+	list-style: disc;
+}
+
+.text ol li {
+	list-style: decimal;
+}
