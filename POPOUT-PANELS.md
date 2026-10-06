@@ -263,6 +263,13 @@ top, width or height - the editor saves what it finds, so the movers use `el.ani
 `translate` property, neither of which hotglue keeps - and keyframe names carry an `ex-` prefix,
 because they are global to the page.
 
+While an object is selected - which is when its menu and panels are open - what moves it stands
+still: its css animations (`.object.glue-selected` in `css/edit.css`), the animations its script
+started with `el.animate()` (paused and played on in `js/edit.js`, only the ones that paused),
+and the script's own `setInterval`, `setTimeout` and `requestAnimationFrame`, which the editor
+hands it as held versions (`user_code_hold_timers()`, edit mode only). Event handlers and
+promises are not held, and a script that calls `window.setInterval` gets the page's own.
+
 ## Building the next one
 
 1. `var pop = $.glue.popover.open(obj, 'glue-x-popover')` — the class names the panel and is

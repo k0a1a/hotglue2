@@ -2274,6 +2274,42 @@ $.glue.modal = function()
 }();
 
 
+// While an object is selected its menu and panels are open, and an object that
+// an animation keeps moving or resizing is a poor thing to edit. css/edit.css
+// pauses the css animations on a selected object; these are the other kind, the
+// ones a script started with el.animate(), which css cannot reach. They are
+// paused when the object is selected and played on when it is let go - only
+// the ones this paused, so an animation the author paused stays paused.
+(function() {
+	var held = new WeakMap();
+	var is_css = function(a) {
+		return (typeof CSSAnimation != 'undefined' && a instanceof CSSAnimation) ||
+			(typeof CSSTransition != 'undefined' && a instanceof CSSTransition);
+	};
+	document.addEventListener('DOMContentLoaded', function() {
+		$.glue.live('.object', 'glue-select', function(e) {
+			var mine = [];
+			if (this.getAnimations) {
+				this.getAnimations({ subtree: true }).forEach(function(a) {
+					if (!is_css(a) && a.playState == 'running') {
+						a.pause();
+						mine.push(a);
+					}
+				});
+			}
+			held.set(this, mine);
+		});
+		$.glue.live('.object', 'glue-deselect', function(e) {
+			(held.get(this) || []).forEach(function(a) {
+				if (a.playState == 'paused') {
+					a.play();
+				}
+			});
+			held.delete(this);
+		});
+	});
+})();
+
 $.glue.object = function()
 {
 	var alter_pre_save = {};

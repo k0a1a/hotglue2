@@ -266,3 +266,75 @@ test('the script examples act on the object', async ({ page, hg }) => {
 	await expect(byId(page, a)).toHaveClass(/\bon\b/);
 	await expect.poll(() => rgb(page, a)).toBe('rgb(255, 215, 0)');
 });
+
+// Holding still while the object is edited. An object that a script or a
+// stylesheet keeps moving is a poor thing to select, drag or edit, and its menu
+// and panels are open exactly while it is selected - so while it is, its css
+// animations, the animations its script started, and the script's own timers
+// stand still, and carry on when it is let go.
+
+test('a selected object\'s animations stand still, and carry on when it is let go',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', box(100), 'A');
+		hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
+			'<style>\n@keyframes ex-t { to { transform: rotate(360deg); } }\n'
+			+ 'animation: ex-t 8s linear infinite;\n</style>\n'
+			+ '<script>\nel.animate([{ opacity: 1 }, { opacity: .5 }], '
+			+ '{ duration: 2000, iterations: Infinity, direction: "alternate" });\n</script>');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		const state = () => page.evaluate((i) => {
+			const el = document.getElementById(i);
+			return {
+				css: getComputedStyle(el).animationPlayState,
+				script: el.getAnimations().filter((x) => !(x instanceof CSSAnimation))
+					.map((x) => x.playState),
+			};
+		}, a);
+		await expect.poll(state).toEqual({ css: 'running', script: ['running'] });
+
+		// force: Playwright will not click what moves, and a moving object is
+		// what the user has to click
+		await byId(page, a).click({ force: true });
+		await expect.poll(state).toEqual({ css: 'paused', script: ['paused'] });
+		// and it stays held, not just caught at the moment of the click
+		await page.waitForTimeout(500);
+		expect(await state()).toEqual({ css: 'paused', script: ['paused'] });
+
+		await page.evaluate(() => window.$.glue.sel.none());
+		await expect.poll(state).toEqual({ css: 'running', script: ['running'] });
+	});
+
+test('a selected object\'s timers stand still, and the published page\'s do not',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', box(100), 'A');
+		hg.addObject('code100000000001', { type: 'objcode', module: 'user_code' },
+			'<script>\nwindow.__ticks = 0;\n'
+			+ 'setInterval(function() { window.__ticks++; }, 100);\n'
+			+ 'setTimeout(function() { window.__once = 1; }, 1200);\n</script>');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		const ticks = () => page.evaluate(() => window.__ticks);
+
+		// running while nothing is selected
+		await expect.poll(ticks).toBeGreaterThan(2);
+		await byId(page, a).click();
+		await expect(byId(page, a)).toHaveClass(/glue-selected/);
+		const held = await ticks();
+		await page.waitForTimeout(600);
+		expect(await ticks(), 'the interval kept ticking while selected').toBeLessThanOrEqual(held + 1);
+		// the one-shot came due while held and waited
+		await page.waitForTimeout(800);
+		expect(await page.evaluate(() => window.__once), 'the timeout ran while selected')
+			.toBeUndefined();
+
+		// let go: both carry on
+		await page.evaluate(() => window.$.glue.sel.none());
+		await expect.poll(ticks).toBeGreaterThan(held + 2);
+		await expect.poll(() => page.evaluate(() => window.__once)).toBe(1);
+
+		// a published page has no editor and no held timers
+		await page.goto(`/?${hg.pageName}`);
+		await expect.poll(() => page.evaluate(() => window.__ticks)).toBeGreaterThan(2);
+	});
