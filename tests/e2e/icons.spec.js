@@ -157,17 +157,20 @@ test('an icon button paints something', async ({ page, hg }) => {
 		.toBe(false);
 });
 
-test('the sheep blinks: an eyelid covers its eyes every half minute',
+test('the sheep blinks: an eyelid covers its eyes now and then',
 	async ({ page, hg }) => {
 		// the clone button's sheep is the one joke in the icon set, and it
 		// gets the one animation: the eyelid from the icon's artwork
 		// (sheep-eyelid.svg, the hidden "eyelids" layer extracted into a
 		// mask of its own - nothing inside an SVG used as a mask can be
-		// shown from outside it) paints over the eyes for half a second.
-		// The cycle length is rolled fresh at every cycle end (3-30s), so
-		// the pauses wander; only the range is stable. Assert the
-		// animation is armed - the lid is invisible for most of the
-		// cycle, so this is the reliable part to check.
+		// shown from outside it) paints over the eyes for one and a half
+		// seconds. A blink is ONE fixed animation, played once while the
+		// class .glue-sheep-blinking is on, and the gaps between blinks are
+		// random timeouts (3-30s) - so only the shape of a blink can be
+		// asserted here, by switching the class on by hand. It used to be a
+		// long infinite animation whose duration was rewritten at every
+		// iteration, which dropped the lid into the middle of a blink and
+		// made the sheep blink in rapid bursts.
 		hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
@@ -175,7 +178,7 @@ test('the sheep blinks: an eyelid covers its eyes every half minute',
 
 		const sheep = page.locator('.glue-btn-icon.glue-sheep').first();
 		await expect(sheep).toBeVisible();
-		const blink = await sheep.evaluate((el) => {
+		const read = () => sheep.evaluate((el) => {
 			const s = getComputedStyle(el, '::after');
 			return {
 				name: s.animationName,
@@ -186,14 +189,15 @@ test('the sheep blinks: an eyelid covers its eyes every half minute',
 				size: s.maskSize || s.webkitMaskSize,
 			};
 		});
+		// at rest nothing animates: no running animation to fall out of step
+		await sheep.evaluate((el) => el.classList.remove('glue-sheep-blinking'));
+		expect((await read()).name).toBe('none');
+		// a blink is a fixed 1.5s, once - never a cycle that is rewritten
+		await sheep.evaluate((el) => el.classList.add('glue-sheep-blinking'));
+		const blink = await read();
 		expect(blink.name).toBe('glue-sheep-blink');
-		// the duration is random per cycle: only its range is promised
-		const d = parseFloat(blink.duration);
-		expect(Number.isFinite(d)).toBe(true);
-		expect(d).toBeGreaterThanOrEqual(3);
-		expect(d).toBeLessThanOrEqual(30);
-		expect(blink.duration).toMatch(/s$/);
-		expect(blink.iterations).toBe('infinite');
+		expect(blink.duration).toBe('1.5s');
+		expect(blink.iterations).toBe('1');
 		// the eyelid is the FACE's paint, not the button's fill: the eyes
 		// are holes in the mask, so covering them with the face colour
 		// makes them vanish - the pale fill would only merge the two pale

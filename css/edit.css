@@ -1314,14 +1314,17 @@
 	   mask file - sheep-eyelid.svg - because nothing inside an SVG used
 	   as a mask can be shown from outside it) painted in the face's
 	   colour (#333) covers the eye row, making the eyes vanish: that is
-	   what reads as a closed eyelid. The cycle
-	   length is the --glue-sheep-cycle custom property, rolled fresh by
-	   the sheep button's JS at every cycle end, so the pause between
-	   blinks wanders (3-30s) instead of ticking like a metronome; the
-	   roll also rewrites the keyframes below, because the fades are a
-	   fixed half second each and keyframes are percentages of whatever
-	   the cycle is. Purely decorative - the one icon in the set that is
-	   a joke tells one at its own pace. */
+	   what reads as a closed eyelid. At rest the lid is invisible and
+	   nothing animates; the sheep's JS adds .glue-sheep-blinking for the
+	   length of one blink, at random intervals (3-30s) so the pauses
+	   wander instead of ticking like a metronome. The blink is one fixed
+	   1.5s animation, played once - NOT a long cycle whose duration is
+	   rewritten: changing the duration of a running animation keeps the
+	   time already elapsed and recomputes the progress against the new
+	   length, which dropped the lid into the middle of a blink (or into a
+	   run of iterations a frame apart) whenever a roll shortened the cycle.
+	   Purely decorative - the one icon in the set that is a joke tells one
+	   at its own pace. */
 	content: '';
 	position: absolute;
 	top: 0;
@@ -1334,18 +1337,16 @@
 	-webkit-mask-size: 30px 30px;
 	mask-size: 30px 30px;
 	opacity: 0;
-	animation: glue-sheep-blink var(--glue-sheep-cycle, 30s) infinite;
 }
 
-/* The fallback curve for the default 30s cycle: 0.5s to close, 0.5s
-   fully down, 0.5s to open. The sheep's JS rewrites these percentages
-   on every roll so the fades stay 0.5s no matter what the cycle is -
-   keyframes are fractions of the cycle, so a fixed time must move as
-   the cycle does. */
+.glue-btn-icon.glue-sheep.glue-sheep-blinking::after {
+	animation: glue-sheep-blink 1.5s 1;
+}
+
+/* 0.5s to close, 0.5s fully down, 0.5s to open */
 @keyframes glue-sheep-blink {
-	0%, 95% { opacity: 0; }
-	96.6667% { opacity: 1; }
-	98.3333%, 100% { opacity: 0; }
+	0%, 100% { opacity: 0; }
+	33.3333%, 66.6667% { opacity: 1; }
 }
 
 
