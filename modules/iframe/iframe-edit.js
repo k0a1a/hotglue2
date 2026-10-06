@@ -72,13 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			child.setAttribute('name', data['name']);
 			child.setAttribute('src', url);
 			elem.appendChild(child);
-			// put the iframe behind some shield for editing
+			// the shield over the upper part of the embed, for editing: the
+			// same one the webvideo has (.glue-iframe-shield in css/edit.css)
 			var shield = document.createElement('div');
 			shield.className = 'glue-iframe-shield glue-ui';
-			shield.style.height = '100%';
-			shield.style.position = 'absolute';
-			shield.style.width = '100%';
-			shield.title = 'visitors will be able to interact with the webpage below';
+			shield.title = 'click here to select/edit this embed';
 			elem.appendChild(shield);
 			$.glue.canvas.add(elem);
 			// make width and height explicit
@@ -99,29 +97,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// context menu items
 	//
-	elem = document.createElement('img');
-	elem.src = $.glue.base_url+'modules/iframe/iframe-url.png';
-	elem.alt = 'btn';
-	elem.title = 'change webpage url';
-	elem.width = 32;
-	elem.height = 32;
-	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var child = obj.querySelector(':scope > iframe');
-		var url = prompt('Enter the URL to show', window.location.protocol + child.getAttribute('src'));
-		if (!url) {
-			return;
-		}
-    // use protocol relative url
-    url = '//' + url.split('//')[1];
-		child.setAttribute('src', url);
-		$.glue.object.save(obj);
-	});
-	$.glue.contextmenu.register('iframe', 'iframe-url', elem);
-
-	elem = document.createElement('div');
-	elem.style.height = '32px';
-	elem.style.width = '32px';
+	// The button for the scrollbars is the SVG set's background-scroll, like
+	// the video toggles, and its on/off state is the pressed frame (css/edit.css).
+	// There is no button for changing the page an iframe shows any more
+	// (danja's call, 2026-10-06): the address is the one given when the object
+	// is made.
+	elem = $.glue.icon('background-scroll', 'toggle scrollbars on and off');
 	$.glue.toggle_button(elem, 'iframe_scroll_sync', 'iframe_scroll_toggle',
 		'scrollbars are shown - click to hide them', 'toggle scrollbars on and off');
 	$.glue.contextmenu.register('iframe', 'iframe-scroll', elem);

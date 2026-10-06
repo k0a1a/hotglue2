@@ -103,13 +103,12 @@ function iframe_alter_render_early($args)
 	elem_append($elem, $i);
 	if ($args['edit']) {
 		// add shield as well
+		// over the upper part of the embed, like the webvideo's: see
+		// .glue-iframe-shield in css/edit.css
 		$s = elem('div');
 		elem_add_class($s, 'glue-iframe-shield');
 		elem_add_class($s, 'glue-ui');
-		elem_css($s, 'height', '100%');
-		elem_css($s, 'position', 'absolute');
-		elem_css($s, 'width', '100%');
-		elem_attr($s, 'title', 'visitors will be able to interact with the webpage below');
+		elem_attr($s, 'title', 'click here to select/edit this embed');
 		elem_append($elem, $s);
 	}
 	

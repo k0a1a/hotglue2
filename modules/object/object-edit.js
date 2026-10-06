@@ -2135,9 +2135,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// object adjustment: z-level in one popout. It was flip, z-level and
 	// transparency, in place of the three menu buttons that each hid a gesture
 	// - the flip's four-state cycle and the two drag-distance sliders; the
-	// other two went to the properties button below on 2026-09-16. The PNG
-	// artwork of the removed buttons stays in this directory, like
-	// transform-rotate.png in the transform module's.
+	// other two went to the properties button below on 2026-09-16. Their PNG
+	// artwork, with the rest of the modules' old PNG buttons, was removed on
+	// 2026-10-06.
 	elem = $.glue.icon('change-layer', 'object position controls: layer up/down and x/y position');
 	elem.addEventListener('click', function(e) {
 		object_adjust_popover($.glue.owner(this));

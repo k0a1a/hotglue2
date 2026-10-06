@@ -1693,3 +1693,28 @@
 	line-height: 1.4;
 	margin-bottom: 3px;
 }
+
+
+.glue-webvideo-shield,
+.glue-iframe-shield {
+	/* The shield over an embedded page or video. Its <iframe> is a genuine
+	   cross-origin document, so a click landing on it never reaches the page at
+	   all; a div of ours stacked above it takes the click, and the editor's
+	   select, menu and drag handling see it. It covers the upper part of the
+	   embed and leaves the rest uncovered, so playback or the page can still be
+	   tried while editing. The embed modules (webvideo and iframe) share it. */
+	background-color: darkgrey;
+	height: 40%;
+	left: 0;
+	opacity: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+
+.webvideo:hover .glue-webvideo-shield,
+.iframe:hover .glue-iframe-shield {
+	/* shown only while the object is hovered, so it does not obscure the embed
+	   when the user is not interacting with it */
+	opacity: 0.5;
+}
