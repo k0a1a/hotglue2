@@ -10,7 +10,7 @@ How the code is split across repos and branches, where each piece is deployed, a
 | Repo | Visibility | Local clone | Holds |
 |---|---|---|---|
 | `k0a1a/hotglue2` | public | server: `/var/www-hotglue/src` | The original hotglue2 and the public self-host branch |
-| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/src-ng` (main working clone; `~/pro/hotglue/hotglue2-ng` is a second one) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
+| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/src-ng` (the working clone; `~/pro/hotglue/hotglue2-ng` is a spare second one, and `ng-src.delete-me-soon` is the old working directory, kept until nothing in it is needed) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
 | `k0a1a/hotglue-account` | private | `~/pro/hotglue/account` | hotglue.me/account admin and registration tooling |
 
 In `src-ng` the remotes are named: `origin` = `hotglue2-ng` (private), `hotglue2` =
@@ -66,39 +66,96 @@ values never go public. db-auth *code* is public (off by default); the real
 Direction is one way: **`ng` → `ng-dev`**. Never commit features on `ng-dev`; never merge
 `ng-dev` back into `ng` (the strip commits would delete the SOWs and tests there).
 
-Run from `src-ng`, with a clean working tree:
+Four steps: sync, review, publish, update the demo. The first two change nothing public;
+the third is the only one that does, and is done when asked for.
+
+### 1. Sync, in a worktree
+
+`scripts/sync-to-public.sh` refuses to run on a dirty working tree, and the working clone
+usually has work in progress in it (icons, uncommitted edits). So it runs in a separate
+worktree of `ng-dev`, which is clean by construction and leaves the working tree and its
+branch alone. **Never `git stash` the working tree to make room** - it takes your
+uncommitted work with it.
 
 ```bash
-git push origin ng                 # ng goes to the private repo first
+cd ~/pro/hotglue/src-ng
+git push origin ng                       # ng goes to the private repo first
 git fetch hotglue2
-scripts/sync-to-public.sh          # checks out ng-dev, merges ng, re-strips, commits
+WT=$(mktemp -d)/ng-dev-wt
+git worktree add "$WT" ng-dev
+cd "$WT"
+bash ~/pro/hotglue/src-ng/scripts/sync-to-public.sh
 ```
 
-The script merges `ng` into `ng-dev`, removes every `*.md` not in `KEEP_MD` and every path in
-`STRIP_PATHS`, and commits `sync: strip dev-only docs/tooling after merging ng` if anything
-needed stripping. It never pushes. Then review:
+The script is run from `src-ng`'s copy because on `ng-dev` it strips itself. It merges `ng`
+into `ng-dev`, removes every `*.md` not in `KEEP_MD` and every path in `STRIP_PATHS`, and
+commits `sync: strip dev-only docs/tooling after merging ng` if anything needed stripping.
+It never pushes.
+
+**Conflicts.** The expected one is a modify/delete (`DU` in `git status`): `ng` changed a
+file that `ng-dev` had stripped - a `*.md`, something under `tests/`. The merge stops there.
+When every conflict is of that kind, remove the files and run the script again to do the strip:
 
 ```bash
-git diff ng-dev@{1} ng-dev -- .gitignore   # every time, by eye
-git log --oneline ng-dev@{1}..ng-dev
-git diff ng-dev@{1} ng-dev --stat          # nothing private should appear: no SOW-*, tests, notes
+git status --short | grep -v '^[AMDR] '    # all DU, all stripped paths?
+git rm -q <those files>
+git commit -qm "Merge ng into ng-dev"
+bash ~/pro/hotglue/src-ng/scripts/sync-to-public.sh
 ```
 
-Check `.gitignore` every time. A merge can carry a fragment of an `ng` change into a
-deliberately-trimmed file without a conflict, so a clean exit is not proof it's fine.
+Any other kind of conflict (a file `ng-dev` keeps, a `.gitignore` clash) is not routine:
+stop and resolve it by hand.
 
-Publish, then update the demo:
+### 2. Review
+
+Still in the worktree. Nothing private may be in the tree, and `.gitignore` is checked by
+eye every time: a merge can carry a fragment of an `ng` change into a deliberately trimmed
+file without a conflict, so a clean exit is not proof it's fine.
+
+```bash
+git diff ng-dev@{1} ng-dev -- .gitignore            # empty, unless ng touched it
+git ls-files | grep -E '\.md$|^tests/|user-config.inc.php-off|SOW|package|composer|sync-to-public'
+                                                    # only README.md, docker/INSTALL.md, fonts/MANIFEST.md
+git diff hotglue2/ng-dev ng-dev --stat              # what the public branch will gain
+for f in $(git diff --name-only hotglue2/ng-dev ng-dev -- '*.php'); do php -l $f; done
+for f in $(git diff --name-only hotglue2/ng-dev ng-dev -- '*.js'); do node --check $f; done
+```
+
+### 3. Publish
+
+The one public step, so it waits for a go-ahead. From the worktree or from `src-ng`:
 
 ```bash
 git push hotglue2 ng-dev
-git checkout ng
-# demo server: cd /var/www-hotglue/hotglue.me-ng && git pull   (run by hand)
+git ls-remote hotglue2 refs/heads/ng-dev            # the tip must match: git rev-parse ng-dev
 ```
+
+GitHub sometimes answers a push with "Please make sure you have the correct access rights
+and the repository exists". It is transient; the same push goes through on a retry. Check
+the tip with `ls-remote` rather than trusting either outcome.
+
+### 4. Update the demo
+
+Nothing is visible until the server pulls. By hand, since the server is not reachable from
+the tools:
+
+```bash
+ssh -p 877 danja@hotglue.me 'cd /var/www-hotglue/hotglue.me-ng && git status -sb && git pull --ff-only'
+```
+
+Then hard-reload the editor (Ctrl+Shift+R): the stylesheets and scripts have no version in
+their URLs and a browser keeps the old ones.
+
+Last, drop the worktree (`git worktree remove "$WT"`); `ng-dev` cannot be checked out in
+`src-ng` while it exists.
 
 ### When to sync
 
-After any `ng` change that should be visible in the public demo or to self-hosters. It is
-not needed for docs-only, test-only or SOW-only commits, since those are stripped anyway.
+After any `ng` change that should be visible in the public demo or to self-hosters: code,
+css, js, the editor's icons, fonts. It is not needed for docs-only, test-only or SOW-only
+commits, since those are stripped anyway - a sync after only those leaves the public tree
+unchanged and just adds merge commits. `git log --oneline ng-dev..ng -- . ':!*.md' ':!tests'`
+shows what a sync would carry over.
 
 ### Adding files that should stay private or go public
 
@@ -116,9 +173,13 @@ not needed for docs-only, test-only or SOW-only commits, since those are strippe
   force-push.
 - **Wrong remote:** `origin` is the private repo. `git push origin ng-dev` would put the
   public branch in the private repo; the public push is `git push hotglue2 ng-dev`.
+- **A dirty working tree stops the script, and stashing is not the answer:** use the
+  worktree above. A `git stash` there takes every uncommitted change with it, including
+  files you have not committed on purpose.
 - **Server pull:** the demo only changes when you pull on the server; pushing `ng-dev` alone
   does nothing visible.
 - **`ng` is not live:** pushing `ng` to `origin` deploys nothing anywhere.
+- **The transient push error** (above) is not a permissions problem; retry and check the tip.
 
 ## Demo checkout history (`/var/www-hotglue/hotglue.me-ng`)
 
@@ -127,3 +188,7 @@ Until 2026-10-06 the demo tracked `hotglue2`'s `ng` branch (at `807ada8`, clean 
 vanished. It was switched to `hotglue2` / `ng-dev` (`git checkout -B ng-dev origin/ng-dev`,
 a 48-commit fast-forward since `807ada8` is in `ng-dev`), and its stale local `ng` branch and
 `origin/ng` ref were removed. It now follows the sync flow above.
+
+Since then every public change has gone out the same way: sync, review, `git push hotglue2
+ng-dev`, then a `git pull --ff-only` there. The checkout is expected to be clean; if
+`git status -sb` shows anything before a pull, look at it first rather than pulling over it.
