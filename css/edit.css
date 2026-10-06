@@ -221,35 +221,41 @@
 	   object, and a mask clips everything the element paints - the outline
 	   included, which is drawn outside the box and so falls outside the mask
 	   image altogether - so the outline vanished the moment an object was
-	   faded. The mask-clip is lifted (no-clip) and four 2px strips just
-	   outside the box edges are ADDED to the fade, which reveals exactly the
-	   pixels the outline is drawn on and nothing of the object: the outline
-	   stays the selection's own, apart from the object's content and border.
-	   Layers, top to bottom: the four strips (add), then the two fade
-	   gradients from main.css (intersect), the last one the base of the stack,
-	   so the result is (fade-x INTERSECT fade-y) ADD strips. */
-	--glue-sel-strip: linear-gradient(#000, #000);
-	-webkit-mask-image: var(--glue-sel-strip), var(--glue-sel-strip),
-		var(--glue-sel-strip), var(--glue-sel-strip),
-		var(--glue-fade-x), var(--glue-fade-y);
-	mask-image: var(--glue-sel-strip), var(--glue-sel-strip),
-		var(--glue-sel-strip), var(--glue-sel-strip),
-		var(--glue-fade-x), var(--glue-fade-y);
-	-webkit-mask-size: calc(100% + 4px) 2px, calc(100% + 4px) 2px,
-		2px calc(100% + 4px), 2px calc(100% + 4px), 100% 100%, 100% 100%;
-	mask-size: calc(100% + 4px) 2px, calc(100% + 4px) 2px,
-		2px calc(100% + 4px), 2px calc(100% + 4px), 100% 100%, 100% 100%;
-	-webkit-mask-position: left -2px top -2px, left -2px bottom -2px,
-		left -2px top -2px, right -2px top -2px, 0 0, 0 0;
-	mask-position: left -2px top -2px, left -2px bottom -2px,
-		left -2px top -2px, right -2px top -2px, 0 0, 0 0;
+	   faded. Here the mask is rebuilt so the outline survives: the fade
+	   inside the object's own shape, plus everything outside that shape up to
+	   2px beyond the box (which is where the outline is, and where the object
+	   paints nothing). The shape is the border-box, which mask-clip follows
+	   round border-radius corners, so the outline follows them too and no
+	   radius is ever read or stored.
+
+	   A mask stack is a left fold of mask-composite from the bottom layer up,
+	   so with S = the object's shape (clipped to the rounded border-box),
+	   B = the box grown by 2px (no-clip) and F = fade-x INTERSECT fade-y:
+	       F                              the two gradients, bottom
+	       F AND S                        intersect S: the fade within the shape
+	       B XOR (F AND S)  = B - F_s     exclude B: all of B except the fade
+	       S XOR (B - F_s)  = F_s OR (B - S)   exclude S: the fade, plus the
+	                                           ring outside the shape
+	   Layers below, top to bottom: S (exclude), B (exclude), S (intersect),
+	   fade-x (intersect), fade-y. (-webkit-mask-composite spells the same
+	   operators xor, xor, source-in, source-in, source-over.) */
+	--glue-sel-fill: linear-gradient(#000, #000);
+	-webkit-mask-image: var(--glue-sel-fill), var(--glue-sel-fill),
+		var(--glue-sel-fill), var(--glue-fade-x), var(--glue-fade-y);
+	mask-image: var(--glue-sel-fill), var(--glue-sel-fill),
+		var(--glue-sel-fill), var(--glue-fade-x), var(--glue-fade-y);
+	-webkit-mask-size: 100% 100%, calc(100% + 4px) calc(100% + 4px),
+		100% 100%, 100% 100%, 100% 100%;
+	mask-size: 100% 100%, calc(100% + 4px) calc(100% + 4px),
+		100% 100%, 100% 100%, 100% 100%;
+	-webkit-mask-position: 0 0, -2px -2px, 0 0, 0 0, 0 0;
+	mask-position: 0 0, -2px -2px, 0 0, 0 0, 0 0;
 	-webkit-mask-repeat: no-repeat;
 	mask-repeat: no-repeat;
-	-webkit-mask-clip: no-clip;
-	mask-clip: no-clip;
-	-webkit-mask-composite: source-over, source-over, source-over, source-over,
-		source-in, source-over;
-	mask-composite: add, add, add, add, intersect, add;
+	-webkit-mask-clip: border-box, no-clip, border-box, border-box, border-box;
+	mask-clip: border-box, no-clip, border-box, border-box, border-box;
+	-webkit-mask-composite: xor, xor, source-in, source-in, source-over;
+	mask-composite: exclude, exclude, intersect, intersect, add;
 }
 
 .glue-ui {
