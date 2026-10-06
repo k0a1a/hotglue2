@@ -328,6 +328,23 @@ $.glue.live('.text', 'glue-register', function(e) {
 			return;
 		}
 		if (e.key == 'Enter') {
+			// inside a list item, the browser's own Enter is what the author
+			// expects: a new item, and Enter on an empty item steps out of
+			// the list. Our marked <br> knows nothing about items, so let the
+			// native path run there - whatever block the exit produces (blink
+			// inserts a <div>, gecko a <p>) is unwrapped to a newline by
+			// from_editing_html at commit, so both engines store the same
+			// thing.
+			var sel = window.getSelection();
+			if (sel && sel.rangeCount) {
+				var range = sel.getRangeAt(0);
+				var node = range.startContainer;
+				var el = (node.nodeType == 3) ? node.parentElement : node;
+				var li = el && el.closest ? el.closest('li') : null;
+				if (li && this.contains(li)) {
+					return;
+				}
+			}
 			// Insert our OWN marked <br> rather than letting the browser
 			// decide: blink wraps the new line in a <div> and gecko inserts a
 			// bare <br>, so without this the same keystroke produces different
@@ -335,9 +352,8 @@ $.glue.live('.text', 'glue-register', function(e) {
 			// while a <br> the author typed stays a <br>.
 			var br = document.createElement('br');
 			br.setAttribute('data-glue-nl', '1');
-			var sel = window.getSelection();
 			if (sel && sel.rangeCount) {
-				var range = sel.getRangeAt(0);
+				range = sel.getRangeAt(0);
 				range.deleteContents();
 				range.insertNode(br);
 				// a trailing <br> is not rendered unless something follows it
@@ -458,6 +474,13 @@ $.glue.live('.text', 'glue-deselect', function(e) {
 $.glue.live('.text.glue-selected', 'click', function(e) {
 	var self = this;
 	var panel;
+	// locked objects: nothing to edit. The selection this click follows is
+	// how the lock itself is reached (a locked object's menu shows only the
+	// unlock item), but the editing click must not act - without this guard
+	// the panel opens and the content turns editable behind the lock's back.
+	if (self.classList.contains('locked')) {
+		return;
+	}
 	// already editing: a click is how the panel is asked for again after it
 	// was closed from under the editing - Escape in one of its fields, or the
 	// object being dragged. The mode itself follows the selection (the
@@ -952,6 +975,163 @@ function text_strip_toggle(render, tag) {
 	var r2 = document.createRange();
 	r2.selectNodeContents(w);
 	text_strip_restore(render, r2);
+}
+
+// each selected line becomes a list item: the selection's content is split
+// at the marked <br>s that separate lines in the editing render
+// (to_editing_html writes them for stored newlines, the Enter handler for
+// typed ones), each line is wrapped in an <li>, the items in a <ul> or <ol>.
+// The list is inserted where the selection was, and the caret lands at the
+// start of the first item, so the author keeps typing straight into it - a
+// whole-list selection like the toggle's would be destroyed by the next
+// keystroke.
+//
+// Inside a list the button is a toggle instead: the kind the list already
+// wears takes it off (each item's content becomes a line of its own again),
+// the other kind converts it. A caret inside is enough - the list is the
+// target, not the selection, the way a caret inside a link targets the link.
+//
+// Like the toggle above, the change is committed later, all at once, by
+// stop_editing's glue.update_object. The stored format passes <ul>/<ol>/<li>
+// through untouched (from_editing_html unwraps only div/p), so no other code
+// knows or cares that these tags exist.
+function text_strip_list(render, kind) {
+	var range = text_strip_range_for();
+	if (!range) {
+		return;
+	}
+	var cont = range.commonAncestorContainer;
+	var el = (cont.nodeType == 3) ? cont.parentElement : cont;
+	var inside = el && el.closest ? el.closest('ul, ol') : null;
+	if (!(inside && render.contains(inside))) {
+		inside = null;
+	}
+	if (inside) {
+		if (inside.tagName.toLowerCase() == kind) {
+			text_strip_unlist(render, inside);
+		} else {
+			text_strip_convert(render, inside, kind);
+		}
+		return;
+	}
+	if (range.collapsed) {
+		return;
+	}
+	// extractContents moves the selected nodes into the fragment, cutting
+	// any partially covered text node at the range's endpoints - so the
+	// fragment holds exactly the selected text, and the range is left
+	// collapsed at the insertion site.
+	var frag = range.extractContents();
+	var list = document.createElement(kind);
+	var li = document.createElement('li');
+	// Close the current item: strip the Enter key's ZWSP pad from its edges
+	// (the pad is a bare text node after the marked <br>, so it LEADS the
+	// next line, and a pad that ends up trailing is the same scaffolding;
+	// from_editing_html removes every ZWSP at commit, this only keeps the
+	// item clean while it is still on screen), and append the item only if
+	// anything is left - a fully empty line becomes nothing rather than a
+	// blank bullet.
+	var finish_item = function() {
+		while (li.firstChild && li.firstChild.nodeType == 3) {
+			li.firstChild.data = li.firstChild.data.replace(/^​+/, '');
+			if (li.firstChild.data === '') {
+				li.removeChild(li.firstChild);
+			} else {
+				break;
+			}
+		}
+		while (li.lastChild && li.lastChild.nodeType == 3) {
+			li.lastChild.data = li.lastChild.data.replace(/​+$/, '');
+			if (li.lastChild.data === '') {
+				li.removeChild(li.lastChild);
+			} else {
+				break;
+			}
+		}
+		if (li.childNodes.length) {
+			list.appendChild(li);
+		}
+		li = document.createElement('li');
+	};
+	// while-loop, not indexed: appendChild/removeChild move nodes out of the
+	// fragment as it is walked, and an index would skip every second node
+	while (frag.firstChild) {
+		var n = frag.firstChild;
+		if (n.nodeType == 1 && n.tagName == 'BR' && n.getAttribute('data-glue-nl')) {
+			frag.removeChild(n);
+			finish_item();
+			continue;
+		}
+		li.appendChild(n);
+	}
+	finish_item();
+	if (!list.childNodes.length) {
+		return;
+	}
+	range.insertNode(list);
+	// the caret at the start of the first item, so the next keystroke
+	// types into it
+	var r2 = document.createRange();
+	r2.setStart(list.firstChild, 0);
+	r2.collapse(true);
+	text_strip_restore(render, r2);
+	// the snapshot's nodes just moved into the list; a later size/colour op
+	// re-aimed at them would edit dead nodes, so clear it the way the
+	// colour commit does
+	text_strip_snapshot = null;
+}
+
+// the list's kind changes - the items move as they are (a nested list of
+// another kind inside an item is the author's and stays), and the caret
+// lands at the start of the first item, like a fresh list.
+function text_strip_convert(render, list, kind) {
+	var neu = document.createElement(kind);
+	while (list.firstChild) {
+		neu.appendChild(list.firstChild);
+	}
+	list.replaceWith(neu);
+	var r2 = document.createRange();
+	if (neu.firstChild) {
+		r2.setStart(neu.firstChild, 0);
+	} else {
+		r2.setStart(neu, 0);
+	}
+	r2.collapse(true);
+	text_strip_restore(render, r2);
+	text_strip_snapshot = null;
+}
+
+// the list comes off: each item's content becomes a line of its own - the
+// contents move out of the li elements, separated by the marked <br>s the
+// Enter handler writes, with the same ZWSP pad so a separator that ends up
+// trailing still renders. from_editing_html turns the brs back into
+// newlines and drops the pads at commit, so the stored form is plain lines
+// again: the round trip out of a list mirrors the round trip into one.
+function text_strip_unlist(render, list) {
+	var frag = document.createDocumentFragment();
+	// a snapshot, not the live collection - the children move out as we go
+	var items = Array.prototype.slice.call(list.children);
+	for (var i = 0; i < items.length; i++) {
+		while (items[i].firstChild) {
+			frag.appendChild(items[i].firstChild);
+		}
+		// a separator after every item but the last - and after the last too
+		// when something follows the list, so the neighbour stays on its own
+		// line instead of merging with the last item
+		if (i < items.length - 1 || list.nextSibling) {
+			var br = document.createElement('br');
+			br.setAttribute('data-glue-nl', '1');
+			frag.appendChild(br);
+			frag.appendChild(document.createTextNode('​'));
+		}
+	}
+	var first = frag.firstChild;
+	list.replaceWith(frag);
+	var r2 = document.createRange();
+	r2.setStart(first, 0);
+	r2.collapse(true);
+	text_strip_restore(render, r2);
+	text_strip_snapshot = null;
 }
 
 // px: the run's font size, applied to the selection text_strip_snapshot
@@ -1588,6 +1768,25 @@ function text_panel_build(pop, obj)
 		return !!(el && el.closest && el.closest('a') &&
 			text_strip_render.contains(el.closest('a')));
 	};
+	// The list buttons are the run's own, and unlike the four toggles they
+	// have no object mode to retarget into: there is no whole-object list.
+	// They gray while nothing is selected - except inside a list, where they
+	// stay alive for a caret too: the list is the target, and the button is
+	// a toggle there (the kind the list wears takes it off, the other kind
+	// converts it).
+	var list_available = function() {
+		var r = text_strip_range_for();
+		if (!r || !text_strip_render) {
+			return false;
+		}
+		var node = r.commonAncestorContainer;
+		var el = node && node.nodeType == 3 ? node.parentElement : node;
+		var inside = el && el.closest ? el.closest('ul, ol') : null;
+		if (inside && text_strip_render.contains(inside)) {
+			return true;
+		}
+		return run_active();
+	};
 	// A row or button that exists but cannot act on the current target
 	// wears this (css/edit.css): the panel's gray-out.
 	var set_gray = function(el, gray) {
@@ -1622,6 +1821,7 @@ function text_panel_build(pop, obj)
 	var icons = $.glue.popover.icon_row();
 	pop.appendChild(icons);
 	var toggles = {};
+	var list_buttons = [];
 	var decoration = function() {
 		var d = getComputedStyle(obj).textDecorationLine ||
 			getComputedStyle(obj).textDecoration || '';
@@ -2217,6 +2417,39 @@ function text_panel_build(pop, obj)
 	});
 	sync_align();
 
+	// --- the list buttons, the run's own -----------------------------------
+	//
+	// One click turns each selected line into a list item: the lines of the
+	// editing render are the runs between the marked <br>s to_editing_html
+	// and the Enter handler write. The buttons sit on the align row, after
+	// the four alignments, at the offset the padding drag used to hold -
+	// danja's call, 2026-10-06: the row's other buttons act on the whole
+	// object, while these act on the selection. Built like the toggles,
+	// wearing the same 22x22 redraws at 1:1.
+	[['ul', 'list-bulleted-22', 'bulleted list'],
+	 ['ol', 'list-ordered-22', 'numbered list']].forEach(function(l) {
+		var b = $.glue.popover.icon_button(l[1], l[2]);
+		b.style.width = '22px';
+		b.style.height = '22px';
+		b.classList.add('glue-font-style');
+		if (!list_buttons.length) {
+			// set apart from the justify button the way the colour button
+			// is set apart from the toggles
+			b.classList.add('glue-font-list');
+		}
+		b.dataset.list = l[0];
+		b.addEventListener('click', function() {
+			// the gray-out (pointer-events:none) keeps this unreachable in
+			// object mode; the guard is for the race where the sync has not
+			// run since the selection moved
+			if (list_available() && text_strip_render) {
+				text_strip_list(text_strip_render, l[0]);
+			}
+		});
+		list_buttons.push(b);
+		align_row.appendChild(b);
+	});
+
 	// --- padding: one drag, the text follows the cursor --------------------
 	//
 	// Press and drag: the cursor's own movements position the text inside
@@ -2224,8 +2457,9 @@ function text_panel_build(pop, obj)
 	// one IS the top padding, and the right and bottom sides keep the
 	// values the number rows gave them (danja's call, 2026-09-26). The
 	// frame compensation is the object panel's own: the outer size stays
-	// what it was, the content box shrinks. The button sits on the align
-	// row at double the distance.
+	// what it was, the content box shrinks. The button sits on the size row
+	// at double the distance (danja's call, 2026-10-06 - it lived on the
+	// align row until then).
 	// danja's 22x22 redraw, shown 1:1: the box comes down from the 32px
 	// $.glue.icon() sets inline, and .glue-font-padding in text-edit.css
 	// sizes the glyph's mask to match (danja's call, 2026-09-27)
@@ -2287,7 +2521,7 @@ function text_panel_build(pop, obj)
 		}
 		save();
 	});
-	align_row.appendChild(pad_btn);
+	size_preset_row.appendChild(pad_btn);
 
 	pop.appendChild(align_row);
 
@@ -2648,9 +2882,22 @@ function text_panel_build(pop, obj)
 	// overwrites a control that is being interacted with.
 	var sync = function() {
 		var run = run_active();
-		set_gray(align_row, run);
+		// the alignments gray one by one, not as a row: the row also holds
+		// the list buttons, which are the run's own, and a row-level gray
+		// would take them out exactly when a run is selected (2026-10-06,
+		// when the lists moved onto the row)
+		align_buttons.forEach(function(b) {
+			set_gray(b, run);
+		});
 		set_gray(link_row, !link_available());
 		set_gray(link_parts.target_row, !link_available());
+
+		// the list buttons: the run's own, grayed outside a run selection -
+		// inside a list they stay alive, where they toggle and convert
+		var la = list_available();
+		list_buttons.forEach(function(b) {
+			set_gray(b, !la);
+		});
 
 		// the four toggles: the run's explicit tags, or the object's style
 		if (run) {
@@ -3099,9 +3346,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// unquoted attribute gains quotes, an uppercase tag becomes lowercase).
 	// This is the way back to editing the literal source, and the way to fix
 	// anything WYSIWYG gets wrong.
-	// the icon is the SuperGlue set's super-user, which draws exactly the </>
+	// the icon is the html-mode glyph, which draws exactly the </>
 	// this button used to spell out as text
-	elem = $.glue.icon('super-user',
+	elem = $.glue.icon('html-mode',
 		'switch between editing the text as it looks and editing its HTML source');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
@@ -3115,7 +3362,21 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (was_editing) {
 			obj.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		}
+		// the menu may stay open on the toggle, so the dot follows the
+		// click rather than waiting for the next show
+		source_sync.call(this);
 	});
+	// The corner dot says the object is in source mode, the way the copy
+	// button's dot says the clipboard is full. The menu is rebuilt on every
+	// show, so the state is re-read on glue-menu-activate rather than kept
+	// in step by hand.
+	var source_sync = function() {
+		var obj = $.glue.owner(this);
+		this.classList.toggle('glue-text-source-on',
+			obj && obj.classList.contains('glue-text-source'));
+	};
+	elem.addEventListener('glue-menu-activate', source_sync);
+	source_sync.call(elem);
 	// prio 12: the last button of the upper row, after the heading level
 	// (it sat second since forever - 2026-09-22, danja's call)
 	$.glue.contextmenu.register('text', 'text-source', elem, 12);

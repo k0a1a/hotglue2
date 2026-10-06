@@ -89,6 +89,8 @@ const sizeField = (page) => panel(page)
 	.locator('.glue-popover-advanced .glue-popover-field').first();
 const alignRow = (page) => panel(page).locator('.glue-popover-row')
 	.filter({ has: page.locator('.glue-align-btn') });
+const alignBtn = (page, which) =>
+	panel(page).locator(`.glue-align-btn[data-align="${which}"]`);
 const linkRow = (page) => page.locator('.glue-text-strip-link');
 
 async function openFold(page) {
@@ -141,7 +143,7 @@ test('the panel is the editing surface\'s toolbar, and Escape closes it',
 	await expect(panel(page).locator('.glue-font-face-list')).toBeVisible();
 	await expect(linkRow(page)).toBeVisible();
 	await expect(linkRow(page)).toHaveClass(/glue-popover-disabled/);
-	await expect(alignRow(page)).not.toHaveClass(/glue-popover-disabled/);
+	await expect(alignBtn(page, 'left')).not.toHaveClass(/glue-popover-disabled/);
 
 	// Escape closes the panel and ends the editing - the old strip's
 	// contract, kept
@@ -326,12 +328,17 @@ test('the bold toggle lights for a bold object, and not for its runs',
 });
 
 test('with a run selected, the object-only rows gray out', async ({ page, hg }) => {
-	// align cannot retarget: text-align is a block property - it grays, and
-	// the link row (the run's own) comes alive
+	// align cannot retarget: text-align is a block property - its buttons
+	// gray one by one (the row also holds the list buttons, which are the
+	// run's own and stay alive), and the link row (the run's own) comes
+	// alive
 	const a = await add(page, hg, 'hello world');
 	await openPanel(page, a);
 	await select(page, a, 'world');
-	await expect(alignRow(page)).toHaveClass(/glue-popover-disabled/);
+	for (const which of ['left', 'center', 'right', 'justify']) {
+		await expect(panel(page).locator(`.glue-align-btn[data-align="${which}"]`))
+			.toHaveClass(/glue-popover-disabled/);
+	}
 	await expect(linkRow(page)).not.toHaveClass(/glue-popover-disabled/);
 	for (const kind of ['bold', 'italic', 'underline', 'strikethrough']) {
 		await expect(fmtBtn(page, kind)).not.toHaveClass(/glue-popover-disabled/);

@@ -31,6 +31,7 @@ const CORPUS = [
   ['uppercase tag',    'UPPER <A HREF="https://x.example/">link</A>'],
   ['unquoted attr',    'x <a href=https://y.example/>y</a>'],
   ['class on link',    '<a href="https://z.example/" class="cta">z</a>'],
+  ['list',             '<ul><li>a</li><li>b</li></ul>'],
 ];
 test('editing and closing a text object does not rewrite its stored content', async ({ page, hg }) => {
   const attrs = { type:'text', module:'text','object-left':'50px','object-top':'50px',

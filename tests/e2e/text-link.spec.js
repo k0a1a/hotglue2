@@ -277,7 +277,15 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await byId(page, a).click();
-	await page.getByTitle(/editing its HTML source/).click();
+
+	// the toggle's corner dot says which mode the object is in - off
+	// before the click, on after it, the way the copy button's dot says
+	// the clipboard is full
+	const toggle = page.getByTitle(/editing its HTML source/);
+	await expect(toggle).not.toHaveClass(/glue-text-source-on/);
+	await toggle.click();
+	await expect(toggle).toHaveClass(/glue-text-source-on/);
+
 	await byId(page, a).click();
 
 	const ta = page.locator(`[id="${a}"] > .glue-text-input`);
