@@ -1,65 +1,9 @@
 # SOW — Rebuild the media-embed module on oEmbed (from YouTube/Vimeo-only)
 
-Status: BUILT (2026-09-23, danja's calls). The webvideo module resolves pasted media URLs
-through the curated oEmbed whitelist (YouTube, Vimeo, SoundCloud, Spotify, Mixcloud),
-the Bandcamp iframe template and PeerTube oEmbed discovery, validates every response
-(single sandboxed iframe on the provider's own host), caches the embed in the page's
-shared directory, and creates the object server-side; legacy YouTube/Vimeo objects
-re-resolve from their reconstructed canonical URL. The hermetic suite exercises the
-whole mechanism through the HG_STUB_OEMBED stub provider (tests/e2e/webvideo.spec.js);
-the real providers need a live probe. The original module hardcoded YouTube + Vimeo
-(bespoke URL parsing → iframe per service).
-
-## Decisions (folded in 2026-09-23)
-
-The open questions this document left hanging, settled:
-
-1. **The cached embed HTML lives in a cache FILE per object, never in the object's
-   attrs.** The `key:value` head is the storage format that round-trips through every
-   feature; embedding third-party HTML there makes it a serialization/escaping hazard.
-   The cache file sits in the page's directory (beside `shared/`), referenced by a
-   `webvideo-cache-file` attr, so the copy-paste machinery carries it like any asset
-   and the delete hooks remove it like the other file attrs. TTL + invalidation: the
-   cache is rewritten whenever the URL changes; a re-resolve can be forced by removing
-   the file; no time-based expiry in v1 (embeds change rarely, and a stale embed is
-   better than a hanging one).
-2. **Resolution happens at editor time, not view time.** The URL is resolved when the
-   object is created or its URL changes (an async editor call, like an upload). The
-   view render reads the cache only; a missing cache triggers one re-resolve with a
-   timeout, and on failure the view renders the fallback (the URL as a link, or the
-   "couldn't embed this link" message) rather than a broken page.
-3. **providers.json is vendored into the repo, not fetched at runtime** (same policy as
-   the vendored `js/moveable.js`). Refresh it by re-downloading the registry and
-   re-committing; the provider matcher ports the registry's host+path patterns to PHP.
-4. **Legacy objects migrate by URL reconstruction, then re-resolve through the new
-   path.** Stored objects carry `webvideo-provider` + `webvideo-id`; the canonical
-   source URL is reconstructed from those (`youtube.com/watch?v=<id>`,
-   `vimeo.com/<id>`) and handed to the oEmbed path. Parity is verified against real
-   existing embed objects before the switch lands.
-5. **The object class stays `webvideo`.** Creation, vetoes, the
-   `glue-webvideo-shield`, and Moveable registration all key on it.
-6. **PeerTube resolves its whitelist-vs-security tension by self-consistency:** the
-   embed iframe's origin must match the oEmbed endpoint's own host. Any instance may
-   be used, but an instance's response can only embed that same instance.
-7. **Validation is mechanical, per provider:** parse the returned `html`, require
-   exactly one `<iframe>`, require its src origin to be in the provider's host
-   allowlist (YouTube: `youtube.com`/`youtube-nocookie.com`; Vimeo:
-   `player.vimeo.com`; Spotify: `open.spotify.com/embed`; SoundCloud:
-   `w.soundcloud.com`; Mixcloud: `www.mixcloud.com`; PeerTube: rule 6). Anything else
-   is rejected and stored as nothing.
-8. **Emitted iframes carry `sandbox` and `referrerpolicy`** (the current module emits
-   neither), and the stored URL and the resolved HTML go through the `elem_*`
-   escaping path twice over (the recurring escaping caution).
-9. **The e2e suite gets a stub oEmbed provider served by the hermetic harness**
-   (`tests/e2e/server-router.php` serves a fake endpoint; a test-only config define
-   injects the fake provider into the whitelist), so resolve/cache/validate/migration
-   and the slow-or-down-provider fallback are all testable offline.
-10. **The build tool is `tools/make-min.js`** (the comment-stripper, MODERNIZATION
-    §5) — there is no terser in this project.
-
-**v1 split** (each step shippable): (1) storage + resolution skeleton with YouTube and
-Vimeo only, proving legacy parity; (2) whitelist expansion + the Bandcamp template +
-caching/validation hardening + the stub-provider e2e; (3) phase-2 providers.
+Status: to implement (ng). The current embed module hardcodes YouTube + Vimeo (bespoke
+URL parsing → iframe per service). Rebuild it around **oEmbed** so it supports many
+providers via one mechanism (paste a URL → get the embed), with a curated, security-minded
+provider whitelist prioritized for Hotglue's artist/musician audience.
 
 ## Why oEmbed (the architectural change)
 
@@ -102,36 +46,60 @@ Whitelist, prioritized for THIS audience (artists, musicians, indie/DIY web):
 (Additional providers can be added to the whitelist later; the mechanism supports all
 oEmbed providers, the whitelist is the gate.)
 
-## Hybrid: oEmbed where available, iframe-template where not
+## Three resolution tiers (not every provider has oEmbed)
 
-Some providers are iframe-only (no oEmbed) or gated:
-- **Bandcamp** — embeds are iframe-based (no open oEmbed); handle with a URL→iframe
-  template (parse the album/track, build the Bandcamp iframe) rather than an oEmbed call.
-- **Instagram / Facebook** — oEmbed exists but is GATED behind a Meta app/token
-  (authenticated access). So IG needs a Meta app + token, not just a URL — MORE work than
-  the others. Treat IG as PHASE 2 / optional due to the auth hoop; don't block the main
-  rebuild on it.
-- So the module has TWO resolution paths: (1) oEmbed (most providers), (2) a small set of
-  URL→iframe templates for iframe-only providers (Bandcamp, and any others). A provider in
-  the whitelist maps to whichever path it uses.
+Providers fall into three tiers; each whitelisted provider maps to the tier it needs:
+
+**Tier 1 — oEmbed** (YouTube, Vimeo, SoundCloud, Spotify, Mixcloud): paste URL → the
+provider's oEmbed endpoint → embed HTML. The primary path.
+
+**Tier 2 — URL → iframe template** (services where the public URL CONTAINS what's needed,
+or a simple transform yields the embed URL): direct string transform to the embed iframe.
+(PeerTube-style / anything whose embed URL derives directly from the public URL.)
+
+**Tier 3 — Open Graph / meta scrape** (no-oEmbed services where the public URL does NOT
+contain the embed id, so you must fetch the page to get it):
+- **Bandcamp is here — NOT tier 2.** Bandcamp has **no oEmbed endpoint**, AND its embed
+  iframe needs Bandcamp's internal NUMERIC album/track id (`album=123456789`) which is
+  **not present in the public URL** (`artist.bandcamp.com/album/slug` is just a slug). So a
+  URL→iframe template can't work — you don't have the numeric id.
+- Resolution: **fetch the public URL server-side and read the `og:video` /
+  `og:video:secure_url` Open Graph meta tag**, whose content IS the Bandcamp
+  `EmbeddedPlayer` URL (with the numeric id already in it). Build the iframe from that.
+  (Reading `og:video` is more robust than scraping the raw numeric id out of page HTML —
+  Open Graph is stable because Bandcamp maintains it for social-media link previews.)
+- This tier generalizes to other no-oEmbed providers that expose Open Graph embed/video
+  meta.
+
+**Instagram / Facebook** — oEmbed exists but is GATED behind a Meta app/token
+(authenticated access): IG needs a Meta app + token, not just a URL — MORE work than the
+others. Treat IG as PHASE 2 / optional; don't block the rebuild on it.
+
+Tier-3 (and tier-1) both require SERVER-SIDE fetching (CORS rules out client-side
+cross-origin fetches of provider pages/endpoints) and CACHING (see caching) — do NOT
+fetch-and-scrape the Bandcamp page (or call oEmbed) on every render.
 
 ## Migration from the current YouTube/Vimeo module
 
 - Existing embedded YouTube/Vimeo objects must KEEP WORKING — don't break existing pages.
-  The stored `webvideo-provider` + `webvideo-id` reconstruct the canonical source URL,
-  which then re-resolves through the oEmbed path (Decision 4) — verified against real
-  existing embed objects for parity before the switch lands.
-- Store what's needed to re-render: the source URL, the provider, and the reference to
-  the cached embed file (Decision 1).
+  Either: (a) the oEmbed path handles YT/Vimeo (it does — both are oEmbed providers) and
+  existing objects re-resolve cleanly, or (b) keep the existing YT/Vimeo rendering for
+  already-stored objects and use oEmbed for new ones. Prefer (a) if existing stored objects
+  re-resolve identically; verify existing embeds render the same after the switch (parity
+  concern — check against real existing embed objects).
+- Store what's needed to re-render: at minimum the source URL (and provider); consider
+  caching the resolved embed HTML (see caching) so render doesn't hit the oEmbed endpoint
+  every page view.
 
 ## Caching (important — don't hit oEmbed endpoints on every page view)
 
 - Resolving a URL via oEmbed is a network call to the provider. Do NOT do this on every
-  page render — the resolved embed HTML is cached per object, in a cache FILE in the
-  page's directory, resolved at editor time (see Decisions 1 and 2). The view render
-  reads the cache; a missing cache re-resolves once with a timeout, and a slow or down
-  provider falls back to the cached embed or the fallback message rather than a broken
-  page.
+  page render — cache the resolved embed HTML (per object, or per URL) after first
+  resolution. Re-resolve only when needed (URL changes, cache expiry, or manual refresh).
+- Decide cache location (with the object's stored data, or a shared URL→embed cache) and a
+  sensible TTL / invalidation. This keeps rendering fast and avoids hammering providers
+  (and avoids the page breaking if a provider's oEmbed endpoint is slow/down at view time —
+  serve the cached embed).
 
 ## Security / privacy (multi-tenant + ethos)
 
@@ -141,6 +109,10 @@ Some providers are iframe-only (no oEmbed) or gated:
   it's from the expected provider and is the expected embed shape (iframe to the provider's
   domain), don't blindly inject arbitrary returned HTML. Constrain to iframe embeds to
   known provider hosts.
+- **Validate scraped embed URLs (tier 3)** — a URL extracted from a page's `og:video` must
+  be validated to be the expected provider's embed host/shape (e.g. a
+  `bandcamp.com/EmbeddedPlayer/...` URL) before building the iframe — never build an iframe
+  from an unvalidated scraped URL. Handle "og:video not found / unexpected" gracefully.
 - **Privacy note** — third-party embeds load third-party scripts/iframes (a privacy
   consideration for page visitors, consistent with the Critical-Engineering ethos). Not a
   blocker, but worth being deliberate about which providers are enabled.
@@ -160,22 +132,27 @@ Some providers are iframe-only (no oEmbed) or gated:
 ## Constraints
 
 - Vanilla JS + Alpine (client), PHP (server-side oEmbed fetch + cache), consistent with ng.
-  No jQuery. Minified assets via `tools/make-min.js` (the project's comment-stripper;
-  there is no terser build).
+  No jQuery.
+- Server-side oEmbed resolution (fetch the provider endpoint server-side, cache it) — don't
+  rely on client-side cross-origin calls to provider oEmbed endpoints.
+- Whitelist-gated; response validation; cached; existing YT/Vimeo embeds must not break.
+- Build minified assets via the project's terser build.
 
 ## Scope / phasing
 
 - **v1:** oEmbed mechanism + providers.json + whitelist (YouTube, Vimeo, PeerTube,
-  SoundCloud, Mixcloud, Spotify) + iframe-template path for Bandcamp + caching + migration
-  of existing YT/Vimeo + response validation.
+  SoundCloud, Mixcloud, Spotify) + Open-Graph-meta-scrape path for Bandcamp (fetch page →
+  `og:video` → iframe) + caching + migration of existing YT/Vimeo + response validation.
 - **Phase 2 / optional:** Instagram (needs Meta app/token), TikTok, Dailymotion, and any
   further whitelist additions; a "refresh embed" action; provider-specific options (start
   time, autoplay-off, theme) where oEmbed/iframe params allow.
 
 ## Definition of done
 
-- The embed module resolves pasted media URLs via oEmbed (providers.json), gated to a
-  curated whitelist, with an iframe-template fallback for iframe-only providers (Bandcamp).
+- The embed module resolves pasted media URLs via THREE tiers — oEmbed (providers.json),
+  URL→iframe template, and Open-Graph meta-scrape — gated to a curated whitelist. Bandcamp
+  is resolved via the meta-scrape tier (fetch page → `og:video` EmbeddedPlayer URL →
+  iframe), NOT a URL template (its embed needs a numeric id absent from the public URL).
 - Whitelist includes (v1) YouTube, Vimeo, PeerTube, SoundCloud, Mixcloud, Spotify, Bandcamp;
   Instagram/TikTok/Dailymotion noted as phase 2.
 - Resolved embeds are cached (no oEmbed call per page view; cached embed served if provider

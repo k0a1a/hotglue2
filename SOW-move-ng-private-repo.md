@@ -1,6 +1,6 @@
 # SOW — Move the `ng` branch to a new private repo `hotglue-ng`
 
-Status: done 2026-10-06 except confirming `hotglue2-ng` is Private. The repo is named
+Status: done 2026-10-06 and `hotglue2-ng` confirmed Private. The repo is named
 `hotglue2-ng` (not `hotglue-ng`) and lives locally at `~/pro/hotglue/hotglue2-ng`; `ng-src` has
 `origin` = `hotglue2-ng` and `hotglue2` = the public repo. Move the `ng` branch out of the public `hotglue2` repo into a NEW
 PRIVATE repo `hotglue-ng` (private, like the `account` repo), preserving history, keeping the
