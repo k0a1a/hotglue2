@@ -10,10 +10,10 @@ How the code is split across repos and branches, where each piece is deployed, a
 | Repo | Visibility | Local clone | Holds |
 |---|---|---|---|
 | `k0a1a/hotglue2` | public | server: `/var/www-hotglue/src` | The original hotglue2 and the public self-host branch |
-| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/hotglue2-ng` (main working clone; `~/pro/hotglue/src-ng` is a second one) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
+| `k0a1a/hotglue2-ng` | **private** | `~/pro/hotglue/src-ng` (main working clone; `~/pro/hotglue/hotglue2-ng` is a second one) | The `ng` branch: hotglue.me server version, SOWs, tests, notes |
 | `k0a1a/hotglue-account` | private | `~/pro/hotglue/account` | hotglue.me/account admin and registration tooling |
 
-In `hotglue2-ng` the remotes are named: `origin` = `hotglue2-ng` (private), `hotglue2` =
+In `src-ng` the remotes are named: `origin` = `hotglue2-ng` (private), `hotglue2` =
 public repo.
 
 ## Branches
@@ -53,6 +53,8 @@ versus hosted differs by config, not by code. `ng-dev` differs from `ng` only by
   `fonts/MANIFEST.md` (the `KEEP_MD` list in the script).
 - **Stripped tooling:** `tests/`, `package.json`, `package-lock.json`, `composer.json`,
   `composer.lock`, `scripts/sync-to-public.sh` (`STRIP_PATHS`).
+- **Hosted-only config:** `user-config.inc.php-off` (the hosted multi-tenant routing, kept off
+  by default) never goes to `ng-dev`; it is in `STRIP_PATHS`.
 - **Trimmed `.gitignore`:** the composer/vendor and e2e blocks are dropped.
 
 The privacy line: SOWs, notes, anti-spam internals, infrastructure details and real config
@@ -64,7 +66,7 @@ values never go public. db-auth *code* is public (off by default); the real
 Direction is one way: **`ng` → `ng-dev`**. Never commit features on `ng-dev`; never merge
 `ng-dev` back into `ng` (the strip commits would delete the SOWs and tests there).
 
-Run from `hotglue2-ng`, with a clean working tree:
+Run from `src-ng`, with a clean working tree:
 
 ```bash
 git push origin ng                 # ng goes to the private repo first

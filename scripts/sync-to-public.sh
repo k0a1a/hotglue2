@@ -24,9 +24,10 @@ set -euo pipefail
 # Markdown files to KEEP on ng-dev; every other *.md is stripped.
 KEEP_MD=(docker/INSTALL.md fonts/MANIFEST.md README.md)
 
-# Non-markdown paths to strip outright: the test suites, and the tooling
+# Non-markdown paths to strip outright: the hosted-only user-config.inc.php-off, the
+# test suites, and the tooling
 # that exists solely to run them.
-STRIP_PATHS=(tests package.json package-lock.json composer.json composer.lock scripts/sync-to-public.sh)
+STRIP_PATHS=(user-config.inc.php-off tests package.json package-lock.json composer.json composer.lock scripts/sync-to-public.sh)
 
 if [ -n "$(git status --porcelain)" ]; then
 	echo "working tree not clean, aborting" >&2
