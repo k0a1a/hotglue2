@@ -61,16 +61,12 @@ a, a:link, a:visited, a:active, a:hover {
 	   wrong hides its element entirely - not something to hand to objects
 	   nobody has touched. */
 	--glue-fade: 0px;
-	-webkit-mask-image:
-		linear-gradient(to right, transparent, #000 var(--glue-fade),
-			#000 calc(100% - var(--glue-fade)), transparent),
-		linear-gradient(to bottom, transparent, #000 var(--glue-fade),
-			#000 calc(100% - var(--glue-fade)), transparent);
-	mask-image:
-		linear-gradient(to right, transparent, #000 var(--glue-fade),
-			#000 calc(100% - var(--glue-fade)), transparent),
-		linear-gradient(to bottom, transparent, #000 var(--glue-fade),
-			#000 calc(100% - var(--glue-fade)), transparent);
+	--glue-fade-x: linear-gradient(to right, transparent, #000 var(--glue-fade),
+		#000 calc(100% - var(--glue-fade)), transparent);
+	--glue-fade-y: linear-gradient(to bottom, transparent, #000 var(--glue-fade),
+		#000 calc(100% - var(--glue-fade)), transparent);
+	-webkit-mask-image: var(--glue-fade-x), var(--glue-fade-y);
+	mask-image: var(--glue-fade-x), var(--glue-fade-y);
 	-webkit-mask-composite: source-in;
 	mask-composite: intersect;
 }

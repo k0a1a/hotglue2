@@ -216,6 +216,42 @@
 	outline: 1px dashed black;
 }
 
+.glue-selected.glue-edge-fade {
+	/* The selection outline of a faded object. The fade is a mask on the
+	   object, and a mask clips everything the element paints - the outline
+	   included, which is drawn outside the box and so falls outside the mask
+	   image altogether - so the outline vanished the moment an object was
+	   faded. The mask-clip is lifted (no-clip) and four 2px strips just
+	   outside the box edges are ADDED to the fade, which reveals exactly the
+	   pixels the outline is drawn on and nothing of the object: the outline
+	   stays the selection's own, apart from the object's content and border.
+	   Layers, top to bottom: the four strips (add), then the two fade
+	   gradients from main.css (intersect), the last one the base of the stack,
+	   so the result is (fade-x INTERSECT fade-y) ADD strips. */
+	--glue-sel-strip: linear-gradient(#000, #000);
+	-webkit-mask-image: var(--glue-sel-strip), var(--glue-sel-strip),
+		var(--glue-sel-strip), var(--glue-sel-strip),
+		var(--glue-fade-x), var(--glue-fade-y);
+	mask-image: var(--glue-sel-strip), var(--glue-sel-strip),
+		var(--glue-sel-strip), var(--glue-sel-strip),
+		var(--glue-fade-x), var(--glue-fade-y);
+	-webkit-mask-size: calc(100% + 4px) 2px, calc(100% + 4px) 2px,
+		2px calc(100% + 4px), 2px calc(100% + 4px), 100% 100%, 100% 100%;
+	mask-size: calc(100% + 4px) 2px, calc(100% + 4px) 2px,
+		2px calc(100% + 4px), 2px calc(100% + 4px), 100% 100%, 100% 100%;
+	-webkit-mask-position: left -2px top -2px, left -2px bottom -2px,
+		left -2px top -2px, right -2px top -2px, 0 0, 0 0;
+	mask-position: left -2px top -2px, left -2px bottom -2px,
+		left -2px top -2px, right -2px top -2px, 0 0, 0 0;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-clip: no-clip;
+	mask-clip: no-clip;
+	-webkit-mask-composite: source-over, source-over, source-over, source-over,
+		source-in, source-over;
+	mask-composite: add, add, add, add, intersect, add;
+}
+
 .glue-ui {
 	/* all ui elements should use this class */
 }
