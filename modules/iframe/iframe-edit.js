@@ -72,13 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			child.setAttribute('name', data['name']);
 			child.setAttribute('src', url);
 			elem.appendChild(child);
-			// put the iframe behind some shield for editing
+			// the shield over the upper part of the embed, for editing: the
+			// same one the webvideo has (.glue-iframe-shield in css/edit.css)
 			var shield = document.createElement('div');
 			shield.className = 'glue-iframe-shield glue-ui';
-			shield.style.height = '100%';
-			shield.style.position = 'absolute';
-			shield.style.width = '100%';
-			shield.title = 'visitors will be able to interact with the webpage below';
+			shield.title = 'click here to select/edit this embed';
 			elem.appendChild(shield);
 			$.glue.canvas.add(elem);
 			// make width and height explicit

@@ -54,3 +54,43 @@ test('the toggle shows and hides the iframe\'s scrollbars and says which it is',
 		await expect(iframe).toHaveAttribute('scrolling', 'no');
 		await expect(btn()).toHaveClass(/glue-menu-disabled/);
 	});
+
+test('the shield is the webvideo\'s: the upper part of the embed, shown on hover',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', IFRAME, '');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+
+		const shield = byId(page, a).locator(':scope > .glue-iframe-shield');
+		await expect(shield).toHaveAttribute('title', 'click here to select/edit this embed');
+		const geometry = () => page.evaluate((i) => {
+			const o = document.getElementById(i).getBoundingClientRect();
+			const s = document.querySelector('[id="' + i + '"] > .glue-iframe-shield');
+			const r = s.getBoundingClientRect();
+			return { top: Math.round(r.top - o.top), ratio: +(r.height / o.height).toFixed(2),
+				wide: Math.round(r.width) === Math.round(o.width),
+				opacity: getComputedStyle(s).opacity };
+		}, a);
+
+		// at rest it is there and invisible; over the object it shows
+		await page.mouse.move(5, 5);
+		expect(await geometry()).toEqual({ top: 0, ratio: 0.4, wide: true, opacity: '0' });
+		const box = await byId(page, a).boundingBox();
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.2);
+		await expect.poll(async () => (await geometry()).opacity).toBe('0.5');
+
+		// and the webvideo's is styled by the same rule
+		const same = await page.evaluate(() => {
+			const rules = [];
+			for (const sheet of document.styleSheets) {
+				try {
+					for (const r of sheet.cssRules) {
+						if (r.selectorText && r.selectorText.includes('.glue-iframe-shield')
+							&& r.selectorText.includes('.glue-webvideo-shield')) rules.push(r.selectorText);
+					}
+				} catch (e) { /* a sheet from another origin */ }
+			}
+			return rules.length;
+		});
+		expect(same, 'one rule for both shields').toBeGreaterThan(0);
+	});

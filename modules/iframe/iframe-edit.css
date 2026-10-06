@@ -3,9 +3,3 @@
 	height: 300px;
 	width: 400px;
 }
-
-.glue-iframe-shield {
-	/* this is the dummy object we place over the iframe for editing */
-	background-color: darkgrey;
-	opacity: 0.5;
-}
