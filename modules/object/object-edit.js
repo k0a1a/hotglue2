@@ -108,7 +108,9 @@ function object_properties_modal_show(obj, data) {
 	// other name. This string is only the dialog's accessible name - nothing
 	// displays it - so it is here to keep the two in step rather than to be
 	// read off the screen.
-	var dialog = $.glue.modal.open('object attributes', 'glue-modal-tag');
+	var dialog = $.glue.modal.open('object attributes', 'glue-modal-tag', function() {
+		commit();
+	});
 	var modal = dialog.modal;
 	var close = dialog.close;
 
@@ -124,12 +126,46 @@ function object_properties_modal_show(obj, data) {
 	var tag = document.createElement('div');
 	tag.className = 'glue-tag';
 
+	// Lines, each doing one thing: the tag with the id and a button to
+	// copy it, the classes hotglue gave the object, an input for the user's
+	// own, and (under the attribute rows) the way to add an attribute - then
+	// the tag's closing line.
 	var line1 = document.createElement('div');
 	line1.className = 'glue-tag-line';
 	txt(line1, '<div', 'glue-tag-name');
 	txt(line1, ' id=');
 	var id_val = txt(line1, '"' + full_name + '"', 'glue-tag-fixed');
 	id_val.title = 'the object\'s id - select and copy it to target this object from the page\'s code';
+	var copy_id = $.glue.icon('copy-12', 'copy the object\'s id');
+	copy_id.classList.add('glue-tag-copy');
+	copy_id.style.width = '12px';
+	copy_id.style.height = '12px';
+	copy_id.setAttribute('role', 'button');
+	copy_id.setAttribute('aria-label', 'copy the object\'s id');
+	copy_id.addEventListener('click', function() {
+		var done = function() {
+			copy_id.title = 'copied';
+			setTimeout(function() { copy_id.title = 'copy the object\'s id'; }, 1200);
+		};
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(full_name).then(done, function() {
+				select_id();
+			});
+		} else {
+			select_id();
+		}
+	});
+	// no clipboard to write to (an insecure origin has none): select the id,
+	// so ctrl+c is the one keystroke left
+	function select_id() {
+		var range = document.createRange();
+		range.selectNodeContents(id_val);
+		var sel = window.getSelection();
+		sel.removeAllRanges();
+		sel.addRange(range);
+		copy_id.title = 'select done - press ctrl+c';
+	}
+	line1.appendChild(copy_id);
 	tag.appendChild(line1);
 
 	var line2 = document.createElement('div');
@@ -138,19 +174,23 @@ function object_properties_modal_show(obj, data) {
 	txt(line2, '"');
 	txt(line2, system_classes.join(' '), 'glue-tag-fixed').title =
 		'set by hotglue - these can\'t be changed, your own classes are added after them';
-	txt(line2, system_classes.length ? ' ' : '');
-	var class_input = document.createElement('input');
-	class_input.type = 'text';
-	class_input.className = 'glue-tag-input';
-	class_input.value = custom_class;
-	class_input.placeholder = 'your classes';
-	class_input.setAttribute('aria-label', 'your own classes, space separated');
-	line2.appendChild(class_input);
 	txt(line2, '"');
 	tag.appendChild(line2);
 
+	var line3 = document.createElement('div');
+	line3.className = 'glue-tag-line';
+	var class_input = document.createElement('input');
+	class_input.type = 'text';
+	class_input.className = 'glue-tag-input glue-tag-class-input';
+	class_input.value = custom_class;
+	class_input.placeholder = 'your own classes';
+	class_input.setAttribute('aria-label', 'your own classes, space separated');
+	line3.appendChild(class_input);
+	tag.appendChild(line3);
+
 	// --- custom attribute rows --------------------------------------------
 	var attrs_wrap = document.createElement('div');
+	attrs_wrap.className = 'glue-tag-attrs';
 	tag.appendChild(attrs_wrap);
 
 	function add_attr_row(name, value) {
@@ -181,7 +221,7 @@ function object_properties_modal_show(obj, data) {
 		remove.title = 'remove this attribute';
 		remove.addEventListener('click', function() {
 			row.remove();
-			validate();
+			commit();
 		});
 		row.appendChild(remove);
 		attrs_wrap.appendChild(row);
@@ -190,12 +230,10 @@ function object_properties_modal_show(obj, data) {
 		return name_input;
 	}
 
-	var line_end = document.createElement('div');
-	line_end.className = 'glue-tag-line';
-	txt(line_end, '>', 'glue-tag-name');
-	tag.appendChild(line_end);
 	modal.appendChild(tag);
 
+	var line_add = document.createElement('div');
+	line_add.className = 'glue-tag-line';
 	var add = document.createElement('button');
 	add.type = 'button';
 	add.className = 'glue-tag-add';
@@ -203,23 +241,17 @@ function object_properties_modal_show(obj, data) {
 	add.addEventListener('click', function() {
 		add_attr_row('', '').focus();
 	});
-	modal.appendChild(add);
+	line_add.appendChild(add);
+	tag.appendChild(line_add);
+
+	var line_close = document.createElement('div');
+	line_close.className = 'glue-tag-line';
+	txt(line_close, '</div>', 'glue-tag-name');
+	tag.appendChild(line_close);
 
 	var problem = document.createElement('div');
 	problem.className = 'glue-tag-problem';
 	modal.appendChild(problem);
-
-	var buttons = document.createElement('div');
-	buttons.className = 'glue-modal-buttons';
-	var ok = document.createElement('button');
-	ok.type = 'button';
-	ok.textContent = 'OK';
-	var cancel = document.createElement('button');
-	cancel.type = 'button';
-	cancel.textContent = 'Cancel';
-	buttons.appendChild(cancel);
-	buttons.appendChild(ok);
-	modal.appendChild(buttons);
 
 	// --- validation (feedback only - the server is the gate) --------------
 	function rows() {
@@ -253,7 +285,6 @@ function object_properties_modal_show(obj, data) {
 			}
 		});
 		problem.textContent = msg || '';
-		ok.disabled = !!msg;
 		return !msg;
 	}
 	class_input.addEventListener('input', validate);
@@ -264,10 +295,12 @@ function object_properties_modal_show(obj, data) {
 	validate();
 
 
-	ok.addEventListener('click', function() {
-		if (!validate()) {
-			return;
-		}
+	// There are no buttons: what the dialog holds is saved as it is changed
+	// (a field's change event, a removed row) and once more as it closes, by
+	// any door. Only a valid, different state is sent; an invalid one waits
+	// for the user to put it right and is dropped if they close on it.
+	var saved = JSON.stringify([custom_class.trim(), stored_attrs]);
+	function state() {
 		var attributes = {};
 		rows().forEach(function(row) {
 			var name = row.querySelector('.glue-tag-attr-name').value.toLowerCase().trim();
@@ -275,15 +308,32 @@ function object_properties_modal_show(obj, data) {
 				attributes[name] = row.querySelector('.glue-tag-attr-value').value;
 			}
 		});
+		return { classes: class_input.value.trim(), attributes: attributes };
+	}
+	function commit() {
+		if (!validate()) {
+			return;
+		}
+		var now = state();
+		var signature = JSON.stringify([now.classes, now.attributes]);
+		if (signature === saved) {
+			return;
+		}
+		saved = signature;
 		$.glue.backend({
 			method: 'object.set_properties',
 			name: obj.id,
-			classes: class_input.value.trim(),
-			attributes: attributes
+			classes: now.classes,
+			attributes: now.attributes
 		}, function(resp) {
 			if (resp['#error']) {
-				// the server refused - keep the modal open with the reason
+				// the server refused: say so where the dialog is still open,
+				// and let the next change try again
+				saved = '';
 				problem.textContent = resp['#data'] || resp['#error'];
+				if (!document.contains(modal)) {
+					$.glue.error(resp['#data'] || resp['#error']);
+				}
 				return;
 			}
 			// Reflect the class change live, so the editor shows what the
@@ -293,13 +343,17 @@ function object_properties_modal_show(obj, data) {
 			// nothing and the object loses its Moveable until a reload.
 			// Nothing about a class or attribute change needs re-registering.
 			custom_tokens.forEach(function(t) { obj.classList.remove(t); });
-			class_input.value.trim().split(/\s+/)
-				.filter(function(t) { return t !== ''; })
-				.forEach(function(t) { obj.classList.add(t); });
-			close();
+			custom_tokens = now.classes.split(/\s+/)
+				.filter(function(t) { return t !== ''; });
+			custom_tokens.forEach(function(t) { obj.classList.add(t); });
 		});
+	}
+	tag.addEventListener('change', commit);
+	tag.addEventListener('keydown', function(e) {
+		if (e.key == 'Enter' && e.target.tagName == 'INPUT') {
+			close();
+		}
 	});
-	cancel.addEventListener('click', close);
 	class_input.focus();
 }
 
@@ -2022,37 +2076,37 @@ document.addEventListener('DOMContentLoaded', function() {
 	// the sheep is the one icon in the set that is a joke, so it gets the
 	// one animation in the set too: its eyes blink (a lid painted in the
 	// button's own fill drops over them - see
-	// .glue-btn-icon.glue-sheep::after in css/edit.css). The blink cycle
-	// length is rolled fresh every time one wraps - 3-30s, random - so
-	// the pauses wander instead of ticking like a metronome.
+	// .glue-btn-icon.glue-sheep::after in css/edit.css). The gaps between
+	// blinks are random, 3-30s, so they wander instead of ticking like a
+	// metronome.
 	elem.classList.add('glue-sheep');
 	// note: elem is reused for every menu item in this scope, so the
 	// closure must capture the sheep itself, not the mutable elem
 	var sheep_elem = elem;
-	// the fades are a fixed half second each - 0.5s to close, 0.5s fully
-	// down, 0.5s to open - but keyframes are fractions of whatever the
-	// cycle is, so every roll has to rewrite the percentages as well as
-	// the duration. This style tag is created now, after css/edit.css has
-	// loaded, so its same-named @keyframes wins over the stylesheet's
-	// 30s fallback (a later rule overrides an earlier one).
-	var blink_style = document.createElement('style');
-	document.head.appendChild(blink_style);
-	var roll_cycle = function() {
-		var cycle = 3 + Math.random() * 27; // seconds, 3-30
-		sheep_elem.style.setProperty('--glue-sheep-cycle', cycle.toFixed(1) + 's');
-		// blink window is the last 1.5s of the cycle, ending at 100%
-		var p1 = (cycle - 1.5) / cycle * 100; // lid starts closing
-		var p2 = (cycle - 1.0) / cycle * 100; // fully down
-		var p3 = (cycle - 0.5) / cycle * 100; // starts opening
-		blink_style.textContent = '@keyframes glue-sheep-blink { 0%, '
-			+ p1.toFixed(4) + '% { opacity: 0; } ' + p2.toFixed(4)
-			+ '% { opacity: 1; } ' + p3.toFixed(4)
-			+ '%, 100% { opacity: 0; } }';
+	// One blink is a fixed 0.5s animation (a third to close, a third down, a
+	// third to open) that the class .glue-sheep-blinking switches on, and the gaps
+	// between blinks are timeouts. The first version was one long infinite
+	// animation whose duration and keyframes were rewritten at every
+	// iteration; changing the duration of a running animation keeps the
+	// elapsed time and recomputes the progress, so a roll could land the lid
+	// mid-blink or start a run of iterations a frame apart - the sheep
+	// sometimes blinked in rapid bursts.
+	var blink_timer;
+	var schedule_blink = function() {
+		clearTimeout(blink_timer);
+		blink_timer = setTimeout(blink, (3 + Math.random() * 27) * 1000); // 3-30s
 	};
-	roll_cycle();
-	// the animation runs on the ::after, but animationiteration is
-	// dispatched to this button with event.pseudoElement === '::after'
-	elem.addEventListener('animationiteration', roll_cycle);
+	var blink = function() {
+		sheep_elem.classList.add('glue-sheep-blinking');
+		// the class stays a little longer than the animation, which then
+		// ends on its own at opacity 0; a timeout rather than animationend
+		// because a menu that is hidden mid-blink never sends one
+		setTimeout(function() {
+			sheep_elem.classList.remove('glue-sheep-blinking');
+		}, 600);
+		schedule_blink();
+	};
+	schedule_blink();
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.clone_object', name: obj.id }, function(data) {
@@ -2139,7 +2193,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			object_properties_modal_show(obj, data['#data']);
 		}, false);
 	});
-	$.glue.contextmenu.register('object', 'object-target', elem);
+	// 8 and not the default 10, so the code button can sit between it and the
+	// symlink button (user_code-edit.js, 9): two items on the default would
+	// have nothing to be put between
+	$.glue.contextmenu.register('object', 'object-target', elem, 8);
 
 	elem = $.glue.icon('shared-w-other-pages', 'make this object appear on all pages');
 	elem.addEventListener('click', function(e) {

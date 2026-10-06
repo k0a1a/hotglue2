@@ -216,6 +216,48 @@
 	outline: 1px dashed black;
 }
 
+.glue-selected.glue-edge-fade {
+	/* The selection outline of a faded object. The fade is a mask on the
+	   object, and a mask clips everything the element paints - the outline
+	   included, which is drawn outside the box and so falls outside the mask
+	   image altogether - so the outline vanished the moment an object was
+	   faded. Here the mask is rebuilt so the outline survives: the fade
+	   inside the object's own shape, plus everything outside that shape up to
+	   2px beyond the box (which is where the outline is, and where the object
+	   paints nothing). The shape is the border-box, which mask-clip follows
+	   round border-radius corners, so the outline follows them too and no
+	   radius is ever read or stored.
+
+	   A mask stack is a left fold of mask-composite from the bottom layer up,
+	   so with S = the object's shape (clipped to the rounded border-box),
+	   B = the box grown by 2px (no-clip) and F = fade-x INTERSECT fade-y:
+	       F                              the two gradients, bottom
+	       F AND S                        intersect S: the fade within the shape
+	       B XOR (F AND S)  = B - F_s     exclude B: all of B except the fade
+	       S XOR (B - F_s)  = F_s OR (B - S)   exclude S: the fade, plus the
+	                                           ring outside the shape
+	   Layers below, top to bottom: S (exclude), B (exclude), S (intersect),
+	   fade-x (intersect), fade-y. (-webkit-mask-composite spells the same
+	   operators xor, xor, source-in, source-in, source-over.) */
+	--glue-sel-fill: linear-gradient(#000, #000);
+	-webkit-mask-image: var(--glue-sel-fill), var(--glue-sel-fill),
+		var(--glue-sel-fill), var(--glue-fade-x), var(--glue-fade-y);
+	mask-image: var(--glue-sel-fill), var(--glue-sel-fill),
+		var(--glue-sel-fill), var(--glue-fade-x), var(--glue-fade-y);
+	-webkit-mask-size: 100% 100%, calc(100% + 4px) calc(100% + 4px),
+		100% 100%, 100% 100%, 100% 100%;
+	mask-size: 100% 100%, calc(100% + 4px) calc(100% + 4px),
+		100% 100%, 100% 100%, 100% 100%;
+	-webkit-mask-position: 0 0, -2px -2px, 0 0, 0 0, 0 0;
+	mask-position: 0 0, -2px -2px, 0 0, 0 0, 0 0;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-clip: border-box, no-clip, border-box, border-box, border-box;
+	mask-clip: border-box, no-clip, border-box, border-box, border-box;
+	-webkit-mask-composite: xor, xor, source-in, source-in, source-over;
+	mask-composite: exclude, exclude, intersect, intersect, add;
+}
+
 .glue-ui {
 	/* all ui elements should use this class */
 }
@@ -328,7 +370,7 @@
 
 .glue-modal-tag {
 	/* wider than the plain modal: a tag with attributes needs the room */
-	width: 460px;
+	min-width: 360px;
 }
 
 .glue-tag {
@@ -336,8 +378,24 @@
 	border: 1px solid #ddd;
 	font-family: monospace;
 	font-size: 12px;
-	line-height: 1.8;
+	/* the lines are spaced like a popout's rows (6px apart, as
+	   .glue-popover-row has it) rather than by a tall line-height; the
+	   attribute rows are in a wrapper of their own, with the same gap */
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	line-height: 1.4;
 	padding: 8px;
+}
+
+.glue-tag-attrs {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.glue-tag-attrs:empty {
+	display: none;
 }
 
 .glue-tag-line {
@@ -386,6 +444,44 @@
 	padding: 1px 3px;
 }
 
+.glue-tag-input:focus {
+	/* no focus ring on the dialog's fields (danja's call, 2026-10-06): the
+	   caret says where you are, and the frame stays the plain grey one */
+	outline: none;
+}
+
+.glue-tag-class-input {
+	/* the user's own classes: a line of its own, three quarters of the tag */
+	flex: none;
+	margin-left: 2ch;
+	width: 75%;
+}
+
+.glue-tag-copy {
+	/* the id's copy button: 12px, no frame - a glyph beside the text, not a
+	   button on its own plate. The box is set in JS, the mask here (see the
+	   note on $.glue.icon()'s inline size); the frame comes off here, where
+	   it would beat .glue-btn-icon's one class with two. */
+	flex: none;
+	margin-left: 6px;
+}
+
+.glue-tag .glue-tag-copy,
+.glue-tag .glue-tag-copy:hover {
+	background: none;
+	border: 0;
+}
+
+.glue-tag .glue-tag-copy::before {
+	-webkit-mask-size: 12px 12px;
+	mask-size: 12px 12px;
+	background-color: #666;
+}
+
+.glue-tag .glue-tag-copy:hover::before {
+	background-color: #000;
+}
+
 .glue-tag-attr-name {
 	width: 110px;
 }
@@ -416,7 +512,7 @@
 
 .glue-tag-add {
 	font-size: 11px;
-	margin-top: 8px;
+	margin-left: 2ch;
 }
 
 .glue-tag-problem {
@@ -1218,14 +1314,17 @@
 	   mask file - sheep-eyelid.svg - because nothing inside an SVG used
 	   as a mask can be shown from outside it) painted in the face's
 	   colour (#333) covers the eye row, making the eyes vanish: that is
-	   what reads as a closed eyelid. The cycle
-	   length is the --glue-sheep-cycle custom property, rolled fresh by
-	   the sheep button's JS at every cycle end, so the pause between
-	   blinks wanders (3-30s) instead of ticking like a metronome; the
-	   roll also rewrites the keyframes below, because the fades are a
-	   fixed half second each and keyframes are percentages of whatever
-	   the cycle is. Purely decorative - the one icon in the set that is
-	   a joke tells one at its own pace. */
+	   what reads as a closed eyelid. At rest the lid is invisible and
+	   nothing animates; the sheep's JS adds .glue-sheep-blinking for the
+	   length of one blink, at random intervals (3-30s) so the pauses
+	   wander instead of ticking like a metronome. The blink is one fixed
+	   0.5s animation, played once - NOT a long cycle whose duration is
+	   rewritten: changing the duration of a running animation keeps the
+	   time already elapsed and recomputes the progress against the new
+	   length, which dropped the lid into the middle of a blink (or into a
+	   run of iterations a frame apart) whenever a roll shortened the cycle.
+	   Purely decorative - the one icon in the set that is a joke tells one
+	   at its own pace. */
 	content: '';
 	position: absolute;
 	top: 0;
@@ -1238,18 +1337,16 @@
 	-webkit-mask-size: 30px 30px;
 	mask-size: 30px 30px;
 	opacity: 0;
-	animation: glue-sheep-blink var(--glue-sheep-cycle, 30s) infinite;
 }
 
-/* The fallback curve for the default 30s cycle: 0.5s to close, 0.5s
-   fully down, 0.5s to open. The sheep's JS rewrites these percentages
-   on every roll so the fades stay 0.5s no matter what the cycle is -
-   keyframes are fractions of the cycle, so a fixed time must move as
-   the cycle does. */
+.glue-btn-icon.glue-sheep.glue-sheep-blinking::after {
+	animation: glue-sheep-blink 0.5s 1;
+}
+
+/* a third of the blink to close, a third fully down, a third to open */
 @keyframes glue-sheep-blink {
-	0%, 95% { opacity: 0; }
-	96.6667% { opacity: 1; }
-	98.3333%, 100% { opacity: 0; }
+	0%, 100% { opacity: 0; }
+	33.3333%, 66.6667% { opacity: 1; }
 }
 
 
@@ -1504,4 +1601,66 @@
 .glue-border-colour-cell {
 	width: 10px;
 	height: 10px;
+}
+
+
+/* The object's code panel: two text areas, CSS and JavaScript, for the one
+   object. It is deliberately not the icon row and the fold of the other
+   panels (POPOUT-PANELS.md): there is nothing to act on or to scrub, only
+   text to write, and a text area does not belong in a fold. */
+
+.glue-code-popover {
+	width: 380px;
+}
+
+.glue-code-field {
+	margin-bottom: 8px;
+}
+
+.glue-code-label {
+	font-size: 11px;
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+.glue-code-hint {
+	color: #666;
+	font-weight: normal;
+	margin-left: 6px;
+}
+
+.glue-code-input {
+	background: #fff;
+	border: 1px solid #bbb;
+	box-sizing: border-box;
+	display: block;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.4;
+	overflow: auto;
+	padding: 3px 5px;
+	resize: vertical;
+	tab-size: 2;
+	white-space: pre;
+	width: 100%;
+}
+
+.glue-code-input:focus {
+	outline: none;
+}
+
+.glue-code-problem {
+	color: #c00;
+	font-size: 11px;
+	min-height: 0;
+}
+
+.glue-code-problem:empty {
+	display: none;
+}
+
+.glue-code-note {
+	color: #666;
+	font-size: 11px;
+	line-height: 1.4;
 }
