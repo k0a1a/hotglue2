@@ -370,7 +370,6 @@
 
 .glue-modal-tag {
 	/* wider than the plain modal: a tag with attributes needs the room */
-	width: 460px;
 	min-width: 360px;
 }
 
