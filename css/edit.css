@@ -1683,3 +1683,11 @@
 	   and the script's timers are held in js/edit.js and by module_user_code. */
 	animation-play-state: paused !important;
 }
+
+.glue-code-help {
+	/* a line of how-to under a field's label */
+	color: #666;
+	font-size: 11px;
+	line-height: 1.4;
+	margin-bottom: 3px;
+}

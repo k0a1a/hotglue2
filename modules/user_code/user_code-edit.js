@@ -192,7 +192,7 @@ function user_code_object_popover(obj)
 		}
 		var parts = user_code_split(data['#data'] || '');
 
-		var field = function(label, hint, value, rows) {
+		var field = function(label, hint, value, rows, help) {
 			var wrap = document.createElement('div');
 			wrap.className = 'glue-code-field';
 			var l = document.createElement('div');
@@ -212,11 +212,18 @@ function user_code_object_popover(obj)
 			t.setAttribute('autocomplete', 'off');
 			t.setAttribute('aria-label', label);
 			wrap.appendChild(l);
+			if (help) {
+				var e = document.createElement('div');
+				e.className = 'glue-code-help';
+				e.textContent = help;
+				wrap.appendChild(e);
+			}
 			wrap.appendChild(t);
 			pop.appendChild(wrap);
 			return t;
 		};
-		var style = field('style', 'CSS, for this object only', parts.style, 7);
+		var style = field('style', 'CSS, for this object only', parts.style, 7,
+			'Write &.name { } for the object itself when it has the class name; a plain .name { } is for something inside it.');
 		style.placeholder = 'background: gold;\n:hover { opacity: .8 }\n.inner { color: red }';
 		var script = field('script', 'JavaScript; el is this object', parts.script, 8);
 		script.placeholder = 'el.addEventListener("click", function() {\n\tel.classList.toggle("on");\n});';
