@@ -378,8 +378,24 @@
 	border: 1px solid #ddd;
 	font-family: monospace;
 	font-size: 12px;
-	line-height: 1.8;
+	/* the lines are spaced like a popout's rows (6px apart, as
+	   .glue-popover-row has it) rather than by a tall line-height; the
+	   attribute rows are in a wrapper of their own, with the same gap */
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	line-height: 1.4;
 	padding: 8px;
+}
+
+.glue-tag-attrs {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.glue-tag-attrs:empty {
+	display: none;
 }
 
 .glue-tag-line {
@@ -435,15 +451,28 @@
 }
 
 .glue-tag-copy {
-	/* the id's copy button: 22px, art at 1:1 (the box is set in JS, the mask
-	   here - see the note on $.glue.icon()'s inline size) */
+	/* the id's copy button: 11px, no frame - a glyph beside the text, not a
+	   button on its own plate. The box is set in JS, the mask here (see the
+	   note on $.glue.icon()'s inline size); the frame comes off here, where
+	   it would beat .glue-btn-icon's one class with two. */
 	flex: none;
 	margin-left: 6px;
 }
 
-.glue-tag-copy::before {
-	-webkit-mask-size: 22px 22px;
-	mask-size: 22px 22px;
+.glue-tag .glue-tag-copy,
+.glue-tag .glue-tag-copy:hover {
+	background: none;
+	border: 0;
+}
+
+.glue-tag .glue-tag-copy::before {
+	-webkit-mask-size: 11px 11px;
+	mask-size: 11px 11px;
+	background-color: #666;
+}
+
+.glue-tag .glue-tag-copy:hover::before {
+	background-color: #000;
 }
 
 .glue-tag-attr-name {
