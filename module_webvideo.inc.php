@@ -60,6 +60,19 @@ function webvideo_providers()
  */
 function webvideo_fetch($url)
 {
+	// CWE-918: refuse to fetch anything that isn't a plain http(s) url
+	// whose host resolves to a public address - blocks SSRF to internal
+	// services, cloud metadata endpoints and loopback/link-local hosts,
+	// even if a caller's own validation is ever loosened or bypassed.
+	$scheme = parse_url($url, PHP_URL_SCHEME);
+	$host = parse_url($url, PHP_URL_HOST);
+	if (!in_array(strtolower((string)$scheme), ['http', 'https']) || empty($host)) {
+		return false;
+	}
+	$ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : gethostbyname($host);
+	if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+		return false;
+	}
 	$ctx = stream_context_create(['http' => [
 		'timeout' => 5,
 		'follow_location' => 1,
