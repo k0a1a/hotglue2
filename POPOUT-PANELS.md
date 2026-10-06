@@ -249,6 +249,15 @@ words), `grid` (two text-glyph toggles with no honest artwork in the set), `page
 and `reading order` (fields and a list). Each is already at its minimum; converting them
 would mean inventing a glyph to justify a row.
 
+**`code`** (`user_code_object_popover()`, `modules/user_code/user_code-edit.js`) is also not
+on the shape, for the same reason and one more: it is two text areas, CSS and JavaScript for
+the one object, and a text area is neither an act nor a knob - there is nothing to put in an
+icon row, and a fold would hide the one thing the panel is. It has no OK: what is in it is
+saved a moment after typing stops, when a field is left, and when the panel closes by any
+door, the last through `pop.on_close` (a removed field's blur is not reliable, see the trap
+on commits above). SOW-object-code.md has the storage design - the code lives in an object of
+its own, `<rev>/code<id>`, not in the object's file.
+
 ## Building the next one
 
 1. `var pop = $.glue.popover.open(obj, 'glue-x-popover')` — the class names the panel and is

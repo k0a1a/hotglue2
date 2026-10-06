@@ -3159,6 +3159,8 @@ $.glue.clipboard = function()
 					name: d.name,
 					attrs: d.attrs,
 					content: d.content,
+					// what modules keep for the object outside its file
+					code: d.code || '',
 					used_at: new Date().toISOString()
 				};
 				try {

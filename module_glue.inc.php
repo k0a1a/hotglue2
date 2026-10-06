@@ -135,12 +135,16 @@ function clone_object($args)
 	if ($ret['#error']) {
 		return $ret;
 	} else {
+		// whatever a module keeps for the object elsewhere (its code) is
+		// copied for the clone
+		invoke_hook('clone_object', ['old'=>$old['name'], 'new'=>$new['name']]);
 		// return name
 		return response($new['name']);
 	}
 }
 
 register_service('glue.clone_object', 'clone_object', ['auth'=>true]);
+register_hook('clone_object', 'invoked when an object has been cloned, should be used for copying what the object keeps elsewhere');
 
 
 /**
@@ -201,16 +205,27 @@ function get_object($args)
 		unset($attrs['content']);
 	}
 
+	// what modules keep for the object outside its file (its code) travels
+	// with it; the keys of the object itself cannot be overridden
+	$extra = [];
+	foreach (invoke_hook('export_object', ['name'=>$name]) as $e) {
+		if (is_array($e)) {
+			$extra = array_merge($extra, $e);
+		}
+	}
+
 	$a = expl('.', $name);
-	return response([
+	return response(array_merge($extra, [
 		'name'=>$name,
 		'page'=>$a[0].'.'.$a[1],
 		'attrs'=>$attrs,
 		'content'=>$content,
-	]);
+	]));
 }
 
 register_service('glue.get_object', 'get_object', ['auth'=>true]);
+register_hook('export_object', 'invoked when an object is handed over for copying, returns extra keys for the clipboard');
+register_hook('import_object', 'invoked when a copied object has been pasted, gets the new name and the clipboard');
 
 
 /**
@@ -381,6 +396,7 @@ function paste_object($args)
 	if ($ret['#error']) {
 		return $ret;
 	}
+	invoke_hook('import_object', ['name'=>$new, 'clipboard'=>$clip]);
 
 	// Keep the author's reading order complete: an object missing from the
 	// list still renders (it lands after the listed ones), but a screen

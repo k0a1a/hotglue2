@@ -1602,3 +1602,65 @@
 	width: 10px;
 	height: 10px;
 }
+
+
+/* The object's code panel: two text areas, CSS and JavaScript, for the one
+   object. It is deliberately not the icon row and the fold of the other
+   panels (POPOUT-PANELS.md): there is nothing to act on or to scrub, only
+   text to write, and a text area does not belong in a fold. */
+
+.glue-code-popover {
+	width: 380px;
+}
+
+.glue-code-field {
+	margin-bottom: 8px;
+}
+
+.glue-code-label {
+	font-size: 11px;
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+.glue-code-hint {
+	color: #666;
+	font-weight: normal;
+	margin-left: 6px;
+}
+
+.glue-code-input {
+	background: #fff;
+	border: 1px solid #bbb;
+	box-sizing: border-box;
+	display: block;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.4;
+	overflow: auto;
+	padding: 3px 5px;
+	resize: vertical;
+	tab-size: 2;
+	white-space: pre;
+	width: 100%;
+}
+
+.glue-code-input:focus {
+	outline: none;
+}
+
+.glue-code-problem {
+	color: #c00;
+	font-size: 11px;
+	min-height: 0;
+}
+
+.glue-code-problem:empty {
+	display: none;
+}
+
+.glue-code-note {
+	color: #666;
+	font-size: 11px;
+	line-height: 1.4;
+}
