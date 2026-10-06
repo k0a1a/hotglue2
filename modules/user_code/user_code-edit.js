@@ -125,6 +125,26 @@ var USER_CODE_EXAMPLES = [
 			+ 'animation: ex-orbit 4s linear infinite;'
 	},
 	{
+		name: 'cycle through blend modes',
+		style: '/* Go through four blend modes while the colour fades round. mix-blend-mode\n'
+			+ '   cannot be tweened, so its animation uses step-end to hold each mode until\n'
+			+ '   the next keyframe; the colour has an animation of its own, to fade. There\n'
+			+ '   has to be something behind the object to blend with. */\n'
+			+ '@keyframes ex-modes {\n'
+			+ '  0%   { mix-blend-mode: multiply; }\n'
+			+ '  25%  { mix-blend-mode: screen; }\n'
+			+ '  50%  { mix-blend-mode: difference; }\n'
+			+ '  75%  { mix-blend-mode: overlay; }\n'
+			+ '  100% { mix-blend-mode: multiply; }\n'
+			+ '}\n'
+			+ '@keyframes ex-tint {\n'
+			+ '  0%, 100% { background-color: #ff4d4d; }\n'
+			+ '  33%      { background-color: #4d9fff; }\n'
+			+ '  66%      { background-color: #ffd24d; }\n'
+			+ '}\n'
+			+ 'animation: ex-modes 8s step-end infinite, ex-tint 8s linear infinite;'
+	},
+	{
 		name: 'breathe: grow and shrink by 20px, staying centred',
 		script: '// Grow by 20px in both directions and back. The size grows by 20 and the\n'
 			+ '// corner moves by 10, which is what keeps the middle where it is. Read from\n'

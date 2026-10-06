@@ -338,3 +338,35 @@ test('a selected object\'s timers stand still, and the published page\'s do not'
 		await page.goto(`/?${hg.pageName}`);
 		await expect.poll(() => page.evaluate(() => window.__ticks)).toBeGreaterThan(2);
 	});
+
+test('the blend example steps through the modes and fades the colour', async ({ page, hg }) => {
+	const a = hg.addObject('100000000001', box(100), 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	await openCode(page, a);
+	await insertExample(page, 'cycle through blend modes');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => hg.readObject('code100000000001').content).toContain('ex-modes');
+	await page.reload();
+	await waitForEditor(page, 1);
+
+	// two animations on the object, the modes stepped and the colour not: at a
+	// given moment of the 8s cycle the mode is the one of its quarter, whole,
+	// and the colour is somewhere between the keyframes
+	const at = (ms) => page.evaluate(([i, t]) => {
+		const el = document.getElementById(i);
+		const anims = el.getAnimations().filter((x) => x instanceof CSSAnimation);
+		anims.forEach((x) => { x.pause(); x.currentTime = t; });
+		const s = getComputedStyle(el);
+		return { n: anims.length, mode: s.mixBlendMode, colour: s.backgroundColor };
+	}, [a, ms]);
+	expect((await at(1000)).n).toBe(2);
+	expect((await at(1000)).mode).toBe('multiply');
+	expect((await at(3000)).mode).toBe('screen');
+	expect((await at(5000)).mode).toBe('difference');
+	expect((await at(7000)).mode).toBe('overlay');
+	// the colour is not stepped: halfway between two keyframes it is neither
+	const mid = (await at(1320)).colour;	// 33% of 8s is 2640ms; 1320 is half way there
+	expect(mid).not.toBe('rgb(255, 77, 77)');
+	expect(mid).not.toBe('rgb(77, 159, 255)');
+});
