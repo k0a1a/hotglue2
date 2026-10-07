@@ -1615,18 +1615,6 @@
 	width: 380px;
 }
 
-/* The panel's title, at its very top. The other panels are named by their
-   icon row and this one has none, so it says what it is in words. A little
-   larger and bolder than a field label, and ruled under, so it reads as the
-   panel's own head rather than as the first of its contents. */
-.glue-code-header {
-	font-size: 12px;
-	font-weight: bold;
-	margin-bottom: 8px;
-	padding-bottom: 4px;
-	border-bottom: 1px solid #ddd;
-}
-
 .glue-code-field {
 	margin-bottom: 8px;
 }
