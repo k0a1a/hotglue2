@@ -470,8 +470,12 @@ $.glue.popover = function()
 				var recent = $.glue.colorpicker.recent();
 				cells.forEach(function(cell, i) {
 					// the palette head is the most recent; the cells fill
-					// in order, a neutral grey where the palette runs out
-					cell.style.backgroundColor = (recent && i < recent.length) ? recent[i] : '#eee';
+					// in order, and where the palette runs out a cell wears
+					// yellow, green, red or blue by its place - never an
+					// empty box (danja's call). Only the swatch: the palette
+					// itself stays as the page made it.
+					cell.style.backgroundColor = (recent && i < recent.length) ?
+						recent[i] : ['#ffdd00', '#22aa44', '#ee2222', '#2255ee'][i];
 				});
 			};
 			sync();
@@ -4222,7 +4226,7 @@ $.glue.upload = function()
 		elem.appendChild($.glue.icon('upload-asset'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
-		upload.accept = 'image/*,video/*,audio/*';
+		upload.accept = 'image/*,video/*,audio/*,text/html,.html,.htm';
 		upload.tooltip = 'upload an asset: an image, video or sound file';
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		elem.addEventListener('click', function(e) {

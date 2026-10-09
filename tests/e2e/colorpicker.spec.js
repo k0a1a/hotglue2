@@ -628,3 +628,31 @@ test('a palette with nothing usable falls back to the global defaults',
 		}));
 		expect(defaults).toContain(bg);
 	});
+
+test('the colour button never shows an empty box: unused cells wear yellow, green, red, blue',
+	async ({ page, hg }) => {
+		const a = hg.addObject('100000000001', OBJ(300, 300), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await page.locator(`[id="${a}"]`).click();
+		const menu_btn = page.locator('#glue-contextmenu-object-properties');
+		await expect(menu_btn).toBeVisible();
+		await page.waitForTimeout(400);		// the menu fades in
+		await menu_btn.click();
+		const cells = () => page.evaluate(() =>
+			[...document.querySelectorAll('.glue-properties-popover .glue-background-color .glue-popover-color-cell')]
+				.map((c) => getComputedStyle(c).backgroundColor));
+
+		// no palette yet: all four by place
+		expect(await cells()).toEqual(['rgb(255, 221, 0)', 'rgb(34, 170, 68)',
+			'rgb(238, 34, 34)', 'rgb(34, 85, 238)']);
+
+		// one colour used: it leads, and the rest keep their places
+		await page.locator('.glue-properties-popover .glue-background-color').click();
+		const field = page.locator('.picker_editor input');
+		await field.fill('#123456');
+		await field.press('Enter');
+		await expect(page.locator('.picker_wrapper')).toBeHidden();
+		await expect.poll(cells).toEqual(['rgb(18, 52, 86)', 'rgb(34, 170, 68)',
+			'rgb(238, 34, 34)', 'rgb(34, 85, 238)']);
+	});
