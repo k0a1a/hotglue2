@@ -265,7 +265,11 @@ test("on any other kind of object the colour is the object's own",
 		await waitForEditor(page, 1);
 		const attrsOf = () => hg.readObject('100000000002').attrs;
 
-		await select(page, a);
+		// through the shield: it covers only the upper part of an iframe, so a
+		// click at the object's centre lands in the page inside it
+		await byId(page, a).locator(':scope > .glue-iframe-shield').click();
+		await expect(propsBtn(page)).toBeVisible();
+		await page.waitForTimeout(400);		// the menu fades in
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
 		await pop(page).locator('.glue-background-color').click();

@@ -164,7 +164,9 @@ test('the panel only draws the section for a text object, and there it is flush 
 		});
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
-		await byId(page, `${hg.pageName}.${ID}`).click();
+		// through the shield: it covers only the upper part of an iframe, so a
+		// click at the object's centre lands in the page inside it
+		await byId(page, `${hg.pageName}.${ID}`).locator(':scope > .glue-iframe-shield').click();
 		await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
 		await expect(propsPanel(page)).toBeVisible();
 

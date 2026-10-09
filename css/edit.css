@@ -837,6 +837,35 @@
 	border-radius: 0;
 }
 
+.glue-popover input,
+.glue-popover select,
+.glue-popover textarea,
+.picker_wrapper input,
+.picker_wrapper button {
+	/* square, like the rest of the editor's chrome: the browsers round form
+	   controls by default and nothing here ever set it (danja's call) */
+	border-radius: 0;
+}
+
+.glue-popover input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),
+.glue-popover select,
+.glue-popover textarea,
+.layout_default.picker_wrapper input:not([type=range]) {
+	/* the fields' frame: 1px of mid grey (danja's call - it was black), with
+	   a pixel of room on the left so a number does not sit on the edge. Not
+	   the slider, the toggles or the file picker, which are not fields and
+	   draw their own. */
+	border: 1px solid #999;
+	padding-left: 2px;
+}
+
+.layout_default.picker_wrapper input:not(:focus) {
+	/* vanilla-picker framed its hex field with a silver hairline drawn as a
+	   shadow spread; with a real border that would be a second frame. The
+	   focus glow is left alone. */
+	box-shadow: none;
+}
+
 .glue-popover-field {
 	/* three digits' worth: the field deliberately accepts values past the
 	   slider's end */
@@ -924,7 +953,10 @@
 	   is the padding box either way, 47, so there is nothing to subtract),
 	   which is the same corner the arrow now occupies. Five ch is what is
 	   left in both engines, and -0.05 still fits with 5px to spare. */
-	width: calc(5ch + 20px);
+	/* 19, not 20, since the border is the editor's own 1px a side and
+	   no longer the UA's 2px inset: the 4px that sum allowed for is 2 now,
+	   plus the 1px of left padding, and the digits keep their five ch */
+	width: calc(5ch + 19px);
 	padding-right: 16px;
 	/* The browser's steppers, off - and BOTH spellings, because each engine
 	   listens to only one. Measured 2026-09-17, three 200px number inputs
