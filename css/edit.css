@@ -554,6 +554,10 @@
 	   for one: place_popup() in js/edit.js positions the popup itself, and
 	   this is what makes the anchor its exact top-left corner. */
 	margin: 0 !important;
+	/* No drop shadow (danja's call, like every popout): vanilla-picker's
+	   .popup rule swaps its silver hairline for a 10px blurred shadow, so
+	   the hairline is put back to keep an edge. */
+	box-shadow: 0 0 0 1px silver !important;
 }
 
 .picker_arrow {

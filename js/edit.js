@@ -983,7 +983,12 @@ document.documentElement.addEventListener('click', function(e) {
 	// ancestor of the two ends, which is out here. It must not close the panel,
 	// nor reach the page, where it would read as "deselect" - the same two
 	// things the scrub's flag above guards against, for every control.
-	if (press_began_in_panel && !pop.contains(e.target)) {
+	// The colour picker is part of the panel here too, as it is where the press
+	// is recorded: its anchor sits in body, outside pop, so without this a
+	// plain click on one of its swatches read as a drag released outside the
+	// panel and was swallowed before the swatch heard it.
+	if (press_began_in_panel && !pop.contains(e.target) &&
+		!e.target.closest('.picker_wrapper')) {
 		press_began_in_panel = false;
 		e.stopPropagation();
 		e.preventDefault();
