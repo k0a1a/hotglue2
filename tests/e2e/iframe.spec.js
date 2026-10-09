@@ -94,3 +94,15 @@ test('the shield is the webvideo\'s: the upper part of the embed, shown on hover
 		});
 		expect(same, 'one rule for both shields').toBeGreaterThan(0);
 	});
+
+test('the shield stops at 150px on a tall embed and stays 40% on a short one',
+	async ({ page, hg }) => {
+		const tall = hg.addObject('100000000001', { ...IFRAME, 'object-height': '800px' }, '');
+		const short = hg.addObject('100000000002', { ...IFRAME, 'object-left': '800px' }, '');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+		const height = (id) => byId(page, id).locator(':scope > .glue-iframe-shield')
+			.evaluate((s) => Math.round(s.getBoundingClientRect().height));
+		expect(await height(tall)).toBe(150);		// 40% would be 320
+		expect(await height(short)).toBe(96);		// 40% of 240
+	});

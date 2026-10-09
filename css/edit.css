@@ -1750,6 +1750,13 @@
 	width: 100%;
 }
 
+.glue-iframe-shield {
+	/* a tall embed does not get a tall shield: 40% of a full-page frame would
+	   cover most of the page inside it (danja's call). The webvideo's stays
+	   at its 40%. */
+	max-height: 150px;
+}
+
 .webvideo:hover .glue-webvideo-shield,
 .iframe:hover .glue-iframe-shield {
 	/* shown only while the object is hovered, so it does not obscure the embed
