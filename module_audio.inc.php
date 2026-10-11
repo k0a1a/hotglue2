@@ -290,7 +290,7 @@ function audio_alter_render_early($args)
 		$s = elem('div');
 		elem_add_class($s, 'glue-audio-shield');
 		elem_add_class($s, 'glue-ui');
-		elem_attr($s, 'title', 'click here to select/edit this audio');
+		elem_attr($s, 'title', 'click to select this audio');
 		elem_append($elem, $s);
 	}
 

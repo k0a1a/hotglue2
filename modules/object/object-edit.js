@@ -135,17 +135,17 @@ function object_properties_modal_show(obj, data) {
 	txt(line1, '<div', 'glue-tag-name');
 	txt(line1, ' id=');
 	var id_val = txt(line1, '"' + full_name + '"', 'glue-tag-fixed');
-	id_val.title = 'the object\'s id - select and copy it to target this object from the page\'s code';
-	var copy_id = $.glue.icon('copy-12', 'copy the object\'s id');
+	id_val.title = 'object id - select and copy it to target this object from page code';
+	var copy_id = $.glue.icon('copy-12', 'copy object id');
 	copy_id.classList.add('glue-tag-copy');
 	copy_id.style.width = '12px';
 	copy_id.style.height = '12px';
 	copy_id.setAttribute('role', 'button');
-	copy_id.setAttribute('aria-label', 'copy the object\'s id');
+	copy_id.setAttribute('aria-label', 'copy object id');
 	copy_id.addEventListener('click', function() {
 		var done = function() {
 			copy_id.title = 'copied';
-			setTimeout(function() { copy_id.title = 'copy the object\'s id'; }, 1200);
+			setTimeout(function() { copy_id.title = 'copy object id'; }, 1200);
 		};
 		if (navigator.clipboard && navigator.clipboard.writeText) {
 			navigator.clipboard.writeText(full_name).then(done, function() {
@@ -163,7 +163,7 @@ function object_properties_modal_show(obj, data) {
 		var sel = window.getSelection();
 		sel.removeAllRanges();
 		sel.addRange(range);
-		copy_id.title = 'select done - press ctrl+c';
+		copy_id.title = 'selected - press ctrl+c';
 	}
 	line1.appendChild(copy_id);
 	tag.appendChild(line1);
@@ -218,7 +218,7 @@ function object_properties_modal_show(obj, data) {
 		remove.type = 'button';
 		remove.className = 'glue-tag-remove';
 		remove.textContent = '×';
-		remove.title = 'remove this attribute';
+		remove.title = 'remove attribute';
 		remove.addEventListener('click', function() {
 			row.remove();
 			commit();
@@ -549,6 +549,7 @@ function object_edge_popover(obj)
 	};
 
 	var radius = $.glue.popover.number_row('round', {
+		title: 'corner radius',
 		// hard floor at 0: a radius is a magnitude, and the setter reads
 		// anything else as "no radius" - so -20 was taking the corner off the
 		// object and leaving -20 in the field as the reason. The ceiling is the
@@ -570,6 +571,7 @@ function object_edge_popover(obj)
 	// of this function, into the fold, because the appends are what fix the
 	// panel's order and the fold is built below.
 	var fade = $.glue.popover.number_row('fade', {
+		title: 'edge fade - softens the object inward from its sides',
 		// hard floor at 0, as round above: a fade is a length, and the setter
 		// takes a negative as "no fade" rather than as a soft edge
 		min: 0, max: max, step: 1, unit: 'px', hard: [0, null],
@@ -585,6 +587,7 @@ function object_edge_popover(obj)
 	// A border of the object's own, which only became possible when the
 	// editor's selection stopped being a border on this same element.
 	var border = $.glue.popover.number_row('width', {
+		title: 'border width',
 		// hard floor at 0: a border-width of -3px is an invalid declaration the
 		// browser drops, so the object would show no border at all while the
 		// field said -3. 40 is where the drag stops, which is not a meaning
@@ -603,6 +606,7 @@ function object_edge_popover(obj)
 	var style_row = $.glue.popover.row('style');
 	var select = document.createElement('select');
 	select.className = 'glue-border-style';
+	select.title = 'border style';
 	// solid first because it is the default, and the only one that is not
 	// stored - see object_render_object() in module_object.inc.php
 	['solid', 'dashed', 'double', 'groove', 'inset', 'outset', 'ridge']
@@ -638,7 +642,7 @@ function object_edge_popover(obj)
 	// the border colour is the shared swatch button now - the 20x20 square
 	// of the palette's four most recent colours, like every other colour
 	// button (danja's call, 2026-09-26)
-	var colour = $.glue.popover.color_button('border colour',
+	var colour = $.glue.popover.color_button('border color',
 		function() {
 			return getComputedStyle(obj).borderTopColor;
 		},
@@ -681,8 +685,8 @@ function object_edge_popover(obj)
 		var on = object_overflow_hidden(obj);
 		clip.classList.toggle('glue-btn-active', on);
 		clip.title = on ?
-			'content bigger than this object is cut off - click to let it show' :
-			'content bigger than this object spills out - click to cut it off';
+			'cut off content bigger than the object - click to let it show' :
+			'content bigger than the object shows - click to cut it off';
 	};
 	clip.addEventListener('click', function() {
 		obj.style.overflow = object_overflow_hidden(obj) ? '' : 'hidden';
@@ -719,6 +723,7 @@ function object_edge_popover(obj)
 	};
 
 	var spread = $.glue.popover.number_row('glow spread', {
+		title: 'glow spread',
 		// the halo's blur radius, in px; a tenth of a px is finer than the
 		// eye can judge, but it keeps the step that found the values it did
 		// hard floor at 0: it is a radius, and a negative one is what the
@@ -743,6 +748,7 @@ function object_edge_popover(obj)
 	adv.appendChild(spread.row);
 
 	var strength = $.glue.popover.number_row('opacity', {
+		title: 'glow opacity',
 		// hard both ends: a percentage of opacity, so 150 is not a stronger
 		// glow - it is a number the object file would keep and the page would
 		// clamp, and this is one of the three rows that reach the file as typed
@@ -783,7 +789,7 @@ function object_edge_popover(obj)
 		return cell;
 	};
 
-	var glow_colour = $.glue.popover.color_button('glow colour',
+	var glow_colour = $.glue.popover.color_button('glow color',
 		function() {
 			return glow.color;
 		},
@@ -811,7 +817,7 @@ function object_edge_popover(obj)
 	var inner_glyph = document.createElement('span');
 	inner_glyph.className = 'glue-glyph-empty-square';
 	inner_toggle.appendChild(inner_glyph);
-	inner_toggle.title = 'glow inside the object too';
+	inner_toggle.title = 'inner glow - also glow inside the object';
 	var sync_inner = function() {
 		inner_toggle.classList.toggle('glue-font-toggle-on', 0 < glow.inner);
 	};
@@ -829,7 +835,7 @@ function object_edge_popover(obj)
 	});
 	sync_inner();
 
-	var duotone = $.glue.popover.color_button('glow second colour',
+	var duotone = $.glue.popover.color_button('glow second color',
 		function() {
 			return glow.color2;
 		},
@@ -862,7 +868,7 @@ function object_edge_popover(obj)
 		}
 	};
 
-	var drop_colour = $.glue.popover.color_button('drop shadow colour',
+	var drop_colour = $.glue.popover.color_button('shadow color',
 		function() {
 			return drop.color;
 		},
@@ -893,6 +899,7 @@ function object_edge_popover(obj)
 	adv.appendChild(pair_duo);
 
 	var distance = $.glue.popover.number_row('distance', {
+		title: 'shadow distance',
 		min: 0, max: 100, step: 1, unit: 'px',
 		value: drop.distance,
 		apply: function(px, commit) {
@@ -908,6 +915,7 @@ function object_edge_popover(obj)
 	adv.appendChild(distance.row);
 
 	var angle = $.glue.popover.number_row('angle', {
+		title: 'shadow angle',
 		min: 0, max: 360, step: 1, unit: '°',
 		value: drop.angle,
 		apply: function(deg, commit) {
@@ -921,6 +929,7 @@ function object_edge_popover(obj)
 	adv.appendChild(angle.row);
 
 	var blur = $.glue.popover.number_row('blur', {
+		title: 'shadow blur',
 		// hard floor at 0: a blur radius, and the shadow is drawn without one
 		// below that. Distance and spread are NOT floored - both are signed in
 		// CSS, and a shadow up and to the left is what a negative distance is
@@ -937,6 +946,7 @@ function object_edge_popover(obj)
 	adv.appendChild(blur.row);
 
 	var drop_spread = $.glue.popover.number_row('spread', {
+		title: 'shadow spread',
 		min: 0, max: 40, step: 1, unit: 'px',
 		value: drop.spread,
 		apply: function(px, commit) {
@@ -1059,87 +1069,6 @@ function object_edge_popover(obj)
 }
 
 //
-// --- object adjustment ------------------------------------------------------
-//
-// The stack, and the precise position: four z moves in the icon row, and the
-// x/y rows right under it - no fold, the position is what one comes to this
-// panel for (danja's call, 2026-09-23).
-//
-// It was three things until 2026-09-16 - flip, z-level and transparency in one
-// panel - and the other two went to the object properties panel, where an
-// object's own properties are. Z-level is not a property of the object but of
-// the company it keeps; the position is the object's own, and its rows read
-// and write the same stored coordinates the drag writes.
-function object_adjust_popover(obj)
-{
-	var pop = $.glue.popover.open(obj, 'glue-adjust-popover');
-	if (!pop) {
-		return;
-	}
-	var save = function() {
-		$.glue.object.save(obj);
-	};
-
-	// z-level: to the ends or one place at a time. level_up/level_down swap
-	// with the nearest intersecting object and save both ends of the swap
-	// themselves; to_top/to_bottom follow the menu's old pattern of save on
-	// the way out.
-	//
-	// Four actions is the house style's first half; the values - the x/y
-	// position - sit right below, out in the open.
-	var z_row = $.glue.popover.icon_row();
-	var z_btn = function(icon, title, fn) {
-		var b = $.glue.popover.icon_button(icon, title);
-		b.addEventListener('click', fn);
-		z_row.appendChild(b);
-	};
-	z_btn('layer-top', 'to top', function() {
-		$.glue.stack.to_top(obj);
-		save();
-	});
-	z_btn('layer-up', 'level up', function() {
-		$.glue.stack.level_up(obj);
-	});
-	z_btn('layer-down', 'level down', function() {
-		$.glue.stack.level_down(obj);
-	});
-	z_btn('layer-bottom', 'to bottom', function() {
-		$.glue.stack.to_bottom(obj);
-		save();
-	});
-	pop.appendChild(z_row);
-
-	// x and y: the stored coordinates, typed or dragged precisely. Positions
-	// have no natural bounds - the row's range only feeds the field's
-	// steppers, since a typed value is never capped (number_row's own rule) -
-	// and the drag moves one pixel per pixel of pointer, which is what makes
-	// it a positioning control rather than a coarse scrub.
-	var pos = {
-		x: parseFloat(obj.style.left) || obj.offsetLeft,
-		y: parseFloat(obj.style.top) || obj.offsetTop,
-	};
-	var pos_row = function(label, key) {
-		var row = $.glue.popover.number_row(label, {
-			min: -9999, max: 99999, step: 1, unit: 'px', sensitivity: 1,
-			value: pos[key],
-			apply: function(v, commit) {
-				pos[key] = v;
-				obj.style[key == 'x' ? 'left' : 'top'] = v+'px';
-				if (commit) {
-					save();
-				}
-			}
-		});
-		return row.row;
-	};
-	// the rows sit out in the open, no fold - the position is what one comes
-	// to this panel FOR (danja's call, 2026-09-23)
-	pop.appendChild(pos_row('x', 'x'));
-	pop.appendChild(pos_row('y', 'y'));
-
-
-	$.glue.popover.show(pop);
-}
 
 //
 // --- properties ------------------------------------------------------------
@@ -1244,14 +1173,14 @@ function object_link_row(obj)
 	url_input.type = 'text';
 	url_input.className = 'glue-popover-field glue-object-link-field';
 	// the prompt's examples, which were this feature's only documentation
-	url_input.title = 'a full address (https://hotglue.me), a page name, or an anchor (#top)';
+	url_input.title = 'link address - full url, page name or anchor (#top)';
 	var btn = document.createElement('button');
 	btn.type = 'button';
 	btn.className = 'glue-link-add-class';
 	btn.textContent = 'make link';
-	btn.title = 'put this address on the object';
+	btn.title = 'put a link on this object';
 	var target = link_target_select();
-	target.title = 'where clicking the object opens the link';
+	target.title = 'link target - where the link opens';
 	var target_row = $.glue.popover.row('target');
 	target_row.appendChild(target);
 
@@ -1266,13 +1195,13 @@ function object_link_row(obj)
 	var sync = function() {
 		if (mode == 'remove') {
 			btn.textContent = 'remove link';
-			btn.title = 'take the link off the object';
+			btn.title = 'remove the link from this object';
 		} else if (mode == 'update') {
 			btn.textContent = 'update link';
-			btn.title = 'apply the edited address to the link';
+			btn.title = 'apply the edited address';
 		} else {
 			btn.textContent = 'make link';
-			btn.title = 'put this address on the object';
+			btn.title = 'put a link on this object';
 		}
 	};
 
@@ -1383,6 +1312,41 @@ function object_link_row(obj)
 	};
 }
 
+// The layer order: four acts, in a row of icons under the panel's own. Where
+// the object sits in the stack - to the ends, or one place at a time.
+// level_up/level_down swap with the nearest intersecting object and save both
+// ends of the swap themselves; to_top/to_bottom save on the way out. It was a
+// popout of its own (with an x and y) until 2026-10-10: the object's place is
+// the placement rows' now, and the order is a property of the object like the
+// rest of this panel.
+function object_layer_row(obj, save)
+{
+	var row = $.glue.popover.icon_row();
+	var btn = function(icon, title, fn) {
+		var b = $.glue.popover.icon_button(icon, title);
+		b.addEventListener('click', fn);
+		// the panel's icons are 22px (css/edit.css sizes the mask to match)
+		b.style.width = '22px';
+		b.style.height = '22px';
+		row.appendChild(b);
+	};
+	btn('layer-top', 'bring to front', function() {
+		$.glue.stack.to_top(obj);
+		save();
+	});
+	btn('layer-up', 'bring forward', function() {
+		$.glue.stack.level_up(obj);
+	});
+	btn('layer-down', 'send backward', function() {
+		$.glue.stack.level_down(obj);
+	});
+	btn('layer-bottom', 'send to back', function() {
+		$.glue.stack.to_bottom(obj);
+		save();
+	});
+	return row;
+}
+
 function object_properties_popover(obj)
 {
 	var pop = $.glue.popover.open(obj, 'glue-properties-popover');
@@ -1491,10 +1455,13 @@ function object_properties_popover(obj)
 	background_title.textContent = 'background properties';
 	body.insertBefore(background_title, body.firstChild);
 	pop.appendChild(icons);
+	pop.appendChild(object_layer_row(obj, save));
 	if (link_ui) {
 		pop.appendChild(link_ui.row);
 		pop.appendChild(link_ui.target_row);
 	}
+	// the object's place and size, in the open above the fold
+	pop.appendChild($.glue.popover.placement_rows(obj));
 	pop.appendChild(fold.toggle);
 	pop.appendChild(body);
 
@@ -1560,7 +1527,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// for the long version of why this is not $.glue.popover.color_button().
 	// The glyph is the shared color, the same as the page panel's and
 	// every other colour button in the editor (danja's call, 09-16).
-	var colour = $.glue.popover.color_button('set object background color',
+	var colour = $.glue.popover.color_button('background color',
 		function() {
 			return getComputedStyle(obj).backgroundColor;
 		},
@@ -1591,11 +1558,11 @@ function object_background_section(pop, icons, body, obj, save)
 	// 'object', not 'object-background': upload_files() dispatches by calling
 	// "{preferred_module}_upload", so the name has to be the module's own or
 	// the file falls through to the image module and becomes a new object.
-	var image = $.glue.popover.icon_button('background-image-22', 'set object background image');
+	var image = $.glue.popover.icon_button('background-image-22', 'background image - pick a file');
 	image.classList.add('glue-background-image');
 	$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page,
 		preferred_module: 'object', object: obj.id }, {
-		tooltip: 'set object background image',
+		tooltip: 'background image - pick a file',
 		error: function(e) {
 			$.glue.error('There was a problem uploading the file.');
 		},
@@ -1657,7 +1624,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// (object_alter_render_early()'s own default when the attribute is absent),
 	// so an empty inline style here would tile the picture live until the next
 	// load. The reset button below sets no-repeat for the same reason.
-	var repeat = $.glue.popover.icon_button('tile-22', 'tile object background image');
+	var repeat = $.glue.popover.icon_button('tile-22', 'tile background image');
 	repeat.classList.add('glue-background-tile');
 	var sync_repeat = function() {
 		repeat.classList.toggle('glue-btn-active',
@@ -1693,6 +1660,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// The min and max are a drag length, not a limit: the field keeps the real
 	// number however far the drag went (see $.glue.popover.number_row).
 	var x_row = $.glue.popover.number_row('x', {
+		title: 'background x position',
 		// coarse: a page position wants a finer hand than the default drag
 		// gives - span/200 would move the picture 5px per pixel of drag
 		min: -500, max: 500, step: 1, unit: 'px', coarse: true,
@@ -1706,6 +1674,7 @@ function object_background_section(pop, icons, body, obj, save)
 		}
 	});
 	var y_row = $.glue.popover.number_row('y', {
+		title: 'background y position',
 		// coarse: as x above
 		min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 		value: at.y,
@@ -1815,6 +1784,7 @@ function object_background_section(pop, icons, body, obj, save)
 	// image stays at its natural size, and a zero typed into the field
 	// removes the attribute again, per the "absent means default" rule.
 	var scale_row = $.glue.popover.number_row('scale', {
+		title: 'background scale, % of object width',
 		min: 10, max: 300, step: 1, unit: '%',
 		value: parseFloat(obj.style.backgroundSize) || 100,
 		apply: function(pct, commit) {
@@ -1920,6 +1890,7 @@ function object_padding_section(body, obj, save)
 	// one value for all four sides. Starts at the left padding, and shows
 	// what a drag would set all four to rather than chasing the knobs.
 	var all = $.glue.popover.number_row('padding', {
+		title: 'padding, all sides',
 		// hard both ends, because the apply below already clamps to exactly
 		// this - saying it here as well is what makes the FIELD show the
 		// padding the object has, rather than the number that was typed into it
@@ -1950,6 +1921,7 @@ function object_padding_section(body, obj, save)
 	// name of its own.
 	var knob = function(label, name) {
 		var row = $.glue.popover.number_row(label, {
+			title: 'padding '+label,
 			// hard both ends, as the padding row above and for its reason
 			min: 0, max: max, step: 1, unit: 'px', hard: [0, max],
 			value: pad[name],
@@ -2043,6 +2015,7 @@ function object_flip_section(icons, obj, save)
 function object_transparency_section(body, obj, save)
 {
 	var opacity = $.glue.popover.number_row('opacity', {
+		title: 'object opacity',
 		// THE row the hard range was added for. opacity is 0 to 1 in CSS, and
 		// out of range here is not a declaration the browser throws away - it
 		// CLAMPS it and keeps the number. Measured in both engines: a typed -50
@@ -2072,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// rather than a diagram, and it earns its place: everyone knows what a
 	// cloned sheep is, and the alternative - two overlapping rectangles - is
 	// what half the icons in any toolbar already look like.
-	elem = $.glue.icon('clone-object', 'create a clone of this object');
+	elem = $.glue.icon('clone-object', 'clone object');
 	// the sheep is the one icon in the set that is a joke, so it gets the
 	// one animation in the set too: its eyes blink (a lid painted in the
 	// button's own fill drops over them - see
@@ -2132,21 +2105,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	$.glue.contextmenu.register('object', 'object-clone', elem, 1);
 
-	// object adjustment: z-level in one popout. It was flip, z-level and
-	// transparency, in place of the three menu buttons that each hid a gesture
-	// - the flip's four-state cycle and the two drag-distance sliders; the
-	// other two went to the properties button below on 2026-09-16. Their PNG
-	// artwork, with the rest of the modules' old PNG buttons, was removed on
-	// 2026-10-06.
-	elem = $.glue.icon('change-layer', 'object position controls: layer up/down and x/y position');
-	elem.addEventListener('click', function(e) {
-		object_adjust_popover($.glue.owner(this));
-	});
-	// in the top row, after the text items (prios 1-6): 7 and 8
-	$.glue.contextmenu.register('object', 'object-adjust', elem, 7, true);
-
 	// border properties and effects: rounded corners, style, shadow and glow
-	elem = $.glue.icon('object-border-properties', 'object border properties and effects: rounded corners, style, shadow and glow');
+	elem = $.glue.icon('object-border-properties', 'border properties - corners, border, clip, fade, glow, shadow');
 	elem.addEventListener('click', function(e) {
 		object_edge_popover($.glue.owner(this));
 		e.stopPropagation();
@@ -2169,7 +2129,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// background alone. The icon is unchanged - a filled square is what an
 	// object's properties panel looks like from here, and the button's place in
 	// the row has not moved.
-	elem = $.glue.icon('object-properties', 'object properties: background color/image, transparency, padding, flip, link');
+	elem = $.glue.icon('object-properties', 'object properties - background, opacity, padding, flip, link');
 	elem.addEventListener('click', function(e) {
 		object_properties_popover($.glue.owner(this));
 		e.stopPropagation();
@@ -2182,7 +2142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under an object, and how it is flipped, is as much a property of it as
 	// the id is. What this action is about is the object as an element: what it
 	// is called, what classes it carries, what it points at.
-	elem = $.glue.icon('object-html-attributes', 'object HTML attributes: id, class and custom values');
+	elem = $.glue.icon('object-html-attributes', 'html attributes - id, class and custom attributes');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
@@ -2198,22 +2158,35 @@ document.addEventListener('DOMContentLoaded', function() {
 	// have nothing to be put between
 	$.glue.contextmenu.register('object', 'object-target', elem, 8);
 
-	elem = $.glue.icon('shared-w-other-pages', 'make this object appear on all pages');
+	elem = $.glue.icon('shared-w-other-pages', 'show on all pages - repeat this object on every page');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		$.glue.backend({ method: 'glue.object_make_symlink', name: obj.id });
 	});
 	$.glue.contextmenu.register('object', 'object-symlink', elem);
 
-	elem = $.glue.icon('delete', 'delete object (UNDOABLE)');
+	// aligning needs several objects, and this menu belongs to one: the
+	// button says where the alignment is
+	elem = $.glue.icon('object-align-left', 'align objects - select two or more with shift+click');
 	elem.addEventListener('click', function(e) {
-		var obj = $.glue.owner(this);
-		var id = obj.id;
-		$.glue.undo.capture_delete(obj, $.glue.object.to_html(obj));
-		$.glue.object.unregister(obj);
-		obj.remove();
-		// delete in backend as well
-		$.glue.backend({ method: 'glue.delete_object', name: id });
+		$.glue.error('Select two or more objects (Shift+click) to align to the first selected object');
+		e.stopPropagation();
+	});
+	$.glue.contextmenu.register('object', 'object-align', elem, 18);
+
+	elem = $.glue.icon('delete', 'delete object - can be undone');
+	elem.addEventListener('click', function(e) {
+		// each object on its own, as one undo step
+		$.glue.undo.begin_batch();
+		$.glue.sel.targets($.glue.owner(this)).forEach(function(obj) {
+			var id = obj.id;
+			$.glue.undo.capture_delete(obj, $.glue.object.to_html(obj));
+			$.glue.object.unregister(obj);
+			obj.remove();
+			// delete in backend as well
+			$.glue.backend({ method: 'glue.delete_object', name: id });
+		});
+		$.glue.undo.end_batch();
 		// update canvas
 		$.glue.canvas.update();
 	});
@@ -2228,14 +2201,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	// on" green: that would have said something about THIS object, and the
 	// clipboard is one slot for the whole editor holding an object that may
 	// well not be the one whose menu is open.
-	elem = $.glue.icon('copy-to-clipboard', 'copy object to clipboard: paste copied object on any page of your site');
+	elem = $.glue.icon('copy-to-clipboard', 'copy object - paste it on any page of the site');
 	// note: elem is reused for every item in this scope, so the closure must
 	// capture this button, not the mutable elem
 	var copy_elem = elem;
 	var copy_sync = function() {
 		var full = $.glue.clipboard.has_clipboard();
 		copy_elem.classList.toggle('glue-clipboard-full', full);
-		copy_elem.title = full ? 'copy object to clipboard: [previous data present]' : 'copy object to clipboard: paste copied object on any page of your site';
+		copy_elem.title = full ? 'copy object - replaces the copied object' : 'copy object - paste it on any page of the site';
 	};
 	elem.addEventListener('glue-menu-activate', copy_sync);
 	// a copy by shortcut leaves this button untouched, so it is told when the

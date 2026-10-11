@@ -249,7 +249,7 @@ $.glue.text = function()
 					e.preventDefault();
 					return false;
 				});
-				a.title = 'this link is disabled for editing';
+				a.title = 'link disabled while editing';
 				// check if scheme is set
 				var url = a.getAttribute('href');
 				if (url && url.charAt(0) != '#' && url.indexOf('://') < 1) {
@@ -460,7 +460,7 @@ $.glue.live('.text', 'glue-register', function(e) {
 			e.preventDefault();
 			return false;
 		});
-		a.title = 'this link is disabled for editing';
+		a.title = 'link disabled while editing';
 	});
 });
 
@@ -648,12 +648,12 @@ function text_panel_link_build() {
 	var link_url = document.createElement('input');
 	link_url.type = 'text';
 	link_url.className = 'glue-link-field';
-	link_url.title = 'the address the selected text links to';
+	link_url.title = 'link address - where the selected text links to';
 	var link_btn = document.createElement('button');
 	link_btn.type = 'button';
 	link_btn.className = 'glue-link-add-class';
 	link_btn.textContent = 'make link';
-	link_btn.title = 'wrap the selected text in a link to this address';
+	link_btn.title = 'put a link on the selected text';
 	link_row.appendChild(link_url);
 	link_row.appendChild(link_btn);
 
@@ -668,7 +668,7 @@ function text_panel_link_build() {
 		link_target_select() : null;
 	var target_row = $.glue.popover.row('target');
 	if (target_sel) {
-		target_sel.title = 'where clicking the link opens it';
+		target_sel.title = 'link target - where the link opens';
 		target_row.appendChild(target_sel);
 	}
 	var link_range = null;      // the snapshot the first interaction took
@@ -802,11 +802,11 @@ function text_panel_link_build() {
 		if (link_mode != 'add' && link_prefill !== null) {
 			if (link_url.value != link_prefill) {
 				link_btn.textContent = 'update link';
-				link_btn.title = 'apply the edited address to the link';
+				link_btn.title = 'apply the edited address';
 				link_mode = 'update';
 			} else {
 				link_btn.textContent = 'remove link';
-				link_btn.title = 'take the link off the text';
+				link_btn.title = 'remove the link from the selected text';
 				link_mode = 'remove';
 			}
 		}
@@ -830,12 +830,12 @@ function text_panel_link_build() {
 			link_url.value = existing.getAttribute('href') || '';
 			link_prefill = link_url.value;
 			link_btn.textContent = 'remove link';
-			link_btn.title = 'take the link off the text';
+			link_btn.title = 'remove the link from the selected text';
 			link_mode = 'remove';
 			if (target_sel) target_sel.set_value(existing.getAttribute('target') || '');
 		} else {
 			link_btn.textContent = 'make link';
-			link_btn.title = 'wrap the selected text in a link to this address';
+			link_btn.title = 'put a link on the selected text';
 			link_mode = 'add';
 			if (target_sel) target_sel.set_value('');
 		}
@@ -1582,6 +1582,8 @@ function text_panel_open(obj) {
 		return;
 	}
 	pop.keep_open_target = obj;
+	// the editing's toolbar: the object's menu stays
+	pop.keep_menu = true;
 	pop.on_close = text_panel_state_clear;
 	text_panel_rebuild(pop, obj);
 	$.glue.popover.show(pop);
@@ -1818,6 +1820,13 @@ function text_panel_build(pop, obj)
 	// On the run they wrap/unwrap tags and a colour span in the render; on
 	// the object they write obj.style.* - the same four effects, stored
 	// wherever the target stores things.
+	// the panel's own head, above the acts - the menu button says what the
+	// panel does, and this says what it is
+	var header = document.createElement('div');
+	header.className = 'glue-popover-header';
+	header.textContent = 'Text properties';
+	pop.appendChild(header);
+
 	var icons = $.glue.popover.icon_row();
 	pop.appendChild(icons);
 	var toggles = {};
@@ -1900,7 +1909,7 @@ function text_panel_build(pop, obj)
 	// caret back once the picker closes), the object gets obj.style.color.
 	// The picker takes focus, which collapses the selection - so the range
 	// is snapshotted on mousedown, before the click opens anything.
-	var color_btn = $.glue.popover.color_button('text colour',
+	var color_btn = $.glue.popover.color_button('text color',
 		function() {
 			return run_active() ? text_strip_run_color() :
 				getComputedStyle(obj).color;
@@ -2301,10 +2310,10 @@ function text_panel_build(pop, obj)
 	var size_buttons = [];
 	var size_preset_row = $.glue.popover.row(false);
 	[
-		['s', 14, 'small: 14px', 'font-small-22'],
-		['n', 24, 'normal: 24px', 'font-normal-22'],
-		['b', 32, 'big: 32px', 'font-big-22'],
-		['x', 48, 'extra: 48px', 'font-extra-big-22']
+		['s', 14, 'font size small - 14px', 'font-small-22'],
+		['n', 24, 'font size normal - 24px', 'font-normal-22'],
+		['b', 32, 'font size big - 32px', 'font-big-22'],
+		['x', 48, 'font size extra big - 48px', 'font-extra-big-22']
 	].forEach(function(s) {
 		var b = $.glue.icon(s[3], s[2]);
 		b.classList.add('glue-font-size');
@@ -2344,6 +2353,7 @@ function text_panel_build(pop, obj)
 	// buttons: a run gets its size wrapped on a span, the object gets it
 	// written into its style.
 	var size_row = $.glue.popover.number_row('size', {
+		title: 'font size, exact',
 		min: 1, max: 100, step: 1, value: size, unit: 'px',
 		apply: function(px, commit) {
 			set_size(px, commit);
@@ -2394,10 +2404,10 @@ function text_panel_build(pop, obj)
 	// ones - and this table used to map them crosswise; the redraws need
 	// no such pairing.
 	[
-		['left', 'align-left-22', 'align left'],
-		['center', 'align-center-22', 'align centre'],
-		['right', 'align-right-22', 'align right'],
-		['justify', 'align-justify-22', 'justify']
+		['left', 'align-left-22', 'align text left'],
+		['center', 'align-center-22', 'align text center'],
+		['right', 'align-right-22', 'align text right'],
+		['justify', 'align-justify-22', 'justify text']
 	].forEach(function(a) {
 		var b = $.glue.icon(a[1], a[2]);
 		b.classList.add('glue-align-btn');
@@ -2426,8 +2436,8 @@ function text_panel_build(pop, obj)
 	// danja's call, 2026-10-06: the row's other buttons act on the whole
 	// object, while these act on the selection. Built like the toggles,
 	// wearing the same 22x22 redraws at 1:1.
-	[['ul', 'list-bulleted-22', 'bulleted list'],
-	 ['ol', 'list-ordered-22', 'numbered list']].forEach(function(l) {
+	[['ul', 'list-bulleted-22', 'bulleted list - each selected line becomes an item'],
+	 ['ol', 'list-ordered-22', 'numbered list - each selected line becomes an item']].forEach(function(l) {
 		var b = $.glue.popover.icon_button(l[1], l[2]);
 		b.style.width = '22px';
 		b.style.height = '22px';
@@ -2463,7 +2473,7 @@ function text_panel_build(pop, obj)
 	// danja's 22x22 redraw, shown 1:1: the box comes down from the 32px
 	// $.glue.icon() sets inline, and .glue-font-padding in text-edit.css
 	// sizes the glyph's mask to match (danja's call, 2026-09-27)
-	var pad_btn = $.glue.icon('padding-22', 'press and drag to position the text inside the object');
+	var pad_btn = $.glue.icon('padding-22', 'text padding - press and drag to move the text inside the object');
 	pad_btn.style.width = '22px';
 	pad_btn.style.height = '22px';
 	pad_btn.classList.add('glue-font-padding');
@@ -2527,7 +2537,14 @@ function text_panel_build(pop, obj)
 
 	// the face, out in the open above the fold (danja's call, 2026-09-18 -
 	// it had been the fold's first row since the day before). The appends are
-	// what fix where a row sits, and this one goes before "more knobs".
+	// what fix where a row sits, and this one goes before "more knobs". The
+	// wheel's own head goes in front of it - in the pop, not the row: the
+	// row is a flex line (the wheel and its arrow sit side by side) and has
+	// no room for a head of its own.
+	var face_header = document.createElement('div');
+	face_header.className = 'glue-popover-header';
+	face_header.textContent = 'Fonts';
+	pop.appendChild(face_header);
 	pop.appendChild(face_row);
 
 	// Where the faces in that dropdown come from, for anyone wondering why
@@ -2560,6 +2577,8 @@ function text_panel_build(pop, obj)
 	// The face came out of it on 2026-09-18 and sits above, so the exact
 	// size is its first row.
 	var fold = $.glue.popover.fold(pop, 'more knobs');
+	// the object's place and size, in the open above the fold
+	pop.appendChild($.glue.popover.placement_rows(obj));
 	pop.appendChild(fold.toggle);
 	var adv = fold.body;
 	pop.appendChild(adv);
@@ -2588,6 +2607,7 @@ function text_panel_build(pop, obj)
 	var cs = getComputedStyle(obj);
 
 	var line = $.glue.popover.number_row('line', {
+		title: 'line height',
 		// hard floor at 0: a line-height of -1em is not a tight leading, it is
 		// an invalid declaration the browser drops, so the object would render
 		// at its default while the file kept the number. The ceiling is the
@@ -2621,6 +2641,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(line.row);
 
 	var letter = $.glue.popover.number_row('letter', {
+		title: 'letter spacing',
 		// fine: the declared range is a fence around the useful one. Nobody
 		// sets a whole em of letter spacing; the band anyone uses is about an
 		// eighth of this, and at the default drag that eighth would be a 25px
@@ -2649,6 +2670,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(letter.row);
 
 	var word = $.glue.popover.number_row('word', {
+		title: 'word spacing',
 		// fine: as letter above, whose range this one is the wider half of
 		min: -0.2, max: 2, step: 0.01, decimals: 2, unit: 'em', fine: true,
 		value: to_em(cs.wordSpacing, 0),
@@ -2747,6 +2769,7 @@ function text_panel_build(pop, obj)
 	};
 
 	var shadow_radius = $.glue.popover.number_row('shadow', {
+		title: 'text shadow blur',
 		// hard floor: a blur radius is a magnitude, and the writer reads
 		// anything at or below zero as "no shadow" - so a typed -5 would take
 		// the shadow off and leave -5 in the field saying why. 40 is a fence
@@ -2761,6 +2784,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(shadow_radius.row);
 
 	var shadow_alpha = $.glue.popover.number_row('fade', {
+		title: 'text shadow opacity',
 		// hard both ends: this is a percentage of opacity, and one of the three
 		// rows in the editor whose number goes into the file as it was typed.
 		// 150% reaches the object as --glue-shadow-alpha: 150 and the page as
@@ -2785,6 +2809,7 @@ function text_panel_build(pop, obj)
 	// pair, and a spread that thickens it (danja's call, 2026-09-28). At a
 	// distance of 0 the shadow is the halo it was.
 	var shadow_distance = $.glue.popover.number_row('distance', {
+		title: 'text shadow distance',
 		// floored at 0, unlike the drop shadow's: a negative distance is only
 		// the angle turned round, and a run's composed value, read back,
 		// could not tell the two apart. 40 is a fence, as the radius's is
@@ -2798,6 +2823,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(shadow_distance.row);
 
 	var shadow_angle = $.glue.popover.number_row('angle', {
+		title: 'text shadow angle',
 		// read the way the drop shadow's is: 0 is to the right and 90 is
 		// down, resolved to x and y by the composed rule's cos() and sin()
 		min: 0, max: 360, step: 1, unit: '\u00b0',
@@ -2810,6 +2836,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(shadow_angle.row);
 
 	var shadow_spread = $.glue.popover.number_row('spread', {
+		title: 'text shadow spread',
 		// text-shadow has no spread of its own, so the composed rule draws
 		// one: a ring of sixteen copies of the shadow's core around it, which
 		// thickens the shadow the way a box-shadow's spread does. Past 10 the
@@ -2825,7 +2852,7 @@ function text_panel_build(pop, obj)
 	adv.appendChild(shadow_spread.row);
 
 	var shadow_row = $.glue.popover.row('color');
-	var shadow_color_btn = $.glue.popover.color_button('shadow colour',
+	var shadow_color_btn = $.glue.popover.color_button('text shadow color',
 		function() {
 			read_shadow();
 			return shadow.color;
@@ -3230,10 +3257,10 @@ function text_heading_popover(obj)
 			var glyph = document.createElement('span');
 			glyph.className = 'glue-glyph-empty-square';
 			b.appendChild(glyph);
-			b.title = 'render this text as a plain text object';
+			b.title = 'plain text - no heading';
 		} else {
 			b.textContent = level[0];
-			b.title = 'render this text as a '+level[0]+' heading';
+			b.title = 'heading level '+level[0].replace(/\D/g,'')+' ('+level[0].toLowerCase()+')';
 		}
 		var sync = function() {
 			b.classList.toggle('glue-font-toggle-on', obj.tagName.toLowerCase() == level[1]);
@@ -3255,7 +3282,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = $.glue.icon('text-object', 'create a text object');
+	var elem = $.glue.icon('text-object', 'new text object');
 	elem.addEventListener('click', function(e) {
 		// create new object
 		$.glue.backend({ method: 'glue.create_object', 'page': $.glue.page }, function(data) {
@@ -3349,7 +3376,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// the icon is the html-mode glyph, which draws exactly the </>
 	// this button used to spell out as text
 	elem = $.glue.icon('html-mode',
-		'switch between editing the text as it looks and editing its HTML source');
+		'edit html source - switch between visual and source editing');
 	elem.addEventListener('click', function(e) {
 		var obj = $.glue.owner(this);
 		var was_editing = obj.classList.contains('glue-text-editing');
@@ -3407,7 +3434,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// what is selected: a run selected inside the editing render brings up the
 	// B/I/U/S, colour, face, size and link controls for that run, and anything
 	// else brings up the object's own type (text_panel_mode).
-	elem = $.glue.icon('font-size', 'font: face, size and style');
+	elem = $.glue.icon('font-size', 'text properties - font, size, style, color, spacing, shadow');
 	elem.addEventListener('click', function(e) {
 		text_panel_toggle($.glue.owner(this));
 		e.stopPropagation();
@@ -3427,7 +3454,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// semantic heading level: screen readers navigate pages by headings, so
 	// a text object can render as h1/h2/h3 (appearance stays the author's).
 	// prio 11 puts it at the right end of the top row, past everything else
-	elem = $.glue.icon('heading', 'heading level');
+	elem = $.glue.icon('heading', 'heading level - h1 to h6');
 	elem.addEventListener('click', function(e) {
 		text_heading_popover($.glue.owner(this));
 		e.stopPropagation();

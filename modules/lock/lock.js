@@ -52,32 +52,31 @@ function lock_set_icon(el, locked) {
 	Alpine.$data(el).locked = locked;
 }
 
-// re-synced whenever the context menu is (re)shown for an object
+// re-synced whenever the context menu is (re)shown for an object. For a
+// selection of several the glyph is the action on the lot: unfreeze only
+// when every one of them is frozen
 function lock_sync(el) {
-	lock_set_icon(el, $.glue.owner(el).classList.contains('locked'));
+	var all = $.glue.sel.targets($.glue.owner(el)).every(function(obj) {
+		return obj.classList.contains('locked');
+	});
+	lock_set_icon(el, all);
 }
 
-// toggles the lock state of the icon's current owner object (see
-// $.glue.owner) and returns the new locked state - kept as a plain
-// function rather than inline in the x-on:click expression below since it
-// has side effects on a different element (the owner object), not just on
-// the icon's own Alpine state
-function lock_toggle(iconElem) {
-	var obj = $.glue.owner(iconElem);
+// freezes or unfreezes one object
+function lock_apply(obj, lock) {
 	var m = $.glue.object.moveable_of(obj);
-	var nowLocked;
+	// handles only show on a lone selected object
+	var alone = obj.classList.contains('glue-selected') &&
+		document.querySelectorAll('.glue-selected').length == 1;
 
-	if (obj.classList.contains('locked')) {
+	if (!lock) {
 		obj.classList.remove('locked');
 		if (m) {
 			m.draggable = true;
-			// resize handles only show while selected (this button only
-			// appears in the context menu of a selected object, but check
-			// explicitly rather than assume)
-			m.resizable = obj.classList.contains('resizable') && obj.classList.contains('glue-selected');
-			m.rotatable = obj.classList.contains('glue-selected');
+			// resize handles only show while selected
+			m.resizable = obj.classList.contains('resizable') && alone;
+			m.rotatable = alone;
 		}
-		nowLocked = false;
 	} else {
 		// an object locked mid-edit stops being editable: stop_editing
 		// commits the session's content first, and the lock makes the
@@ -98,12 +97,32 @@ function lock_toggle(iconElem) {
 				ta.style.resize = 'none';
 			}
 		}
-		nowLocked = true;
 	}
-	$.glue.contextmenu.hide();
-	$.glue.contextmenu.show(obj);
 	$.glue.object.save(obj);
-	return nowLocked;
+}
+
+// toggles the lock state of the icon's current owner object (see
+// $.glue.owner), or of every selected object when the owner is one of
+// several, and returns the new locked state - kept as a plain function
+// rather than inline in the x-on:click expression below since it has side
+// effects on a different element (the owner object), not just on the
+// icon's own Alpine state
+function lock_toggle(iconElem) {
+	var obj = $.glue.owner(iconElem);
+	var targets = $.glue.sel.targets(obj);
+	// several objects of mixed state all freeze; they unfreeze only when
+	// every one is frozen already
+	var lock = !targets.every(function(t) {
+		return t.classList.contains('locked');
+	});
+	$.glue.undo.begin_batch();
+	targets.forEach(function(t) {
+		lock_apply(t, lock);
+	});
+	$.glue.undo.end_batch();
+	$.glue.contextmenu.hide();
+	$.glue.contextmenu.show(obj, 1 < targets.length);
+	return lock;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -121,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	var elem = $.glue.icon('lock');
 
 	elem.setAttribute('x-data', '{ locked: false }');
-	elem.setAttribute('x-bind:title', "locked ? 'object is frozen, click to unfreeze it' : 'freeze object'");
+	elem.setAttribute('x-bind:title', "locked ? 'unfreeze object - this object is frozen' : 'freeze object'");
 	elem.setAttribute('x-on:glue-menu-activate', 'lock_sync($el)');
 	elem.setAttribute('x-on:click', 'lock_set_icon($el, lock_toggle($el))');
 

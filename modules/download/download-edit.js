@@ -92,12 +92,12 @@ function download_wrap_attach_selected(box) {
 		// the selection says what it says, so an attach without a target
 		// there is an error, not a reach into the past.
 		if (selected.length > 1) {
-			$.glue.error('select a text or image object to attach the download to using Shift+click');
+			$.glue.error('Select text or image object (Shift + click) to attach download to it');
 			return;
 		}
 		t = download_last_target;
 		if (!t || !t.isConnected || t === box) {
-			$.glue.error('select a text or image object to attach the download to using Shift+click');
+			$.glue.error('Select text or image object (Shift + click) to attach download to it');
 			return;
 		}
 	}
@@ -133,7 +133,7 @@ function download_wrap_set_icon(elem, is_wrapped) {
 
 // the text/image menu's attach/detach button
 function download_wrap_make_item() {
-	var elem = $.glue.icon('attach', 'attach a file to download');
+	var elem = $.glue.icon('attach', 'attach download to this object');
 	var wrapped = false;
 	elem.addEventListener('glue-menu-activate', function() {
 		var obj = $.glue.owner(this);
@@ -143,7 +143,7 @@ function download_wrap_make_item() {
 		$.glue.backend({ method: 'glue.load_object', name: obj.id }, function(data) {
 			wrapped = !!(data['#data'] && data['#data']['download-wrap']);
 			download_wrap_set_icon(elem, wrapped);
-			elem.title = wrapped ? 'detach the download' : 'attach a file to download';
+			elem.title = wrapped ? 'detach download' : 'attach download to this object';
 		}, false);
 	});
 	elem.addEventListener('click', function(e) {
@@ -239,13 +239,13 @@ function download_wrap_detach(obj) {
 // across boxes like every menu item, so the state lives in the closure
 // and every activate re-syncs it.
 function download_public_make_item() {
-	var elem = $.glue.icon('public-download', 'this download is public - click to make it private');
+	var elem = $.glue.icon('public-download', 'public download - click to make it private');
 	var is_public = true;
 	var set = function() {
 		download_icon(elem, is_public ? 'public-download' : 'private-download');
 		elem.title = is_public ?
-			'this download is public - click to make it private' :
-			'this download is private - click to make it public';
+			'public download - click to make it private' :
+			'private download - click to make it public';
 	};
 	elem.addEventListener('glue-menu-activate', function() {
 		var obj = $.glue.owner(this);
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// object-properties' 0; download-class items land in the top bar
 	// anyway) - the attach lives in the menu only, not on the box
 	// (danja's call, 2026-09-22)
-	var attach = $.glue.icon('attach', 'attach the download to a selected text or image object');
+	var attach = $.glue.icon('attach', 'attach download - to the selected text or image object');
 	attach.addEventListener('click', function(e) {
 		e.stopPropagation();
 		var obj = $.glue.owner(this);

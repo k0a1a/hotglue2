@@ -1,1 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><g fill="none" stroke="#000" stroke-miterlimit="10" stroke-width="2"><path d="M5 17.5h12"/><path stroke-linejoin="bevel" d="M6 4.5h10M11 4.5v10"/></g></svg>
+<svg width="22" height="22" version="1.1" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0 -.5)" fill="none" stroke="#000" stroke-miterlimit="10" stroke-width="2"><path d="m5 17.5h12"/><path d="m6 5.5h10m-5-1v10" stroke-linejoin="bevel"/></g></svg>

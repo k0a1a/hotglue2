@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	//
 	// menu items
 	//
-	var elem = $.glue.icon('embed-webpage', 'embed another webpage');
+	var elem = $.glue.icon('embed-webpage', 'embed webpage');
 	elem.addEventListener('click', function(e) {
 		var url = prompt('Enter the URL to show');
 		if (!url) {
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			// same one the webvideo has (.glue-iframe-shield in css/edit.css)
 			var shield = document.createElement('div');
 			shield.className = 'glue-iframe-shield glue-ui';
-			shield.title = 'click here to select/edit this embed';
+			shield.title = 'click to select this embed';
 			elem.appendChild(shield);
 			$.glue.canvas.add(elem);
 			// make width and height explicit
@@ -102,9 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// There is no button for changing the page an iframe shows any more
 	// (danja's call, 2026-10-06): the address is the one given when the object
 	// is made.
-	elem = $.glue.icon('background-scroll', 'toggle scrollbars on and off');
+	elem = $.glue.icon('background-scroll', 'scrollbars - show or hide');
 	$.glue.toggle_button(elem, 'iframe_scroll_sync', 'iframe_scroll_toggle',
-		'scrollbars are shown - click to hide them', 'toggle scrollbars on and off');
+		'scrollbars shown - click to hide them', 'scrollbars - show or hide');
 	$.glue.contextmenu.register('iframe', 'iframe-scroll', elem);
 
 	// make sure we don't send to much over the wire for every save

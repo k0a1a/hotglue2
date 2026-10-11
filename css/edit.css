@@ -125,14 +125,14 @@
 
 .glue-contextmenu-left {
 	/* a context menu item to the object's left */
-	margin-bottom: 10px;
+	margin-bottom: 5px;
 	margin-right: 20px;
 }
 
 .glue-contextmenu-top {
 	/* a context menu item on top of the object */
 	margin-bottom: 20px;
-	margin-right: 10px;
+	margin-right: 5px;
 }
 
 .glue-grid {
@@ -216,6 +216,31 @@
 	outline: 1px dashed black;
 }
 
+.glue-selected.glue-anchor {
+	/* The object the others align to, while several are selected: a solid
+	   heavier outline against the others' dashed one, so it is plain which
+	   one the alignment will follow. Only there once there are two selected
+	   (see mark_anchor in $.glue.sel). */
+	outline: 2px solid #000;
+}
+
+.glue-multisel {
+	/* The multi-select toolbar (see $.glue.multisel): buttons in a row, laid
+	   out by js/edit.js on the anchor. Page coordinates, above the objects
+	   (199) and level with the object menus (200/201), below the panels (450) */
+	position: absolute;
+	z-index: 201;
+	display: flex;
+	/* 5px between the buttons, the object menus' own spacing (their buttons
+	   carry a 5px right margin) */
+	gap: 5px;
+}
+
+.glue-multisel .glue-multisel-gap {
+	/* a double gap between the edges and the centres */
+	margin-left: 5px;
+}
+
 .glue-selected.glue-edge-fade {
 	/* The selection outline of a faded object. The fade is a mask on the
 	   object, and a mask clips everything the element paints - the outline
@@ -239,6 +264,13 @@
 	   Layers below, top to bottom: S (exclude), B (exclude), S (intersect),
 	   fade-x (intersect), fade-y. (-webkit-mask-composite spells the same
 	   operators xor, xor, source-in, source-in, source-over.) */
+	/* The ring that keeps the outline also lets through whatever the object
+	   paints outside its box - its glow and drop shadow, at full strength,
+	   as a red (or any colour) band round the box the moment the object was
+	   selected, though unselected the mask hides them. So the outer shadow
+	   layers go while it is selected (--glue-outer, css/main.css); the inner
+	   glow, inside the shape and faded with it, stays. */
+	--glue-outer: 0;
 	--glue-sel-fill: linear-gradient(#000, #000);
 	-webkit-mask-image: var(--glue-sel-fill), var(--glue-sel-fill),
 		var(--glue-sel-fill), var(--glue-fade-x), var(--glue-fade-y);
@@ -287,6 +319,15 @@
 	   there the link really is what is under the pointer. Last of the three,
 	   so it wins over both. */
 	cursor: text;
+}
+
+.glue-upload-input,
+.glue-upload-input::file-selector-button {
+	/* the invisible file input lies over its button, so it is the thing the
+	   pointer is over: it has to say what the button underneath says (the
+	   .glue-btn-icon pointer), or the buttons that are pickers alone read as
+	   dead */
+	cursor: pointer;
 }
 
 .glue-upload-statusbar {
@@ -475,11 +516,11 @@
 .glue-tag .glue-tag-copy::before {
 	-webkit-mask-size: 12px 12px;
 	mask-size: 12px 12px;
-	background-color: #666;
+	background-color: #333;
 }
 
 .glue-tag .glue-tag-copy:hover::before {
-	background-color: #000;
+	background-color: #333;
 }
 
 .glue-tag-attr-name {
@@ -554,6 +595,10 @@
 	   for one: place_popup() in js/edit.js positions the popup itself, and
 	   this is what makes the anchor its exact top-left corner. */
 	margin: 0 !important;
+	/* No drop shadow (danja's call, like every popout): vanilla-picker's
+	   .popup rule swaps its silver hairline for a 10px blurred shadow, so
+	   the hairline is put back to keep an edge. */
+	box-shadow: 0 0 0 1px silver !important;
 }
 
 .picker_arrow {
@@ -704,6 +749,18 @@
 	user-select: none;
 }
 
+.glue-popover-header {
+	/* a panel's own head, at its very top - what the panel is, in words.
+	   A little larger and bolder than a field label, and ruled under, so it
+	   reads as the panel's own head rather than as the first of its contents.
+	   The text panel wears it; a panel that is named by its icon row does not. */
+	font-size: 12px;
+	font-weight: bold;
+	margin-bottom: 8px;
+	padding-bottom: 4px;
+	border-bottom: 1px solid #ddd;
+}
+
 .glue-popover-note {
 	/* what a panel is about to act on - which text is being linked, say.
 	   Reads as a caption rather than as a control. */
@@ -833,6 +890,37 @@
 	border-radius: 0;
 }
 
+.glue-popover input,
+.glue-popover select,
+.glue-popover textarea,
+.glue-popover button,
+.glue-modal-buttons button,
+.picker_wrapper input,
+.picker_wrapper button {
+	/* square, like the rest of the editor's chrome: the browsers round form
+	   controls by default and nothing here ever set it (danja's call) */
+	border-radius: 0;
+}
+
+.glue-popover input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),
+.glue-popover select,
+.glue-popover textarea,
+.layout_default.picker_wrapper input:not([type=range]) {
+	/* the fields' frame: 1px of mid grey (danja's call - it was black), with
+	   a pixel of room on the left so a number does not sit on the edge. Not
+	   the slider, the toggles or the file picker, which are not fields and
+	   draw their own. */
+	border: 1px solid #999;
+	padding-left: 2px;
+}
+
+.layout_default.picker_wrapper input:not(:focus) {
+	/* vanilla-picker framed its hex field with a silver hairline drawn as a
+	   shadow spread; with a real border that would be a second frame. The
+	   focus glow is left alone. */
+	box-shadow: none;
+}
+
 .glue-popover-field {
 	/* three digits' worth: the field deliberately accepts values past the
 	   slider's end */
@@ -920,7 +1008,10 @@
 	   is the padding box either way, 47, so there is nothing to subtract),
 	   which is the same corner the arrow now occupies. Five ch is what is
 	   left in both engines, and -0.05 still fits with 5px to spare. */
-	width: calc(5ch + 20px);
+	/* 19, not 20, since the border is the editor's own 1px a side and
+	   no longer the UA's 2px inset: the 4px that sum allowed for is 2 now,
+	   plus the 1px of left padding, and the digits keep their five ch */
+	width: calc(5ch + 19px);
 	padding-right: 16px;
 	/* The browser's steppers, off - and BOTH spellings, because each engine
 	   listens to only one. Measured 2026-09-17, three 200px number inputs
@@ -1712,6 +1803,13 @@
 	position: absolute;
 	top: 0;
 	width: 100%;
+}
+
+.glue-iframe-shield {
+	/* a tall embed does not get a tall shield: 40% of a full-page frame would
+	   cover most of the page inside it (danja's call). The webvideo's stays
+	   at its 40%. */
+	max-height: 150px;
 }
 
 .webvideo:hover .glue-webvideo-shield,

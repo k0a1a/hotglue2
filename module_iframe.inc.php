@@ -42,8 +42,11 @@ function iframe_alter_save($args)
 		return false;
 	}
 	
-	// url
-	if (elem_attr($i, 'src') !== NULL) {
+	// url - an uploaded html file is shown through its object's own url, which
+	// is the server's to say, so the src is not read back over it
+	if (!empty($obj['iframe-file'])) {
+		// nothing to store
+	} elseif (elem_attr($i, 'src') !== NULL) {
     // strip schema from url
 		$obj['iframe-url'] = strstr(elem_attr($i, 'src'), '//');
 	} else {
@@ -72,7 +75,13 @@ function iframe_alter_render_early($args)
 	$i = elem('iframe');
 	// set the name attribute
 	elem_attr($i, 'name', $obj['name']);
-	if (!$args['edit']) {
+	if (!empty($obj['iframe-file'])) {
+		// an uploaded html file runs in a sandbox of its own, in the editor
+		// as on the page: scripts and forms work, but without
+		// allow-same-origin it is a stranger to the site, and cannot reach
+		// the page around it or the editor's session
+		elem_attr($i, 'sandbox', 'allow-forms allow-modals allow-popups allow-scripts');
+	} elseif (!$args['edit']) {
 		// try to lift any restrictions
 		elem_attr($i, 'sandbox', 'allow-forms allow-same-origin allow-scripts allow-top-navigation');
 	}
@@ -82,7 +91,12 @@ function iframe_alter_render_early($args)
 	elem_css($i, 'position', 'absolute');
 	elem_css($i, 'width', '100%');
 	// url
-	if (!empty($obj['iframe-url'])) {
+	if (!empty($obj['iframe-file'])) {
+		// the url points to the object name, not the filename in the shared
+		// directory (the file gets served in iframe_serve_resource()), and
+		// stays relative - see module_image.inc.php for why
+		elem_attr($i, 'src', SHORT_URLS ? urlencode($obj['name']) : '?'.urlencode($obj['name']));
+	} elseif (!empty($obj['iframe-url'])) {
     // use protocol relative url
 		//elem_attr($i, 'src', $obj['iframe-url']);
 		elem_attr($i, 'src', strstr($obj['iframe-url'], '//'));
@@ -108,7 +122,7 @@ function iframe_alter_render_early($args)
 		$s = elem('div');
 		elem_add_class($s, 'glue-iframe-shield');
 		elem_add_class($s, 'glue-ui');
-		elem_attr($s, 'title', 'click here to select/edit this embed');
+		elem_attr($s, 'title', 'click to select this embed');
 		elem_append($elem, $s);
 	}
 	
@@ -173,5 +187,102 @@ function iframe_save_state($args)
 		return false;
 	} else {
 		return true;
+	}
+}
+
+
+function iframe_delete_object($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'iframe' || empty($obj['iframe-file'])) {
+		return false;
+	}
+	load_modules('glue');
+	$a = expl('.', $obj['name']);
+	$ret = delete_upload(['pagename'=>$a[0], 'file'=>$obj['iframe-file'], 'max_cnt'=>1]);
+	if ($ret['#error']) {
+		log_msg('error', 'iframe_delete_object: delete_upload returned '.quot($ret['#data']));
+	}
+}
+
+
+function iframe_has_reference($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'iframe' || empty($obj['iframe-file'])) {
+		return false;
+	}
+	// symlinks have their referenced files in a different page that's why
+	// they are not relevant here
+	if (@is_link(CONTENT_DIR.'/'.str_replace('.', '/', $obj['name']))) {
+		return false;
+	}
+	return $obj['iframe-file'] == $args['file'];
+}
+
+
+/**
+ *	implements serve_resource: the uploaded html file, which is the page the
+ *	iframe shows
+ */
+function iframe_serve_resource($args)
+{
+	$obj = $args['obj'];
+	if (!isset($obj['type']) || $obj['type'] != 'iframe' || empty($obj['iframe-file'])) {
+		return false;
+	}
+
+	$a = expl('.', $obj['name']);
+	if (!$args['dl']) {
+		// an html document served from the site's own origin is as much the
+		// site as its own pages are: a script inside it could act as whoever
+		// opens the url, the editor included. The sandbox policy keeps the
+		// scripts (the page is meant to run) and takes the origin away, and
+		// it is on the response itself, so it holds when the url is opened
+		// directly as well as in the frame. The download path is an
+		// attachment, not a document.
+		header('Content-Security-Policy: sandbox allow-forms allow-modals allow-popups allow-scripts');
+		header('X-Content-Type-Options: nosniff');
+	}
+	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['iframe-file'], $args['dl'], 'text/html');
+}
+
+
+/**
+ *	an uploaded html file becomes an iframe object that shows it, which
+ *	resizes like any embed
+ */
+function iframe_upload($args)
+{
+	$ext = strtolower(filext($args['file']));
+	if (!in_array($ext, ['html', 'htm', 'xhtml']) && $args['mime'] != 'text/html') {
+		return false;
+	}
+	// a page menu's 'upload a file' asks for a download object by name, and a
+	// wrap target is a download's business: neither is ours
+	if (isset($args['preferred_module']) && $args['preferred_module'] == 'download') {
+		return false;
+	}
+
+	load_modules('glue');
+	$obj = create_object($args);
+	if ($obj['#error']) {
+		return false;
+	} else {
+		$obj = $obj['#data'];
+	}
+	$obj['type'] = 'iframe';
+	$obj['module'] = 'iframe';
+	$obj['iframe-file'] = $args['file'];
+	// a document is longer than the frame it starts in: scrollbars on, the
+	// menu toggle takes them away
+	$obj['iframe-scroll'] = 'scroll';
+	save_object($obj);
+
+	$ret = render_object(['name'=>$obj['name'], 'edit'=>true]);
+	if ($ret['#error']) {
+		return false;
+	} else {
+		return $ret['#data'];
 	}
 }

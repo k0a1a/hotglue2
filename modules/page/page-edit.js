@@ -35,7 +35,7 @@ function page_container_handle_make(edge) {
 	var h = document.createElement('div');
 	h.className = 'glue-container-handle glue-ui';
 	h.dataset.edge = edge;
-	h.title = 'drag to set how wide the centered container is';
+	h.title = 'container width - drag to resize';
 	h.style.touchAction = 'none';
 	h.addEventListener('pointerdown', function(e) {
 		var wrap = $.glue.canvas.wrapper();
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		title_field.type = 'text';
 		title_field.className = 'glue-popover-field glue-page-title';
 		title_field.value = document.title;
-		title_field.title = 'the title shown in the browser tab and to search engines';
+		title_field.title = 'page title - shown in the browser tab and to search engines';
 		// commit on change (blur or Enter), not per keystroke: the title is
 		// an attribute of the page, not text being edited
 		title_field.addEventListener('change', function() {
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		url_field.type = 'text';
 		url_field.className = 'glue-popover-field glue-page-url';
 		url_field.value = $.glue.page.split('.').shift();
-		url_field.title = 'the URL of this page';
+		url_field.title = 'page url';
 		url_field.addEventListener('change', function() {
 			var old_pn = $.glue.page.split('.').shift();
 			var new_pn = this.value.trim();
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		row = $.glue.popover.row('start page');
 		var start_check = document.createElement('input');
 		start_check.type = 'checkbox';
-		start_check.title = 'make this the page visitors land on';
+		start_check.title = 'start page - the page visitors land on';
 		// sync with reality when the panel opens
 		$.glue.backend({ method: 'glue.get_startpage' }, function(data) {
 			start_check.checked = (data == $.glue.page);
@@ -202,20 +202,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		pw_field.type = 'password';
 		pw_field.className = 'glue-popover-field glue-page-password';
 		pw_field.autocomplete = 'new-password';
-		pw_field.title = 'protect this page with a password';
+		pw_field.title = 'page password - protect this page';
 		var pw_btn = document.createElement('div');
 		pw_btn.className = 'glue-popover-reset';
-		pw_btn.title = 'protect this page with a password';
+		pw_btn.title = 'page password - protect this page';
 		var pw_sync = function(protected_) {
 			pw_field.value = '';
 			if (protected_) {
 				pw_field.placeholder = 'page is protected';
 				pw_btn.textContent = 'clear';
-				pw_btn.title = 'remove the password';
+				pw_btn.title = 'remove page password';
 			} else {
 				pw_field.placeholder = 'set a password';
 				pw_btn.textContent = 'set';
-				pw_btn.title = 'protect this page with a password';
+				pw_btn.title = 'page password - protect this page';
 			}
 		};
 		var pw_commit = function() {
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	var elem = $.glue.icon('page-title', 'page options: change title of the page, URL, make it a start page, or delete it');
+	var elem = $.glue.icon('page-title', 'page options - title, url, start page, password, delete');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_settings_popover();
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	elem = $.glue.icon('list-ordered', 'reading order: assign element importance, H1 being of most importance, through H6');
+	elem = $.glue.icon('list-ordered', 'reading order - the order screen readers follow');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_reading_order_popover();
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// with it: the picker is the one way in, in a panel where the button sits
 	// next to the thing it colours.)
 
-	elem = $.glue.icon('page-new', 'create a new page');
+	elem = $.glue.icon('page-new', 'new page');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		var pn = prompt('Name the page to be created');
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// sits BEHIND an opaque picture, so picking one while a picture is
 		// up would look like nothing had happened - the clear comes first,
 		// with the confirm it has always had
-		var colour = $.glue.popover.color_button('set page background color',
+		var colour = $.glue.popover.color_button('page background color',
 			function() {
 				return getComputedStyle(doc).backgroundColor;
 			},
@@ -569,10 +569,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// so the button IS the picker and wants no click handler of its own.
 		// The upload leaves the panel open, because what you do next - tiling,
 		// sizing, moving - is all in here.
-		var image = $.glue.popover.icon_button('background-image', 'set page background image');
+		var image = $.glue.popover.icon_button('background-image', 'page background image - pick a file');
 		image.classList.add('glue-background-image');
 		$.glue.upload.button(image, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
-			tooltip: 'set page background image',
+			tooltip: 'page background image - pick a file',
 			error: function(e) {
 				if (e && e.target && e.target.status) {
 					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
@@ -608,10 +608,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// uploads the same way and the server (page_upload) tells the two
 		// apart by the file's mime. What you do next - moving, sizing,
 		// tiling - is the same rows as the image's.
-		var video_btn = $.glue.popover.icon_button('background-video', 'set page background video');
+		var video_btn = $.glue.popover.icon_button('background-video', 'page background video - pick a file');
 		video_btn.classList.add('glue-background-video');
 		$.glue.upload.button(video_btn, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'page' }, {
-			tooltip: 'set page background video',
+			tooltip: 'page background video - pick a file',
 			error: function(e) {
 				if (e && e.target && e.target.status) {
 					$.glue.error('There was a problem uploading a file (status '+e.target.status+')');
@@ -818,6 +818,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// The min and max are a drag length, not a limit: the field keeps the real
 		// number however far the drag went (see $.glue.popover.number_row).
 		var x_row = $.glue.popover.number_row('x', {
+			title: 'page background x position',
 			// coarse: a page position wants a finer hand than the default drag
 			// gives - span/200 would move the picture 5px per pixel of drag
 			min: -500, max: 500, step: 1, unit: 'px', coarse: true,
@@ -831,6 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 		var y_row = $.glue.popover.number_row('y', {
+			title: 'page background y position',
 			// coarse: as x above
 			min: -500, max: 500, step: 1, unit: 'px', coarse: true,
 			value: at.y,
@@ -860,6 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// nothing is stored; it is not written until the scale is actually
 		// touched, and a zero clears the attribute again.
 		var scale_row = $.glue.popover.number_row('scale', {
+			title: 'page background scale, % of page width',
 			min: 10, max: 300, step: 1, unit: '%',
 			value: (function() {
 				if (page_bg_video_mode()) {
@@ -946,7 +949,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// under it, and what each of them does. The glyph followed the name on
 	// 09-16: background-set, the half-filled frame, which says "the background
 	// is set" where the old one only said "there is a picture back here".
-	var page_bg_button = $.glue.icon('page-background', 'set page background');
+	var page_bg_button = $.glue.icon('page-background', 'page background');
 	page_bg_button.addEventListener('click', function(e) {
 		page_background_popover();
 		e.stopPropagation();
@@ -974,7 +977,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// the backend write only happens on commit
 		var redraw = function() {
 			$.glue.grid.update(true);
-			grid_btn.title = 'grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')';
+			grid_btn.title = 'grid settings - '+$.glue.grid.x()+'x'+$.glue.grid.y();
 		};
 		var commit = function() {
 			$.glue.backend({ method: 'glue.update_object', name: $.glue.page+'.page',
@@ -987,11 +990,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		var show = document.createElement('div');
 		show.className = 'glue-font-toggle glue-grid-show-toggle';
 		show.textContent = '▦';
-		show.title = 'the grid is drawn - click to remove it';
+		show.title = 'grid shown - click to hide it';
 		var sync_show = function() {
 			var on = ($.glue.grid.mode() & 1) !== 0;
 			show.classList.toggle('glue-font-toggle-on', on);
-			show.title = on ? 'the grid is drawn - click to remove it' : 'no grid - click to draw it';
+			show.title = on ? 'grid shown - click to hide it' : 'grid hidden - click to show it';
 		};
 		show.addEventListener('click', function() {
 			$.glue.grid.mode(($.glue.grid.mode() & 1) ? 0 : 1);
@@ -1013,8 +1016,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			lock.classList.toggle('glue-font-toggle-on', locked);
 			lock.textContent = locked ? 'x=y' : 'x≠y';
 			lock.title = locked ?
-				'x and y move together - click to set them separately' :
-				'x and y are set separately - click to interlock them';
+				'grid x and y linked - click to set them separately' :
+				'grid x and y separate - click to link them';
 		};
 		lock.addEventListener('click', function() {
 			locked = !locked;
@@ -1047,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		};
 		var x_row = $.glue.popover.number_row('x', {
+			title: 'grid x spacing',
 			min: 10, max: 500, step: 1, unit: 'px',
 			value: $.glue.grid.x(),
 			apply: function(v, commit_save) {
@@ -1059,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		pop.appendChild(x_row.row);
 		var y_row = $.glue.popover.number_row('y', {
+			title: 'grid y spacing',
 			min: 10, max: 500, step: 1, unit: 'px',
 			value: $.glue.grid.y(),
 			apply: function(v, commit_save) {
@@ -1074,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		$.glue.popover.show(pop);
 	};
 
-	elem = $.glue.icon('adjust-grid-size', 'show grid ('+$.glue.grid.x()+'x'+$.glue.grid.y()+')');
+	elem = $.glue.icon('adjust-grid-size', 'grid settings - '+$.glue.grid.x()+'x'+$.glue.grid.y());
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		// clicking the button draws the grid (the panel's show toggle
@@ -1095,9 +1100,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	// here because toggling reloads the page.
 	elem = $.glue.conf.page.layout_mode == 'centered' ?
 		$.glue.icon('composition-mode-absolute',
-			'center page content in a fixed-width container') :
+			'switch to absolute layout - unbounded canvas') :
 		$.glue.icon('composition-mode-centered',
-			'page content sits on an unbounded canvas');
+			'switch to centered layout - fixed-width container');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		page_layout_toggle();

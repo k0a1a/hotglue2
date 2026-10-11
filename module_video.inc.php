@@ -458,7 +458,7 @@ function video_alter_render_early($args)
 		$s = elem('div');
 		elem_add_class($s, 'glue-video-shield');
 		elem_add_class($s, 'glue-ui');
-		elem_attr($s, 'title', 'click here to select/edit this video');
+		elem_attr($s, 'title', 'click to select this video');
 		elem_append($elem, $s);
 	}
 
