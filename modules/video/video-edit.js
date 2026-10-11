@@ -225,24 +225,24 @@ document.addEventListener('DOMContentLoaded', function() {
 	// toggle work; danja's replacements will come), the same mask plumbing
 	// every other menu button uses, and the enabled state is the pressed
 	// frame of the panel toggles (see the two-class rule in css/edit.css).
-	var elem = $.glue.icon('video-autoplay', 'toggle automatic playback of video');
+	var elem = $.glue.icon('video-autoplay', 'autoplay - start playing when the page loads');
 	$.glue.toggle_button(elem, 'video_autoplay_sync', 'video_autoplay_toggle',
-		'automatic playback is on - click to turn off', 'toggle automatic playback of video');
+		'autoplay on - click to turn off', 'autoplay - start playing when the page loads');
 	$.glue.contextmenu.register('video', 'video-autoplay', elem);
 
-	elem = $.glue.icon('video-loop', 'toggle looping of video');
+	elem = $.glue.icon('video-loop', 'loop - play again at the end');
 	$.glue.toggle_button(elem, 'video_loop_sync', 'video_loop_toggle',
-		'looping is on - click to turn off', 'toggle looping of video');
+		'loop on - click to turn off', 'loop - play again at the end');
 	$.glue.contextmenu.register('video', 'video-loop', elem);
 
-	elem = $.glue.icon('video-controls', 'show or hide control elements');
+	elem = $.glue.icon('video-controls', 'player controls - show or hide');
 	$.glue.toggle_button(elem, 'video_controls_sync', 'video_controls_toggle',
-		'controls are shown - click to hide them', 'show or hide control elements');
+		'player controls shown - click to hide them', 'player controls - show or hide');
 	$.glue.contextmenu.register('video', 'video-controls', elem);
 
-	elem = $.glue.icon('video-sound', 'mute or unmute video');
+	elem = $.glue.icon('video-sound', 'sound - mute or unmute');
 	$.glue.toggle_button(elem, 'video_mute_sync', 'video_mute_toggle',
-		'video is muted - click to unmute', 'mute or unmute video');
+		'sound muted - click to unmute', 'sound - mute or unmute');
 	$.glue.contextmenu.register('video', 'video-mute', elem);
 
 	elem = $.glue.icon('download', 'download original file');

@@ -8,7 +8,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	var elem = $.glue.icon('code-page', 'add custom JavaScript code and CSS definitions');
+	var elem = $.glue.icon('code-page', 'page code - css and javascript for this page');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		// a new tab, so the page being worked on stays behind (danja's
@@ -357,7 +357,7 @@ function user_code_object_popover(obj)
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	var elem = $.glue.icon('code-object', 'code for this object: CSS that applies to it alone, and JavaScript that is handed it');
+	var elem = $.glue.icon('code-object', 'object code - css and javascript for this object');
 	elem.addEventListener('click', function(e) {
 		user_code_object_popover($.glue.owner(this));
 		e.stopPropagation();

@@ -211,7 +211,7 @@ test('an object pasted into the same page keeps every stored property',
 		// the button about itself
 		const copy_btn = byId(page, 'glue-contextmenu-object-copy');
 		await expect(copy_btn).toHaveClass(/glue-clipboard-full/);
-		await expect(copy_btn).toHaveAttribute('title', 'copy object to clipboard: [previous data present]');
+		await expect(copy_btn).toHaveAttribute('title', 'copy object - replaces the copied object');
 
 		const before = hg.ids();
 		await page.keyboard.press('Control+v');
@@ -485,7 +485,7 @@ test('the paste button appears only when there is something to paste',
 		// the single-click menu opens with alt+o; with an empty clipboard the
 		// paste item takes itself out of it rather than sitting there dead
 		await page.keyboard.press('Alt+O');
-		await expect(page.getByTitle('undo the last change')).toBeVisible();
+		await expect(page.getByTitle('undo last change')).toBeVisible();
 		await expect(page.getByTitle('paste copied object')).toBeHidden();
 
 		// selecting an object closes the menu by itself (glue-select)
@@ -494,12 +494,12 @@ test('the paste button appears only when there is something to paste',
 		await expect(copy_btn).toBeVisible();
 		await expect(copy_btn).not.toHaveClass(/glue-clipboard-full/);
 		// nothing copied yet, so the tooltip says just what the button does
-		await expect(copy_btn).toHaveAttribute('title', 'copy object to clipboard: paste copied object on any page of your site');
+		await expect(copy_btn).toHaveAttribute('title', 'copy object - paste it on any page of the site');
 		await copy_btn.click();
 		await page.waitForFunction(() =>
 			window.localStorage.getItem('glue.object-clipboard') !== null);
 		await expect(copy_btn).toHaveClass(/glue-clipboard-full/);
-		await expect(copy_btn).toHaveAttribute('title', 'copy object to clipboard: [previous data present]');
+		await expect(copy_btn).toHaveAttribute('title', 'copy object - replaces the copied object');
 
 		// and now the single-click menu offers it, and it works
 		await page.keyboard.press('Alt+O');
@@ -520,7 +520,7 @@ test('ctrl+c and ctrl+v leave a form field alone', async ({ page, hg }) => {
 	// the page title field - a real text input, and the place an editor user
 	// would paste a page title into
 	await page.keyboard.press('Alt+P');
-	await page.getByTitle('page options: change title of the page, URL, make it a start page, or delete it').click();
+	await page.getByTitle('page options - title, url, start page, password, delete').click();
 	const field = page.locator('.glue-page-title');
 	await expect(field).toBeVisible();
 	await field.click();
@@ -612,7 +612,7 @@ test('a clipboard nobody has used for an hour is gone',
 		// clipboard that is only *pretended* to be empty would leave the dot
 		// lit and the whole question to be answered again at every call site
 		await page.keyboard.press('Alt+O');
-		await expect(page.getByTitle('undo the last change')).toBeVisible();
+		await expect(page.getByTitle('undo last change')).toBeVisible();
 		await expect(page.getByTitle('paste copied object')).toBeHidden();
 		expect(await readClipboard(page)).toBeNull();
 

@@ -35,7 +35,7 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const fontBtn = (page) => page.getByTitle(/text properties - font/);
 const pop = (page) => page.locator('.glue-font-popover');
 // the panel's own rows, not the ones inside the advanced fold
 const own = (page) => page.locator('.glue-font-popover > .glue-popover-row');
@@ -75,6 +75,10 @@ test('one button opens the panel, and the three it replaced are gone',
 		await waitForEditor(page, 1);
 		await open(page, a);
 
+		// the panel's heads: its own at the top, the face wheel's above the
+		// wheel, in that order
+		await expect(pop(page).locator('.glue-popover-header')).toHaveText([
+			'Text properties', 'Fonts']);
 		// the four sizes the panel opens on, and the styles and alignments
 		await expect(sizeBtn(page, 's')).toBeVisible();
 		await expect(sizeBtn(page, 'n')).toBeVisible();

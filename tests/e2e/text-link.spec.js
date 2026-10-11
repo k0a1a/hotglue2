@@ -28,7 +28,7 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject('100000000001').content;
 const panel = (page) => page.locator('.glue-font-popover');
-const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const fontBtn = (page) => page.getByTitle(/text properties - font/);
 const linkRow = (page) => page.locator('.glue-text-strip-link');
 const urlField = (page) => linkRow(page).locator('.glue-link-field').first();
 const linkButton = (page) => linkRow(page).locator('button').first();
@@ -281,7 +281,7 @@ test('source mode puts the textarea back, markup and all', async ({ page, hg }) 
 	// the toggle's corner dot says which mode the object is in - off
 	// before the click, on after it, the way the copy button's dot says
 	// the clipboard is full
-	const toggle = page.getByTitle(/editing its HTML source/);
+	const toggle = page.getByTitle(/edit html source/);
 	await expect(toggle).not.toHaveClass(/glue-text-source-on/);
 	await toggle.click();
 	await expect(toggle).toHaveClass(/glue-text-source-on/);

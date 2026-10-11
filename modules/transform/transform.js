@@ -112,7 +112,7 @@ $.glue.live('.object', 'glue-select', function(e) {
 	// included. Checked before the download guard below: the box is the
 	// object whose selection completes the pair, so this handler is the one
 	// that has to take the other selected objects' rotation handles away.
-	if (m && document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length) {
+	if (m && 1 < document.querySelectorAll('.glue-selected').length) {
 		document.querySelectorAll('.glue-selected').forEach(function(el) {
 			var mm = $.glue.object.moveable_of(el);
 			if (mm) {
@@ -204,7 +204,7 @@ $.glue.live('.object', 'glue-movestop', function(e) {
 	var m = $.glue.object.moveable_of(this);
 	if (m && !this.classList.contains('locked') && !this.classList.contains('download') && this.classList.contains('glue-selected')) {
 		// no handles while a download shares the selection
-		if (document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length) {
+		if (1 < document.querySelectorAll('.glue-selected').length) {
 			return;
 		}
 		m.rotatable = true;

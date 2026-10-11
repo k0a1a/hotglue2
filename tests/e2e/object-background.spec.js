@@ -124,8 +124,8 @@ test('with no image, the button opens the panel and the picker is in it',
 		// page's panel has, which is the flip the page has no use for. The
 		// colour is the shared swatch since 2026-09-26, so the five are the
 		// swatch and four icon buttons
-		await expect(pop(page).locator('.glue-popover-icons > *')).toHaveCount(5);
-		await expect(pop(page).locator('.glue-popover-icon')).toHaveCount(4);
+		await expect(pop(page).locator('.glue-popover-icons').first().locator(':scope > *')).toHaveCount(5);
+		await expect(pop(page).locator('.glue-popover-icons').first().locator('.glue-popover-icon')).toHaveCount(4);
 		await expect(pop(page).locator('.glue-background-color')).toHaveCount(1);
 		// and everything with a label is behind the one fold, closed to start
 		// with: opening the panel on what you came for, not on ten rows
@@ -328,8 +328,8 @@ test('an image object has the full panel, background section included',
 		// the flip pair in the row and, in the fold, the padding, the
 		// transparency and the reset - the padding section came to image
 		// objects with the video's in 2026-09-23
-		await expect(p.locator('.glue-popover-icons > *')).toHaveCount(5);
-		await expect(p.locator('.glue-popover-icon')).toHaveCount(4);
+		await expect(p.locator('.glue-popover-icons').first().locator(':scope > *')).toHaveCount(5);
+		await expect(p.locator('.glue-popover-icons').first().locator('.glue-popover-icon')).toHaveCount(4);
 		await expect(flipV(page)).toBeVisible();
 		await expect(flipH(page)).toBeVisible();
 		await openFold(page);
@@ -445,25 +445,19 @@ test('the properties button leads the top row, and the object-wide pair rides it
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		// both moved buttons ride the top row instead of the left column
-		await expect(page.locator('#glue-contextmenu-object-adjust'))
-			.toHaveClass(/glue-contextmenu-top/);
+		// the moved button rides the top row instead of the left column
 		await expect(propsBtn(page)).toHaveClass(/glue-contextmenu-top/);
-		await expect(page.locator('.glue-contextmenu-left#glue-contextmenu-object-adjust'))
-			.toHaveCount(0);
 		await expect(page.locator('.glue-contextmenu-left#glue-contextmenu-object-properties'))
 			.toHaveCount(0);
 		// properties is prio 0 - the object-wide setting the rest of the row is
 		// read against - so it is left-most, ahead of the text items (prios
-		// 1-2), and adjust (7) stays at the end of them
+		// 1-2)
 		const order = await page.evaluate(() =>
 			[...document.querySelectorAll('.glue-contextmenu-top')]
 				.map((b) => b.id));
 		expect(order[0]).toBe('glue-contextmenu-object-properties');
 		expect(order.indexOf('glue-contextmenu-object-properties'))
 			.toBeLessThan(order.indexOf('glue-contextmenu-text-font'));
-		expect(order.indexOf('glue-contextmenu-text-font'))
-			.toBeLessThan(order.indexOf('glue-contextmenu-object-adjust'));
 	});
 
 test('with an image, the panel opens onto the image it describes',
@@ -481,7 +475,7 @@ test('with an image, the panel opens onto the image it describes',
 
 		await propsBtn(page).click();
 		await expect(pop(page)).toBeVisible();
-		await expect(pop(page).locator('.glue-popover-icons > *')).toHaveCount(5);
+		await expect(pop(page).locator('.glue-popover-icons').first().locator(':scope > *')).toHaveCount(5);
 		await expect(pop(page).locator('.glue-background-tile')).toHaveCount(1);
 		// nothing stored about the tiling, so it is the renderer's own default
 		// - no-repeat - and the toggle is lit only when the image repeats

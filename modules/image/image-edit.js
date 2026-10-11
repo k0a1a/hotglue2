@@ -246,7 +246,7 @@ function image_properties_popover(obj)
 	var glyph = document.createElement('span');
 	glyph.className = 'glue-glyph-empty-square';
 	toggle.appendChild(glyph);
-	toggle.title = 'mark the image as decorative (screen readers skip it)';
+	toggle.title = 'decorative image - screen readers skip it';
 	toggle.addEventListener('click', function() {
 		if (t.getAttribute('role') == 'presentation') {
 			t.removeAttribute('role');
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	var elem;
 	// image-class items always sit in the top row; prio 11 puts this one
 	// right of everything else there (download is the default 10)
-	elem = $.glue.icon('description', 'image description');
+	elem = $.glue.icon('description', 'image description - alt text and decorative');
 	elem.addEventListener('click', function(e) {
 		image_properties_popover($.glue.owner(this));
 	});

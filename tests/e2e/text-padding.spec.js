@@ -65,7 +65,7 @@ async function openPanel(page, hg) {
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await byId(page, `${hg.pageName}.${ID}`).click();
-	await page.getByTitle(/font: face, size and style/).click();
+	await page.getByTitle(/text properties - font/).click();
 	await expect(panel(page)).toBeVisible();
 	return `${hg.pageName}.${ID}`;		// the DOM id the object element carries
 }
@@ -167,7 +167,7 @@ test('the panel only draws the section for a text object, and there it is flush 
 		// through the shield: it covers only the upper part of an iframe, so a
 		// click at the object's centre lands in the page inside it
 		await byId(page, `${hg.pageName}.${ID}`).locator(':scope > .glue-iframe-shield').click();
-		await page.getByTitle('object properties: background color/image, transparency, padding, flip, link').click();
+		await page.getByTitle('object properties - background, opacity, padding, flip, link').click();
 		await expect(propsPanel(page)).toBeVisible();
 
 		await expect(propsPanel(page).locator('.glue-padding-row')).toHaveCount(0);

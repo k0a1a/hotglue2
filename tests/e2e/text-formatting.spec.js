@@ -33,7 +33,7 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject(ID).content;
 const panel = (page) => page.locator('.glue-font-popover');
-const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const fontBtn = (page) => page.getByTitle(/text properties - font/);
 
 async function startEditing(page, id) {
 	await byId(page, id).click();
@@ -170,18 +170,18 @@ test('source mode never shows the panel', async ({ page, hg }) => {
 	// entering editing in source mode: the textarea, never the panel
 	const a = await add(page, hg, 'hello world');
 	await byId(page, a).click();
-	await page.getByTitle(/editing its HTML source/).click();
+	await page.getByTitle(/edit html source/).click();
 	await byId(page, a).click();
 	await expect(page.locator(`[id="${a}"] > .glue-text-input`)).toBeFocused();
 	await expect(panel(page)).toBeHidden();
 
 	// back out, source mode off, and into WYSIWYG: the panel opens on it
 	await page.keyboard.press('Escape');		// exit source editing
-	await page.getByTitle(/editing its HTML source/).click();	// back to WYSIWYG
+	await page.getByTitle(/edit html source/).click();	// back to WYSIWYG
 	await openPanel(page, a);
 
 	// switching to source mid-edit hides the panel again
-	await page.getByTitle(/editing its HTML source/).click();
+	await page.getByTitle(/edit html source/).click();
 	await expect(panel(page)).toBeHidden();
 });
 
@@ -266,7 +266,7 @@ test('the color button wraps the selection in a color span', async ({ page, hg }
 	const a = await add(page, hg, 'hello world');
 	await openPanel(page, a);
 	await select(page, a, 'world');
-	await page.getByTitle('text colour').click();
+	await page.getByTitle('text color').click();
 	await expect(page.locator('.picker_wrapper')).toBeVisible();
 	const field = page.locator('.picker_editor input');
 	await field.fill('#ff0000');
@@ -287,7 +287,7 @@ test('a color picked after a size joins the same span', async ({ page, hg }) => 
 	await sizeField(page).fill('24');
 	await sizeField(page).dispatchEvent('input');
 	await sizeField(page).dispatchEvent('change');
-	await page.getByTitle('text colour').click();
+	await page.getByTitle('text color').click();
 	const field = page.locator('.picker_editor input');
 	await field.fill('#ff0000');
 	await field.dispatchEvent('input');

@@ -227,6 +227,13 @@ $.glue.popover = function()
 {
 	var GAP = 10;
 	var open_panel = false;
+	// The object whose menu this hid while its panel is open. A panel
+	// takes the menu's place - they sit in the same free space beside the
+	// object, and the panel is what is being used - and the menu comes back
+	// when the panel goes, unless the object has been let go or is on the move.
+	var menu_hidden_for = false;
+	// the same, for the resize and rotation handles
+	var handles_hidden_for = false;
 	// Set by a control whose drag has actually moved, and read by the click
 	// handler below: see swallow_next_click().
 	var swallow_click = false;
@@ -371,7 +378,9 @@ $.glue.popover = function()
 		open: function(obj, cls) {
 			var same = open_panel && $.glue.owner(open_panel) === obj &&
 				open_panel.classList.contains(cls);
-			$.glue.popover.close();
+			// swapping one panel for another keeps the menu away; closing the
+			// one that is open does not
+			$.glue.popover.close(!same);
 			if (same) {
 				return false;
 			}
@@ -386,6 +395,18 @@ $.glue.popover = function()
 			pop.style.visibility = 'hidden';
 			document.body.appendChild(pop);
 			open_panel = pop;
+			var owner_obj = $.glue.owner(pop);
+			// except the text editing's own toolbar: it opens with the
+			// editing and sits beside the menu for as long as it lasts
+			if (!pop.keep_menu && owner_obj && owner_obj.classList &&
+					owner_obj.classList.contains('object')) {
+				menu_hidden_for = owner_obj;
+				$.glue.contextmenu.hide();
+			}
+			if (owner_obj && owner_obj.classList && owner_obj.classList.contains('object')) {
+				handles_hidden_for = owner_obj;
+				$.glue.object.hide_handles(owner_obj);
+			}
 			// while a panel is open the page holds still: a wheel or a
 			// finger meant for the panel must not scroll the page under
 			// it (danja's call, 2026-09-21)
@@ -399,7 +420,9 @@ $.glue.popover = function()
 		// object being deselected or dragged out from under it, another panel
 		// opening), so this is the one place such a panel is told to put back
 		// what it took. Set .on_close on the panel before show() to use it.
-		close: function() {
+		// keep_menu .. leave the object's menu hidden: another panel is about
+		// to open, or the object is being dragged
+		close: function(keep_menu) {
 			if (open_panel) {
 				if (typeof open_panel.on_close == 'function') {
 					open_panel.on_close();
@@ -408,6 +431,28 @@ $.glue.popover = function()
 				open_panel = false;
 			}
 			document.body.style.overflow = '';
+			var hobj = handles_hidden_for;
+			if (hobj && !keep_menu) {
+				handles_hidden_for = false;
+				if (hobj.isConnected && hobj.classList.contains('glue-selected') &&
+						document.querySelectorAll('.glue-selected').length == 1) {
+					$.glue.object.show_handles(hobj);
+				}
+			}
+			var obj = menu_hidden_for;
+			if (obj && !keep_menu) {
+				menu_hidden_for = false;
+				// only a lone selected object has a menu to come back
+				if (obj.isConnected && obj.classList.contains('glue-selected') &&
+						document.querySelectorAll('.glue-selected').length == 1) {
+					$.glue.contextmenu.show(obj);
+				}
+			}
+		},
+		// a drag took the panel away: the menu follows the object's own
+		// movestop back (see menu_after_move)
+		menu_after_move: function() {
+			return menu_hidden_for;
 		},
 		// what is open, or false - for the handlers below
 		current: function() {
@@ -420,6 +465,7 @@ $.glue.popover = function()
 		// Returns { toggle, body } - append both to the panel, fill the body.
 		// Opening one changes the panel's height, and a panel is placed by
 		// its size, so it is re-placed on every toggle.
+		number_hint: 'drag sideways, shift coarse, alt fine, or type',
 		fold: function(pop, label) {
 			var toggle_row = $.glue.popover.row(false);
 			var disclosure = document.createElement('div');
@@ -908,7 +954,9 @@ $.glue.popover = function()
 				opts.apply(pre_edit, committed);
 			});
 
-			row.title = 'drag sideways to change, or type a number';
+			// the tooltip: what the row is, then how to work it
+			row.title = opts.title ? opts.title+' - '+$.glue.popover.number_hint :
+				'drag sideways to change, or type a number';
 			// What the row can do, drawn, and in the field rather than beside
 			// it: the field keeps a right padding for the arrow (css/edit.css)
 			// and the arrow is positioned in it. The box is what makes that
@@ -930,6 +978,72 @@ $.glue.popover = function()
 					field.value = fmt(v);
 				}
 			};
+		},
+		// The object's own place and size, as numbers: x and y are its left
+		// and top, scale resizes its box - keeping the ratio - as a percentage
+		// of the size it had when the panel opened (so the field starts at
+		// 100, whatever the object is). Out in the open above "more knobs" in
+		// the object properties and text panels, for placing something
+		// precisely where dragging and the arrow keys cannot. Returns the grid
+		// row to append to the panel.
+		placement_rows: function(obj) {
+			// the computed width/height are what style.width/height set (content
+			// box or border box alike); offsetWidth would add padding and border
+			var cs0 = getComputedStyle(obj);
+			var base_w = parseFloat(cs0.width) || obj.offsetWidth;
+			var base_h = parseFloat(cs0.height) || obj.offsetHeight;
+			// what a drag's end does: the object is a different place or shape
+			// now, and its handles and menu are drawn around where it was
+			var settle = function(commit) {
+				var m = $.glue.object.moveable_of(obj);
+				if (m) {
+					m.updateRect();
+				}
+				$.glue.object.place_handles(obj);
+				if (commit) {
+					$.glue.object.save(obj);
+					$.glue.canvas.update(obj);
+				}
+				$.glue.contextmenu.reposition();
+			};
+			var rows = {};
+			var axis = function(label, prop, read) {
+				rows[label] = $.glue.popover.number_row(label, {
+					title: 'object '+label+' position',
+					min: -9999, max: 99999, step: 1, sensitivity: 1, unit: 'px',
+					value: read(),
+					apply: function(v, commit) {
+						if (obj.classList.contains('locked')) {
+							rows[label].set(read());
+							return;
+						}
+						obj.style[prop] = Math.round(v)+'px';
+						settle(commit);
+					}
+				});
+			};
+			axis('x', 'left', function() { return obj.offsetLeft; });
+			axis('y', 'top', function() { return obj.offsetTop; });
+			rows.scale = $.glue.popover.number_row('scale', {
+				title: 'object scale, % of size when opened',
+				min: 10, max: 300, step: 1, unit: '%', value: 100,
+				apply: function(pct, commit) {
+					if (obj.classList.contains('locked') || !pct || pct < 1) {
+						rows.scale.set(100);
+						return;
+					}
+					obj.style.width = Math.max(1, Math.round(base_w*pct/100))+'px';
+					obj.style.height = Math.max(1, Math.round(base_h*pct/100))+'px';
+					settle(commit);
+				}
+			});
+			var grid = document.createElement('div');
+			grid.className = 'glue-properties-grid glue-placement-rows';
+			[rows.x, rows.y, rows.scale].forEach(function(r) {
+				r.row.classList.add('glue-placement-row');
+				grid.appendChild(r.row);
+			});
+			return grid;
 		},
 		// A control whose drag has actually moved calls this as it finishes: the
 		// click the drag itself is about to deliver is not a click anybody made.
@@ -1045,8 +1159,23 @@ document.addEventListener('DOMContentLoaded', function() {
 			$.glue.popover.close();
 		}
 	});
+	var menu_after_move = false;
 	$.glue.live('.object', 'glue-movestart', function(e) {
-		$.glue.popover.close();
+		var pop = $.glue.popover.current();
+		// a panel is only taken away by a drag of its own object: another
+		// object's drag would hide its menu with nobody to bring it back
+		if (pop && $.glue.owner(pop) === this) {
+			menu_after_move = $.glue.popover.menu_after_move();
+			$.glue.popover.close(true);
+		}
+	});
+	$.glue.live('.object', 'glue-movestop', function(e) {
+		if (menu_after_move && menu_after_move === this) {
+			var obj = menu_after_move;
+			menu_after_move = false;
+			// close() with nothing open restores the menu it kept away
+			$.glue.popover.close();
+		}
 	});
 });
 
@@ -1197,7 +1326,7 @@ $.glue.colorpicker = function()
 		blend_row.classList.add('glue-picker-blend');
 		var sel = document.createElement('select');
 		sel.className = 'glue-picker-blend-select';
-		sel.title = 'how the object blends with what is behind it';
+		sel.title = 'blend mode - how the object blends with what is behind it';
 		BLEND_MODES.forEach(function(m) {
 			var o = document.createElement('option');
 			o.value = m;
@@ -1438,19 +1567,47 @@ $.glue.contextmenu = function()
 	var left = [];
 	var m = {};
 	var owner = false;
+	var owner_multi = false;
 	var prev_owner = false;
+	var prev_multi = false;
 	var top = [];
 	var veto = {};
+
+	// What a selection of several objects gets: the few actions that mean
+	// something done to each of them, in the left column of the anchor. The
+	// actions read the selection themselves (see $.glue.sel.targets).
+	var MULTI_ITEMS = ['object-lock', 'object-delete'];
+
+	// the menu for a selection of several, unless a download box is in it:
+	// that selection is the attach flow, with a menu of its own
+	var multi_pending = false;
+	var show_multi = function() {
+		var anchor = $.glue.sel.anchor();
+		if (anchor && 1 < document.querySelectorAll('.glue-selected').length &&
+				!document.querySelector('.glue-selected.download')) {
+			$.glue.contextmenu.show(anchor, true);
+		}
+	};
 
 	$.glue.live('.object', 'glue-deselect', function(e) {
 		// hide menu when deselecting
 		$.glue.contextmenu.hide();
+		// clearing N selected objects deselects them one by one: rebuild the
+		// multi menu once, after the last, not N-1 times
+		if (!multi_pending) {
+			multi_pending = true;
+			queueMicrotask(function() {
+				multi_pending = false;
+				show_multi();
+			});
+		}
 	});
 
 	$.glue.live('.object', 'glue-movestart', function(e) {
 		// hide menu when moving the selected object
 		if (this == owner) {
 			prev_owner = owner;
+			prev_multi = owner_multi;
 			$.glue.contextmenu.hide();
 		}
 	});
@@ -1458,17 +1615,19 @@ $.glue.contextmenu = function()
 	$.glue.live('.object', 'glue-movestop', function(e) {
 		// show menu again when we hid the menu because of movement
 		if (this == prev_owner) {
-			$.glue.contextmenu.show(prev_owner);
+			$.glue.contextmenu.show(prev_owner, prev_multi);
 			prev_owner = false;
 		}
 	});
 
 	$.glue.live('.object', 'glue-select', function(e) {
-		// show menu when one object is selected
+		// show menu when one object is selected, the multi-selection menu
+		// when there are several
 		if (document.querySelectorAll('.glue-selected').length == 1) {
 			$.glue.contextmenu.show(this);
 		} else {
 			$.glue.contextmenu.hide();
+			show_multi();
 		}
 	});
 
@@ -1492,16 +1651,38 @@ $.glue.contextmenu = function()
 	// restart the animation under the pointer.
 	var place_items = function(obj, reveal) {
 		var obj_rect = obj.getBoundingClientRect();
+		// the download's attach icon drops its class margins while it sits
+		// at the box's corner (below), and the item is reused by the next
+		// menu: the row has to be measured and placed with them back, or the
+		// icon is laid out stuck to the object until the next placement
+		top.forEach(function(item) {
+			item.elem.style.margin = '';
+		});
+		left.forEach(function(item) {
+			item.elem.style.margin = '';
+		});
+		// a row or column that would leave the screen goes to the object's
+		// other side instead: the top row under it, the left column to its
+		// right. The 20px stand-off moves to the margin facing the object.
+		var flip_top = top.length > 0 &&
+			obj_rect.top-outer_height(top[0].elem, true) < 0;
+		var flip_left = left.length > 0 &&
+			obj_rect.left-outer_width(left[0].elem, true) < 0;
 		for (var i=0; i < 2; i++) {
 			var target;
 			var cur_left = obj_rect.left+window.scrollX;
 			var cur_top = obj_rect.top+window.scrollY;
+			if (flip_left && i == 1) {
+				cur_left = obj_rect.right+window.scrollX;
+			}
 			var offset = 48; // menu offset (when can't calculate height or width)
 			if (i == 0) {
 				target = top;
 				// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
 				// TODO (later): can be improved
-				if (left.length) {
+				if (flip_left) {
+					// the column is on the right, the row keeps the object's edge
+				} else if (left.length) {
 					if (cur_left-outer_width(left[0].elem, true) < 0) {
 						cur_left = outer_width(left[0].elem, true) + offset;
 					}
@@ -1516,7 +1697,9 @@ $.glue.contextmenu = function()
 				target = left;
 				// this is to make sure that the context menu for objects positioned at 0, 0 is accessible
 				// TODO (later): can be improved
-				if (top.length) {
+				if (flip_top) {
+					// the row is underneath, the column keeps the object's top
+				} else if (top.length) {
 					if (cur_top-outer_height(top[0].elem, true) < 0) {
 						cur_top = outer_height(top[0].elem, true);
 					}
@@ -1532,16 +1715,30 @@ $.glue.contextmenu = function()
 				var item = target[j].elem;
 				if (target == top) {
 					item.style.left = cur_left+'px';
-					var temp_top = cur_top-outer_height(item, true);
-					if (temp_top < 0) {
-						temp_top = 0;
+					var temp_top;
+					if (flip_top) {
+						item.style.marginBottom = '0';
+						item.style.marginTop = '20px';
+						temp_top = obj_rect.bottom+window.scrollY;
+					} else {
+						temp_top = cur_top-outer_height(item, true);
+						if (temp_top < 0) {
+							temp_top = 0;
+						}
 					}
 					item.style.top = temp_top+'px';
 					var cur_width = outer_width(item, true);
 				} else {
-					var temp_left = cur_left-outer_width(item, true);
-					if (temp_left < 0) {
-						temp_left = 0;
+					var temp_left;
+					if (flip_left) {
+						item.style.marginRight = '0';
+						item.style.marginLeft = '20px';
+						temp_left = cur_left;
+					} else {
+						temp_left = cur_left-outer_width(item, true);
+						if (temp_left < 0) {
+							temp_left = 0;
+						}
 					}
 					item.style.left = temp_left+'px';
 					item.style.top = cur_top+'px';
@@ -1605,8 +1802,6 @@ $.glue.contextmenu = function()
 						obj_rect.left-attach_elem.offsetWidth-gap)+window.scrollX+'px';
 					attach_elem.style.top = (face_down ? obj_rect.bottom+gap :
 						obj_rect.top-attach_elem.offsetHeight-gap)+window.scrollY+'px';
-				} else {
-					attach_elem.style.margin = '';
 				}
 			}
 		}
@@ -1677,7 +1872,10 @@ $.glue.contextmenu = function()
 			}
 			return false;
 		},
-		show: function(obj) {
+		// multi .. true for the menu of a selection of several, shown on obj
+		// (the anchor): only the MULTI_ITEMS, whose actions apply to every
+		// selected object
+		show: function(obj, multi) {
 			if (owner) {
 				if (obj == owner) {
 					return;
@@ -1686,7 +1884,13 @@ $.glue.contextmenu = function()
 				}
 			}
 			// unless object is locked construct default menus
-			if (!obj.classList.contains('locked')) {
+			if (multi) {
+				for (var i=0; i < m['object'].length; i++) {
+					if (MULTI_ITEMS.indexOf(m['object'][i].name) != -1) {
+						left.push(m['object'][i]);
+					}
+				}
+			} else if (!obj.classList.contains('locked')) {
 				for (var cls in m) {
 					if (obj.classList.contains(cls)) {
 						for (var i=0; i < m[cls].length; i++) {
@@ -1774,6 +1978,7 @@ $.glue.contextmenu = function()
 			}
 			place_items(obj, true);
 			owner = obj;
+			owner_multi = !!multi;
 			// reset prev_owner as well
 			prev_owner = false;
 			return true;
@@ -2440,8 +2645,10 @@ $.glue.object = function()
 	// a download box sharing its selection with anything else is the attach
 	// flow - the box's own menu shows instead, and no object in the selection
 	// draws resize or rotate handles (danja's call, 2026-09-24)
+	// ... and so does any selection of several: the handles belong to one
+	// object, and drawn on each of many they are noise
 	var attach_flow_selection = function() {
-		return document.querySelector('.glue-selected.download') && 1 < document.querySelectorAll('.glue-selected').length;
+		return 1 < document.querySelectorAll('.glue-selected').length;
 	};
 	$.glue.live('.object', 'glue-select', function(e) {
 		if (attach_flow_selection()) {
@@ -2777,6 +2984,23 @@ $.glue.object = function()
 			$.glue.backend({ method: 'glue.save_state', 'html': html });
 		},
 		// obj .. element
+		// A panel has number fields for the same things the handles do (x, y,
+		// scale), so the handles go while one is open and come back with the
+		// menu: both rotate and resize, for one object
+		hide_handles: function(obj) {
+			hide_resize_handles(obj);
+			var m = moveables.get(obj);
+			if (m) {
+				m.rotatable = false;
+			}
+		},
+		show_handles: function(obj) {
+			show_resize_handles(obj);
+			var m = moveables.get(obj);
+			if (m && !obj.classList.contains('locked') && !obj.classList.contains('download')) {
+				m.rotatable = true;
+			}
+		},
 		// see place_handles above: called by whatever changes an object's
 		// rotation, since the offsets that keep the handles outside it are
 		// direction-dependent
@@ -3286,7 +3510,7 @@ $.glue.clipboard = function()
 document.addEventListener('DOMContentLoaded', function() {
 	// visible "Undo" entry in the single-click ("new") menu, not just the
 	// Ctrl+Z shortcut
-	var elem = $.glue.icon('undo', 'undo the last change');
+	var elem = $.glue.icon('undo', 'undo last change');
 	elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.undo();
@@ -3294,7 +3518,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	$.glue.menu.register('new', elem, 20);
 
 	// visible "Redo" entry, next to Undo
-	var redo_elem = $.glue.icon('redo', 'redo the last undone change');
+	var redo_elem = $.glue.icon('redo', 'redo last undone change');
 	redo_elem.addEventListener('click', function(e) {
 		$.glue.menu.hide();
 		$.glue.undo.redo();
@@ -3305,6 +3529,28 @@ document.addEventListener('DOMContentLoaded', function() {
 $.glue.sel = function()
 {
 	var key_moving = false;
+
+	// The selected objects, oldest first. The FIRST of them is the ANCHOR when
+	// there are several: the one the others align to (see $.glue.multisel) -
+	// pick the one to line up with first, then the objects to line up to it,
+	// which is also where the toolbar appears (danja's call, 2026-10-09). The
+	// selection itself is still just the .glue-selected class, which has no
+	// order, so the order is kept here - select() and deselect() are the only
+	// places the class changes.
+	var order = [];
+
+	// .glue-anchor marks the first selected object, and only while it has
+	// company: a lone selected object is not the anchor of anything. Called
+	// before the select/deselect events fire, so whoever hears them finds the
+	// marking already true.
+	var mark_anchor = function() {
+		document.querySelectorAll('.glue-anchor').forEach(function(el) {
+			el.classList.remove('glue-anchor');
+		});
+		if (2 <= order.length) {
+			order[0].classList.add('glue-anchor');
+		}
+	};
 
 	// this could probably also be body
 	document.documentElement.addEventListener('click', function(e) {
@@ -3613,6 +3859,12 @@ $.glue.sel = function()
 		deselect: function(obj) {
 			if (obj.classList.contains('glue-selected')) {
 				obj.classList.remove('glue-selected');
+				// dropping it re-derives the anchor from whoever is first now
+				var at = order.indexOf(obj);
+				if (0 <= at) {
+					order.splice(at, 1);
+				}
+				mark_anchor();
 				$.glue.trigger(obj, 'glue-deselect');
 			}
 		},
@@ -3636,13 +3888,224 @@ $.glue.sel = function()
 			// TODO (later): handle more than one obj (and change callers)
 			if (!obj.classList.contains('glue-selected')) {
 				obj.classList.add('glue-selected');
+				order.push(obj);
+				mark_anchor();
 				$.glue.trigger(obj, 'glue-select');
 			}
+		},
+		// the object the others align to: the first of the selected objects,
+		// or null when nothing is selected. A lone selected object is its own
+		// anchor here; .glue-anchor and the multi-select toolbar are only
+		// there once there are two.
+		anchor: function() {
+			order = order.filter(function(el) {
+				return el.classList.contains('glue-selected') && el.isConnected;
+			});
+			return order.length ? order[0] : null;
+		},
+		// the objects a menu action on obj applies to: all the selected
+		// ones when obj is one of several, else just obj
+		targets: function(obj) {
+			var sel = Array.from(document.querySelectorAll('.glue-selected'));
+			return (1 < sel.length && sel.indexOf(obj) != -1) ? sel : [obj];
 		},
 		// return if an object is selected
 		// obj .. element
 		selected: function(obj) {
 			return obj.classList.contains('glue-selected');
+		}
+	};
+}();
+
+// The multi-select toolbar: what there is to do with several selected objects
+// at once, on the first-selected one (the anchor, $.glue.sel.anchor()). A
+// single object's chrome attaches to that object, and this is the same thing
+// for the many: the toolbar sits on the object everything else is aligned TO,
+// which is why .glue-anchor is drawn differently from the rest. Align is all
+// it holds so far; distribute and bulk actions would be more buttons here
+// (SOW-alignment-tool.md).
+$.glue.multisel = function()
+{
+	// edge: which edge or centre of the box lines up, as a fraction of its
+	// width (x) or height (y). The four edges first, then after a wider gap
+	// the two centres.
+	var modes = [
+		{ name: 'left', axis: 'x', at: 0, icon: 'object-align-left',
+			title: 'align left edges to the first selected object' },
+		{ name: 'right', axis: 'x', at: 1, icon: 'object-align-right',
+			title: 'align right edges to the first selected object' },
+		{ name: 'top', axis: 'y', at: 0, icon: 'object-align-top',
+			title: 'align top edges to the first selected object' },
+		{ name: 'bottom', axis: 'y', at: 1, icon: 'object-align-bottom',
+			title: 'align bottom edges to the first selected object' },
+		{ name: 'center', axis: 'x', at: 0.5, icon: 'object-align-center',
+			title: 'align horizontal centers to the first selected object' },
+		{ name: 'middle', axis: 'y', at: 0.5, icon: 'object-align-middle',
+			title: 'align vertical centers to the first selected object' }
+	];
+
+	// clear space between the toolbar and the anchor, the object menus' own
+	var GAP = 20;
+
+	var bar = null;
+	// true while align() is moving objects, so the movestart/movestop it
+	// sends for each one do not hide and show the toolbar under the pointer
+	var aligning = false;
+	// true between a drag's movestart and its movestop
+	var moving = false;
+
+	var build = function() {
+		bar = document.createElement('div');
+		bar.className = 'glue-multisel glue-ui';
+		modes.forEach(function(mode) {
+			var btn = $.glue.icon(mode.icon, mode.title);
+			// the row keeps 30, not $.glue.icon()'s 32; the glyph's mask is
+			// already 30 and stays centred in the 28 the border leaves
+			btn.style.width = '30px';
+			btn.style.height = '30px';
+			btn.id = 'glue-multisel-'+mode.name;
+			// the centres start after a gap
+			if (mode.name == 'center') {
+				btn.classList.add('glue-multisel-gap');
+			}
+			btn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				$.glue.multisel.align(mode.name);
+			});
+			bar.appendChild(btn);
+		});
+		document.body.appendChild(bar);
+	};
+
+	// On the anchor: along the top of its visual box, from the left edge, the
+	// way an object's own menu sits. Visual, not layout - a rotated anchor is
+	// where it looks to be. If there is no room above it goes below, and
+	// either way it is held on screen. Page coordinates, since the bar is
+	// absolutely positioned in body like the menu items.
+	var place = function() {
+		var anchor = $.glue.sel.anchor();
+		if (!bar || !anchor) {
+			return;
+		}
+		var r = anchor.getBoundingClientRect();
+		var w = bar.offsetWidth;
+		var h = bar.offsetHeight;
+		var vw = document.documentElement.clientWidth;
+		var vh = document.documentElement.clientHeight;
+		// the gap the object menus keep: their buttons carry a 20px bottom
+		// margin, so the row stands 20px clear of the box
+		var x = r.left;
+		var y = r.top-h-GAP;
+		if (y < 0) {
+			y = r.bottom+GAP;
+		}
+		x = Math.max(0, Math.min(vw-w, x));
+		y = Math.max(0, Math.min(vh-h, y));
+		bar.style.left = Math.round(x+window.scrollX)+'px';
+		bar.style.top = Math.round(y+window.scrollY)+'px';
+	};
+
+	var update = function() {
+		// a download box in the selection is the attach flow, which has a
+		// menu of its own and nothing to align
+		var show = !moving && 2 <= document.querySelectorAll('.glue-selected').length &&
+			!document.querySelector('.glue-selected.download') && $.glue.sel.anchor();
+		if (!show) {
+			if (bar) {
+				bar.style.display = 'none';
+			}
+			return;
+		}
+		if (!bar) {
+			build();
+		}
+		bar.style.display = '';
+		place();
+	};
+
+	$.glue.live('.object', 'glue-select', update);
+	$.glue.live('.object', 'glue-deselect', update);
+	$.glue.live('.object', 'glue-unregister', function() {
+		// after the unregister has deselected it
+		setTimeout(update, 0);
+	});
+	$.glue.live('.object', 'glue-movestart', function() {
+		if (!aligning) {
+			moving = true;
+			update();
+		}
+	});
+	$.glue.live('.object', 'glue-movestop', function() {
+		if (!aligning) {
+			moving = false;
+			update();
+		}
+	});
+	window.addEventListener('resize', update);
+
+	return {
+		// mode .. 'center', 'left', 'right', 'middle', 'top' or 'bottom'
+		// Moves every other selected object so the chosen edge or centre of
+		// its box meets the anchor's. The anchor stays where it is, and so do
+		// locked objects. Measured on the boxes as they look (rotation
+		// included) and written as a shift of left/top, saved the way the
+		// arrow keys save a move, as one undo step.
+		align: function(name) {
+			var mode = modes.filter(function(m) { return m.name == name; })[0];
+			var anchor = $.glue.sel.anchor();
+			if (!mode || !anchor) {
+				return;
+			}
+			var ar = anchor.getBoundingClientRect();
+			var target = mode.axis == 'x' ? ar.left+ar.width*mode.at : ar.top+ar.height*mode.at;
+			var moved = [];
+			// a scaled ancestor makes a viewport pixel less than a layout pixel
+			var op = anchor.offsetParent;
+			var scale = op && op.offsetWidth ? op.getBoundingClientRect().width/op.offsetWidth : 1;
+			if (!scale || !isFinite(scale)) {
+				scale = 1;
+			}
+			aligning = true;
+			$.glue.undo.begin_batch();
+			document.querySelectorAll('.glue-selected:not(.locked)').forEach(function(el) {
+				if (el === anchor) {
+					return;
+				}
+				var r = el.getBoundingClientRect();
+				var now = mode.axis == 'x' ? r.left+r.width*mode.at : r.top+r.height*mode.at;
+				var delta = Math.round((target-now)/scale);
+				if (!delta) {
+					return;
+				}
+				// never entirely off the canvas, as the arrow keys never do
+				if (mode.axis == 'x') {
+					if (el.offsetLeft+delta+el.offsetWidth <= 1) {
+						return;
+					}
+				} else if (el.offsetTop+delta+el.offsetHeight <= 1) {
+					return;
+				}
+				$.glue.trigger(el, 'glue-movestart');
+				if (mode.axis == 'x') {
+					el.style.left = (el.offsetLeft+delta)+'px';
+				} else {
+					el.style.top = (el.offsetTop+delta)+'px';
+				}
+				moved.push(el);
+			});
+			moved.forEach(function(el) {
+				// saves the object and updates the canvas (see the
+				// glue-movestop handler in $.glue.sel)
+				$.glue.trigger(el, 'glue-movestop');
+				var m = $.glue.object.moveable_of(el);
+				if (m) {
+					m.updateRect();
+				}
+				$.glue.object.place_handles(el);
+			});
+			$.glue.undo.end_batch();
+			aligning = false;
+			place();
 		}
 	};
 }();
@@ -4227,7 +4690,7 @@ $.glue.upload = function()
 		var upload = default_upload_handling();
 		upload.multiple = true;
 		upload.accept = 'image/*,video/*,audio/*,text/html,.html,.htm';
-		upload.tooltip = 'upload an asset: an image, video or sound file';
+		upload.tooltip = 'upload asset - image, video, audio or html file';
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		elem.addEventListener('click', function(e) {
 			// update x, y
@@ -4248,7 +4711,7 @@ $.glue.upload = function()
 		file_elem.appendChild($.glue.icon('upload-file'));
 		var file_upload = default_upload_handling();
 		file_upload.multiple = true;
-		file_upload.tooltip = 'upload a file: any file, stored as a download object';
+		file_upload.tooltip = 'upload file - any file, stored as a download object';
 		$.glue.upload.button(file_elem, { method: 'glue.upload_files', page: $.glue.page, preferred_module: 'download' }, file_upload);
 		file_elem.addEventListener('click', function(e) {
 			// update x, y
@@ -4297,11 +4760,12 @@ $.glue.upload = function()
 				options = {};
 			}
 			if (!options.tooltip) {
-				options.tooltip = 'upload a file';
+				options.tooltip = 'upload file';
 			}
 			var input = document.createElement('input');
 			input.type = 'file';
 			input.title = options.tooltip;
+			input.className = 'glue-upload-input';
 			input.style.height = '100%';
 			input.style.opacity = '0';
 			input.style.position = 'absolute';

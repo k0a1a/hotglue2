@@ -27,7 +27,7 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const edgeBtn = (page) => page.getByTitle(/border properties and effects/);
+const edgeBtn = (page) => page.getByTitle(/border properties - corners/);
 const pop = (page) => page.locator('.glue-edge-popover');
 const field = (page, n) => pop(page).locator('.glue-popover-field').nth(n);
 const cssOf = (page, id, prop) => page.evaluate(([i, p]) =>
@@ -772,4 +772,24 @@ test('media inside an object rounds with it', async ({ page, hg }) => {
 		return v;
 	}, a);
 	expect(radius, 'a direct media child does not follow the object').toBe('24px');
+});
+
+test('a faded object with a glow shows no glow band round it while selected', async ({ page, hg }) => {
+	// the selection mask keeps a 2px ring outside the box for the outline, and
+	// the outer glow and drop shadow would show through it at full strength
+	const a = hg.addObject('100000000001', {
+		...ATTRS, 'object-edge-fade': '30px', 'object-glow-color': '#ff0000',
+		'object-glow-spread': '30', 'object-glow-alpha': '90',
+	}, 'A');
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 1);
+	const outer = () => byId(page, a).evaluate((e) =>
+		getComputedStyle(e).getPropertyValue('--glue-outer').trim());
+	expect(await outer()).toBe('1');
+	await byId(page, a).click();
+	await expect.poll(outer).toBe('0');
+	// the glow is not touched in the file, and comes back when it is let go
+	await page.mouse.click(5, 5);
+	await expect.poll(outer).toBe('1');
+	await expect.poll(() => attrs(hg)['object-glow-color']).toBe('#ff0000');
 });

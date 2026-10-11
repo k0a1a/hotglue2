@@ -15,7 +15,7 @@ const SEED = {
 	'object-width': '100px', 'object-height': '50px', 'object-zindex': '100',
 	'text-background-color': 'transparent',
 };
-const BTN = 'input[title="upload an asset: an image, video or sound file"]';
+const BTN = 'input[title="upload asset - image, video, audio or html file"]';
 
 async function upload(page, file) {
 	await page.keyboard.press('Alt+o');

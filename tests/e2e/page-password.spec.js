@@ -127,7 +127,7 @@ test('the options set and clear the password', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 
 	await page.keyboard.press('Alt+P');
-	await page.getByTitle('page options: change title of the page, URL, make it a start page, or delete it').click();
+	await page.getByTitle('page options - title, url, start page, password, delete').click();
 	const pwField = page.locator('.glue-page-password');
 	await expect(pwField).toBeVisible();
 

@@ -19,8 +19,8 @@ const pageAttrs = (hg) => hg.readObject('page').attrs;
 
 async function openPanel(page) {
 	await page.keyboard.press('Alt+P');
-	await expect(page.getByTitle(/grid \(/)).toBeVisible();
-	await page.getByTitle(/grid \(/).click();
+	await expect(page.getByTitle(/grid settings/)).toBeVisible();
+	await page.getByTitle(/grid settings/).click();
 	await expect(pop(page)).toBeVisible();
 }
 

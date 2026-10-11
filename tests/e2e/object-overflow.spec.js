@@ -22,14 +22,14 @@ const ATTRS = {
 const LONG = 'this text is considerably longer than the box it lives in';
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const toggle = (page) => page.getByTitle(/content bigger than this object/);
+const toggle = (page) => page.getByTitle(/content bigger than the object/);
 const overflowOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).overflow, id);
 
 async function select(page, id) {
 	await byId(page, id).click();
 	// the toggle lives in the edge popout, as the last row before the fold
-	await page.getByTitle('object border properties and effects: rounded corners, style, shadow and glow').click();
+	await page.getByTitle('border properties - corners, border, clip, fade, glow, shadow').click();
 	await expect(toggle(page)).toBeVisible();
 }
 
@@ -84,11 +84,11 @@ test('the pressed-in frame and the tooltip say what is true now',
 		await waitForEditor(page, 1);
 		await select(page, a);
 
-		await expect(toggle(page)).toHaveAttribute('title', /spills out/);
+		await expect(toggle(page)).toHaveAttribute('title', /click to cut it off/);
 		await expect(toggle(page)).not.toHaveClass(/glue-btn-active/);
 		await toggle(page).click();
 		await expect(toggle(page)).toHaveClass(/glue-btn-active/);
-		await expect(toggle(page)).toHaveAttribute('title', /cut off/);
+		await expect(toggle(page)).toHaveAttribute('title', /let it show/);
 	});
 
 test('clipping is not lost when the object is next moved', async ({ page, hg }) => {

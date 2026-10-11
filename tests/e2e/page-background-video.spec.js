@@ -22,15 +22,15 @@ test('a video uploads as the page background and behaves like the picture',
 		await waitForEditor(page, 1);
 
 		await page.keyboard.press('Alt+P');
-		await page.getByTitle('set page background').click();
+		await page.getByTitle('page background', { exact: true }).click();
 		const pop = page.locator('.glue-background-popover');
 		await expect(pop).toBeVisible();
 
 		// the video button is the picker, like the picture's
-		const input = page.locator('input[title="set page background video"]').first();
+		const input = page.locator('input[title="page background video - pick a file"]').first();
 		await expect(input).toBeAttached();
 		await page.evaluate(() => {
-			document.querySelector('input[title="set page background video"]').parentElement
+			document.querySelector('input[title="page background video - pick a file"]').parentElement
 				.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		});
 		await input.setInputFiles(SAMPLE);
@@ -75,7 +75,7 @@ test('a video uploads as the page background and behaves like the picture',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await page.keyboard.press('Alt+P');
-		await page.getByTitle('set page background').click();
+		await page.getByTitle('page background', { exact: true }).click();
 		await expect(pop).toBeVisible();
 		await page.locator('.glue-background-tile').click();
 		await expect(page.locator('canvas.page-background-video')).toHaveCount(1);
@@ -100,7 +100,7 @@ test('a video uploads as the page background and behaves like the picture',
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await page.keyboard.press('Alt+P');
-		await page.getByTitle('set page background').click();
+		await page.getByTitle('page background', { exact: true }).click();
 		await expect(pop).toBeVisible();
 		await pop.locator('.glue-popover-disclosure').click();
 		await pop.getByTitle('remove the background image').click();

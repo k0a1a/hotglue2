@@ -22,8 +22,8 @@ test('the menu has the scrollbar toggle with its icon and no change-url button',
 		await byId(page, a).locator('.glue-iframe-shield').click();
 		await page.waitForTimeout(400);		// the menu fades in
 
-		await expect(page.getByTitle(/scrollbars are shown|toggle scrollbars/).first()).toBeVisible();
-		const icon = await page.getByTitle(/scrollbars are shown|toggle scrollbars/).first()
+		await expect(page.getByTitle(/scrollbars/).first()).toBeVisible();
+		const icon = await page.getByTitle(/scrollbars/).first()
 			.evaluate((el) => el.style.getPropertyValue('--glue-icon'));
 		expect(icon).toContain('background-scroll.svg');
 		await expect(page.getByTitle('change webpage url')).toHaveCount(0);
@@ -43,12 +43,12 @@ test('the toggle shows and hides the iframe\'s scrollbars and says which it is',
 		const btn = () => page.locator('.glue-btn-icon[title*="scrollbars"]').first();
 		await expect(iframe).toHaveAttribute('scrolling', 'no');
 		await expect(btn()).toHaveClass(/glue-menu-disabled/);
-		await expect(btn()).toHaveAttribute('title', 'toggle scrollbars on and off');
+		await expect(btn()).toHaveAttribute('title', 'scrollbars - show or hide');
 
 		await btn().click();
 		await expect(iframe).toHaveAttribute('scrolling', 'auto');
 		await expect(btn()).toHaveClass(/glue-menu-enabled/);
-		await expect(btn()).toHaveAttribute('title', 'scrollbars are shown - click to hide them');
+		await expect(btn()).toHaveAttribute('title', 'scrollbars shown - click to hide them');
 
 		await btn().click();
 		await expect(iframe).toHaveAttribute('scrolling', 'no');
@@ -62,7 +62,7 @@ test('the shield is the webvideo\'s: the upper part of the embed, shown on hover
 		await waitForEditor(page, 1);
 
 		const shield = byId(page, a).locator(':scope > .glue-iframe-shield');
-		await expect(shield).toHaveAttribute('title', 'click here to select/edit this embed');
+		await expect(shield).toHaveAttribute('title', 'click to select this embed');
 		const geometry = () => page.evaluate((i) => {
 			const o = document.getElementById(i).getBoundingClientRect();
 			const s = document.querySelector('[id="' + i + '"] > .glue-iframe-shield');

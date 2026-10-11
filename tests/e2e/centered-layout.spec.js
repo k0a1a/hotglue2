@@ -156,13 +156,13 @@ test('the toggle switches modes and stores infinite by absence', async ({ page, 
 	// (modules/page/page-edit.js) - so the unbounded page offers the one
 	// that says so, and the centered page the other
 	await page.mouse.dblclick(900, 500);
-	await page.getByTitle(/page content sits on an unbounded canvas/).click();
+	await page.getByTitle(/switch to centered layout/).click();
 	await page.waitForLoadState('load');
 	await expect(page.locator('#hg-centered-wrapper')).toHaveCount(1);
 	expect(hg.readObject('page').attrs['page-layout-mode']).toBe('centered');
 
 	await page.mouse.dblclick(900, 500);
-	await page.getByTitle(/center page content in a fixed-width container/).click();
+	await page.getByTitle(/switch to absolute layout/).click();
 	await page.waitForLoadState('load');
 	await expect(page.locator('#hg-centered-wrapper')).toHaveCount(0);
 	expect(hg.readObject('page').attrs['page-layout-mode'],

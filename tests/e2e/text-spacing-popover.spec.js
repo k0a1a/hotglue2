@@ -30,7 +30,7 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const fontBtn = (page) => page.getByTitle(/text properties - font/);
 const panel = (page) => page.locator('.glue-font-popover');
 const pop = (page) => panel(page).locator('.glue-popover-advanced');
 const rowField = (page, n) => pop(page).locator('.glue-popover-field').nth(n);

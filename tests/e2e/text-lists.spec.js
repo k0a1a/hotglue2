@@ -36,7 +36,7 @@ const ATTRS = {
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 const stored = (hg) => hg.readObject('100000000001').content;
 const panel = (page) => page.locator('.glue-font-popover');
-const fontBtn = (page) => page.getByTitle(/font: face, size and style/);
+const fontBtn = (page) => page.getByTitle(/text properties - font/);
 const listBtn = (page, title) => panel(page).locator(`.glue-popover-icon[title="${title}"]`);
 
 async function startEditing(page, id) {
@@ -148,15 +148,15 @@ test('the list buttons join the align row, and gray until a run is selected',
 
 		// both buttons are there from the moment the panel opens; with
 		// nothing selected, they are grayed - they are the run's own
-		await expect(listBtn(page, 'bulleted list')).toBeVisible();
-		await expect(listBtn(page, 'numbered list')).toBeVisible();
-		await expect(listBtn(page, 'bulleted list')).toHaveClass(/glue-popover-disabled/);
-		await expect(listBtn(page, 'numbered list')).toHaveClass(/glue-popover-disabled/);
+		await expect(listBtn(page, 'bulleted list - each selected line becomes an item')).toBeVisible();
+		await expect(listBtn(page, 'numbered list - each selected line becomes an item')).toBeVisible();
+		await expect(listBtn(page, 'bulleted list - each selected line becomes an item')).toHaveClass(/glue-popover-disabled/);
+		await expect(listBtn(page, 'numbered list - each selected line becomes an item')).toHaveClass(/glue-popover-disabled/);
 
 		// a run selected inside the render brings them alive
 		await selectAll(page, a);
-		await expect(listBtn(page, 'bulleted list')).not.toHaveClass(/glue-popover-disabled/);
-		await expect(listBtn(page, 'numbered list')).not.toHaveClass(/glue-popover-disabled/);
+		await expect(listBtn(page, 'bulleted list - each selected line becomes an item')).not.toHaveClass(/glue-popover-disabled/);
+		await expect(listBtn(page, 'numbered list - each selected line becomes an item')).not.toHaveClass(/glue-popover-disabled/);
 	});
 
 test('the bulleted button wraps each selected line in its own li',
@@ -167,7 +167,7 @@ test('the bulleted button wraps each selected line in its own li',
 		await openPanel(page, a);
 		await selectAll(page, a);
 
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg))
@@ -181,7 +181,7 @@ test('the numbered button wraps in ol', async ({ page, hg }) => {
 	await openPanel(page, a);
 	await selectAll(page, a);
 
-	await listBtn(page, 'numbered list').click();
+	await listBtn(page, 'numbered list - each selected line becomes an item').click();
 	await finish(page, a);
 
 	await expect.poll(() => stored(hg))
@@ -198,7 +198,7 @@ test('partial first and last lines become partial items',
 		// what they selected, same as every other run op
 		await selectRange(page, a, 'lph', 'amm');
 
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg))
@@ -215,7 +215,7 @@ test('blank lines are dropped, interior and trailing',
 		await openPanel(page, a);
 		await selectAll(page, a);
 
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg))
@@ -231,7 +231,7 @@ test('with nothing selected the buttons stay grayed and the content is untouched
 
 		// the gray-out is pointer-events:none, so no click can reach the
 		// handler - assert the state, then leave the content alone
-		await expect(listBtn(page, 'bulleted list')).toHaveClass(/glue-popover-disabled/);
+		await expect(listBtn(page, 'bulleted list - each selected line becomes an item')).toHaveClass(/glue-popover-disabled/);
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg)).toBe('one\ntwo\nthree');
@@ -244,7 +244,7 @@ test('a caret inside a list keeps the buttons alive, and numbered converts it',
 		await waitForEditor(page, 1);
 		await openPanel(page, a);
 		await selectAll(page, a);
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 		await expect.poll(() => stored(hg))
 			.toBe('<ul><li>one</li><li>two</li><li>three</li></ul>');
@@ -253,8 +253,8 @@ test('a caret inside a list keeps the buttons alive, and numbered converts it',
 		// the list - the buttons stay alive, and numbered converts it
 		await openPanel(page, a);
 		await caretInList(page, a);
-		await expect(listBtn(page, 'numbered list')).not.toHaveClass(/glue-popover-disabled/);
-		await listBtn(page, 'numbered list').click();
+		await expect(listBtn(page, 'numbered list - each selected line becomes an item')).not.toHaveClass(/glue-popover-disabled/);
+		await listBtn(page, 'numbered list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg))
@@ -267,14 +267,14 @@ test('the bulleted button converts a numbered list', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await openPanel(page, a);
 	await selectAll(page, a);
-	await listBtn(page, 'numbered list').click();
+	await listBtn(page, 'numbered list - each selected line becomes an item').click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('<ol><li>one</li><li>two</li><li>three</li></ol>');
 
 	await openPanel(page, a);
 	await selectItem(page, a);
-	await listBtn(page, 'bulleted list').click();
+	await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 	await finish(page, a);
 
 	await expect.poll(() => stored(hg))
@@ -288,7 +288,7 @@ test('the button the list already wears takes the list off',
 		await waitForEditor(page, 1);
 		await openPanel(page, a);
 		await selectAll(page, a);
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 		await expect.poll(() => stored(hg))
 			.toBe('<ul><li>one</li><li>two</li><li>three</li></ul>');
@@ -297,7 +297,7 @@ test('the button the list already wears takes the list off',
 		// trailing separator: the stored form is the plain lines again
 		await openPanel(page, a);
 		await selectItem(page, a);
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		await expect.poll(() => stored(hg)).toBe('one\ntwo\nthree');
@@ -312,7 +312,7 @@ test('un-listing keeps what followed the list on its own line',
 		await openPanel(page, a);
 
 		await selectItem(page, a);
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 		await finish(page, a);
 
 		// a separator after the last item because something follows the
@@ -327,7 +327,7 @@ test('the list survives the editing round trip', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await openPanel(page, a);
 	await selectAll(page, a);
-	await listBtn(page, 'numbered list').click();
+	await listBtn(page, 'numbered list - each selected line becomes an item').click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('<ol><li>one</li><li>two</li><li>three</li></ol>');
@@ -353,7 +353,7 @@ test('the list renders as a list on the published page', async ({ page, hg }) =>
 	await waitForEditor(page, 1);
 	await openPanel(page, a);
 	await selectAll(page, a);
-	await listBtn(page, 'bulleted list').click();
+	await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 	await finish(page, a);
 
 	// the real page a visitor gets: three items, and a disc marker -
@@ -376,7 +376,7 @@ test('Enter inside a list makes a new item, and Enter on an empty item steps out
 		await waitForEditor(page, 1);
 		await openPanel(page, a);
 		await selectAll(page, a);
-		await listBtn(page, 'bulleted list').click();
+		await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 
 		// the caret is at the start of the first item; move to its end and
 		// Enter - inside a list the browser's own Enter applies (the marked
@@ -405,7 +405,7 @@ test('a list edit is one undo step away', async ({ page, hg }) => {
 	await waitForEditor(page, 1);
 	await openPanel(page, a);
 	await selectAll(page, a);
-	await listBtn(page, 'bulleted list').click();
+	await listBtn(page, 'bulleted list - each selected line becomes an item').click();
 	await finish(page, a);
 	await expect.poll(() => stored(hg))
 		.toBe('<ul><li>one</li><li>two</li><li>three</li></ul>');

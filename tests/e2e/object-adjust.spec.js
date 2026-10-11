@@ -1,18 +1,12 @@
-// The 'object adjustments' popout: where the object sits in the stack, and
-// nothing else.
+// The layer order in the object properties panel: a row of four icons under
+// the panel's own, where the object sits in the stack.
 //
-// It was three things - flip, z-level and transparency - until 2026-09-16, when
-// danja moved the other two to the object properties panel and left this one
-// the relation between an object and its neighbours. The flip and transparency
-// tests that used to be in this file are in object-background.spec.js now, with
-// the panel they moved to.
-//
-// The panel itself replaces a menu button that hid a drag-distance slider (drag
-// right, drag further right...), and the four buttons it offers are the four
-// moves the object adjustment menu always had: to top, level up, level down, to
-// bottom. The stored format is the one the module always used - object-zindex
-// holds the literal style value - so the round-trips below assert against the
-// flat files exactly the way the rotation spec does.
+// It was a popout of its own ('object position controls', with an x and y)
+// until 2026-10-10, when danja folded it into the properties panel. The four
+// buttons are the four moves the object menu always had: to front, forward,
+// backward, to back. The stored format is the one the module always used -
+// object-zindex holds the literal style value - so the round-trips below
+// assert against the flat files exactly the way the rotation spec does.
 
 const { test, expect, waitForEditor } = require('./fixtures/hotglue.js');
 
@@ -24,8 +18,8 @@ const OBJ = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const adjust = (page) => page.getByTitle('object position controls: layer up/down and x/y position');
-const popover = (page) => page.locator('.glue-popover.glue-adjust-popover');
+const adjust = (page) => page.getByTitle(/object properties - background/);
+const popover = (page) => page.locator('.glue-popover.glue-properties-popover');
 const zOf = (page, id) => page.evaluate((i) =>
 	getComputedStyle(document.getElementById(i)).zIndex, id);
 
@@ -36,49 +30,28 @@ async function selectAndOpen(page, id) {
 	await expect(popover(page)).toBeVisible();
 }
 
-test('the popout opens, and the old hidden-gesture buttons are gone',
+test('the layer row sits under the icon row, as four 22px icons',
 	async ({ page, hg }) => {
 		const a = hg.addObject('100000000001', OBJ, 'A');
 		await page.goto(hg.editUrl());
 		await waitForEditor(page, 1);
 		await selectAndOpen(page, a);
 
-		expect(await page.getByTitle('flip object').count()).toBe(0);
-		expect(await page.getByTitle(/change transparency/).count()).toBe(0);
-		expect(await page.getByTitle('bring object to foreground or background').count()).toBe(0);
-
-		// and the panel has the promised rows: the four z buttons, and nothing
-		// else - no reset either, as no popout has a reset since 2026-09-28 (danja's call) - the flip toggles and the opacity slider are the
-		// properties panel's now, so neither is in here
-		for (const t of ['to top', 'level up', 'level down', 'to bottom']) {
+		// there is no popout of its own any more
+		expect(await page.getByTitle(/object position controls/).count()).toBe(0);
+		for (const t of ['bring to front', 'bring forward', 'send backward', 'send to back']) {
 			await expect(page.getByTitle(t)).toBeVisible();
+			const box = await page.getByTitle(t).boundingBox();
+			expect(Math.round(box.width)).toBe(22);
+			expect(Math.round(box.height)).toBe(22);
 		}
-		await expect(popover(page).locator('.glue-popover-reset')).toHaveCount(0);
-		await expect(popover(page).locator('.glue-popover-slider')).toHaveCount(0);
-		expect(await page.getByTitle('flip vertically').count()).toBe(0);
+		// under the panel's own icon row, and no x/y rows of this row's own
+		const rows = popover(page).locator('.glue-popover-icons');
+		await expect(rows).toHaveCount(2);
+		const first = await rows.nth(0).boundingBox();
+		const second = await rows.nth(1).boundingBox();
+		expect(second.y).toBeGreaterThan(first.y + first.height - 1);
 	});
-
-test('the x and y rows position the object precisely', async ({ page, hg }) => {
-	const a = hg.addObject('100000000001', OBJ, 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await selectAndOpen(page, a);
-
-	// the rows are right in the panel, seeded from the stored position
-	const fields = popover(page).locator('.glue-popover-field');
-	await expect(fields.nth(0)).toHaveValue('300');
-	await expect(fields.nth(1)).toHaveValue('300');
-
-	// typed values move the object live and commit on change
-	await fields.nth(0).fill('415');
-	await fields.nth(0).press('Enter');
-	await expect.poll(() => hg.readObject('100000000001').attrs['object-left']).toBe('415px');
-	await expect(byId(page, a)).toHaveCSS('left', '415px');
-	await fields.nth(1).fill('37');
-	await fields.nth(1).press('Enter');
-	await expect.poll(() => hg.readObject('100000000001').attrs['object-top']).toBe('37px');
-	await expect(byId(page, a)).toHaveCSS('top', '37px');
-});
 
 test('to top/to bottom push to the ends; level up/down swap one step',
 	async ({ page, hg }) => {
@@ -97,19 +70,19 @@ test('to top/to bottom push to the ends; level up/down swap one step',
 		await selectAndOpen(page, a);
 
 		// to top: just above the topmost intersecting object
-		await page.getByTitle('to top').click();
+		await page.getByTitle('bring to front').click();
 		expect(await zOf(page, a)).toBe('104');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
 			.toBe('104');
 
 		// to bottom: just below the bottommost intersecting object
-		await page.getByTitle('to bottom').click();
+		await page.getByTitle('send to back').click();
 		expect(await zOf(page, a)).toBe('102');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
 			.toBe('102');
 
 		// level up: swap with the nearest intersecting object above
-		await page.getByTitle('level up').click();
+		await page.getByTitle('bring forward').click();
 		expect(await zOf(page, a)).toBe('103');
 		expect(await zOf(page, b)).toBe('102');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
@@ -118,7 +91,7 @@ test('to top/to bottom push to the ends; level up/down swap one step',
 			.toBe('102');
 
 		// level down: swap with the nearest intersecting object below
-		await page.getByTitle('level down').click();
+		await page.getByTitle('send backward').click();
 		expect(await zOf(page, a)).toBe('102');
 		expect(await zOf(page, b)).toBe('103');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
@@ -127,7 +100,7 @@ test('to top/to bottom push to the ends; level up/down swap one step',
 			.toBe('103');
 
 		// at the bottom there is nothing below to swap with
-		await page.getByTitle('level down').click();
+		await page.getByTitle('send backward').click();
 		expect(await zOf(page, a)).toBe('102');
 		expect(await zOf(page, b)).toBe('103');
 	});
@@ -152,7 +125,7 @@ test('an object without its own z swaps with the implicit 0',
 		}, a);
 		await selectAndOpen(page, a);
 
-		await page.getByTitle('level up').click();
+		await page.getByTitle('bring forward').click();
 		expect(await zOf(page, a)).toBe('107');
 		await expect.poll(() => hg.readObject('100000000001').attrs['object-zindex'])
 			.toBe('107');

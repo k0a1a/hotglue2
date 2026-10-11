@@ -66,7 +66,7 @@ test('a tap on a menu button opens its panel', async ({ page, hg }) => {
 
 	await byId(page, a).tap();
 	await page.waitForTimeout(400);		// the menu fades in
-	await page.getByTitle(/font: face, size and style/).tap();
+	await page.getByTitle(/text properties - font/).tap();
 	await expect(page.locator('.glue-font-popover')).toBeVisible();
 	// and a tap outside closes it again
 	await page.touchscreen.tap(360, 700);
@@ -234,7 +234,7 @@ test('a finger scrubs the padding row in the font panel without scrolling the pa
 		await expect(byId(page, a)).toHaveClass(/glue-selected/);
 		await page.waitForTimeout(400);		// the menu fades in
 
-		await page.getByTitle(/font: face, size and style/).tap();
+		await page.getByTitle(/text properties - font/).tap();
 		const panel = page.locator('.glue-popover.glue-font-popover');
 		await expect(panel).toBeVisible();
 		// the padding row is in the panel's fold; the disclosure is tapped open

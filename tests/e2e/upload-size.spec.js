@@ -25,7 +25,7 @@ test('the editor refuses an oversized file before uploading it', async ({ page, 
 	await waitForEditor(page, 1);
 
 	await page.keyboard.press('Alt+o');
-	const input = page.locator('input[title="upload an asset: an image, video or sound file"]').first();
+	const input = page.locator('input[title="upload asset - image, video, audio or html file"]').first();
 	await expect(input).toBeAttached();
 	// the refusal is an alert raised inside the input's change handler, so it
 	// blocks the page until it is answered: it is answered here, by a handler

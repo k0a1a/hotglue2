@@ -15,14 +15,14 @@ async function uploadViaNewMenu(page, file) {
 	await page.keyboard.press('Alt+o');
 	// the button's artwork is now a mask icon (.glue-btn-icon); the input
 	// keeps the button's tooltip, so it is the handle to the button
-	const input = page.locator('input[title="upload an asset: an image, video or sound file"]').first();
+	const input = page.locator('input[title="upload asset - image, video, audio or html file"]').first();
 	await expect(input).toBeAttached();
 	// The button's own click handler is what records WHERE the upload should
 	// land ($.glue.menu.spawn_coords()), and the file input is a transparent
 	// overlay on top of it - so fire the button's click first, then hand the
 	// input its file. Driving the file chooser instead skips the handler.
 	await page.evaluate(() => {
-		document.querySelector('input[title="upload an asset: an image, video or sound file"]').parentElement
+		document.querySelector('input[title="upload asset - image, video, audio or html file"]').parentElement
 			.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 	});
 	await input.setInputFiles(file);
@@ -112,10 +112,10 @@ test('the menu is video\'s: the four toggles and download, and no reset-size',
 
 		// select the object - the context menu items come up beside it
 		await audioOf(page).click();
-		await expect(page.getByTitle('toggle automatic playback of audio')).toBeVisible();
-		await expect(page.getByTitle('toggle looping of audio')).toBeVisible();
-		await expect(page.getByTitle('show or hide control elements')).toBeVisible();
-		await expect(page.getByTitle('mute or unmute audio')).toBeVisible();
+		await expect(page.getByTitle('autoplay - start playing when the page loads')).toBeVisible();
+		await expect(page.getByTitle('loop - play again at the end')).toBeVisible();
+		await expect(page.getByTitle('player controls - show or hide')).toBeVisible();
+		await expect(page.getByTitle('sound - mute or unmute')).toBeVisible();
 		await expect(page.getByTitle('download original file')).toBeVisible();
 		// no reset-size: the button left the video menu too (2026-09-24), and
 		// the audio object never had a native size to reset to in the first
@@ -124,15 +124,15 @@ test('the menu is video\'s: the four toggles and download, and no reset-size',
 
 		// mute toggles the live state, the property not just the attribute -
 		// the same loaded-element lock the video module's fix is about
-		await page.getByTitle('mute or unmute audio').click();
+		await page.getByTitle('sound - mute or unmute').click();
 		await expect.poll(() => audioOf(page).locator('audio').evaluate((a) => a.muted))
 			.toBe(true);
-		await page.getByTitle('audio is muted - click to unmute').click();
+		await page.getByTitle('sound muted - click to unmute').click();
 		await expect.poll(() => audioOf(page).locator('audio').evaluate((a) => a.muted))
 			.toBe(false);
 
 		// loop toggles the stored attr the way video's does
-		await page.getByTitle('toggle looping of audio').click();
+		await page.getByTitle('loop - play again at the end').click();
 		await expect.poll(() => {
 			const id = hg.ids().find((f) => f !== '100000000001' && f !== 'page');
 			return hg.readObject(id).attrs['audio-loop'];

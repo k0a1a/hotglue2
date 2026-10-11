@@ -112,10 +112,10 @@ test('an uploaded file renders as the 50x50 mime box and downloads in view',
 		await waitForEditor(page, 1);
 
 		await page.keyboard.press('Alt+o');
-		const input = page.locator('input[title="upload an asset: an image, video or sound file"]').first();
+		const input = page.locator('input[title="upload asset - image, video, audio or html file"]').first();
 		await expect(input).toBeAttached();
 		await page.evaluate(() => {
-			document.querySelector('input[title="upload an asset: an image, video or sound file"]').parentElement
+			document.querySelector('input[title="upload asset - image, video, audio or html file"]').parentElement
 				.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		});
 		await input.setInputFiles(SAMPLE);
@@ -156,7 +156,7 @@ test('attaching from the target menu writes the pair and wraps only in view',
 		await waitForEditor(page, 1);
 
 		await openMenu(page, hg, '100000000001');
-		await expect(menuBtn(page)).toHaveAttribute('title', 'attach a file to download');
+		await expect(menuBtn(page)).toHaveAttribute('title', 'attach download to this object');
 		const chooser = page.waitForEvent('filechooser');
 		await menuBtn(page).click();
 		await (await chooser).setFiles(SAMPLE);
@@ -270,6 +270,8 @@ test('a download selected together with its target shows the menu and attaches',
 			Array.from(document.querySelectorAll('[id^="glue-contextmenu-"]'))
 				.filter((el) => el.style.visibility !== 'hidden').map((el) => el.id));
 		expect(ids).toEqual(['glue-contextmenu-download-attach']);
+		// and the align toolbar stays away: there is nothing to align here
+		await expect(page.locator('.glue-multisel')).toBeHidden();
 
 		// the icon sits at the corner facing the target, with the menu's
 		// usual 20px stand-off: the text here is left of (and a hair below)
@@ -319,7 +321,7 @@ test('detach clears the pair and the box returns at its position',
 	await waitForEditor(page, 2);
 
 	await openMenu(page, hg, '100000000001');
-	await expect(menuBtn(page)).toHaveAttribute('title', 'detach the download');
+	await expect(menuBtn(page)).toHaveAttribute('title', 'detach download');
 	await menuBtn(page).click();
 	await expect.poll(() => hg.readObject('100000000001').attrs['download-wrap'])
 		.toBe(undefined);
@@ -496,12 +498,12 @@ test('the public/private toggle hides and restores the box in view',
 		await byId(page, hg, '100000000001').click();
 		const toggle = page.locator('#glue-contextmenu-download-public');
 		await expect(toggle).toHaveAttribute('title',
-			'this download is public - click to make it private');
+			'public download - click to make it private');
 		await toggle.click();
 		await expect.poll(() => hg.readObject('100000000001').attrs['download-public'])
 			.toBe('private');
 		await expect(toggle).toHaveAttribute('title',
-			'this download is private - click to make it public');
+			'private download - click to make it public');
 
 		// the view shows nothing and the file asks an outsider for auth
 		// (a bare node fetch, not Playwright's request fixture - that one
@@ -567,7 +569,7 @@ test('an image target attaches the same way, and wraps its <img> in view',
 
 		// the image's menu carries the same attach button
 		await openMenu(page, hg, '100000000001');
-		await expect(menuBtn(page)).toHaveAttribute('title', 'attach a file to download');
+		await expect(menuBtn(page)).toHaveAttribute('title', 'attach download to this object');
 		const chooser = page.waitForEvent('filechooser');
 		await menuBtn(page).click();
 		await (await chooser).setFiles(SAMPLE);
@@ -584,3 +586,24 @@ test('an image target attaches the same way, and wraps its <img> in view',
 		const a = page.locator('a').filter({ has: byId(page, hg, '100000000001') });
 		await expect(a).toHaveAttribute('download', 'sample.pdf');
 	});
+
+test('the box menu is laid out normally after a multi-select', async ({ page, hg }) => {
+	hg.addObject('100000000001', textObject(50, 50, 100), 'hello');
+	hg.addObject('100000000002', downloadObject(300, 50, 100));
+	await page.goto(hg.editUrl());
+	await waitForEditor(page, 2);
+	await byId(page, hg, '100000000001').click();
+	await byId(page, hg, '100000000002').click({ modifiers: ['Shift'] });
+	await expect(page.locator('#glue-contextmenu-download-attach')).toBeVisible();
+
+	// the box alone: the attach icon is in the top row
+	await page.mouse.click(5, 5);
+	await byId(page, hg, '100000000002').click();
+	const icon = page.locator('#glue-contextmenu-download-attach');
+	await expect(icon).toBeVisible();
+	await page.waitForTimeout(500);
+	// level with the rest of the row
+	const at = await icon.boundingBox();
+	const next = await page.locator('#glue-contextmenu-object-properties').boundingBox();
+	expect(at.y).toBeCloseTo(next.y, 0);
+});

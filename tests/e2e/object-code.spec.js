@@ -19,7 +19,7 @@ const box = (left) => ({
 });
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const codeBtn = (page) => page.getByTitle(/code for this object/);
+const codeBtn = (page) => page.getByTitle(/object code - css and javascript/);
 const panel = (page) => page.locator('.glue-code-popover');
 const styleBox = (page) => panel(page).getByLabel('style');
 const scriptBox = (page) => panel(page).getByLabel('script');

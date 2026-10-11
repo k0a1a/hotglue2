@@ -243,24 +243,15 @@ test('the picker does not cover the object it is recolouring', async ({ page, hg
 	expect(overlaps(pick, obj), 'the picker is sitting on top of the object').toBe(false);
 });
 
-test('nor the menu it was opened from', async ({ page, hg }) => {
-	// covering the row the button lives in is not as bad as covering the
-	// object, but the free canvas is right there
+test('nor the menu it was opened from: that is out of the way while a panel is open', async ({ page, hg }) => {
+	// a panel takes the menu's place (js/edit.js, $.glue.popover), so there is
+	// no row of buttons left for the picker to cover
 	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
 	await page.goto(hg.editUrl());
 	await waitForEditor(page, 1);
 	await openPicker(page, a);
-
-	const pick = await page.locator('.picker_wrapper').boundingBox();
-	const items = await page.evaluate(() =>
-		[...document.querySelectorAll('.glue-contextmenu-left, .glue-contextmenu-top')]
-			.map((e) => {
-				const b = e.getBoundingClientRect();
-				return { id: e.id, x: b.x, y: b.y, width: b.width, height: b.height };
-			}));
-	expect(items.length, 'no menu was open, so this proved nothing').toBeGreaterThan(0);
-	const hit = items.filter((i) => overlaps(pick, i)).map((i) => i.id);
-	expect(hit, 'the picker is covering menu buttons').toEqual([]);
+	await expect(page.locator('.picker_wrapper')).toBeVisible();
+	await expect(page.locator('.glue-contextmenu-left, .glue-contextmenu-top')).toHaveCount(0);
 });
 
 test('it moves to the other side when there is no room on the first',
@@ -552,7 +543,7 @@ test('a new text object takes the last colour used on the page',
 
 		// the "new" menu opens on a click on empty canvas
 		await page.mouse.click(500, 400);
-		await page.getByTitle('create a text object').click();
+		await page.getByTitle('new text object').click();
 		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
 
 		expect(await page.evaluate(() =>
@@ -566,7 +557,7 @@ test('and falls back to a random default on a page with no colours yet',
 		await page.waitForFunction(() => window.$ && window.$.glue && window.$.glue.object);
 
 		await page.mouse.click(500, 400);
-		await page.getByTitle('create a text object').click();
+		await page.getByTitle('new text object').click();
 		await page.waitForFunction(() => document.querySelectorAll('.text.object').length === 1);
 
 		const bg = await page.evaluate(() =>
@@ -595,7 +586,7 @@ test('a new text object skips transparent and white swatches for a usable one',
 		await waitForEditor(page, 1);
 
 		await page.keyboard.press('Alt+o');
-		await page.getByTitle('create a text object').click();
+		await page.getByTitle('new text object').click();
 		// the new object, not the seeded one: creation waits on the server, so
 		// a .last() read straight after the click can still be the seeded
 		// yellow object - which is what this read in Chromium
@@ -614,7 +605,7 @@ test('a palette with nothing usable falls back to the global defaults',
 		await waitForEditor(page, 1);
 
 		await page.keyboard.press('Alt+o');
-		await page.getByTitle('create a text object').click();
+		await page.getByTitle('new text object').click();
 		// the new object, not the seeded one (see the test above) - read too
 		// early, the seeded yellow could pass here too, yellow being a default
 		const obj = page.locator('.text.object:not([id$=".100000000001"])');
