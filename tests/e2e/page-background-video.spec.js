@@ -53,6 +53,27 @@ test('a video uploads as the page background and behaves like the picture',
 		// the tile toggle works for a video too: the wallpaper swap
 		await expect(page.locator('.glue-background-tile')).not.toHaveClass(/glue-background-off/);
 
+		// the live swap, in the SAME session that loaded without a video
+		// background: the tiler script was not rendered with the page, so
+		// the swap itself has to be able to start the loop - the canvas
+		// used to sit there unpainted (feeder offscreen, layer blank) and
+		// only a reload brought the background back (2026-10-11 regression)
+		await page.locator('.glue-background-tile').click();
+		await expect(page.locator('canvas.page-background-video')).toHaveCount(1);
+		await expect(page.locator('video.page-background-video-source')).toHaveCount(1);
+		await expect.poll(() => page.locator('canvas.page-background-video').evaluate((c) => {
+			const d = c.getContext('2d').getImageData(Math.min(40, c.width-1), Math.min(40, c.height-1), 1, 1).data;
+			return d[3];
+		})).toBeGreaterThan(0);
+		await expect.poll(() => hg.readObject('page').attrs['page-background-repeat']).toBe('repeat');
+
+		// and the way back: the feeder comes back into its place as the
+		// single video the rest of this test drives
+		await page.locator('.glue-background-tile').click();
+		await expect(page.locator('canvas.page-background-video')).toHaveCount(0);
+		await expect(page.locator('video.page-background-video')).toHaveCount(1);
+		await expect.poll(() => hg.readObject('page').attrs['page-background-repeat']).toBeUndefined();
+
 		// the scale row drives the video's width and stores the same key
 		await pop.locator('.glue-popover-disclosure').click();
 		const scale = pop.locator('.glue-background-scale .glue-popover-field');

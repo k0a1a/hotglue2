@@ -25,19 +25,28 @@
 	// when its tile toggle swaps the layer live - the panel's swap creates
 	// the pair long after this file first ran, so it cannot arm itself
 	// once and be done.
+	//
+	// The loop does not capture the pair: it re-queries it on every frame.
+	// The panel's toggle swaps the pair live - untile takes the canvas
+	// away, retile builds a fresh one - and a loop that had armed on the
+	// first pair would otherwise keep painting the detached canvas while
+	// the new one sits there blank. When the pair goes away the loop
+	// dis-arms (running back to false), so the retile's start call arms
+	// on the new pair.
 	var start = function() {
 		if (running) {
-			return;
-		}
-		var canvas = document.querySelector('canvas.page-background-video');
-		var video = document.querySelector('video.page-background-video-source');
-		if (!canvas || !video) {
 			return;
 		}
 		running = true;
 
 		var last = 0;
 		var draw = function() {
+			var canvas = document.querySelector('canvas.page-background-video');
+			var video = document.querySelector('video.page-background-video-source');
+			if (!canvas || !video) {
+				running = false;
+				return;
+			}
 			// the offscreen feeder's autoplay attribute is not always
 			// enough (policy differences between engines) - the tiler asks
 			// for playback itself, muted so it is always allowed
