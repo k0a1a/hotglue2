@@ -159,9 +159,9 @@ Detail and reasoning are in `ROADMAP.md`'s Done section; this is the shape of it
 **Decisions, not code:**
 
 1. **Merge `ng` to `dev`, or don't.** 117 commits is a lot of unmerged work.
-2. **The icon set's licence.** The upstream files declare CC BY-NC-SA 3.0; hotglue is
-   GPLv3, which cannot carry a non-commercial restriction. This blocks release and needs
-   whoever holds the rights. `ROADMAP.md` has the detail.
+2. ~~**The icon set's licence.**~~ **Settled 2026-10-11:** most icons are redrawn and
+   danja relicensed the rest under GPLv3, like the code - `img/icons/LICENSE`. (The
+   upstream files declared CC BY-NC-SA 3.0, which GPLv3 cannot carry.)
 3. **`$.glue.rangeslider` — adopt or delete.** Built for rotation, which went to direct
    manipulation instead; it still has no caller, and is fully tested.
 

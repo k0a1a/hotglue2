@@ -1379,7 +1379,9 @@ npx playwright test --config tests/e2e/playwright.config.js \
   iframe module's change-URL and the video module's reset-size, named in the open
   decision below.
 
-  **Unresolved: licensing.** The upstream files declare CC BY-NC-SA 3.0
+  **Settled 2026-10-11 (danja): the icons are GPLv3, like the code** - most were redrawn
+  since, and the rights holder relicensed the rest; `img/icons/LICENSE` says so. What
+  follows is the history. The upstream files declare CC BY-NC-SA 3.0
   (`cc:prohibits CommercialUse`), credited to VERBALVISU.AL / SuperGlue project. Hotglue
   is GPLv3, which does not permit adding a non-commercial restriction to a distributed
   work, so this has to be settled before release — presumably by relicensing the set,
