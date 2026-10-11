@@ -102,6 +102,21 @@ Checked against the tree on 2026-09-14.
 
 ## Done / shipped
 
+- **Align several objects to the last-selected one** (2026-10-09, `SOW-alignment-tool.md`;
+  the SOW first said first-selected, changed at danja's call). `$.glue.sel` keeps the
+  selection's ORDER now; the newest selected object is the anchor
+  (`$.glue.sel.anchor()`), drawn with a solid 2px outline (`.glue-anchor`) against the
+  others' dashed one while two or more are selected. `$.glue.multisel` in `js/edit.js` is
+  the toolbar on it, 20px clear of it and 10px between buttons like the object menus -
+  centre, left, right, middle, top, bottom, centre first - built to
+  take distribute and bulk actions later (v2, not built). Each button shifts the other
+  unlocked objects' left/top by the difference between the boxes as they look (rotation
+  included), saved as the arrow keys save a move, one undo step. Six icons,
+  `img/icons/object-align-*.svg`; `tests/e2e/align.spec.js`. The toolbar is placed
+  above the anchor, below it when there is no room, and does not use
+  `$.glue.popover.place_for`, which would put it beside the whole selection. Not checked: a
+  `download` anchor already shows its own attach icon on a multi-select
+  (`modules/download/download-edit.js`), which may sit where this toolbar does.
 - DB-backed editor auth (`AUTH_METHOD='db'`).
 - **Undo/redo** — `$.glue.undo` in `js/edit.js`, an in-memory stack 20 deep. It replaced
   the old server-side auto-snapshot system rather than building on it.
