@@ -243,16 +243,39 @@ test('the picker does not cover the object it is recolouring', async ({ page, hg
 	expect(overlaps(pick, obj), 'the picker is sitting on top of the object').toBe(false);
 });
 
-test('nor the menu it was opened from: that is out of the way while a panel is open', async ({ page, hg }) => {
-	// a panel takes the menu's place (js/edit.js, $.glue.popover), so there is
-	// no row of buttons left for the picker to cover
-	const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
-	await page.goto(hg.editUrl());
-	await waitForEditor(page, 1);
-	await openPicker(page, a);
-	await expect(page.locator('.picker_wrapper')).toBeVisible();
-	await expect(page.locator('.glue-contextmenu-left, .glue-contextmenu-top')).toHaveCount(0);
-});
+test('nor the menu it was opened from: that stays on screen while the picker is open',
+	async ({ page, hg }) => {
+		// the menu stays on screen under every panel (danja's call,
+		// 2026-10-12), and the picker is placed clear of it - the menu is on
+		// the "better not covered" side of place_for's two boxes
+		const a = hg.addObject('100000000001', OBJ(300, 250), 'A');
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 1);
+		await openPicker(page, a);
+		await expect(page.locator('.picker_wrapper')).toBeVisible();
+		const menu = await page.evaluate(() => {
+			let box = false;
+			document.querySelectorAll(
+				'.glue-contextmenu-left, .glue-contextmenu-top'
+			).forEach((el) => {
+				const b = el.getBoundingClientRect();
+				if (!b.width && !b.height) {
+					return;
+				}
+				box = box ? {
+					x: Math.min(box.x, b.x), y: Math.min(box.y, b.y),
+					width: Math.max(box.x + box.width, b.x + b.width) -
+						Math.min(box.x, b.x),
+					height: Math.max(box.y + box.height, b.y + b.height) -
+						Math.min(box.y, b.y)
+				} : { x: b.x, y: b.y, width: b.width, height: b.height };
+			});
+			return box;
+		});
+		expect(menu, 'the menu is still on screen').toBeTruthy();
+		const pick = await page.locator('.picker_wrapper').boundingBox();
+		expect(overlaps(pick, menu), 'the picker is sitting on top of the menu').toBe(false);
+	});
 
 test('it moves to the other side when there is no room on the first',
 	async ({ page, hg }) => {

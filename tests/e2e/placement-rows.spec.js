@@ -56,12 +56,14 @@ for (const [name, button, panel] of [
 	});
 }
 
-// a panel takes the object's menu's place while it is open, and the menu
-// comes back when the panel goes
-test('the menu goes away with the panel open and returns when it closes', async ({ page, hg }) => {
+// the menu stays on screen while a panel is open - the panel is placed
+// clear of it, not in its place (danja's call, 2026-10-12) - and only a
+// deselection takes it away
+test('the menu stays on screen while the panel is open', async ({ page, hg }) => {
 	const id = await open(page, hg, /object properties - background/);
 	await expect(page.locator('.glue-properties-popover')).toBeVisible();
-	await expect(page.locator('.glue-contextmenu-left, .glue-contextmenu-top')).toHaveCount(0);
+	// the menu it was opened from is still on screen
+	await expect(page.locator('#glue-contextmenu-object-lock')).toBeVisible();
 	// the panel has x, y and scale fields: no resize or rotation handles
 	await expect(page.locator('.moveable-rotation-control')).toHaveCount(0);
 	await expect(page.locator('.moveable-control.moveable-direction')).toHaveCount(0);
@@ -75,6 +77,7 @@ test('the menu goes away with the panel open and returns when it closes', async 
 	// letting go of the object with the panel open leaves no menu behind
 	await page.getByTitle(/object properties - background/).click();
 	await expect(page.locator('.glue-properties-popover')).toBeVisible();
+	await expect(page.locator('#glue-contextmenu-object-lock')).toBeVisible();
 	await page.mouse.click(5, 5);
 	await expect(page.locator('.glue-properties-popover')).toBeHidden();
 	await expect(page.locator('.glue-contextmenu-left, .glue-contextmenu-top')).toHaveCount(0);

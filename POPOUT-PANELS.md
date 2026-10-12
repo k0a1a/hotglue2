@@ -14,6 +14,10 @@ a candidate outright and covering the editor's own menus only breaking a tie. Th
 design codex — "no menu or interface shall interfere with page elements" — enforced in one
 function, which is why a panel's size changing (a fold opening) means it is placed again.
 
+The menu stays on screen for as long as the panel is open — the panel takes the space
+beside it, not its place (danja's call, 2026-10-12); what a panel hides is the object's
+resize and rotation handles, which its x, y and scale rows replace.
+
 The panels are editor-only chrome: `css/edit.css` and the module `*-edit.css` files never
 ship to a published page.
 
