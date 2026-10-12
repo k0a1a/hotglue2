@@ -115,9 +115,9 @@ function download_alter_render_late($args)
 		return false;		// a private download wraps nothing in view
 	}
 	if (SHORT_URLS) {
-		$link = urlencode($dl['name']).'&download=1';
+		$link = base_path().urlencode($dl['name']).'&download=1';
 	} else {
-		$link = '?'.urlencode($dl['name']).'&download=1';
+		$link = base_path().'?'.urlencode($dl['name']).'&download=1';
 	}
 	$fname = !empty($dl['download-file-name']) ? $dl['download-file-name'] : $dl['download-file'];
 	if (substr($html, 0, 3) == '<a ') {
@@ -225,9 +225,9 @@ function download_render_object($args)
 		// through a different domain than the one configured/detected as
 		// the base url - see module_object.inc.php's object_alter_render_late()
 		if (SHORT_URLS) {
-			$link = urlencode($obj['name']).'&download=1';
+			$link = base_path().urlencode($obj['name']).'&download=1';
 		} else {
-			$link = '?'.urlencode($obj['name']).'&download=1';
+			$link = base_path().'?'.urlencode($obj['name']).'&download=1';
 		}
 		$fname = !empty($obj['download-file-name']) ? $obj['download-file-name'] : $obj['download-file'];
 		$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" download="'.

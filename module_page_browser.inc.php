@@ -50,7 +50,7 @@ function controller_pages($args)
 	body_append('<h1>Favicon</h1>'.nl());
 	body_append('<div id="site_settings_favicon">'.nl());
 	if (!empty($site_obj['page-favicon-file'])) {
-		body_append(tab().'<img id="site_settings_favicon_preview" src="?favicon" alt="current favicon">'.nl());
+		body_append(tab().'<img id="site_settings_favicon_preview" src="'.base_path().'?favicon" alt="current favicon">'.nl());
 	} else {
 		body_append(tab().'<span id="site_settings_favicon_preview_empty">no favicon set</span>'.nl());
 	}
@@ -84,7 +84,7 @@ function controller_pages($args)
 			// entry as a data attribute for the actions, and as a marker
 			// next to the name, like [startpage]
 			$protected = page_password_required($pn.'.head');
-			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"'.($protected ? ' data-protected="1"' : '').'><span class="page_browser_pagename"><a href="?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
+			body_append('<div class="page_browser_entry" id="'.htmlspecialchars($pn, ENT_COMPAT, 'UTF-8').'"'.($protected ? ' data-protected="1"' : '').'><span class="page_browser_pagename"><a href="'.base_path().'?'.htmlspecialchars(urlencode($pn), ENT_COMPAT, 'UTF-8').'">'.htmlspecialchars($pn, ENT_NOQUOTES, 'UTF-8').'</a></span> ');
 			if ($pn.'.head' == startpage()) {
 				body_append('<span id="page_browser_startpage">[startpage]</span> ');
 			}

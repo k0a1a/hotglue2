@@ -389,9 +389,9 @@ function video_alter_render_early($args)
 		// object_alter_render_late() for the full rationale
 		// TODO (later): support URLs as well
 		if (SHORT_URLS) {
-			elem_attr($v, 'src', urlencode($obj['name']));
+			elem_attr($v, 'src', base_path().urlencode($obj['name']));
 		} else {
-			elem_attr($v, 'src', '?'.urlencode($obj['name']));
+			elem_attr($v, 'src', base_path().'?'.urlencode($obj['name']));
 		}
 	}
 	elem_css($v, 'width', '100%');

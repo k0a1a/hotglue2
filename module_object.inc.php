@@ -301,9 +301,9 @@ function object_alter_render_early($args)
 			$pn = get_first_item(expl('.', $obj['name']));
 			$url = CONTENT_DIR.'/'.$pn.'/shared/'.rawurlencode($obj['object-background-file']);
 		} else if (SHORT_URLS) {
-			$url = urlencode($obj['name']);
+			$url = base_path().urlencode($obj['name']);
 		} else {
-			$url = '?'.urlencode($obj['name']);
+			$url = base_path().'?'.urlencode($obj['name']);
 		}
 		elem_css($elem, 'background-image', 'url('.$url.')');
 		elem_css($elem, 'background-repeat', !empty($obj['object-background-repeat']) ?
@@ -473,9 +473,9 @@ function object_alter_render_late($args)
 				// href against the domain the page is actually being viewed
 				// on, not a hardcoded one
 				if (SHORT_URLS) {
-					$link = urlencode($link);
+					$link = base_path().urlencode($link);
 				} else {
-					$link = '?'.urlencode($link);
+					$link = base_path().'?'.urlencode($link);
 				}
 			}
 			// <a> can include block elements in html5
