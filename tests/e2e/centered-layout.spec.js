@@ -305,3 +305,22 @@ test('an uploaded object lands where it was dropped, in both modes',
 			`in centred mode vs ${landed.infinite.screenX} in infinite`)
 			.toBe(landed.infinite.screenX);
 	});
+
+// a linked object sits inside an <a>, one level below the centered wrapper,
+// and the wrapper's pointer-events:none used to reach it: the link was dead
+test('a linked object is clickable in centered mode', async ({ page, hg }) => {
+	hg.addObject('page', { 'page-layout-mode': 'centered', 'page-container-width': '600' });
+	hg.addObject('100000000001', {
+		type: 'text', module: 'text', 'object-left': '20px', 'object-top': '20px',
+		'object-width': '200px', 'object-height': '40px', 'object-zindex': '100',
+		'object-link': 'http://elsewhere.test/x',
+	}, 'linked');
+	await page.goto(`/?${hg.pageName}`);
+	const pe = await page.locator('#hg-centered-wrapper a > .object')
+		.evaluate((e) => getComputedStyle(e).pointerEvents);
+	expect(pe).toBe('auto');
+	const box = await page.locator('#hg-centered-wrapper a > .object').boundingBox();
+	const hit = await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y).closest('a'),
+		[box.x + 10, box.y + 10]);
+	expect(hit).toBe(true);
+});
