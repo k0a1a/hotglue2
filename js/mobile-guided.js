@@ -337,11 +337,19 @@
 		}
 		// A NEGATIVE result means the canvas is smaller than the viewport on
 		// that axis and should be centred - the normal case when pulled back.
-		function panFor(scale) {
+		//
+		// Vertically that is only wanted when asked for. The opening view, the
+		// landing and the double-tap back to the opening view are all "the top of
+		// the page" (danja's call, 2026-10-12): a page pulled back to fit its
+		// width is often much shorter than the screen, and centring it left a
+		// blank band above the content on load - 270px on a 393x852 phone, for a
+		// 579px-tall canvas at 0.54 - which vanished the moment the visitor zoomed
+		// in. With top=true the canvas sits at the top and the blank is below it.
+		function panFor(scale, top) {
 			var cw = canvasW * scale, ch = canvasH * scale;
 			return {
 				x: cw <= vw ? -(vw - cw) / 2 : 0,
-				y: ch <= vh ? -(vh - ch) / 2 : 0
+				y: ch <= vh ? (top ? 0 : -(vh - ch) / 2) : 0
 			};
 		}
 
@@ -368,7 +376,7 @@
 		// wrong; this only declines to land on blank canvas, and looks at no
 		// more than the objects already visible from where the reveal ends.
 		function landingPan(scale) {
-			var p = panFor(scale);
+			var p = panFor(scale, true);
 			// a negative pan means the canvas is smaller than the viewport on
 			// that axis and is being centred - nothing to trim
 			var out = { x: p.x, y: p.y };
@@ -506,7 +514,7 @@
 			// bitten. Without it, double-tapping while pinched out to the floor
 			// would land at a quarter of the intended scale.
 			var scale = want / pinchNow();
-			var pan = atOverview ? panCentredOn(scale, at.x, at.y) : panFor(scale);
+			var pan = atOverview ? panCentredOn(scale, at.x, at.y) : panFor(scale, true);
 			atOverview = !atOverview;
 
 			// Scroll cannot be animated, so fold it back into the transform
@@ -567,7 +575,7 @@
 		// a pure zoom; the centring branch in panFor() engages only for a
 		// canvas smaller than the viewport on an axis, which is the normal
 		// case vertically for a wide, short page like content/wide.
-		var start = panFor(startScale);
+		var start = panFor(startScale, true);
 		apply(startScale, start.x, start.y);
 		DBG.startScale = startScale.toFixed(4);
 

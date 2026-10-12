@@ -177,3 +177,36 @@ test('a page whose content starts at the origin is not shifted', async ({ page, 
 		(/landingPan: ([^\n]*)/.exec(document.getElementById('hg-mg-dbg').textContent) || [])[1]);
 	expect(landing, 'nothing to trim, so nothing should move').toBe('0,0');
 });
+
+test('a short, wide page opens at the top, lands at the top and double-taps back to the top',
+	async ({ page, hg }) => {
+		// pulled back to fit its width this canvas is far shorter than the
+		// screen; it used to be centred vertically, which left a blank band
+		// above the content on load that vanished as soon as the visitor
+		// zoomed in (centered layout pages, wider than their container, hit it)
+		hg.addObject('100000000001', OBJ(0, 0, 900, 120), 'wide and short');
+		hg.addObject('100000000002', OBJ(0, 160, 900, 120), 'second row');
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}`);
+		await expect.poll(async () => (await state(page)).active).toBe(true);
+
+		const topOfContent = () => page.evaluate(() => {
+			const els = [...document.querySelectorAll('.object')];
+			return Math.min(...els.map((e) => e.getBoundingClientRect().top));
+		});
+		// the opening view: the scale is below 1 and the page is NOT centred
+		await expect.poll(async () => (await state(page)).scale).toBeLessThan(1);
+		expect(await topOfContent(), 'the opening view starts at the top').toBeLessThan(8);
+
+		// after the reveal
+		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(1);
+		expect(await topOfContent(), 'the landing starts at the top').toBeLessThan(8);
+
+		// double-tap out to the pulled-back view and look again
+		await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('dblclick',
+			{ bubbles: true, clientX: 100, clientY: 100 })));
+		await expect.poll(async () => (await state(page)).scale, { timeout: 4000 }).toBeLessThan(1);
+		await page.waitForTimeout(700);
+		expect(await topOfContent(), 'the double-tap back to the opening view is at the top')
+			.toBeLessThan(8);
+	});
