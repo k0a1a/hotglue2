@@ -903,6 +903,8 @@
 }
 
 .glue-popover input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),
+.glue-popover button,
+.glue-modal-buttons button,
 .glue-popover select,
 .glue-popover textarea,
 .layout_default.picker_wrapper input:not([type=range]) {

@@ -27,7 +27,7 @@ KEEP_MD=(docker/INSTALL.md fonts/MANIFEST.md README.md)
 # Non-markdown paths to strip outright: the hosted-only user-config.inc.php-off, the
 # test suites, and the tooling
 # that exists solely to run them.
-STRIP_PATHS=(user-config.inc.php-off tests package.json package-lock.json composer.json composer.lock scripts/sync-to-public.sh)
+STRIP_PATHS=(user-config.inc.php-off tests package.json package-lock.json composer.json composer.lock scripts/sync-to-public.sh .agent qwen-coder.sh)
 
 if [ -n "$(git status --porcelain)" ]; then
 	echo "working tree not clean, aborting" >&2
