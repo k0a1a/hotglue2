@@ -25,7 +25,9 @@ a, a:link, a:visited, a:active, a:hover {
 	pointer-events: none;
 }
 
-#hg-centered-wrapper > .object {
+/* not '>': an object with a link is wrapped in <a>, so it is a grandchild and
+   would inherit the container's none - its link dead in centered mode */
+#hg-centered-wrapper .object {
 	pointer-events: auto;
 }
 

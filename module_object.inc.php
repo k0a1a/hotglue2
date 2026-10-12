@@ -464,7 +464,10 @@ function object_alter_render_late($args)
 			}
 			// resolve any aliases
 			$link = resolve_aliases($link, $obj['name']);
-			if (!is_url($link) && substr($link, 0, 1) != '#') {
+			if (($local = localize_url($link)) !== false) {
+				// a saved absolute address of this very site (see localize_url())
+				$link = $local;
+			} elseif (!is_url($link) && substr($link, 0, 1) != '#') {
 				// same-site page links are kept relative (not prefixed with
 				// base_url()) so they still resolve correctly when the page
 				// is viewed through a different domain (e.g. a custom
