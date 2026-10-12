@@ -1582,8 +1582,6 @@ function text_panel_open(obj) {
 		return;
 	}
 	pop.keep_open_target = obj;
-	// the editing's toolbar: the object's menu stays
-	pop.keep_menu = true;
 	pop.on_close = text_panel_state_clear;
 	text_panel_rebuild(pop, obj);
 	$.glue.popover.show(pop);

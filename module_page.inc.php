@@ -440,8 +440,11 @@ function page_render_page_late($args)
 			elem_append($bdy, $c);
 		}
 		// the tiler only acts when the pair exists - safe to ship on every
-		// page that has any video background
-		html_add_js(base_url().'js/page-background-video.js');
+		// page that has any video background (the editor gets it for every
+		// page in page_render_page_early, pair or no pair)
+		if (empty($args['edit'])) {
+			html_add_js(base_url().'js/page-background-video.js');
+		}
 	}
 
 	$layout = page_layout($args['page']);
@@ -496,6 +499,15 @@ function page_render_page_early($args)
 			html_add_js(base_url().'modules/page/page-edit.js');
 		}
 		html_add_css(base_url().'modules/page/page-edit.css');
+
+		// the tiled-video tiler ships with EVERY edited page, not only the
+		// ones that loaded WITH a video background: the background panel
+		// can build the canvas + feeder pair long after the render ran,
+		// and its tile toggle calls the tiler to start it - a page opened
+		// without a video background that gets one and is tiled in the
+		// same session must be able to paint (a no-op without a pair, so
+		// shipping it everywhere is harmless)
+		html_add_js(base_url().'js/page-background-video.js');
 
 		// set grid: the page's own stored size (page-grid-x/y on the page
 		// pseudo-object, written by the grid panel), falling back to the

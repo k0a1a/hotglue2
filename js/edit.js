@@ -227,12 +227,11 @@ $.glue.popover = function()
 {
 	var GAP = 10;
 	var open_panel = false;
-	// The object whose menu this hid while its panel is open. A panel
-	// takes the menu's place - they sit in the same free space beside the
-	// object, and the panel is what is being used - and the menu comes back
-	// when the panel goes, unless the object has been let go or is on the move.
-	var menu_hidden_for = false;
-	// the same, for the resize and rotation handles
+	// The object whose resize and rotation handles this hid while its panel
+	// is open - they come back when the panel goes, unless the object has
+	// been let go or is on the move. The object's menu stays on screen the
+	// whole time: the panel is placed clear of it (place_for), not in its
+	// place (danja's call, 2026-10-12).
 	var handles_hidden_for = false;
 	// Set by a control whose drag has actually moved, and read by the click
 	// handler below: see swallow_next_click().
@@ -378,8 +377,8 @@ $.glue.popover = function()
 		open: function(obj, cls) {
 			var same = open_panel && $.glue.owner(open_panel) === obj &&
 				open_panel.classList.contains(cls);
-			// swapping one panel for another keeps the menu away; closing the
-			// one that is open does not
+			// swapping one panel for another keeps the handles away; closing
+			// the one that is open brings them back
 			$.glue.popover.close(!same);
 			if (same) {
 				return false;
@@ -396,13 +395,6 @@ $.glue.popover = function()
 			document.body.appendChild(pop);
 			open_panel = pop;
 			var owner_obj = $.glue.owner(pop);
-			// except the text editing's own toolbar: it opens with the
-			// editing and sits beside the menu for as long as it lasts
-			if (!pop.keep_menu && owner_obj && owner_obj.classList &&
-					owner_obj.classList.contains('object')) {
-				menu_hidden_for = owner_obj;
-				$.glue.contextmenu.hide();
-			}
 			if (owner_obj && owner_obj.classList && owner_obj.classList.contains('object')) {
 				handles_hidden_for = owner_obj;
 				$.glue.object.hide_handles(owner_obj);
@@ -420,9 +412,10 @@ $.glue.popover = function()
 		// object being deselected or dragged out from under it, another panel
 		// opening), so this is the one place such a panel is told to put back
 		// what it took. Set .on_close on the panel before show() to use it.
-		// keep_menu .. leave the object's menu hidden: another panel is about
-		// to open, or the object is being dragged
-		close: function(keep_menu) {
+		// keep_handles .. leave the object's resize and rotation handles
+		// away: another panel is about to open, or the object is being
+		// dragged
+		close: function(keep_handles) {
 			if (open_panel) {
 				if (typeof open_panel.on_close == 'function') {
 					open_panel.on_close();
@@ -432,27 +425,13 @@ $.glue.popover = function()
 			}
 			document.body.style.overflow = '';
 			var hobj = handles_hidden_for;
-			if (hobj && !keep_menu) {
+			if (hobj && !keep_handles) {
 				handles_hidden_for = false;
 				if (hobj.isConnected && hobj.classList.contains('glue-selected') &&
 						document.querySelectorAll('.glue-selected').length == 1) {
 					$.glue.object.show_handles(hobj);
 				}
 			}
-			var obj = menu_hidden_for;
-			if (obj && !keep_menu) {
-				menu_hidden_for = false;
-				// only a lone selected object has a menu to come back
-				if (obj.isConnected && obj.classList.contains('glue-selected') &&
-						document.querySelectorAll('.glue-selected').length == 1) {
-					$.glue.contextmenu.show(obj);
-				}
-			}
-		},
-		// a drag took the panel away: the menu follows the object's own
-		// movestop back (see menu_after_move)
-		menu_after_move: function() {
-			return menu_hidden_for;
 		},
 		// what is open, or false - for the handlers below
 		current: function() {
@@ -1159,21 +1138,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			$.glue.popover.close();
 		}
 	});
-	var menu_after_move = false;
+	var panel_closed_for = false;
 	$.glue.live('.object', 'glue-movestart', function(e) {
 		var pop = $.glue.popover.current();
 		// a panel is only taken away by a drag of its own object: another
-		// object's drag would hide its menu with nobody to bring it back
+		// object's drag would restore its handles with nobody to hide them
 		if (pop && $.glue.owner(pop) === this) {
-			menu_after_move = $.glue.popover.menu_after_move();
+			panel_closed_for = this;
 			$.glue.popover.close(true);
 		}
 	});
 	$.glue.live('.object', 'glue-movestop', function(e) {
-		if (menu_after_move && menu_after_move === this) {
-			var obj = menu_after_move;
-			menu_after_move = false;
-			// close() with nothing open restores the menu it kept away
+		if (panel_closed_for && panel_closed_for === this) {
+			panel_closed_for = false;
+			// the movestart close kept the handles away for the move:
+			// close() with nothing open brings them back
 			$.glue.popover.close();
 		}
 	});
