@@ -48,6 +48,9 @@ define('LOG_LEVEL', 'debug');
 // the oEmbed module's hermetic stub provider: resolves stub.example URLs
 // locally, no network (SOW-oembed-media.md Decision 9)
 define('HG_STUB_OEMBED', true);
+// a domain that used to point at this site: links saved with its address are the
+// site's own (tests/e2e/own-site-links.spec.js)
+define('SITE_HOSTS', 'old-domain.test');
 
 chdir($root);
 require $root.(preg_match('#/json\.php$#', $path) ? '/json.php' : '/index.php');

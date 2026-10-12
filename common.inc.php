@@ -662,6 +662,94 @@ function resolve_aliases($s, $name = '')
 
 
 /**
+ *	the hosts that mean "this site": the one the visitor is on, with and
+ *	without www., plus whatever the install adds - the SITE_HOSTS constant
+ *	(space or comma separated, for a custom domain pointed at this site that
+ *	is no longer or not yet the current host) and a hosted_site_hosts()
+ *	function if user-config.inc.php defines one (it is only called when a link
+ *	to an absolute address is being looked at, so it can do real work)
+ *
+ *	@return array lower case host names
+ */
+function own_hosts()
+{
+	static $hosts = null;
+	if ($hosts !== null) {
+		return $hosts;
+	}
+	$hosts = [];
+	if (!empty($_SERVER['HTTP_HOST'])) {
+		$hosts[] = strtolower(preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']));
+	}
+	if (defined('SITE_HOSTS')) {
+		foreach (preg_split('/[\s,]+/', SITE_HOSTS, -1, PREG_SPLIT_NO_EMPTY) as $h) {
+			$hosts[] = strtolower($h);
+		}
+	}
+	if (function_exists('hosted_site_hosts')) {
+		foreach ((array)hosted_site_hosts() as $h) {
+			$hosts[] = strtolower($h);
+		}
+	}
+	foreach ($hosts as $h) {
+		$hosts[] = (strpos($h, 'www.') === 0) ? substr($h, 4) : 'www.'.$h;
+	}
+	$hosts = array_values(array_unique(array_filter($hosts)));
+	return $hosts;
+}
+
+
+/**
+ *	turn an absolute address of this very site into a domain-relative one
+ *
+ *	Links were saved as full addresses (http://user.example/?page) years ago,
+ *	and those pass through the renderer untouched - so a site viewed through
+ *	another domain, or whose old domain is gone, sent its visitors off to
+ *	that other address. An address whose host is one of own_hosts() becomes
+ *	base_path().'?page' (or base_path() for the front page); the fragment is
+ *	kept. Anything that cannot be mapped with certainty - another host, a
+ *	path that is not a plain page name, a query with several parts - is left
+ *	exactly as it was.
+ *
+ *	@param string $url
+ *	@return string|false the domain-relative url, or false when $url is not an
+ *		address of this site (or not one we can map)
+ */
+function localize_url($url)
+{
+	if (!preg_match('#^https?://([^/?\#:]+)(?::\d+)?([^?\#]*)(?:\?([^\#]*))?(\#.*)?$#i', $url, $m)) {
+		return false;
+	}
+	if (!in_array(strtolower($m[1]), own_hosts(), true)) {
+		return false;
+	}
+	$path = $m[2];
+	$query = isset($m[3]) ? $m[3] : '';
+	$frag = isset($m[4]) ? $m[4] : '';
+	// an install in a subdirectory: its own path in front is not part of the page
+	$bp = base_path();
+	if ($bp != '/' && strpos($path, $bp) === 0) {
+		$path = '/'.substr($path, strlen($bp));
+	}
+	if ($query !== '' && ($path === '' || $path === '/')) {
+		// /?page - the query is the page, as long as it is just that
+		if (strpos($query, '&') !== false) {
+			return false;
+		}
+		return $bp.'?'.$query.$frag;
+	}
+	if ($query === '' && ($path === '' || $path === '/')) {
+		return $bp.$frag;
+	}
+	if ($query === '' && preg_match('#^/([^/.]+)/?$#', $path, $p)) {
+		// /page - what the .htaccess rewrite turns into ?page
+		return $bp.(SHORT_URLS ? '' : '?').urlencode(urldecode($p[1])).$frag;
+	}
+	return false;
+}
+
+
+/**
  *	resolve relative urls in various page content to include the pages base 
  *	url
  *
@@ -678,12 +766,17 @@ function resolve_relative_urls($s)
 		while (($start = strpos($s, $attr.'="', $start)) !== false) {
 			if (($end = strpos($s, '"', $start+strlen($attr)+2)) !== false) {
 				$link = substr($s, $start+strlen($attr)+2, $end-$start-strlen($attr)-2);
-				if (!is_url($link) && substr($link, 0, 1) != '#') {
-					// keep same-site page links domain-relative (base_path(), not
-					// prefixed with base_url()) so they resolve correctly when viewed
-					// through a different domain than the one configured/
-					// detected as the base url - see module_object.inc.php's
-					// object_alter_render_late() for the full rationale
+				if (($local = localize_url($link)) !== false) {
+					// an absolute address of this very site: write the
+					// domain-relative one back into the markup
+					log_msg('debug', 'common: localizing url '.quot($link));
+					$s = substr($s, 0, $start+strlen($attr)+2).$local.substr($s, $end);
+					$end = $start+strlen($attr)+2+strlen($local);
+				} elseif (!is_url($link) && substr($link, 0, 1) != '#') {
+					// note: this branch computes the resolved link and has never
+					// written it back (nor did the original) - changing that would
+					// turn every relative asset path in rich text into a page link,
+					// so only the localized case above is written back
 					log_msg('debug', 'common: resolving relative url '.quot($link));
 					if (SHORT_URLS) {
 						$link = base_path().$link;
