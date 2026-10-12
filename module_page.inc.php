@@ -247,9 +247,9 @@ function page_render_object($args)
 	// module_object.inc.php's object_alter_render_late() for the full rationale
 	if (!empty($obj['page-background-file'])) {
 		if (SHORT_URLS) {
-			html_css('background-image', 'url('.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+			html_css('background-image', 'url('.base_path().htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
 		} else {
-			html_css('background-image', 'url(?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
+			html_css('background-image', 'url('.base_path().'?'.htmlspecialchars(urlencode($obj['name']), ENT_NOQUOTES, 'UTF-8').')');
 		}
 	}
 	// background-image-repeat
@@ -360,9 +360,9 @@ function page_render_page_late($args)
 		// configured/detected as the base url - the same rationale as the
 		// image background above
 		if (SHORT_URLS) {
-			elem_attr($v, 'src', urlencode($args['page'].'.page'));
+			elem_attr($v, 'src', base_path().urlencode($args['page'].'.page'));
 		} else {
-			elem_attr($v, 'src', '?'.urlencode($args['page'].'.page'));
+			elem_attr($v, 'src', base_path().'?'.urlencode($args['page'].'.page'));
 		}
 		elem_attr($v, 'autoplay', 'autoplay');
 		elem_attr($v, 'muted', 'muted');
@@ -1125,7 +1125,7 @@ function page_password_verify($page, $pw)
  */
 function page_password_prompt($page, $error)
 {
-	$url = '?'.htmlspecialchars($page, ENT_QUOTES, 'UTF-8');
+	$url = base_path().'?'.htmlspecialchars($page, ENT_QUOTES, 'UTF-8');
 	echo '<!DOCTYPE html>'.nl();
 	echo '<html>'.nl();
 	echo '<head>'.nl();

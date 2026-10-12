@@ -226,9 +226,9 @@ function audio_alter_render_early($args)
 		// configured/detected as the base url - see module_object.inc.php's
 		// object_alter_render_late() for the full rationale
 		if (SHORT_URLS) {
-			elem_attr($a, 'src', urlencode($obj['name']));
+			elem_attr($a, 'src', base_path().urlencode($obj['name']));
 		} else {
-			elem_attr($a, 'src', '?'.urlencode($obj['name']));
+			elem_attr($a, 'src', base_path().'?'.urlencode($obj['name']));
 		}
 	}
 	// set some fallback text
@@ -277,7 +277,7 @@ function audio_alter_render_early($args)
 	// never takes a click or a focus
 	$i = elem('img');
 	elem_add_class($i, 'audio-icon');
-	elem_attr($i, 'src', base_url().'img/icons/audio.svg');
+	elem_attr($i, 'src', base_path().'img/icons/audio.svg');
 	elem_attr($i, 'alt', '');
 	elem_append($elem, $i);
 

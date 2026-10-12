@@ -52,7 +52,7 @@ function controller_create_page($args)
 	body_append(tab(2).'<div id="wrapper">'.nl());
 	body_append(tab(3).'<div id="content">'.nl());
 	body_append(tab(4).'<div id="left-nav">'.nl());
-	body_append(tab(5).'<img src="img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(5).'<img src="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(4).'<div id="main">'.nl());
 	body_append(tab(5).'<h1 id="error-title">Page does not exist yet!</h1>'.nl());
@@ -65,7 +65,7 @@ function controller_create_page($args)
 	body_append(tab(3).'</div>'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(2).'<div style="position: absolute; left: 200px; top: -10px; z-index: 2;">'.nl());
-	body_append(tab(3).'<img src="img/hotglue-404.png" alt="404">'.nl());
+	body_append(tab(3).'<img src="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'img/hotglue-404.png" alt="404">'.nl());
 	body_append(tab(2).'</div>'.nl());
 	body_append(tab(1).'</div>'.nl());
 	echo html_finalize();
@@ -213,9 +213,9 @@ function controller_login($args)
 		// module_object.inc.php's object_alter_render_late() for the full
 		// rationale
 		if (SHORT_URLS) {
-			header('Location: pages');
+			header('Location: '.base_path().'pages');
 		} else {
-			header('Location: ?pages');
+			header('Location: '.base_path().'?pages');
 		}
 		die();
 	}

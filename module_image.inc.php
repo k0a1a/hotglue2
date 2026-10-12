@@ -183,9 +183,9 @@ function image_alter_render_early($args)
 	// object_alter_render_late() for the full rationale
 	// TODO (later): support URLs as well
 	if (SHORT_URLS) {
-		$url = urlencode($obj['name']);
+		$url = base_path().urlencode($obj['name']);
 	} else {
-		$url = '?'.urlencode($obj['name']);
+		$url = base_path().'?'.urlencode($obj['name']);
 	}
 	
 	// A tiled (or positioned) picture saved by the old tiling and position

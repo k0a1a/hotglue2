@@ -176,6 +176,35 @@ function request_base_url()
  *
  *	@return string base url (not html-encoded)
  */
+/**
+ *	the path part of this install's address, with a trailing slash ('/' for
+ *	an install at the root of its domain)
+ *
+ *	same-site links and assets are written as base_path().'some/path': they
+ *	carry no scheme or host, so they follow whatever domain the page is viewed
+ *	on (a custom domain pointed at this install), and they do not depend on
+ *	the page's own path either - a page reached as /plot (the .htaccess
+ *	rewrite) would resolve a bare '?plot.head.1' to /plot?plot.head.1, which
+ *	that rewrite turns back into the page
+ *
+ *	@return string
+ */
+function base_path()
+{
+	// SCRIPT_NAME, not PHP_SELF: PHP_SELF carries any extra path after the
+	// script (the built-in server's, for one) and would make this follow the
+	// page's own path
+	$p = isset($_SERVER['SCRIPT_NAME']) ? dirname($_SERVER['SCRIPT_NAME']) : '/';
+	if ($p === '' || $p === '.' || $p === '\\') {
+		$p = '/';
+	}
+	if (substr($p, -1) != '/') {
+		$p .= '/';
+	}
+	return $p;
+}
+
+
 function base_url()
 {
 	global $base_url_cached;

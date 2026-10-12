@@ -95,7 +95,7 @@ function iframe_alter_render_early($args)
 		// the url points to the object name, not the filename in the shared
 		// directory (the file gets served in iframe_serve_resource()), and
 		// stays relative - see module_image.inc.php for why
-		elem_attr($i, 'src', SHORT_URLS ? urlencode($obj['name']) : '?'.urlencode($obj['name']));
+		elem_attr($i, 'src', base_path().(SHORT_URLS ? '' : '?').urlencode($obj['name']));
 	} elseif (!empty($obj['iframe-url'])) {
     // use protocol relative url
 		//elem_attr($i, 'src', $obj['iframe-url']);

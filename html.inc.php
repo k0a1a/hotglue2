@@ -388,16 +388,16 @@ function html_add_alternate($type, $url, $title)
 
 
 /**
- *	strip a leading base_url() from an asset url, turning it back into a
- *	same-site relative one
+ *	turn an asset url into a domain-relative one: the site's own path in
+ *	front, no scheme or host
  *
- *	every asset-loading call site in this codebase builds its url as
- *	base_url().'some/path' - centralizing the strip here (rather than
- *	dropping the base_url() call at each of those many sites) means assets
- *	keep resolving correctly even when a page is viewed through a different
- *	domain than the one BASE_URL is configured/detected as (e.g. a custom
- *	domain pointed at this install), same rationale as
- *	module_object.inc.php's object_alter_render_late() for page links
+ *	every asset-loading call site builds its url as base_url().'some/path'
+ *	(or hands in a bare 'img/x.png' or '?favicon') - centralizing the fix
+ *	here, rather than at each of those many sites, means assets keep
+ *	resolving when a page is viewed through a different domain than the one
+ *	BASE_URL is configured/detected as, and when it is opened under a path
+ *	that is not the site root (/plot, see base_path()). Urls that already have
+ *	a scheme or start with a slash are left alone.
  *
  *	@param string $url
  *	@return string
@@ -406,9 +406,12 @@ function _relativize_asset_url($url)
 {
 	$bu = base_url();
 	if (!empty($bu) && strpos($url, $bu) === 0) {
-		return substr($url, strlen($bu));
+		return base_path().substr($url, strlen($bu));
 	}
-	return $url;
+	if ($url === '' || $url[0] == '/' || $url[0] == '#' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $url)) {
+		return $url;
+	}
+	return base_path().$url;
 }
 
 
