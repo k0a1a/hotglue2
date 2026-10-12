@@ -94,6 +94,12 @@ $.glue.image = function() {
 			var width = obj.offsetWidth;
 			var height = obj.offsetHeight;
 			var img = obj.querySelector(':scope > img');
+			if (!img && obj.style.backgroundImage) {
+				// a tiled legacy picture (image-background-repeat, drawn as the
+				// object's own background): the file is the TILE, and a
+				// re-encode to the frame would replace it with one huge copy
+				return;
+			}
 			// the picture displays proportionally (object-fit: contain), so
 			// the re-encoded file targets the CONTAINED size - the frame
 			// intersected with the picture's own aspect - never the frame

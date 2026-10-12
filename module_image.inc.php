@@ -188,6 +188,46 @@ function image_alter_render_early($args)
 		$url = '?'.urlencode($obj['name']);
 	}
 	
+	// A tiled (or positioned) picture saved by the old tiling and position
+	// buttons - image-background-repeat / -position - is drawn the way it
+	// always was: as the object's own background, at its natural size, repeating.
+	// The editor can no longer write these keys, but a great many existing pages
+	// carry them (hotglue.me's own start page tiles bluegrid.png), and a single
+	// stretched copy of a 40px tile is not what they were made to look like.
+	// An object with a background of its own (object-background-file) keeps the
+	// new model.
+	$legacy_repeat = !empty($obj['image-background-repeat']) &&
+		$obj['image-background-repeat'] != 'no-repeat';
+	$legacy_pos = !empty($obj['image-background-position']) &&
+		!in_array($obj['image-background-position'], ['0px 0px', '0% 0%']);
+	if (($legacy_repeat || $legacy_pos) && empty($obj['object-background-file'])) {
+		elem_css($elem, 'background-image', 'url('.$url.')');
+		if ($legacy_repeat) {
+			elem_css($elem, 'background-repeat', $obj['image-background-repeat']);
+		} else {
+			elem_css($elem, 'background-repeat', 'no-repeat');
+			elem_css($elem, 'background-size', '100% 100%');
+		}
+		if (!empty($obj['image-background-position'])) {
+			elem_css($elem, 'background-position', $obj['image-background-position']);
+		}
+		// no img child to carry the description: the object says it itself
+		if (!empty($obj['image-decorative'])) {
+			elem_attr($elem, 'role', 'presentation');
+		} else {
+			$legacy_alt = isset($obj['image-alt']) ? $obj['image-alt']
+				: (isset($obj['image-title']) ? $obj['image-title'] : '');
+			if ($legacy_alt !== '') {
+				elem_attr($elem, 'role', 'img');
+				elem_attr($elem, 'aria-label', $legacy_alt);
+			}
+		}
+		if (!empty($obj['image-title'])) {
+			elem_attr($elem, 'title', $obj['image-title']);
+		}
+		return true;
+	}
+
 	// accessibility (SOW-accessibility.md): image-alt is the description,
 	// image-decorative marks the image as pure decoration. The legacy
 	// image-title still acts as the fallback description.
@@ -257,9 +297,9 @@ function image_alter_save($args)
 	// update the object based on the element's properties
 	// by convention all properties are prefixed with the module name, in order
 	// to prevent any naming collisions
-	// note: the legacy image-background-repeat/-position are no longer read
-	// or rendered (the picture is a child img now) - attrs already in
-	// content stay stored but inert
+	// note: the legacy image-background-repeat/-position are not written any
+	// more; image_alter_render_early() still draws them for pages that have them
+	// (and they stay stored as they are)
 
 	// accessibility round-trip (SOW-accessibility.md): the serialized DOM
 	// carries role/alt on the img child (the picture is always a child
@@ -282,6 +322,9 @@ function image_alter_save($args)
 				unset($obj['image-alt']);
 			}
 		}
+	} elseif (elem_css($elem, 'background-image') !== NULL) {
+		// a tiled legacy picture (see image_alter_render_early()): it has no
+		// img child to read the description from, so what is stored stays
 	} else {
 		unset($obj['image-decorative']);
 		unset($obj['image-alt']);
