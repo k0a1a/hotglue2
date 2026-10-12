@@ -1,8 +1,0 @@
-# These files are local state; human-readable Markdown may be version-controlled.
-memory.db
-memory.db-*
-repo_index.json
-history/
-.documents.lock
-mcp.json
-.tmp-*
