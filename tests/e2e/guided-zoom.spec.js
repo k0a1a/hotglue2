@@ -1,6 +1,6 @@
 // The zoom of the mobile guided view is a site setting (/?pages, "Mobile view"):
 // 25-150% of a baseline that is itself 75% of natural size (natural size read
-// as too zoomed in on a phone). 100% is the default and is stored by ABSENCE,
+// as too zoomed in on a phone). 75% is the default - 0.5625 of natural size - and is stored by ABSENCE,
 // so a site that never touched it keeps the files and html it had.
 //
 // What the feel of it is on a real phone stays with tests/e2e/android-check.js;
@@ -49,14 +49,14 @@ async function setZoom(page, hg, pct) {
 	await page.waitForTimeout(500);
 }
 
-test('the settings page offers 25/50/75/100/125/150, with 100 the default', async ({ page }) => {
+test('the settings page offers 25/50/75/100/125/150, with 75 the default', async ({ page }) => {
 	await page.goto('/?pages');
 	const radios = page.locator('#site_settings_guided_zoom input[type=radio]');
 	await expect(radios).toHaveCount(6);
 	expect(await radios.evaluateAll((els) => els.map((e) => e.value)))
 		.toEqual(['25', '50', '75', '100', '125', '150']);
-	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeChecked();
-	await expect(page.locator('#site_settings_guided_zoom')).toContainText('100% (default)');
+	await expect(page.locator('#site_settings_guided_zoom input[value="75"]')).toBeChecked();
+	await expect(page.locator('#site_settings_guided_zoom')).toContainText('75% (default)');
 });
 
 test('the default leaves the page html alone', async ({ page, hg }) => {
@@ -76,8 +76,14 @@ test('a chosen zoom is stored, shown after a reload and put on the page body',
 		expect(await page.evaluate(() => document.body.getAttribute('data-guided-zoom')))
 			.toBe('125');
 
-		// and back to the default removes it again
+		// 100% is a real choice now, written like any other
 		await setZoom(page, hg, 100);
+		await page.goto(`/?${hg.pageName}`);
+		expect(await page.evaluate(() => document.body.getAttribute('data-guided-zoom')))
+			.toBe('100');
+
+		// and back to the default removes it again
+		await setZoom(page, hg, 75);
 		await page.goto(`/?${hg.pageName}`);
 		expect(await page.evaluate(() => document.body.hasAttribute('data-guided-zoom'))).toBe(false);
 	});
@@ -92,7 +98,7 @@ test('an out-of-range zoom is refused by the service', async ({ page }) => {
 	expect(body['#error'], 'a zoom outside the choices must not be accepted').toBeTruthy();
 	expect(body['#error_code']).toBe(400);
 	await page.goto('/?pages');
-	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeChecked();
+	await expect(page.locator('#site_settings_guided_zoom input[value="75"]')).toBeChecked();
 });
 
 const scriptOnPage = (page) => page.evaluate(() =>
@@ -101,7 +107,7 @@ const scriptOnPage = (page) => page.evaluate(() =>
 test('the guided view is on by default, and the zoom choices are live', async ({ page }) => {
 	await page.goto('/?pages');
 	await expect(page.locator('#site_settings_guided_on')).toBeChecked();
-	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeEnabled();
+	await expect(page.locator('#site_settings_guided_zoom input[value="75"]')).toBeEnabled();
 });
 
 test('switching it off keeps the script off the page, even for ?guided=1',
@@ -115,7 +121,7 @@ test('switching it off keeps the script off the page, even for ?guided=1',
 
 		await page.goto('/?pages');
 		await page.locator('#site_settings_guided_on').uncheck();
-		await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeDisabled();
+		await expect(page.locator('#site_settings_guided_zoom input[value="75"]')).toBeDisabled();
 		await page.waitForTimeout(500);
 
 		await page.goto(`/?${hg.pageName}`);
@@ -128,7 +134,7 @@ test('switching it off keeps the script off the page, even for ?guided=1',
 		// and the choice is still there after a reload of the settings
 		await page.goto('/?pages');
 		await expect(page.locator('#site_settings_guided_on')).not.toBeChecked();
-		await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeDisabled();
+		await expect(page.locator('#site_settings_guided_zoom input[value="75"]')).toBeDisabled();
 	});
 
 test('switching it back on restores it, and a chosen zoom survives the round trip',
@@ -158,6 +164,15 @@ test('the guided toggle service refuses a non-boolean', async ({ page }) => {
 	const body = await res.json();
 	expect(body['#error_code']).toBe(400);
 });
+
+test('a site that never touched the setting lands at 0.5625 (75% of natural size x 75%)',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(100, 100), 'A');
+		hg.addObject('100000000002', OBJ(1500, 4000), 'B');
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}`);
+		await expect.poll(() => scaleOf(page), { timeout: 8000 }).toBe(0.5625);
+	});
 
 for (const [pct, scale] of [[25, 0.1875], [50, 0.375], [75, 0.5625], [100, 0.75], [125, 0.9375], [150, 1.125]]) {
 	test(`${pct}% lands the guided view at ${scale} (75% of natural size x ${pct}%)`,

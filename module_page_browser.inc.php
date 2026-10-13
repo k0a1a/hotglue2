@@ -67,11 +67,11 @@ function controller_pages($args)
 	body_append(tab().'<span id="site_settings_guided_label">zoom of the guided view</span>'.nl());
 	$current_zoom = intval(@$site_obj['page-guided-zoom']);
 	if (!in_array($current_zoom, guided_zoom_choices(), true)) {
-		$current_zoom = 100;
+		$current_zoom = guided_zoom_default();
 	}
 	body_append(tab().'<span id="site_settings_guided_zoom" role="radiogroup" aria-labelledby="site_settings_guided_label">'.nl());
 	foreach (guided_zoom_choices() as $z) {
-		body_append(tab(2).'<label><input type="radio" name="guided_zoom" value="'.$z.'"'.($z == $current_zoom ? ' checked' : '').($guided_on ? '' : ' disabled').'> '.$z.'%'.($z == 100 ? ' (default)' : '').'</label>'.nl());
+		body_append(tab(2).'<label><input type="radio" name="guided_zoom" value="'.$z.'"'.($z == $current_zoom ? ' checked' : '').($guided_on ? '' : ' disabled').'> '.$z.'%'.($z == guided_zoom_default() ? ' (default)' : '').'</label>'.nl());
 	}
 	body_append(tab().'</span>'.nl());
 	body_append('</div>'.nl());

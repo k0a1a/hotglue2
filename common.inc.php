@@ -165,8 +165,8 @@ function default_html($add_glue)
 				html_add_js(base_url().'js/mobile-guided.js', 3, true);
 			}
 			// the site's chosen zoom for it; the default is not written at all
-			$guided_zoom = $favicon_obj['#error'] ? 100 : intval(@$favicon_obj['#data']['page-guided-zoom']);
-			if ($guided_zoom != 100 && in_array($guided_zoom, guided_zoom_choices(), true)) {
+			$guided_zoom = $favicon_obj['#error'] ? guided_zoom_default() : intval(@$favicon_obj['#data']['page-guided-zoom']);
+			if ($guided_zoom != guided_zoom_default() && in_array($guided_zoom, guided_zoom_choices(), true)) {
 				$bdy = &body();
 				elem_attr($bdy, 'data-guided-zoom', (string)$guided_zoom);
 			}
@@ -869,15 +869,29 @@ function startpage()
 
 /**
  *	the choices for the mobile guided view's zoom (site settings, see /pages),
- *	in percent of the default reading scale - 100 is the default and is stored
- *	by ABSENCE (page-guided-zoom on the startpage's own page-object), so a site
- *	that never touched the setting keeps exactly the files and html it had
+ *	in percent of a reading scale that is itself 75% of natural size
+ *	(js/mobile-guided.js's READ_BASE). The default, guided_zoom_default(), is
+ *	stored by ABSENCE (page-guided-zoom on the startpage's own page-object), so
+ *	a site that never touched the setting keeps exactly the files and html it
+ *	had. A stored value keeps its meaning whatever the default is.
  *
  *	@return array list of ints
  */
 function guided_zoom_choices()
 {
 	return [25, 50, 75, 100, 125, 150];
+}
+
+
+/**
+ *	the default zoom choice: 75% of the reading scale, 0.5625 of natural size
+ *	(the first default, 100%, read as too zoomed in on a phone)
+ *
+ *	@return int
+ */
+function guided_zoom_default()
+{
+	return 75;
 }
 
 

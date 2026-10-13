@@ -79,7 +79,7 @@ test('?guided=0 turns it off on a small screen', async ({ page, hg }) => {
 	expect((await state(page)).active).toBe(false);
 });
 
-test('opens at 75% of the limiting dimension and reveals to the reading scale (75% of natural size)',
+test('opens at 75% of the limiting dimension and reveals to the reading scale (56.25% of natural size by default)',
 	async ({ page, hg }) => {
 		bigPage(hg);
 		await page.setViewportSize(PHONE);
@@ -98,7 +98,7 @@ test('opens at 75% of the limiting dimension and reveals to the reading scale (7
 		expect(dbg.fitHeight, 'this fixture should be height-limited')
 			.toBeLessThan(dbg.fitWidth);
 
-		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.75);
+		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.5625);
 	});
 
 test('the zoom is paced in log space, not linearly', async ({ page, hg }) => {
@@ -125,7 +125,7 @@ test('honours prefers-reduced-motion by landing directly', async ({ browser, hg 
 	await expect.poll(async () => (await state(page)).active).toBe(true);
 	// no dwell, no animation - it is simply already there
 	expect((await state(page)).scale, 'reduced motion should skip the reveal entirely')
-		.toBe(0.75);
+		.toBe(0.5625);
 	await context.close();
 });
 
@@ -144,7 +144,7 @@ test('lands on content rather than on empty canvas', async ({ page, hg }) => {
 	await page.setViewportSize(PHONE);
 	await page.goto(`/?${hg.pageName}&debug=1`);
 	await expect.poll(async () => (await state(page)).active).toBe(true);
-	await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.75);
+	await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.5625);
 
 	// measure the empty margin the visitor is left looking at
 	const gap = await page.evaluate(() => {
@@ -195,17 +195,21 @@ test('a short, wide page opens at the top, lands at the top and double-taps back
 			return Math.min(...els.map((e) => e.getBoundingClientRect().top));
 		});
 		// the opening view: the scale is below the reading scale and the page is NOT centred
-		await expect.poll(async () => (await state(page)).scale).toBeLessThan(0.75);
+		await expect.poll(async () => (await state(page)).scale).toBeLessThan(0.5625);
 		expect(await topOfContent(), 'the opening view starts at the top').toBeLessThan(8);
 
 		// after the reveal
-		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.75);
+		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.5625);
 		expect(await topOfContent(), 'the landing starts at the top').toBeLessThan(8);
 
-		// double-tap out to the pulled-back view and look again
+		// double-tap out to the pulled-back view and look again. Let the reveal
+		// finish first: its scale rounds to the landing value a few frames
+		// before the transition ends, and the double-tap is handled only once
+		// the view has handed over.
+		await page.waitForTimeout(800);
 		await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('dblclick',
 			{ bubbles: true, clientX: 100, clientY: 100 })));
-		await expect.poll(async () => (await state(page)).scale, { timeout: 4000 }).toBeLessThan(0.75);
+		await expect.poll(async () => (await state(page)).scale, { timeout: 4000 }).toBeLessThan(0.5625);
 		await page.waitForTimeout(700);
 		expect(await topOfContent(), 'the double-tap back to the opening view is at the top')
 			.toBeLessThan(8);

@@ -682,7 +682,7 @@ register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
  *	page cache is dropped.
  *
  *	@param array $args arguments
- *		key 'zoom' int one of 50, 75, 100, 125, 150
+ *		key 'zoom' int one of guided_zoom_choices()
  *	@return array response
  */
 function page_set_guided_zoom($args)
@@ -693,7 +693,7 @@ function page_set_guided_zoom($args)
 	}
 	load_modules('glue');
 	$name = startpage().'.page';
-	if ($zoom == 100) {
+	if ($zoom == guided_zoom_default()) {
 		// the default: nothing to remove if the object was never written
 		$obj = load_object(['name'=>$name]);
 		if (!$obj['#error'] && isset($obj['#data']['page-guided-zoom'])) {
