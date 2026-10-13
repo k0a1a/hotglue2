@@ -69,9 +69,8 @@ register_service('page.clear_background_img', 'page_clear_background_img', ['aut
  */
 function page_clear_favicon($args)
 {
-	$page = startpage();
-	load_modules('glue');
-	$obj = load_object(['name'=>$page.'.page']);
+	$page = site_options_page();
+	$obj = site_options_load();
 	if ($obj['#error']) {
 		return response(true);
 	}
@@ -99,9 +98,8 @@ function page_remove_font($args)
 	if (empty($args['file'])) {
 		return response('Required argument "file" missing', 400);
 	}
-	$page = startpage();
-	load_modules('glue');
-	$obj = load_object(['name'=>$page.'.page']);
+	$page = site_options_page();
+	$obj = site_options_load();
 	if ($obj['#error'] || empty($obj['#data']['page-custom-fonts'])) {
 		return response(true);
 	}
@@ -675,6 +673,75 @@ register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
 
 
 /**
+ *	set the zoom of the mobile guided view for the whole site (site settings,
+ *	see /pages): percent of the default reading scale, one of
+ *	guided_zoom_choices(). The default is stored by absence. Pages may be
+ *	cached with the attribute the front end reads (common.inc.php), so the
+ *	page cache is dropped.
+ *
+ *	@param array $args arguments
+ *		key 'zoom' int one of guided_zoom_choices()
+ *	@return array response
+ */
+function page_set_guided_zoom($args)
+{
+	$zoom = isset($args['zoom']) ? intval($args['zoom']) : 0;
+	if (!in_array($zoom, guided_zoom_choices(), true)) {
+		return response('Invalid zoom '.quot(@$args['zoom']).', must be one of '.implode(', ', guided_zoom_choices()), 400);
+	}
+	if ($zoom == guided_zoom_default()) {
+		// the default: nothing to remove if it was never written
+		$ret = site_options_remove('page-guided-zoom');
+	} else {
+		$ret = site_options_update(['page-guided-zoom'=>(string)$zoom]);
+	}
+	if ($ret['#error']) {
+		return $ret;
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_guided_zoom', 'page_set_guided_zoom', ['auth'=>true]);
+
+
+/**
+ *	switch the mobile guided view on or off for the whole site (site settings,
+ *	see /pages). On is the default and is stored by ABSENCE; only
+ *	page-guided = off is written, on the startpage's own page-object. While it
+ *	is off the front end does not load the script at all (common.inc.php), so
+ *	the page cache is dropped here too.
+ *
+ *	@param array $args arguments
+ *		key 'enabled' bool
+ *	@return array response
+ */
+function page_set_guided($args)
+{
+	if (!isset($args['enabled'])) {
+		return response('Required argument "enabled" missing', 400);
+	}
+	$enabled = filter_var($args['enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	if ($enabled === NULL) {
+		return response('Argument "enabled" must be a boolean', 400);
+	}
+	if ($enabled) {
+		// the default: nothing to remove if it was never switched off
+		$ret = site_options_remove('page-guided');
+	} else {
+		$ret = site_options_update(['page-guided'=>'off']);
+	}
+	if ($ret['#error']) {
+		return $ret;
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_guided', 'page_set_guided', ['auth'=>true]);
+
+
+/**
  *	remember the last typeface picked via "change typeface", applied as
  *	the default for newly created text objects (see
  *	modules/text/text-edit.js) instead of the browser default - site-wide,
@@ -689,8 +756,7 @@ function page_set_last_font($args)
 	if (!isset($args['font']) || $args['font'] === '') {
 		return response('Required argument "font" missing', 400);
 	}
-	load_modules('glue');
-	return update_object(['name'=>startpage().'.page', 'page-last-text-font'=>$args['font']]);
+	return site_options_update(['page-last-text-font'=>$args['font']]);
 }
 
 register_service('page.set_last_font', 'page_set_last_font', ['auth'=>true]);
@@ -710,8 +776,7 @@ function page_set_last_font_size($args)
 	if (!isset($args['size']) || $args['size'] === '') {
 		return response('Required argument "size" missing', 400);
 	}
-	load_modules('glue');
-	return update_object(['name'=>startpage().'.page', 'page-last-text-font-size'=>$args['size']]);
+	return site_options_update(['page-last-text-font-size'=>$args['size']]);
 }
 
 register_service('page.set_last_font_size', 'page_set_last_font_size', ['auth'=>true]);
@@ -731,8 +796,7 @@ function page_set_last_line_height($args)
 	if (!isset($args['height']) || $args['height'] === '') {
 		return response('Required argument "height" missing', 400);
 	}
-	load_modules('glue');
-	return update_object(['name'=>startpage().'.page', 'page-last-text-line-height'=>$args['height']]);
+	return site_options_update(['page-last-text-line-height'=>$args['height']]);
 }
 
 register_service('page.set_last_line_height', 'page_set_last_line_height', ['auth'=>true]);
@@ -752,12 +816,11 @@ register_service('page.set_last_line_height', 'page_set_last_line_height', ['aut
  */
 function page_favicon_upload($args)
 {
-	// site-wide favicon: stored on the startpage's own page-object
-	// regardless of which page it's viewed from, since it applies to
-	// every page - only accepted when uploaded from the startpage itself
-	// so it's clear which site it's being set for (the upload button is
-	// also only shown there, see page-edit.js)
-	if (empty($args['page']) || $args['page'] != startpage()) {
+	// site-wide favicon: stored with the site options (see
+	// site_options_page()) regardless of which page it's viewed from, since
+	// it applies to every page - only accepted when uploaded to the site
+	// options page itself (the upload button is on the options page)
+	if (empty($args['page']) || $args['page'] != site_options_page()) {
 		return false;
 	}
 	// check if supported file: accept a recognized mime, or (since
@@ -772,9 +835,8 @@ function page_favicon_upload($args)
 		return false;
 	}
 
-	load_modules('glue');
 	// check if there is already a favicon and delete it
-	$obj = load_object(['name'=>$args['page'].'.page']);
+	$obj = site_options_load();
 	if (!$obj['#error']) {
 		$obj = $obj['#data'];
 		if (!empty($obj['page-favicon-file'])) {
@@ -782,12 +844,7 @@ function page_favicon_upload($args)
 		}
 	}
 
-	$obj = [];
-	$obj['name'] = $args['page'].'.page';
-	$obj['page-favicon-file'] = $args['file'];
-	$obj['page-favicon-mime'] = $args['mime'];
-
-	$ret = update_object($obj);
+	$ret = site_options_update(['page-favicon-file'=>$args['file'], 'page-favicon-mime'=>$args['mime']]);
 	if ($ret['#error']) {
 		log_msg('error', 'page_favicon_upload: error updating page object: '.quot($ret['#data']));
 		return false;
@@ -808,7 +865,7 @@ function page_font_upload($args)
 {
 	// site-wide custom fonts: same storage/restriction rationale as
 	// page_favicon_upload()
-	if (empty($args['page']) || $args['page'] != startpage()) {
+	if (empty($args['page']) || $args['page'] != site_options_page()) {
 		return false;
 	}
 	// woff/woff2/ttf/otf accepted - see module_text.inc.php's
@@ -829,8 +886,7 @@ function page_font_upload($args)
 		return false;
 	}
 
-	load_modules('glue');
-	$obj = load_object(['name'=>$args['page'].'.page']);
+	$obj = site_options_load();
 	$fonts = [];
 	if (!$obj['#error'] && !empty($obj['#data']['page-custom-fonts'])) {
 		$fonts = @json_decode($obj['#data']['page-custom-fonts'], true);
@@ -863,7 +919,7 @@ function page_font_upload($args)
 	}
 	$fonts[] = ['file'=>$args['file'], 'name'=>$name];
 
-	$ret = update_object(['name'=>$args['page'].'.page', 'page-custom-fonts'=>json_encode($fonts)]);
+	$ret = site_options_update(['page-custom-fonts'=>json_encode($fonts)]);
 	if ($ret['#error']) {
 		log_msg('error', 'page_font_upload: error updating page object: '.quot($ret['#data']));
 		return false;
@@ -952,8 +1008,7 @@ function page_upload($args)
  */
 function controller_favicon($args)
 {
-	load_modules('glue');
-	$obj = load_object(['name'=>startpage().'.page']);
+	$obj = site_options_load();
 	if ($obj['#error'] || empty($obj['#data']['page-favicon-file'])) {
 		hotglue_error(404);
 		return;

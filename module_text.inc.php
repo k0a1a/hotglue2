@@ -145,7 +145,7 @@ function _include_custom_font($font_family)
 		// correctly when viewed through a different domain than the one
 		// configured/detected as the base url - see
 		// module_object.inc.php's object_alter_render_late() for the full rationale
-		$rule .= tab().'src: url('.CONTENT_DIR.'/'.get_first_item(expl('.', startpage())).'/shared/'.rawurlencode($font['file']).') format("'.$format.'");'.nl();
+		$rule .= tab().'src: url('.CONTENT_DIR.'/'.get_first_item(expl('.', site_options_page())).'/shared/'.rawurlencode($font['file']).') format("'.$format.'");'.nl();
 		$rule .= '}';
 		html_add_css_inline($rule, 5);
 		$already_included[$font_family] = true;
@@ -683,8 +683,7 @@ function text_render_page_early($args)
 		// page_set_last_font()/page_set_last_font_size()/
 		// page_set_last_line_height()) - applied as the default for newly
 		// created text objects, see text-edit.js's "new text" handler
-		load_modules('glue');
-		$site_obj = load_object(['name'=>startpage().'.page']);
+		$site_obj = site_options_load();
 		if (!$site_obj['#error'] && !empty($site_obj['#data']['page-last-text-font'])) {
 			html_add_js_var('$.glue.conf.text.last_font', $site_obj['#data']['page-last-text-font']);
 		}

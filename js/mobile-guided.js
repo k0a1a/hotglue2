@@ -51,6 +51,26 @@
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
 	var LANDING_MARGIN = 8;		// canvas px to leave left of the first content
 	var SMALL_SCREEN_PX = 768;
+	// a percentage background size is a share of the visitor's window, and a
+	// phone's window is not the one the page was designed in: it is resolved
+	// against this nominal desktop width instead (danja's call, 2026-10-13)
+	var REF_PAGE_W = 1280;
+	// The size the reveal lands at, and a double-tap returns to, as a fraction
+	// of natural size. Natural size itself (1.0) read as too zoomed in on a
+	// phone, so the baseline is 75% of it. The site owner scales that baseline
+	// from the settings page (25-150%, the default 75%), which reaches this
+	// script as a data-guided-zoom attribute on <body> - written by
+	// common.inc.php, and only when it is not the default, so an untouched
+	// site's html does not change.
+	var READ_BASE = 0.75;
+	var DEFAULT_ZOOM_PCT = 75;	// guided_zoom_default() in common.inc.php
+	function readScale() {
+		var pct = parseFloat(document.body && document.body.getAttribute('data-guided-zoom'));
+		if (!(pct >= 25 && pct <= 150)) {
+			pct = DEFAULT_ZOOM_PCT;
+		}
+		return READ_BASE * pct / 100;
+	}
 
 	// ?guided=1 forces activation on a wide screen, ?guided=0 forces it off on
 	// a phone. QA/demo tooling only - NOT a/b infrastructure (hotglue has no
@@ -234,13 +254,18 @@
 		//
 		// This is contain-fit divided by 0.75, i.e. deliberately one third
 		// tighter than fitting the whole canvas.
-		var openBase = Math.min(1, Math.min(fitWidth, fitHeight) / 0.75);
-		// A canvas barely larger than the screen puts that at natural size,
-		// which would leave the toggle with two identical states and nothing to
-		// do. Show the whole canvas instead. The reveal is imperceptible on
-		// those pages for the same reason.
-		if (openBase > 0.95) {
-			openBase = Math.min(fitWidth, fitHeight) * 0.95;
+		// Capped at the reading scale the reveal lands on, never above it.
+		var READ = readScale();
+		DBG.readScale = READ.toFixed(4);
+		var openBase = Math.min(READ, Math.min(fitWidth, fitHeight) / 0.75);
+		// A canvas barely larger than the screen puts that at the reading
+		// scale, which would leave the toggle with two identical states and
+		// nothing to do. Show the whole canvas instead. The reveal is
+		// imperceptible on those pages for the same reason. (Where the whole
+		// canvas is itself no smaller than the reading scale, the two states
+		// are one and the toggle has nowhere to go - that is as it should be.)
+		if (openBase > 0.95 * READ) {
+			openBase = Math.min(READ, Math.min(fitWidth, fitHeight) * 0.95);
 		}
 		var startScale = openBase * zoomComp;
 
@@ -330,6 +355,73 @@
 			canvas.style.transform =
 				'translate(' + (-panX) + 'px,' + (-panY) + 'px) scale(' + scale + ') ' +
 				'translate(' + (-minX) + 'px,' + (-minY) + 'px)';
+			applyBg(scale, panX, panY);
+		}
+
+		// --- page background ------------------------------------------------
+		// The page's background is an inline style on <html> (see
+		// module_page.inc.php's page_render_object()), so it belongs to the
+		// DOCUMENT and the transform on the canvas never reaches it: a 400px
+		// tile stayed 400px while the content around it was at 0.56x. It is
+		// scaled here instead, with the same numbers the transform uses. A page
+		// point p lands at  s*(p - min) - pan  in the document, so
+		//   background-size     = size * s
+		//   background-position = s*(pos - min) - pan
+		// Both are linear in s and pan, so a transition with the transform's own
+		// duration and easing keeps them in step through the reveal and the
+		// double-tap. Only what can be resolved is touched: a px position, and a
+		// px size, a percentage of REF_PAGE_W, or the image's own size. cover /
+		// contain / keyword positions are left exactly as they were.
+		var bg = null;
+		(function () {
+			var st = docEl.style;
+			var img = /url\((['"]?)(.*?)\1\)/.exec(st.backgroundImage || '');
+			if (!img) return;
+			var pos = [0, 0], p = (st.backgroundPosition || '').trim();
+			if (p) {
+				p = p.split(/\s+/);
+				if (p.length !== 2 || !/^-?[\d.]+px$/.test(p[0]) || !/^-?[\d.]+px$/.test(p[1])) return;
+				pos = [parseFloat(p[0]), parseFloat(p[1])];
+			}
+			var w = null, h = 'auto', sz = (st.backgroundSize || '').trim();
+			if (sz && sz !== 'auto' && sz !== 'auto auto') {
+				var t = sz.split(/\s+/);
+				var m = /^(-?[\d.]+)(px|%)$/.exec(t[0]);
+				if (!m || (t[1] && t[1] !== 'auto' && !/^[\d.]+px$/.test(t[1]))) return;
+				w = m[2] === '%' ? parseFloat(m[1]) / 100 * REF_PAGE_W : parseFloat(m[1]);
+				if (t[1] && t[1] !== 'auto') h = parseFloat(t[1]);
+			}
+			bg = { x: pos[0], y: pos[1], w: w, h: h, ready: w !== null, last: null };
+			// a fixed background cannot follow a panned, scaled canvas
+			st.backgroundAttachment = 'scroll';
+			if (w === null) {
+				// no size of its own: the image's, which is only known once it loads
+				var im = new Image();
+				im.onload = function () {
+					if (!im.naturalWidth) return;
+					bg.w = im.naturalWidth;
+					bg.ready = true;
+					if (bg.last) applyBg(bg.last[0], bg.last[1], bg.last[2]);
+				};
+				im.src = img[2];
+			}
+		})();
+		function applyBg(scale, panX, panY) {
+			if (!bg) return;
+			bg.last = [scale, panX, panY];
+			if (!bg.ready) return;
+			docEl.style.backgroundSize = (bg.w * scale) + 'px ' +
+				(bg.h === 'auto' ? 'auto' : (bg.h * scale) + 'px');
+			docEl.style.backgroundPosition = (scale * (bg.x - minX) - panX) + 'px ' +
+				(scale * (bg.y - minY) - panY) + 'px';
+		}
+		// the canvas's transition, and the background's to match
+		function setTransition(t) {
+			canvas.style.transition = t;
+			if (!bg) return;
+			var rest = t.replace(/^transform\s+/, '');
+			docEl.style.transition = t ?
+				('background-size ' + rest + ', background-position ' + rest) : '';
 		}
 		function sizeSizer(scale) {
 			document.body.style.width = (canvasW * scale) + 'px';
@@ -353,7 +445,8 @@
 			};
 		}
 
-		// Land at the canvas ORIGIN at NATURAL size. Anything derived from
+		// Land at the canvas ORIGIN at the reading scale (75% of natural size
+		// by default, see READ_BASE). Anything derived from
 		// fitting the canvas to the screen lands zoomed OUT by construction -
 		// fit-width on content/zinecamp2015 is 0.2192, at which its 18px body
 		// text renders 4px - so the reveal would end with nothing legible and
@@ -361,7 +454,7 @@
 		// which is both the readable scale and the honest one, and needs no
 		// content inspection to arrive at. The visitor pans from there.
 		// No cap needed: 1.0 IS natural size, so it cannot upscale anything.
-		var targetScale = 1 * zoomComp;
+		var targetScale = READ * zoomComp;
 		DBG.fitHeight = fitHeight.toFixed(4);
 		// Where to LAND horizontally.
 		//
@@ -430,7 +523,7 @@
 		var cur = { scale: 1, panX: 0, panY: 0 };
 
 		function handoff(scale, panX, panY) {
-			canvas.style.transition = '';
+			setTransition('');
 			cur.scale = scale; cur.panX = panX; cur.panY = panY;
 			sizeSizer(scale);
 			// A negative pan means "centre me" - a scroll offset cannot express
@@ -439,6 +532,7 @@
 			canvas.style.transform =
 				'translate(' + (-resX) + 'px,' + (-resY) + 'px) ' +
 				'scale(' + scale + ') translate(' + (-minX) + 'px,' + (-minY) + 'px)';
+			applyBg(scale, resX, resY);
 			void docEl.scrollWidth;		// flush the new body box before scrolling
 			var sx = Math.max(0, panX), sy = Math.max(0, panY);
 			window.scrollTo(sx, sy);
@@ -507,7 +601,7 @@
 			if (toggling) return;
 			toggling = true;
 			var at = canvasPointAt(pageX, pageY);
-			var want = atOverview ? 1 : openBase;
+			var want = atOverview ? READ : openBase;
 			// Compensate for wherever the visitor's pinch currently sits, the
 			// same way the load-time compensation does - our transform and the
 			// browser's zoom multiply, and this is the third place that has
@@ -526,7 +620,7 @@
 			// the larger of the two (content/wide toggles across 13.7x in
 			// 400ms), so linear interpolation is even more visible here.
 			canvas.getBoundingClientRect();		// make the start state stick
-			canvas.style.transition = zoom_transition(TOGGLE_MS, cur.scale, scale);
+			setTransition(zoom_transition(TOGGLE_MS, cur.scale, scale));
 			apply(scale, pan.x, pan.y);
 			var settled = false;
 			var settle = function (ev) {
@@ -637,7 +731,7 @@
 				setTimeout(function () {
 					if (done) return;
 					canvas.getBoundingClientRect();	// force the start state to stick
-					canvas.style.transition = zoom_transition(REVEAL_MS, startScale, targetScale);
+					setTransition(zoom_transition(REVEAL_MS, startScale, targetScale));
 					canvas.addEventListener('transitionend', finish);
 					apply(targetScale, end.x, end.y);
 				}, REVEAL_DWELL_MS);

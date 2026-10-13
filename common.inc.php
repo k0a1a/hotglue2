@@ -78,13 +78,12 @@ function cache_output($category, $name, $out)
 function default_html($add_glue)
 {
 	html_title(SITE_NAME);
-	// a site-wide favicon can be uploaded via the startpage's "page" menu
-	// (page-favicon-file, stored on the startpage's own page-object
-	// regardless of which page is currently being viewed - see
-	// module_page.inc.php's page_upload()/controller_favicon()) - falls
-	// back to the FAVICON config constant if none has been uploaded
-	load_modules('glue');
-	$favicon_obj = load_object(['name'=>startpage().'.page']);
+	// a site-wide favicon can be uploaded on the site options page
+	// (page-favicon-file, stored with the site options - see site_options_page()
+	// - regardless of which page is currently being viewed; module_page.inc.php's
+	// page_favicon_upload()/controller_favicon()) - falls back to the
+	// FAVICON config constant if none has been uploaded
+	$favicon_obj = site_options_load();
 	if (!$favicon_obj['#error'] && !empty($favicon_obj['#data']['page-favicon-file'])) {
 		html_favicon('?favicon');
 		// the uploaded icon is also the best home-screen icon this site has -
@@ -152,10 +151,24 @@ function default_html($add_glue)
 		// actually reaches people. The source is 30KB, 59% of it comments;
 		// the copy is 12KB, and 4KB against 11KB once gzipped. Regenerate it
 		// with tools/make-min.js after editing the source.
-		if (USE_MIN_FILES) {
-			html_add_js(base_url().'js/mobile-guided.min.js', 3, true);
+		// The site can switch it off (page-guided = off in the site options,
+		// loaded above for the favicon; on is the default and is
+		// stored by absence). Then the script is not loaded at all - a visitor
+		// downloads nothing for it - and ?guided=1 has nothing to force.
+		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
+			// nothing to add
 		} else {
-			html_add_js(base_url().'js/mobile-guided.js', 3, true);
+			if (USE_MIN_FILES) {
+				html_add_js(base_url().'js/mobile-guided.min.js', 3, true);
+			} else {
+				html_add_js(base_url().'js/mobile-guided.js', 3, true);
+			}
+			// the site's chosen zoom for it; the default is not written at all
+			$guided_zoom = $favicon_obj['#error'] ? guided_zoom_default() : intval(@$favicon_obj['#data']['page-guided-zoom']);
+			if ($guided_zoom != guided_zoom_default() && in_array($guided_zoom, guided_zoom_choices(), true)) {
+				$bdy = &body();
+				elem_attr($bdy, 'data-guided-zoom', (string)$guided_zoom);
+			}
 		}
 	}
 }
@@ -854,18 +867,225 @@ function startpage()
 
 
 /**
+ *	the site options: settings that belong to the whole site rather than to
+ *	one page (favicon, custom fonts, the guided view, the last text font,
+ *	size and line height)
+ *
+ *	They used to be stored on the STARTPAGE's own page-object, which is a page
+ *	like any other: deleting it took every setting and every uploaded file with
+ *	it, writes then failed (the directory was gone), and changing the startpage
+ *	silently left the settings behind. They now live in a reserved page of
+ *	their own, content/_options/ - shaped like a page (head/page plus shared/)
+ *	so the object, upload and shared-directory code works on it unchanged, and
+ *	so tools that scan page directories (cleanup-orphans.php) see the favicon
+ *	and the fonts as referenced. It is not a page a visitor or an author can
+ *	reach: valid_pagename() refuses the name, pagenames() skips it, the
+ *	controller 404s it and delete_page() will not delete it.
+ */
+function site_options_page()
+{
+	return '_options.head';
+}
+
+
+function site_options_name()
+{
+	return site_options_page().'.page';
+}
+
+
+/**
+ *	the attributes that are site options, i.e. the ones that used to be
+ *	stored on the startpage's page-object
+ *
+ *	@return array list of attribute names
+ */
+function site_options_keys()
+{
+	return ['page-favicon-file', 'page-favicon-mime', 'page-custom-fonts',
+		'page-last-text-font', 'page-last-text-font-size', 'page-last-text-line-height',
+		'page-guided', 'page-guided-zoom'];
+}
+
+
+/**
+ *	make sure the site options page's directories exist
+ *
+ *	@return bool
+ */
+function site_options_ensure()
+{
+	$base = CONTENT_DIR.'/'.get_first_item(expl('.', site_options_page()));
+	foreach ([$base, $base.'/head', $base.'/shared'] as $d) {
+		if (!is_dir($d)) {
+			$m = umask(0000);
+			$ok = @mkdir($d, 0777);
+			umask($m);
+			// another request may have made it in between
+			if (!$ok && !is_dir($d)) {
+				log_msg('error', 'site_options_ensure: error creating '.quot($d));
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+
+/**
+ *	bring a site that still has its options on the startpage's page-object
+ *	over to the site options page: copy the settings, and the favicon and font
+ *	files they name. Lazy (the first time anything reads the options), once
+ *	(the options page existing is the marker), and non-destructive - the
+ *	startpage keeps what it had.
+ */
+function site_options_migrate()
+{
+	static $done = false;
+	if ($done) {
+		return;
+	}
+	$done = true;
+	$base = CONTENT_DIR.'/'.get_first_item(expl('.', site_options_page()));
+	if (is_dir($base.'/head')) {
+		return;
+	}
+	load_modules('glue');
+	$sp = startpage();
+	$old = load_object(['name'=>$sp.'.page']);
+	if ($old['#error']) {
+		return;
+	}
+	$move = [];
+	foreach (site_options_keys() as $k) {
+		if (isset($old['#data'][$k]) && $old['#data'][$k] !== '') {
+			$move[$k] = $old['#data'][$k];
+		}
+	}
+	if (empty($move) || !site_options_ensure()) {
+		return;
+	}
+	$files = [];
+	if (!empty($move['page-favicon-file'])) {
+		$files[] = $move['page-favicon-file'];
+	}
+	if (!empty($move['page-custom-fonts'])) {
+		$fonts = @json_decode($move['page-custom-fonts'], true);
+		if (is_array($fonts)) {
+			foreach ($fonts as $f) {
+				if (!empty($f['file'])) {
+					$files[] = $f['file'];
+				}
+			}
+		}
+	}
+	$from = CONTENT_DIR.'/'.get_first_item(expl('.', $sp)).'/shared/';
+	foreach ($files as $f) {
+		$f = basename($f);
+		if (is_file($from.$f)) {
+			$m = umask(0111);
+			if (!@copy($from.$f, $base.'/shared/'.$f)) {
+				log_msg('error', 'site_options_migrate: error copying '.quot($f));
+			}
+			umask($m);
+		}
+	}
+	$ret = update_object(['name'=>site_options_name()] + $move);
+	if ($ret['#error']) {
+		log_msg('error', 'site_options_migrate: error writing the site options: '.quot($ret['#data']));
+	} else {
+		log_msg('info', 'site_options_migrate: moved '.count($move).' setting(s) and '.count($files).' file(s) from '.quot($sp));
+	}
+}
+
+
+/**
+ *	load the site options object
+ *
+ *	@return array like load_object(): '#error', and the attributes in '#data'
+ */
+function site_options_load()
+{
+	load_modules('glue');
+	site_options_migrate();
+	return load_object(['name'=>site_options_name()]);
+}
+
+
+/**
+ *	set site options
+ *
+ *	@param array $attrs attribute => value
+ *	@return array response
+ */
+function site_options_update($attrs)
+{
+	load_modules('glue');
+	site_options_migrate();
+	if (!site_options_ensure()) {
+		return response('Error creating the site options directory', 500);
+	}
+	return update_object(['name'=>site_options_name()] + $attrs);
+}
+
+
+/**
+ *	remove site options
+ *
+ *	@param array|string $attrs attribute name(s)
+ *	@return array response
+ */
+function site_options_remove($attrs)
+{
+	$obj = site_options_load();
+	if ($obj['#error']) {
+		// nothing was ever written
+		return response(true);
+	}
+	return object_remove_attr(['name'=>site_options_name(), 'attr'=>$attrs]);
+}
+
+
+/**
+ *	the choices for the mobile guided view's zoom (site settings, see /pages),
+ *	in percent of a reading scale that is itself 75% of natural size
+ *	(js/mobile-guided.js's READ_BASE). The default, guided_zoom_default(), is
+ *	stored by ABSENCE (page-guided-zoom in the site options), so
+ *	a site that never touched the setting keeps exactly the files and html it
+ *	had. A stored value keeps its meaning whatever the default is.
+ *
+ *	@return array list of ints
+ */
+function guided_zoom_choices()
+{
+	return [25, 50, 75, 100, 125, 150];
+}
+
+
+/**
+ *	the default zoom choice: 75% of the reading scale, 0.5625 of natural size
+ *	(the first default, 100%, read as too zoomed in on a phone)
+ *
+ *	@return int
+ */
+function guided_zoom_default()
+{
+	return 75;
+}
+
+
+/**
  *	return the site's uploaded custom fonts (site settings, see /pages)
  *
- *	stored as a json-encoded list on the startpage's own page-object
- *	(page-custom-fonts), regardless of which page is currently being
- *	rendered - see module_page.inc.php's page_font_upload()
+ *	stored as a json-encoded list in the site options (page-custom-fonts),
+ *	regardless of which page is currently being rendered - see
+ *	module_page.inc.php's page_font_upload()
  *
  *	@return array list of ['file'=>..., 'name'=>...]
  */
 function site_custom_fonts()
 {
-	load_modules('glue');
-	$obj = load_object(['name'=>startpage().'.page']);
+	$obj = site_options_load();
 	if ($obj['#error'] || empty($obj['#data']['page-custom-fonts'])) {
 		return [];
 	}
@@ -1011,7 +1231,7 @@ function valid_pagename($s)
 		return false;
 	} elseif (empty($a[0]) || empty($a[1])) {
 		return false;
-	} elseif (in_array($a[0], ['cache', 'shared'])) {
+	} elseif (in_array($a[0], ['cache', 'shared', '_options'])) {
 		// reserved page names
 		// TODO (later): we're missing the log file here
 		// TODO (later): we're also missing $arg0 of controllers here

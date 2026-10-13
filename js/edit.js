@@ -2880,6 +2880,9 @@ $.glue.object = function()
 
 			if (can_resize) {
 				var resize_orig_aspect = 1;
+				// images invert the shift convention: their proportions are
+				// kept by default and shift is what frees them - the picture
+				// fills its frame, so a frame of another shape IS a stretch
 
 				m.on('resizeStart', function(e) {
 					resize_orig_aspect = obj.offsetWidth/obj.offsetHeight;
@@ -2892,7 +2895,7 @@ $.glue.object = function()
 					// (renderDirections above), and none of them move the
 					// top-left anchor, so it's enough to just adjust
 					// whichever dimension the handle doesn't already drive
-					if (e.inputEvent.shiftKey) {
+					if (obj.classList.contains('image') ? !e.inputEvent.shiftKey : e.inputEvent.shiftKey) {
 						if (e.direction[0] != 0 && e.direction[1] != 0) {
 							// corner handle: let whichever dimension moved
 							// more this frame drive the other
@@ -4668,7 +4671,7 @@ $.glue.upload = function()
 		elem.appendChild($.glue.icon('upload-asset'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
-		upload.accept = 'image/*,video/*,audio/*,text/html,.html,.htm';
+		upload.accept = 'image/*,.heic,.heif,video/*,audio/*,text/html,.html,.htm';
 		upload.tooltip = 'upload asset - image, video, audio or html file';
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		elem.addEventListener('click', function(e) {

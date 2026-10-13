@@ -255,10 +255,12 @@ function image_alter_render_early($args)
 	}
 	elem_css($i, 'width', '100%');
 	elem_css($i, 'height', '100%');
-	// the picture keeps its proportions: it letterboxes inside the frame,
-	// and the bars show the object's background colour or image through -
-	// that is deliberate, danja's call 2026-09-23
-	elem_css($i, 'object-fit', 'contain');
+	// the picture fills the frame, stretching with it - object-fit is left at
+	// its default (fill) on purpose. That is what every page made before the
+	// child-img rewrite stores: the frame's shape IS the stretch, there is no
+	// flag, so a letterboxing default (object-fit: contain, 2026-09-23) drew
+	// every image whose frame was not the picture's own shape with bars -
+	// 2105 of 6019 images in the 2025 corpus (see image-resize-shift.spec.js)
 	// in the editor the picture must not swallow the clicks meant for the
 	// object (select, menus) - the img fills the frame, so it covers
 	// every pixel; a visitor's page never needs to click through it

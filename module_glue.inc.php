@@ -585,6 +585,11 @@ function delete_page($args)
 	if (!page_exists($args['page'])) {
 		return response('Page '.quot($args['page']).' does not exist', 404);
 	}
+	if (get_first_item(expl('.', $args['page'])) == '_options') {
+		return response('The site options are not a page and cannot be deleted', 400);
+	}
+	// remember before it is gone: deleting the startpage hands it on
+	$was_startpage = ($args['page'] == startpage());
 	
 	log_msg('info', 'delete_page: deleting '.quot($args['page']));
 	invoke_hook('delete_page', ['page'=>$args['page']]);
@@ -631,6 +636,28 @@ function delete_page($args)
 	@rmdir(CONTENT_DIR.'/'.$a[0].'/shared');
 	if (@rmdir(CONTENT_DIR.'/'.$a[0])) {
 		log_msg('info', 'delete_page: parent page directory empty, removing '.quot($a[0]));
+	}
+
+	// the startpage is gone: the first page that is left takes over (and with
+	// no page left the pointer goes, so startpage() falls back to the default)
+	if ($was_startpage) {
+		$next = false;
+		$all = pagenames([]);
+		foreach ($all['#data'] as $pn) {
+			if (is_dir(CONTENT_DIR.'/'.$pn.'/head')) {
+				$next = $pn.'.head';
+				break;
+			}
+		}
+		$m = umask(0111);
+		if ($next !== false) {
+			@file_put_contents(CONTENT_DIR.'/startpage', $next);
+			log_msg('info', 'delete_page: the startpage was deleted, '.quot($next).' is the startpage now');
+		} else {
+			@unlink(CONTENT_DIR.'/startpage');
+			log_msg('info', 'delete_page: the last page was deleted, no startpage left');
+		}
+		umask($m);
 	}
 	
 	return response(true);
@@ -943,7 +970,8 @@ function pagenames($args)
 		$files = @scandir(CONTENT_DIR);
 		$ret = [];
 		foreach ($files as $f) {
-			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared') {
+			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared' || $f == '_options') {
+				// (_options: the site options, not a page - see common.inc.php)
 				continue;
 			} elseif (!is_dir(CONTENT_DIR.'/'.$f)) {
 				// skip files
@@ -1528,6 +1556,63 @@ function _upload_size_str($n)
 }
 
 
+/**
+ *	is this upload a HEIC/HEIF picture (iPhone photos)?
+ */
+function is_heic_upload($name, $type)
+{
+	return in_array(strtolower($type), ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'])
+		|| in_array(strtolower(filext($name)), ['heic', 'heif']);
+}
+
+
+/**
+ *	convert an uploaded HEIC/HEIF picture to a JPEG in place
+ *
+ *	Browsers other than Safari cannot draw HEIC, so it is turned into a JPEG
+ *	before it is stored; everything after this sees an ordinary .jpg. Needs
+ *	the imagick extension built with HEIC support. The first image of a
+ *	multi-image file is used, the camera's rotation is applied to the pixels
+ *	and the metadata (GPS position included) is not carried over.
+ *
+ *	@param string $tmp path of the uploaded file, overwritten with the JPEG
+ *	@return bool success
+ */
+function convert_heic_to_jpeg($tmp)
+{
+	if (!class_exists('Imagick')) {
+		return false;
+	}
+	try {
+		$im = new Imagick();
+		// a decompression bomb costs memory, not disk: cap what it may take
+		$im->setResourceLimit(Imagick::RESOURCETYPE_MEMORY, 256 * 1024 * 1024);
+		$im->setResourceLimit(Imagick::RESOURCETYPE_MAP, 512 * 1024 * 1024);
+		$im->readImageBlob(file_get_contents($tmp));
+		$im->setIteratorIndex(0);
+		$frame = $im->getImage();
+		switch ($frame->getImageOrientation()) {
+			case Imagick::ORIENTATION_BOTTOMRIGHT: $frame->rotateImage('#fff', 180); break;
+			case Imagick::ORIENTATION_RIGHTTOP: $frame->rotateImage('#fff', 90); break;
+			case Imagick::ORIENTATION_LEFTBOTTOM: $frame->rotateImage('#fff', 270); break;
+		}
+		$frame->setImageOrientation(Imagick::ORIENTATION_TOPLEFT);
+		$frame->stripImage();
+		$frame->setImageBackgroundColor('white');
+		$frame->setImageAlphaChannel(Imagick::ALPHACHANNEL_REMOVE);
+		$frame->setImageFormat('jpeg');
+		$frame->setImageCompressionQuality(90);
+		$jpeg = $frame->getImageBlob();
+		$frame->clear();
+		$im->clear();
+		return file_put_contents($tmp, $jpeg) !== false;
+	} catch (Exception $e) {
+		log_msg('warn', 'convert_heic_to_jpeg: '.$e->getMessage());
+		return false;
+	}
+}
+
+
 function upload_files($args)
 {
 	if (empty($args['page'])) {
@@ -1556,6 +1641,15 @@ function upload_files($args)
 		// nothing but the transfer
 		if (UPLOAD_MAX_SIZE && !empty($f['size']) && intval($f['size']) > UPLOAD_MAX_SIZE) {
 			return response('file too large (max '._upload_size_str(UPLOAD_MAX_SIZE).')', 413);
+		}
+		// HEIC (iPhone photos) is stored as a JPEG
+		if (is_heic_upload($f['name'], $f['type'])) {
+			if (!convert_heic_to_jpeg($f['tmp_name'])) {
+				return response('this server cannot read HEIC pictures - convert it to jpg first', 415);
+			}
+			$f['name'] = preg_replace('/\.[^.]*$/', '', $f['name']).'.jpg';
+			$f['type'] = 'image/jpeg';
+			$f['size'] = filesize($f['tmp_name']);
 		}
 		$existed = false;
 		$fn = upload_file($f['tmp_name'], $args['page'], $f['name'], $existed);

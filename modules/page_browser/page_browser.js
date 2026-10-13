@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (!file) {
 				return;
 			}
-			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.startpage, preferred_module: 'page_favicon' }, function(data) {
+			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.options, preferred_module: 'page_favicon' }, function(data) {
 				if (!data || data['#error'] || !data['#data'] || !data['#data'].length) {
 					$.glue.error('There was a problem uploading the favicon');
 					return;
@@ -252,6 +252,46 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('site_settings_favicon_clear').style.display = 'none';
 		});
 	});
+
+	// the zoom of the mobile guided view (site-wide, stored on the startpage's
+	// page-object; see module_page.inc.php's page_set_guided_zoom())
+	var guided_zoom = document.getElementById('site_settings_guided_zoom');
+	var guided_on = document.getElementById('site_settings_guided_on');
+	if (guided_on && guided_zoom) {
+		guided_on.addEventListener('change', function() {
+			var want = guided_on.checked;
+			$.glue.backend({ method: 'page.set_guided', enabled: want }, function(data) {
+				if (!data || data['#error']) {
+					// not saved: put the box back to what is stored
+					guided_on.checked = !want;
+					$.glue.error('There was a problem saving the setting');
+					return;
+				}
+				// the zoom means nothing while the view is off
+				guided_zoom.querySelectorAll('input').forEach(function(r) {
+					r.disabled = !want;
+				});
+			});
+		});
+	}
+	if (guided_zoom) {
+		var guided_prev = (guided_zoom.querySelector('input:checked') || {}).value;
+		guided_zoom.addEventListener('change', function(e) {
+			var chosen = e.target.value;
+			$.glue.backend({ method: 'page.set_guided_zoom', zoom: parseInt(chosen, 10) }, function(data) {
+				if (!data || data['#error']) {
+					// not saved: put the choice back to what is stored
+					var back = guided_zoom.querySelector('input[value="' + guided_prev + '"]');
+					if (back) {
+						back.checked = true;
+					}
+					$.glue.error('There was a problem saving the zoom');
+					return;
+				}
+				guided_prev = chosen;
+			});
+		});
+	}
 
 	// "remove" is only shown on hover, same pattern (and re-using the same
 	// .page_browser_actions styling) as the "All pages" list above
@@ -297,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (!file) {
 				return;
 			}
-			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.startpage, preferred_module: 'page_font' }, function(data) {
+			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.options, preferred_module: 'page_font' }, function(data) {
 				if (!data || data['#error'] || !data['#data'] || !data['#data'].length || !data['#data'][0]) {
 					$.glue.error('There was a problem uploading the font');
 					return;

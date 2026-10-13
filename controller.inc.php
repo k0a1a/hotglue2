@@ -26,8 +26,27 @@ if (!isset($controllers)) {
 /**
  *	show a site where authenticated users can create new pages
  */
+/**
+ *	refuse the request when it is for the site options page: it is not a page
+ *	a visitor or an author can see, edit or create (see site_options_page())
+ *
+ *	@return bool true if the request was refused (a 404 was sent)
+ */
+function controller_refuse_site_options($args)
+{
+	if (!empty($args[0][0]) && get_first_item(expl('.', $args[0][0])) == '_options') {
+		hotglue_error(404);
+		return true;
+	}
+	return false;
+}
+
+
 function controller_create_page($args)
 {
+	if (controller_refuse_site_options($args)) {
+		return;
+	}
 	page_canonical($args[0][0]);
 	$page = $args[0][0];
 	if (page_exists($page)) {
@@ -79,6 +98,9 @@ register_controller('*', 'create_page', 'controller_create_page', ['auth'=>true]
  */
 function controller_edit($args)
 {
+	if (controller_refuse_site_options($args)) {
+		return;
+	}
 	handle_updates();
 	// this is a good spot to log the server's php version as well
 	log_msg('debug', 'controller_edit: running on php version '.phpversion());
@@ -153,6 +175,9 @@ function controller_default($args)
 	
 	page_canonical($args[0][0]);
 	$obj = expl('.', $args[0][0]);
+	if (controller_refuse_site_options($args)) {
+		return;
+	}
 	if (count($obj) == 2) {
 		// page requested
 		if (page_exists($args[0][0])) {
@@ -229,6 +254,9 @@ register_controller('login', '', 'controller_login');
  */
 function controller_show($args)
 {
+	if (controller_refuse_site_options($args)) {
+		return;
+	}
 	// most of these checks are only necessary if the client calls 
 	// page/show directly
 	page_canonical($args[0][0]);
