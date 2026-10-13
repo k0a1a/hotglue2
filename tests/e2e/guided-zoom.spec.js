@@ -1,5 +1,5 @@
 // The zoom of the mobile guided view is a site setting (/?pages, "Mobile view"):
-// 50-150% of a baseline that is itself 75% of natural size (natural size read
+// 25-150% of a baseline that is itself 75% of natural size (natural size read
 // as too zoomed in on a phone). 100% is the default and is stored by ABSENCE,
 // so a site that never touched it keeps the files and html it had.
 //
@@ -49,12 +49,12 @@ async function setZoom(page, hg, pct) {
 	await page.waitForTimeout(500);
 }
 
-test('the settings page offers 50/75/100/125/150, with 100 the default', async ({ page }) => {
+test('the settings page offers 25/50/75/100/125/150, with 100 the default', async ({ page }) => {
 	await page.goto('/?pages');
 	const radios = page.locator('#site_settings_guided_zoom input[type=radio]');
-	await expect(radios).toHaveCount(5);
+	await expect(radios).toHaveCount(6);
 	expect(await radios.evaluateAll((els) => els.map((e) => e.value)))
-		.toEqual(['50', '75', '100', '125', '150']);
+		.toEqual(['25', '50', '75', '100', '125', '150']);
 	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeChecked();
 	await expect(page.locator('#site_settings_guided_zoom')).toContainText('100% (default)');
 });
@@ -85,7 +85,7 @@ test('a chosen zoom is stored, shown after a reload and put on the page body',
 test('an out-of-range zoom is refused by the service', async ({ page }) => {
 	// straight at json.php: the editor's backend() wrapper swallows error bodies
 	const res = await page.request.post('/json.php', {
-		form: { method: JSON.stringify('page.set_guided_zoom'), zoom: JSON.stringify(300) },
+		form: { method: JSON.stringify('page.set_guided_zoom'), zoom: JSON.stringify(10) },
 	});
 	// json.php answers 200 and carries the error in the body
 	const body = await res.json();
@@ -159,7 +159,7 @@ test('the guided toggle service refuses a non-boolean', async ({ page }) => {
 	expect(body['#error_code']).toBe(400);
 });
 
-for (const [pct, scale] of [[50, 0.375], [75, 0.5625], [100, 0.75], [125, 0.9375], [150, 1.125]]) {
+for (const [pct, scale] of [[25, 0.1875], [50, 0.375], [75, 0.5625], [100, 0.75], [125, 0.9375], [150, 1.125]]) {
 	test(`${pct}% lands the guided view at ${scale} (75% of natural size x ${pct}%)`,
 		async ({ page, hg }) => {
 			hg.addObject('100000000001', OBJ(100, 100), 'A');

@@ -877,7 +877,7 @@ function startpage()
  */
 function guided_zoom_choices()
 {
-	return [50, 75, 100, 125, 150];
+	return [25, 50, 75, 100, 125, 150];
 }
 
 

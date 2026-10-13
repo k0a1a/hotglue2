@@ -54,13 +54,13 @@
 	// The size the reveal lands at, and a double-tap returns to, as a fraction
 	// of natural size. Natural size itself (1.0) read as too zoomed in on a
 	// phone, so the baseline is 75% of it. The site owner scales that baseline
-	// from the settings page (50-150%), which reaches this script as a
+	// from the settings page (25-150%), which reaches this script as a
 	// data-guided-zoom attribute on <body> - written by common.inc.php, and only
 	// when it is not the default, so an untouched site's html does not change.
 	var READ_BASE = 0.75;
 	function readScale() {
 		var pct = parseFloat(document.body && document.body.getAttribute('data-guided-zoom'));
-		if (!(pct >= 50 && pct <= 150)) {
+		if (!(pct >= 25 && pct <= 150)) {
 			pct = 100;
 		}
 		return READ_BASE * pct / 100;

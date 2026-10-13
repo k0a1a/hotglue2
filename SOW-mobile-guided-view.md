@@ -253,8 +253,8 @@ and looks at no objects beyond the ones already on screen where the reveal ends.
 
 > **Superseded 2026-10-13.** Natural size (1.0) read as too zoomed in on a phone, so the
 > reveal now lands at a *reading scale* of `READ_BASE` = 0.75 of natural size, and the site
-> owner scales that from the settings page (`/?pages`, "Mobile view": 50 / 75 / 100 / 125 /
-> 150 %, 100 the default → 0.375 … 1.125). It is stored as `page-guided-zoom` on the
+> owner scales that from the settings page (`/?pages`, "Mobile view": 25 / 50 / 75 / 100 / 125 /
+> 150 %, 100 the default → 0.1875 … 1.125). It is stored as `page-guided-zoom` on the
 > startpage's page object (absent = default) and reaches the script as a
 > `data-guided-zoom` attribute on `<body>`, written only when it is not the default. The
 > double-tap returns to the same scale, and the overview is capped below it. The reasoning
