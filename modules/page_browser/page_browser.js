@@ -253,6 +253,28 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 
+	// the zoom of the mobile guided view (site-wide, stored on the startpage's
+	// page-object; see module_page.inc.php's page_set_guided_zoom())
+	var guided_zoom = document.getElementById('site_settings_guided_zoom');
+	if (guided_zoom) {
+		var guided_prev = (guided_zoom.querySelector('input:checked') || {}).value;
+		guided_zoom.addEventListener('change', function(e) {
+			var chosen = e.target.value;
+			$.glue.backend({ method: 'page.set_guided_zoom', zoom: parseInt(chosen, 10) }, function(data) {
+				if (!data || data['#error']) {
+					// not saved: put the choice back to what is stored
+					var back = guided_zoom.querySelector('input[value="' + guided_prev + '"]');
+					if (back) {
+						back.checked = true;
+					}
+					$.glue.error('There was a problem saving the zoom');
+					return;
+				}
+				guided_prev = chosen;
+			});
+		});
+	}
+
 	// "remove" is only shown on hover, same pattern (and re-using the same
 	// .page_browser_actions styling) as the "All pages" list above
 	var font_span = false;

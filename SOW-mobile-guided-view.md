@@ -249,7 +249,18 @@ choose which object was worth showing and guessed wrong — a 68x21px label over
 500x715 poster. This chooses nothing; it only declines to land on blank canvas,
 and looks at no objects beyond the ones already on screen where the reveal ends.
 
-### Landing scale is 1.0 — natural size
+### Landing scale — the reading scale (75% of natural size by default)
+
+> **Superseded 2026-10-13.** Natural size (1.0) read as too zoomed in on a phone, so the
+> reveal now lands at a *reading scale* of `READ_BASE` = 0.75 of natural size, and the site
+> owner scales that from the settings page (`/?pages`, "Mobile view": 50 / 75 / 100 / 125 /
+> 150 %, 100 the default → 0.375 … 1.125). It is stored as `page-guided-zoom` on the
+> startpage's page object (absent = default) and reaches the script as a
+> `data-guided-zoom` attribute on `<body>`, written only when it is not the default. The
+> double-tap returns to the same scale, and the overview is capped below it. The reasoning
+> below about *why a fixed, content-independent scale* still holds; only the constant moved.
+
+#### (original reasoning, landing at 1.0)
 
 Anything derived from fitting the canvas to the screen lands zoomed OUT by construction:
 fit-width on `content/zinecamp2015` is 0.2192, at which its 18px body text renders

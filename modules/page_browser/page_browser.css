@@ -9,7 +9,18 @@
 	margin-top: 10px;
 }
 
+#site_settings_guided_zoom label {
+	margin-right: 14px;
+	white-space: nowrap;
+}
+
+#site_settings_guided_label {
+	display: block;
+	margin-bottom: 6px;
+}
+
 #site_settings_favicon,
+#site_settings_guided,
 #site_settings_fonts {
 	margin-bottom: 15px;
 	margin-left: 10px;

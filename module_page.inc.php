@@ -675,6 +675,47 @@ register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
 
 
 /**
+ *	set the zoom of the mobile guided view for the whole site (site settings,
+ *	see /pages): percent of the default reading scale, one of
+ *	guided_zoom_choices(). The default is stored by absence. Pages may be
+ *	cached with the attribute the front end reads (common.inc.php), so the
+ *	page cache is dropped.
+ *
+ *	@param array $args arguments
+ *		key 'zoom' int one of 50, 75, 100, 125, 150
+ *	@return array response
+ */
+function page_set_guided_zoom($args)
+{
+	$zoom = isset($args['zoom']) ? intval($args['zoom']) : 0;
+	if (!in_array($zoom, guided_zoom_choices(), true)) {
+		return response('Invalid zoom '.quot(@$args['zoom']).', must be one of '.implode(', ', guided_zoom_choices()), 400);
+	}
+	load_modules('glue');
+	$name = startpage().'.page';
+	if ($zoom == 100) {
+		// the default: nothing to remove if the object was never written
+		$obj = load_object(['name'=>$name]);
+		if (!$obj['#error'] && isset($obj['#data']['page-guided-zoom'])) {
+			$ret = object_remove_attr(['name'=>$name, 'attr'=>'page-guided-zoom']);
+			if ($ret['#error']) {
+				return $ret;
+			}
+		}
+	} else {
+		$ret = update_object(['name'=>$name, 'page-guided-zoom'=>(string)$zoom]);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_guided_zoom', 'page_set_guided_zoom', ['auth'=>true]);
+
+
+/**
  *	remember the last typeface picked via "change typeface", applied as
  *	the default for newly created text objects (see
  *	modules/text/text-edit.js) instead of the browser default - site-wide,

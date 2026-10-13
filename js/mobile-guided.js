@@ -51,6 +51,20 @@
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
 	var LANDING_MARGIN = 8;		// canvas px to leave left of the first content
 	var SMALL_SCREEN_PX = 768;
+	// The size the reveal lands at, and a double-tap returns to, as a fraction
+	// of natural size. Natural size itself (1.0) read as too zoomed in on a
+	// phone, so the baseline is 75% of it. The site owner scales that baseline
+	// from the settings page (50-150%), which reaches this script as a
+	// data-guided-zoom attribute on <body> - written by common.inc.php, and only
+	// when it is not the default, so an untouched site's html does not change.
+	var READ_BASE = 0.75;
+	function readScale() {
+		var pct = parseFloat(document.body && document.body.getAttribute('data-guided-zoom'));
+		if (!(pct >= 50 && pct <= 150)) {
+			pct = 100;
+		}
+		return READ_BASE * pct / 100;
+	}
 
 	// ?guided=1 forces activation on a wide screen, ?guided=0 forces it off on
 	// a phone. QA/demo tooling only - NOT a/b infrastructure (hotglue has no
@@ -234,13 +248,18 @@
 		//
 		// This is contain-fit divided by 0.75, i.e. deliberately one third
 		// tighter than fitting the whole canvas.
-		var openBase = Math.min(1, Math.min(fitWidth, fitHeight) / 0.75);
-		// A canvas barely larger than the screen puts that at natural size,
-		// which would leave the toggle with two identical states and nothing to
-		// do. Show the whole canvas instead. The reveal is imperceptible on
-		// those pages for the same reason.
-		if (openBase > 0.95) {
-			openBase = Math.min(fitWidth, fitHeight) * 0.95;
+		// Capped at the reading scale the reveal lands on, never above it.
+		var READ = readScale();
+		DBG.readScale = READ.toFixed(4);
+		var openBase = Math.min(READ, Math.min(fitWidth, fitHeight) / 0.75);
+		// A canvas barely larger than the screen puts that at the reading
+		// scale, which would leave the toggle with two identical states and
+		// nothing to do. Show the whole canvas instead. The reveal is
+		// imperceptible on those pages for the same reason. (Where the whole
+		// canvas is itself no smaller than the reading scale, the two states
+		// are one and the toggle has nowhere to go - that is as it should be.)
+		if (openBase > 0.95 * READ) {
+			openBase = Math.min(READ, Math.min(fitWidth, fitHeight) * 0.95);
 		}
 		var startScale = openBase * zoomComp;
 
@@ -353,7 +372,8 @@
 			};
 		}
 
-		// Land at the canvas ORIGIN at NATURAL size. Anything derived from
+		// Land at the canvas ORIGIN at the reading scale (75% of natural size
+		// by default, see READ_BASE). Anything derived from
 		// fitting the canvas to the screen lands zoomed OUT by construction -
 		// fit-width on content/zinecamp2015 is 0.2192, at which its 18px body
 		// text renders 4px - so the reveal would end with nothing legible and
@@ -361,7 +381,7 @@
 		// which is both the readable scale and the honest one, and needs no
 		// content inspection to arrive at. The visitor pans from there.
 		// No cap needed: 1.0 IS natural size, so it cannot upscale anything.
-		var targetScale = 1 * zoomComp;
+		var targetScale = READ * zoomComp;
 		DBG.fitHeight = fitHeight.toFixed(4);
 		// Where to LAND horizontally.
 		//
@@ -507,7 +527,7 @@
 			if (toggling) return;
 			toggling = true;
 			var at = canvasPointAt(pageX, pageY);
-			var want = atOverview ? 1 : openBase;
+			var want = atOverview ? READ : openBase;
 			// Compensate for wherever the visitor's pinch currently sits, the
 			// same way the load-time compensation does - our transform and the
 			// browser's zoom multiply, and this is the third place that has
