@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (!file) {
 				return;
 			}
-			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.startpage, preferred_module: 'page_favicon' }, function(data) {
+			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.options, preferred_module: 'page_favicon' }, function(data) {
 				if (!data || data['#error'] || !data['#data'] || !data['#data'].length) {
 					$.glue.error('There was a problem uploading the favicon');
 					return;
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (!file) {
 				return;
 			}
-			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.startpage, preferred_module: 'page_font' }, function(data) {
+			upload_file(file, { method: 'glue.upload_files', page: $.glue.conf.page.options, preferred_module: 'page_font' }, function(data) {
 				if (!data || data['#error'] || !data['#data'] || !data['#data'].length || !data['#data'][0]) {
 					$.glue.error('There was a problem uploading the font');
 					return;

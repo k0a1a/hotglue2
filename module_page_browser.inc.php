@@ -31,16 +31,22 @@ function controller_pages($args)
 		html_add_js(base_url().'modules/page_browser/page_browser.js');
 	}
 	html_add_js_var('$.glue.conf.page.startpage', startpage());
+	// uploads for the site options (favicon, fonts) go to this page
+	html_add_js_var('$.glue.conf.page.options', site_options_page());
 	$bdy = &body();
 	elem_attr($bdy, 'id', 'pages');
 
 	// site settings: options that apply to every page rather than to the
-	// look of one particular page - stored on the startpage's own
-	// page-object regardless of which page is currently being viewed (see
-	// common.inc.php's startpage()/site_custom_fonts(), and
+	// look of one particular page - stored in the site options, a reserved
+	// page of their own, so they do not depend on the startpage (see
+	// common.inc.php's site_options_page()/site_custom_fonts(), and
 	// module_page.inc.php's page_favicon_upload()/page_font_upload())
 	load_modules('glue');
-	$site_obj = load_object(['name'=>startpage().'.page']);
+	if (is_auth()) {
+		// the uploads below need the page to exist
+		site_options_ensure();
+	}
+	$site_obj = site_options_load();
 	$site_obj = $site_obj['#error'] ? [] : $site_obj['#data'];
 
 	// the page's own name for itself, and the same two words the editor's

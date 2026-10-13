@@ -378,10 +378,10 @@ test('an asset that is gone from the source page fails soft',
 
 test('fonts are not copied: they are site-wide and already resolve',
 	async ({ page, hg, second }) => {
-		// The registry is the startpage's own page object, whichever page is
-		// being viewed (common.inc.php's site_custom_fonts()). No other spec
-		// touches the startpage, so this one puts it back the way it found it.
-		const startpageName = 'start.head';
+		// The registry is the site options page's own object, whichever page is
+		// being viewed (common.inc.php's site_custom_fonts()). Few other specs
+		// touch it, so this one puts it back the way it found it.
+		const startpageName = '_options.head';
 		const startDir = pageDir(startpageName);
 		const hadStartpage = fs.existsSync(startDir);
 		fs.mkdirSync(revDir(startpageName), { recursive: true, mode: 0o777 });
@@ -423,7 +423,7 @@ test('fonts are not copied: they are site-wide and already resolve',
 				.flatMap((s) => { try { return [...s.cssRules]; } catch (e) { return []; } })
 				.map((r) => r.cssText).join('\n'));
 			expect(css, 'the pasted text lost its custom font').toContain('TestFace');
-			expect(css).toContain('content-e2e/start/shared/TestFace.woff2');
+			expect(css).toContain('content-e2e/_options/shared/TestFace.woff2');
 			expect(errors).toEqual([]);
 		} finally {
 			if (hadStartpage) {

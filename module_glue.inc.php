@@ -585,6 +585,11 @@ function delete_page($args)
 	if (!page_exists($args['page'])) {
 		return response('Page '.quot($args['page']).' does not exist', 404);
 	}
+	if (get_first_item(expl('.', $args['page'])) == '_options') {
+		return response('The site options are not a page and cannot be deleted', 400);
+	}
+	// remember before it is gone: deleting the startpage hands it on
+	$was_startpage = ($args['page'] == startpage());
 	
 	log_msg('info', 'delete_page: deleting '.quot($args['page']));
 	invoke_hook('delete_page', ['page'=>$args['page']]);
@@ -631,6 +636,28 @@ function delete_page($args)
 	@rmdir(CONTENT_DIR.'/'.$a[0].'/shared');
 	if (@rmdir(CONTENT_DIR.'/'.$a[0])) {
 		log_msg('info', 'delete_page: parent page directory empty, removing '.quot($a[0]));
+	}
+
+	// the startpage is gone: the first page that is left takes over (and with
+	// no page left the pointer goes, so startpage() falls back to the default)
+	if ($was_startpage) {
+		$next = false;
+		$all = pagenames([]);
+		foreach ($all['#data'] as $pn) {
+			if (is_dir(CONTENT_DIR.'/'.$pn.'/head')) {
+				$next = $pn.'.head';
+				break;
+			}
+		}
+		$m = umask(0111);
+		if ($next !== false) {
+			@file_put_contents(CONTENT_DIR.'/startpage', $next);
+			log_msg('info', 'delete_page: the startpage was deleted, '.quot($next).' is the startpage now');
+		} else {
+			@unlink(CONTENT_DIR.'/startpage');
+			log_msg('info', 'delete_page: the last page was deleted, no startpage left');
+		}
+		umask($m);
 	}
 	
 	return response(true);
@@ -943,7 +970,8 @@ function pagenames($args)
 		$files = @scandir(CONTENT_DIR);
 		$ret = [];
 		foreach ($files as $f) {
-			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared') {
+			if ($f == '.' || $f == '..' || $f == 'cache' || $f == 'shared' || $f == '_options') {
+				// (_options: the site options, not a page - see common.inc.php)
 				continue;
 			} elseif (!is_dir(CONTENT_DIR.'/'.$f)) {
 				// skip files

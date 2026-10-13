@@ -18,11 +18,11 @@ const OBJ = (left, top, w = 400, h = 300) => ({
 });
 const PHONE = { width: 360, height: 649 };
 
-// The site settings live on the startpage's own page-object, which the hermetic
-// content tree does not have: make the startpage's directory for the test and
-// take it away again (nothing else in the suite wants it; copy-paste.spec.js
-// does the same for its font registry).
-const START_DIR = path.join(CONTENT, 'start');
+// The site settings live in the site options page, _options, which the
+// hermetic content tree starts without: it is made the first time the options
+// page is opened, and taken away again after the test (copy-paste.spec.js does
+// the same for its font registry).
+const START_DIR = path.join(CONTENT, '_options');
 let hadStart = false;
 test.beforeEach(() => {
 	hadStart = fs.existsSync(START_DIR);
