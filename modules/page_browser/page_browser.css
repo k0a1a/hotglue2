@@ -3,16 +3,17 @@
 }
 
 #pages h1 {
-	/* heading on the page */
+	/* heading on the page; the size is the browser's own h1 default, written
+	   down so the h2 below can be a stated fraction of it */
+	font-size: 2em;
 	margin-bottom: 10px;
 	margin-left: 10px;
 	margin-top: 10px;
 }
 
 #pages h2 {
-	/* the sections under the page heading: 10% smaller than the h1 (which
-	   the reset leaves at 100%) */
-	font-size: 90%;
+	/* the sections under the page heading: 10% smaller than the h1 above */
+	font-size: 1.8em;
 	margin-bottom: 10px;
 	margin-left: 10px;
 	margin-top: 10px;
