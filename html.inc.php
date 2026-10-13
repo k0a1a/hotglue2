@@ -592,6 +592,28 @@ function html_favicon()
 
 
 /**
+ *	set the site's own uploaded favicon, which is written LAST in the head
+ *
+ *	A favicon the owner uploaded for the whole site is the owner's deliberate
+ *	choice, so it has to win over an icon that only turned up in a page's
+ *	custom HEAD (a hard-coded <link rel="icon">, say, kept from before the site
+ *	had one). Browsers that are offered several icons take the later, so it
+ *	is emitted after the user HEAD definitions, where html_favicon() and
+ *	html_add_icon() write early - and those stay early on purpose: they are
+ *	the installation's defaults (FAVICON, FAVICON_SET), which an owner's own
+ *	icon should beat.
+ *
+ *	@param string $url (url-encoded if necessary)
+ *	@param string $type mime type, optional
+ */
+function html_site_favicon($url, $type = '')
+{
+	global $html;
+	$html['header']['site_favicon'] = ['url'=>_relativize_asset_url($url), 'type'=>$type];
+}
+
+
+/**
  *	add an icon link to the page head
  *
  *	html_favicon() above sets the one legacy "shortcut icon"; this appends to
@@ -754,6 +776,16 @@ function html_finalize(&$cache = false)
 			// $rule = str_replace("\n", "\n\t", $def);
 			$ret .= $def.nl();
 		}
+	}
+	// the site's uploaded favicon goes after everything a page brought along,
+	// see html_site_favicon()
+	if (!empty($html['header']['site_favicon'])) {
+		$u = htmlspecialchars($html['header']['site_favicon']['url'], ENT_COMPAT, 'UTF-8');
+		$t = !empty($html['header']['site_favicon']['type']) ?
+			' type="'.htmlspecialchars($html['header']['site_favicon']['type'], ENT_COMPAT, 'UTF-8').'"' : '';
+		$ret .= '<link rel="shortcut icon" href="'.$u.'"'.$t.'>'.nl();
+		$ret .= '<link rel="icon" href="'.$u.'"'.$t.'>'.nl();
+		$ret .= '<link rel="apple-touch-icon" href="'.$u.'">'.nl();
 	}
 	$ret .= '</head>'.nl();
 	// load user body definitions
