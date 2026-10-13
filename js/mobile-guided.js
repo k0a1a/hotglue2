@@ -51,6 +51,10 @@
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
 	var LANDING_MARGIN = 8;		// canvas px to leave left of the first content
 	var SMALL_SCREEN_PX = 768;
+	// a percentage background size is a share of the visitor's window, and a
+	// phone's window is not the one the page was designed in: it is resolved
+	// against this nominal desktop width instead (danja's call, 2026-10-13)
+	var REF_PAGE_W = 1280;
 	// The size the reveal lands at, and a double-tap returns to, as a fraction
 	// of natural size. Natural size itself (1.0) read as too zoomed in on a
 	// phone, so the baseline is 75% of it. The site owner scales that baseline
@@ -351,6 +355,73 @@
 			canvas.style.transform =
 				'translate(' + (-panX) + 'px,' + (-panY) + 'px) scale(' + scale + ') ' +
 				'translate(' + (-minX) + 'px,' + (-minY) + 'px)';
+			applyBg(scale, panX, panY);
+		}
+
+		// --- page background ------------------------------------------------
+		// The page's background is an inline style on <html> (see
+		// module_page.inc.php's page_render_object()), so it belongs to the
+		// DOCUMENT and the transform on the canvas never reaches it: a 400px
+		// tile stayed 400px while the content around it was at 0.56x. It is
+		// scaled here instead, with the same numbers the transform uses. A page
+		// point p lands at  s*(p - min) - pan  in the document, so
+		//   background-size     = size * s
+		//   background-position = s*(pos - min) - pan
+		// Both are linear in s and pan, so a transition with the transform's own
+		// duration and easing keeps them in step through the reveal and the
+		// double-tap. Only what can be resolved is touched: a px position, and a
+		// px size, a percentage of REF_PAGE_W, or the image's own size. cover /
+		// contain / keyword positions are left exactly as they were.
+		var bg = null;
+		(function () {
+			var st = docEl.style;
+			var img = /url\((['"]?)(.*?)\1\)/.exec(st.backgroundImage || '');
+			if (!img) return;
+			var pos = [0, 0], p = (st.backgroundPosition || '').trim();
+			if (p) {
+				p = p.split(/\s+/);
+				if (p.length !== 2 || !/^-?[\d.]+px$/.test(p[0]) || !/^-?[\d.]+px$/.test(p[1])) return;
+				pos = [parseFloat(p[0]), parseFloat(p[1])];
+			}
+			var w = null, h = 'auto', sz = (st.backgroundSize || '').trim();
+			if (sz && sz !== 'auto' && sz !== 'auto auto') {
+				var t = sz.split(/\s+/);
+				var m = /^(-?[\d.]+)(px|%)$/.exec(t[0]);
+				if (!m || (t[1] && t[1] !== 'auto' && !/^[\d.]+px$/.test(t[1]))) return;
+				w = m[2] === '%' ? parseFloat(m[1]) / 100 * REF_PAGE_W : parseFloat(m[1]);
+				if (t[1] && t[1] !== 'auto') h = parseFloat(t[1]);
+			}
+			bg = { x: pos[0], y: pos[1], w: w, h: h, ready: w !== null, last: null };
+			// a fixed background cannot follow a panned, scaled canvas
+			st.backgroundAttachment = 'scroll';
+			if (w === null) {
+				// no size of its own: the image's, which is only known once it loads
+				var im = new Image();
+				im.onload = function () {
+					if (!im.naturalWidth) return;
+					bg.w = im.naturalWidth;
+					bg.ready = true;
+					if (bg.last) applyBg(bg.last[0], bg.last[1], bg.last[2]);
+				};
+				im.src = img[2];
+			}
+		})();
+		function applyBg(scale, panX, panY) {
+			if (!bg) return;
+			bg.last = [scale, panX, panY];
+			if (!bg.ready) return;
+			docEl.style.backgroundSize = (bg.w * scale) + 'px ' +
+				(bg.h === 'auto' ? 'auto' : (bg.h * scale) + 'px');
+			docEl.style.backgroundPosition = (scale * (bg.x - minX) - panX) + 'px ' +
+				(scale * (bg.y - minY) - panY) + 'px';
+		}
+		// the canvas's transition, and the background's to match
+		function setTransition(t) {
+			canvas.style.transition = t;
+			if (!bg) return;
+			var rest = t.replace(/^transform\s+/, '');
+			docEl.style.transition = t ?
+				('background-size ' + rest + ', background-position ' + rest) : '';
 		}
 		function sizeSizer(scale) {
 			document.body.style.width = (canvasW * scale) + 'px';
@@ -452,7 +523,7 @@
 		var cur = { scale: 1, panX: 0, panY: 0 };
 
 		function handoff(scale, panX, panY) {
-			canvas.style.transition = '';
+			setTransition('');
 			cur.scale = scale; cur.panX = panX; cur.panY = panY;
 			sizeSizer(scale);
 			// A negative pan means "centre me" - a scroll offset cannot express
@@ -461,6 +532,7 @@
 			canvas.style.transform =
 				'translate(' + (-resX) + 'px,' + (-resY) + 'px) ' +
 				'scale(' + scale + ') translate(' + (-minX) + 'px,' + (-minY) + 'px)';
+			applyBg(scale, resX, resY);
 			void docEl.scrollWidth;		// flush the new body box before scrolling
 			var sx = Math.max(0, panX), sy = Math.max(0, panY);
 			window.scrollTo(sx, sy);
@@ -548,7 +620,7 @@
 			// the larger of the two (content/wide toggles across 13.7x in
 			// 400ms), so linear interpolation is even more visible here.
 			canvas.getBoundingClientRect();		// make the start state stick
-			canvas.style.transition = zoom_transition(TOGGLE_MS, cur.scale, scale);
+			setTransition(zoom_transition(TOGGLE_MS, cur.scale, scale));
 			apply(scale, pan.x, pan.y);
 			var settled = false;
 			var settle = function (ev) {
@@ -659,7 +731,7 @@
 				setTimeout(function () {
 					if (done) return;
 					canvas.getBoundingClientRect();	// force the start state to stick
-					canvas.style.transition = zoom_transition(REVEAL_MS, startScale, targetScale);
+					setTransition(zoom_transition(REVEAL_MS, startScale, targetScale));
 					canvas.addEventListener('transitionend', finish);
 					apply(targetScale, end.x, end.y);
 				}, REVEAL_DWELL_MS);

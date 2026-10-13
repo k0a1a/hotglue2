@@ -267,6 +267,15 @@ and looks at no objects beyond the ones already on screen where the reveal ends.
 > by absence). While it is off `common.inc.php` does not load `mobile-guided.js` at all, so a
 > visitor downloads nothing for it and `?guided=1` has nothing to force.
 
+> **Page background (2026-10-13).** The page's CSS background is an inline style on `<html>`,
+> which the canvas transform never reached, so tiles kept their size while the content scaled.
+> `js/mobile-guided.js` now scales `background-size` and `background-position` with the same
+> scale and pan as the transform (`size * s`, `s*(pos - min) - pan`), animated with the same
+> duration and easing so they stay in step. It resolves a px position, a px size, a percentage
+> size (against a nominal 1280px page, because a phone's window is not the one the page was
+> designed in) or the image's own size; `fixed` attachment becomes scroll; `cover`/`contain`
+> and keyword positions are left alone. A video background is a body child and already scaled.
+
 #### (original reasoning, landing at 1.0)
 
 Anything derived from fitting the canvas to the screen lands zoomed OUT by construction:
