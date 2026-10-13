@@ -40,9 +40,40 @@ uncommitted state, was merged into `ng` in `1002088`.)
 | hotglue.me/ng (demo) | `/var/www-hotglue/hotglue.me-ng` | `hotglue2` / `ng-dev` |
 | hotglue.me/account | `/var/www-hotglue/account` | `hotglue-account` / `main` |
 
-Nothing on the server tracks `hotglue2-ng`. A commit on `ng` therefore reaches no server by
-itself; it reaches the demo only through `ng-dev` (below). If the private `ng` is ever
-deployed, use a separate clone (`/var/www-hotglue/src-ng`) with its own read-only deploy key.
+`/var/www-hotglue/src-ng` (the private `ng`, what the hosted sites run) tracks
+`hotglue2-ng` / `ng` through its own read-only deploy key. A commit on `ng` reaches it only
+when someone pulls there; the public demo is separate and only changes through `ng-dev`
+(below).
+
+### Deploying `ng` to `src-ng`: functional code only
+
+A deploy puts **only the code the site runs** on the server: no markdown, tests, tooling,
+docs or package manifests. The checkout is a git *sparse checkout* (non-cone), so
+`git pull --ff-only` stays the deploy step while the excluded files exist in git history but
+never on disk, where the web server could serve them. (Before 2026-10-13 the SOWs,
+`CLAUDE.md` and `package.json` were readable at `https://hotglue.me/<name>`.)
+
+```bash
+ssh -p 877 danja@hotglue.me 'cd /var/www-hotglue/src-ng && git fetch -q && git merge --ff-only origin/ng'
+```
+
+The patterns live in the server's `.git/info/sparse-checkout` and survive pulls:
+
+```
+/*
+!*.md
+!/.agent/   !/tests/   !/scripts/   !/tools/   !/doc/   !/docker/
+!/package.json   !/package-lock.json   !/composer.json   !/composer.lock   !/qwen-coder.sh
+!/user-config.inc.php-off   !/user-config.inc.php-dist   !/htaccess-dist   !/INSTALL   !/README
+```
+
+- **A new dev-only path** (a tool, a test config, a doc) must be added here too, by
+  `git sparse-checkout add '!/the-path'` on the server, or it is served. `*.md` is covered
+  already.
+- **Check after a deploy:** `curl -s -o /dev/null -w '%{http_code}'` on
+  `/SOW-mobile-guided-view.md`, `/CLAUDE.md`, `/package.json` - all 404 - and on `/`, `/js/edit.min.js` - 200.
+- **Undo:** `git sparse-checkout disable` brings every tracked file back.
+- The live `user-config.inc.php` and `.htaccess` are untracked and are never touched.
 
 ## What `ng-dev` is
 
