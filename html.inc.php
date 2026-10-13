@@ -416,6 +416,45 @@ function _relativize_asset_url($url)
 
 
 /**
+ *	put a version on the url of one of this install's own css or js files
+ *
+ *	The web server lets browsers keep css and js for a day (Cache-Control
+ *	max-age=86400), and these urls never changed, so after an update a returning
+ *	visitor ran the OLD script against the NEW page for up to 24 hours - a
+ *	settings checkbox that did nothing, for one. The file's modification time
+ *	goes on as ?v=: it changes exactly when the file does, and costs one stat
+ *	(cached for the request). Only local .css/.js urls that map to a real file
+ *	under this install are touched; an external url, one that already has a
+ *	query, or a missing file is returned as it came.
+ *
+ *	@param string $url a domain-relative url (see _relativize_asset_url())
+ *	@return string
+ */
+function _asset_version_url($url)
+{
+	static $cache = [];
+	if (isset($cache[$url])) {
+		return $cache[$url];
+	}
+	$ret = $url;
+	if ($url !== '' && $url[0] == '/' && substr($url, 0, 2) != '//' && strpos($url, '?') === false &&
+			preg_match('#\.(css|js)$#i', $url)) {
+		$bp = base_path();
+		if (strpos($url, $bp) === 0) {
+			$rel = rawurldecode(substr($url, strlen($bp)));
+			if ($rel !== '' && strpos($rel, '..') === false && strpos($rel, '\\') === false) {
+				$fn = __DIR__.'/'.$rel;
+				if (is_file($fn) && ($m = @filemtime($fn))) {
+					$ret = $url.'?v='.$m;
+				}
+			}
+		}
+	}
+	return $cache[$url] = $ret;
+}
+
+
+/**
  *	add a reference to a css file to the html header
  *
  *	@param string $url url attribute (url-encoded if necessary)
@@ -428,7 +467,7 @@ function html_add_css($url, $prio = 5, $media = '')
 	if ((!isset($html['header']['css']) || !is_array($html['header']['css']))) {
 		$html['header']['css'] = [];
 	}
-	$html['header']['css'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'media'=>$media];
+	$html['header']['css'][] = ['url'=>_asset_version_url(_relativize_asset_url($url)), 'prio'=>$prio, 'media'=>$media];
 }
 
 
@@ -489,7 +528,7 @@ function html_add_js($url, $prio = 5, $defer = false)
 	if ((!isset($html['header']['js']) || !is_array($html['header']['js']))) {
 		$html['header']['js'] = [];
 	}
-	$html['header']['js'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'defer'=>$defer];
+	$html['header']['js'][] = ['url'=>_asset_version_url(_relativize_asset_url($url)), 'prio'=>$prio, 'defer'=>$defer];
 }
 
 
