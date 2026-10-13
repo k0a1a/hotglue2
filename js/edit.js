@@ -2880,9 +2880,14 @@ $.glue.object = function()
 
 			if (can_resize) {
 				var resize_orig_aspect = 1;
+				// images invert the shift convention: their proportions are
+				// kept by default and shift is what frees them (the picture
+				// then stretches to fill the frame, see resizeEnd)
+				var resize_stretched = false;
 
 				m.on('resizeStart', function(e) {
 					resize_orig_aspect = obj.offsetWidth/obj.offsetHeight;
+					resize_stretched = false;
 					$.glue.trigger(obj, 'glue-resizestart');
 				}).on('resize', function(e) {
 					var width = e.width;
@@ -2892,7 +2897,11 @@ $.glue.object = function()
 					// (renderDirections above), and none of them move the
 					// top-left anchor, so it's enough to just adjust
 					// whichever dimension the handle doesn't already drive
-					if (e.inputEvent.shiftKey) {
+					var is_image = obj.classList.contains('image');
+					if (is_image && e.inputEvent.shiftKey) {
+						resize_stretched = true;
+					}
+					if (is_image ? !e.inputEvent.shiftKey : e.inputEvent.shiftKey) {
 						if (e.direction[0] != 0 && e.direction[1] != 0) {
 							// corner handle: let whichever dimension moved
 							// more this frame drive the other
@@ -2918,6 +2927,18 @@ $.glue.object = function()
 					obj.style.top = e.drag.top+'px';
 					$.glue.trigger(obj, 'glue-resize');
 				}).on('resizeEnd', function(e) {
+					if (resize_stretched) {
+						// an image resized with shift held is stretched to
+						// fill its frame (object-fit: fill); one that ended up
+						// within 1% of the picture's own proportions goes back
+						// to the letterboxing default. The img child's style is
+						// what image_alter_save() reads image-stretch from.
+						var pic = obj.querySelector(':scope > img');
+						if (pic && pic.naturalWidth && pic.naturalHeight) {
+							var off = Math.abs((obj.offsetWidth/obj.offsetHeight)/(pic.naturalWidth/pic.naturalHeight)-1);
+							pic.style.objectFit = off > 0.01 ? 'fill' : 'contain';
+						}
+					}
 					$.glue.object.save(obj);
 					$.glue.trigger(obj, 'glue-resizestop');
 					$.glue.canvas.update(obj);

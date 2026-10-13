@@ -108,7 +108,10 @@ $.glue.image = function() {
 			var target_w = width;
 			var target_h = height;
 			if (img && img.naturalWidth && img.naturalHeight) {
-				var scale = Math.min(width/img.naturalWidth, height/img.naturalHeight);
+				// a stretched picture (object-fit: fill) covers the whole
+				// frame, so the file has to be big enough for its longer side
+				var stretched = img.style.objectFit == 'fill';
+				var scale = (stretched ? Math.max : Math.min)(width/img.naturalWidth, height/img.naturalHeight);
 				target_w = Math.round(img.naturalWidth*scale);
 				target_h = Math.round(img.naturalHeight*scale);
 			}

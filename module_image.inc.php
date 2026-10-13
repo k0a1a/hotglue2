@@ -258,7 +258,9 @@ function image_alter_render_early($args)
 	// the picture keeps its proportions: it letterboxes inside the frame,
 	// and the bars show the object's background colour or image through -
 	// that is deliberate, danja's call 2026-09-23
-	elem_css($i, 'object-fit', 'contain');
+	// unless it was resized with shift held, which stretches it to fill the
+	// frame (image-stretch, round-tripped from this img by image_alter_save)
+	elem_css($i, 'object-fit', empty($obj['image-stretch']) ? 'contain' : 'fill');
 	// in the editor the picture must not swallow the clicks meant for the
 	// object (select, menus) - the img fills the frame, so it covers
 	// every pixel; a visitor's page never needs to click through it
@@ -308,6 +310,11 @@ function image_alter_save($args)
 	$stored_alt = '';
 	if (is_string(elem_val($elem)) && preg_match('#<img\b[^>]*>#i', elem_val($elem), $m)) {
 		$img = html_parse_elem($m[0]);
+		if (elem_css($img, 'object-fit') === 'fill') {
+			$obj['image-stretch'] = 'yes';
+		} else {
+			unset($obj['image-stretch']);
+		}
 		if (elem_attr($img, 'role') === 'presentation') {
 			$obj['image-decorative'] = 'yes';
 			unset($obj['image-alt']);	// decorative implies empty alt
