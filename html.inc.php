@@ -592,16 +592,21 @@ function html_favicon()
 
 
 /**
- *	set the site's own uploaded favicon, which is written LAST in the head
+ *	set the site's own uploaded favicon: the ONLY icon the page declares
  *
  *	A favicon the owner uploaded for the whole site is the owner's deliberate
  *	choice, so it has to win over an icon that only turned up in a page's
  *	custom HEAD (a hard-coded <link rel="icon">, say, kept from before the site
- *	had one). Browsers that are offered several icons take the later, so it
- *	is emitted after the user HEAD definitions, where html_favicon() and
- *	html_add_icon() write early - and those stay early on purpose: they are
- *	the installation's defaults (FAVICON, FAVICON_SET), which an owner's own
- *	icon should beat.
+ *	had one). Order is not enough to make it win: a browser offered several
+ *	icons chooses mostly by size, and a 16x16 icon beats a large one however
+ *	late the large one is declared (measured: an inline, fully transparent
+ *	16x16 data: icon won, and the tab showed an empty icon). So the page's
+ *	other icon links - rel icon, shortcut icon, apple-touch-icon - are dropped
+ *	from the user HEAD definitions when the page is written (see
+ *	_strip_icon_links(); what is stored is not touched), and this one is
+ *	emitted after them. html_favicon() and html_add_icon() write the
+ *	installation's defaults (FAVICON, FAVICON_SET) early and are not used when
+ *	a site favicon is set, so an owner's own icon still beats those.
  *
  *	@param string $url (url-encoded if necessary)
  *	@param string $type mime type, optional
@@ -610,6 +615,33 @@ function html_site_favicon($url, $type = '')
 {
 	global $html;
 	$html['header']['site_favicon'] = ['url'=>_relativize_asset_url($url), 'type'=>$type];
+}
+
+
+/**
+ *	remove the icon links from a piece of user HEAD html
+ *
+ *	Drops <link> tags whose rel names an icon (icon, shortcut icon,
+ *	apple-touch-icon, apple-touch-icon-precomposed) and leaves everything else
+ *	in the string as it was. Quoted attribute values are skipped as a unit, so a
+ *	'>' inside one (an inline svg icon) does not end the tag early.
+ *
+ *	@param string $html
+ *	@return string
+ */
+function _strip_icon_links($html)
+{
+	return preg_replace_callback('#<link\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*>#i', function ($m) {
+		if (!preg_match('#\brel\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))#i', $m[0], $r)) {
+			return $m[0];
+		}
+		$rel = isset($r[3]) ? $r[3] : (isset($r[2]) && $r[2] !== '' ? $r[2] : $r[1]);
+		$tokens = preg_split('#\s+#', strtolower(trim($rel)));
+		if (array_intersect($tokens, ['icon', 'apple-touch-icon', 'apple-touch-icon-precomposed'])) {
+			return '';
+		}
+		return $m[0];
+	}, $html);
 }
 
 
@@ -774,6 +806,10 @@ function html_finalize(&$cache = false)
 				$def = substr($def, 0, -1);
 			}
 			// $rule = str_replace("\n", "\n\t", $def);
+			if (!empty($html['header']['site_favicon'])) {
+				// the site's own favicon is the only icon (see html_site_favicon())
+				$def = _strip_icon_links($def);
+			}
 			$ret .= $def.nl();
 		}
 	}
