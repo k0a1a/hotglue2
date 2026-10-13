@@ -27,7 +27,7 @@ function download_alter_render_early($args)
 	$obj = $args['obj'];
 	if (elem_has_class($elem, 'download')) {
 		if ($args['edit']) {
-			elem_attr($elem, 'title', 'this is '.$obj['name'].', original file name was '.$obj['download-file']);
+			elem_attr($elem, 'title', 'this is '.$obj['name'].', original file name was '.($obj['download-file'] ?? ''));
 		} else {
 			elem_attr($elem, 'title', 'download file');
 		}
@@ -71,7 +71,7 @@ function download_mime_label($obj)
 			return $a[1];
 		}
 	}
-	$a = expl('.', $obj['download-file']);
+	$a = expl('.', $obj['download-file'] ?? '');
 	if (1 < count($a)) {
 		return array_pop($a);
 	}
@@ -157,6 +157,10 @@ function download_delete_object($args)
 		return false;
 	}
 
+	// a download object that never got its file has nothing to delete
+	if (empty($obj['download-file'])) {
+		return false;
+	}
 	$a = expl('.', $obj['name']);
 	$ret = delete_upload(['pagename'=>$a[0], 'file'=>$obj['download-file'], 'max_cnt'=>1]);
 	if ($ret['#error']) {
@@ -177,7 +181,7 @@ function download_has_reference($args)
 		return false;
 	}
 	
-	if ($obj['download-file'] != $args['file']) {
+	if (($obj['download-file'] ?? '') != $args['file']) {
 		return false;
 	} else {
 		return true;
@@ -229,7 +233,7 @@ function download_render_object($args)
 		} else {
 			$link = base_path().'?'.urlencode($obj['name']).'&download=1';
 		}
-		$fname = !empty($obj['download-file-name']) ? $obj['download-file-name'] : $obj['download-file'];
+		$fname = !empty($obj['download-file-name']) ? $obj['download-file-name'] : ($obj['download-file'] ?? '');
 		$html = '<a href="'.htmlspecialchars($link, ENT_COMPAT, 'UTF-8').'" download="'.
 			htmlspecialchars($fname, ENT_COMPAT, 'UTF-8').'">'."\n\t".str_replace("\n", "\n\t", $html)."\n".'</a>'."\n";
 	}
@@ -305,7 +309,7 @@ function download_serve_resource($args)
 		header($_SERVER['SERVER_PROTOCOL'].' 401 Unauthorized');
 		return true;
 	}
-	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.$obj['download-file'], $args['dl'], $obj['download-file-mime']);
+	serve_file(CONTENT_DIR.'/'.$a[0].'/shared/'.($obj['download-file'] ?? ''), $args['dl'], $obj['download-file-mime'] ?? '');
 }
 
 
