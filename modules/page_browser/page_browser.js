@@ -256,6 +256,24 @@ document.addEventListener('DOMContentLoaded', function() {
 	// the zoom of the mobile guided view (site-wide, stored on the startpage's
 	// page-object; see module_page.inc.php's page_set_guided_zoom())
 	var guided_zoom = document.getElementById('site_settings_guided_zoom');
+	var guided_on = document.getElementById('site_settings_guided_on');
+	if (guided_on && guided_zoom) {
+		guided_on.addEventListener('change', function() {
+			var want = guided_on.checked;
+			$.glue.backend({ method: 'page.set_guided', enabled: want }, function(data) {
+				if (!data || data['#error']) {
+					// not saved: put the box back to what is stored
+					guided_on.checked = !want;
+					$.glue.error('There was a problem saving the setting');
+					return;
+				}
+				// the zoom means nothing while the view is off
+				guided_zoom.querySelectorAll('input').forEach(function(r) {
+					r.disabled = !want;
+				});
+			});
+		});
+	}
 	if (guided_zoom) {
 		var guided_prev = (guided_zoom.querySelector('input:checked') || {}).value;
 		guided_zoom.addEventListener('change', function(e) {

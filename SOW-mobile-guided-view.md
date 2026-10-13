@@ -259,6 +259,11 @@ and looks at no objects beyond the ones already on screen where the reveal ends.
 > `data-guided-zoom` attribute on `<body>`, written only when it is not the default. The
 > double-tap returns to the same scale, and the overview is capped below it. The reasoning
 > below about *why a fixed, content-independent scale* still holds; only the constant moved.
+>
+> The whole view can also be switched off for the site, from the same section of the
+> settings page: `page-guided = off` on the startpage's page object (on is the default, stored
+> by absence). While it is off `common.inc.php` does not load `mobile-guided.js` at all, so a
+> visitor downloads nothing for it and `?guided=1` has nothing to force.
 
 #### (original reasoning, landing at 1.0)
 

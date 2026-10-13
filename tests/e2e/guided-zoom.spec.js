@@ -95,6 +95,70 @@ test('an out-of-range zoom is refused by the service', async ({ page }) => {
 	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeChecked();
 });
 
+const scriptOnPage = (page) => page.evaluate(() =>
+	Array.from(document.scripts).some((x) => /mobile-guided/.test(x.src)));
+
+test('the guided view is on by default, and the zoom choices are live', async ({ page }) => {
+	await page.goto('/?pages');
+	await expect(page.locator('#site_settings_guided_on')).toBeChecked();
+	await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeEnabled();
+});
+
+test('switching it off keeps the script off the page, even for ?guided=1',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(100, 100), 'A');
+		hg.addObject('100000000002', OBJ(1500, 4000), 'B');
+		await page.setViewportSize(PHONE);
+
+		await page.goto(`/?${hg.pageName}`);
+		expect(await scriptOnPage(page), 'on by default').toBe(true);
+
+		await page.goto('/?pages');
+		await page.locator('#site_settings_guided_on').uncheck();
+		await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeDisabled();
+		await page.waitForTimeout(500);
+
+		await page.goto(`/?${hg.pageName}`);
+		expect(await scriptOnPage(page), 'off: the script must not even be loaded').toBe(false);
+		await page.goto(`/?${hg.pageName}&guided=1`);
+		await page.waitForTimeout(600);
+		expect(await scaleOf(page), '?guided=1 has nothing to force while the site has it off')
+			.toBe(null);
+
+		// and the choice is still there after a reload of the settings
+		await page.goto('/?pages');
+		await expect(page.locator('#site_settings_guided_on')).not.toBeChecked();
+		await expect(page.locator('#site_settings_guided_zoom input[value="100"]')).toBeDisabled();
+	});
+
+test('switching it back on restores it, and a chosen zoom survives the round trip',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(100, 100), 'A');
+		hg.addObject('100000000002', OBJ(1500, 4000), 'B');
+		await setZoom(page, hg, 125);
+
+		await page.goto('/?pages');
+		await page.locator('#site_settings_guided_on').uncheck();
+		await page.waitForTimeout(500);
+		await page.locator('#site_settings_guided_on').check();
+		await page.waitForTimeout(500);
+		await expect(page.locator('#site_settings_guided_zoom input[value="125"]')).toBeChecked();
+		await expect(page.locator('#site_settings_guided_zoom input[value="125"]')).toBeEnabled();
+
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}`);
+		expect(await scriptOnPage(page)).toBe(true);
+		await expect.poll(() => scaleOf(page), { timeout: 8000 }).toBe(0.9375);
+	});
+
+test('the guided toggle service refuses a non-boolean', async ({ page }) => {
+	const res = await page.request.post('/json.php', {
+		form: { method: JSON.stringify('page.set_guided'), enabled: JSON.stringify('maybe') },
+	});
+	const body = await res.json();
+	expect(body['#error_code']).toBe(400);
+});
+
 for (const [pct, scale] of [[50, 0.375], [75, 0.5625], [100, 0.75], [125, 0.9375], [150, 1.125]]) {
 	test(`${pct}% lands the guided view at ${scale} (75% of natural size x ${pct}%)`,
 		async ({ page, hg }) => {

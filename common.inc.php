@@ -152,17 +152,24 @@ function default_html($add_glue)
 		// actually reaches people. The source is 30KB, 59% of it comments;
 		// the copy is 12KB, and 4KB against 11KB once gzipped. Regenerate it
 		// with tools/make-min.js after editing the source.
-		if (USE_MIN_FILES) {
-			html_add_js(base_url().'js/mobile-guided.min.js', 3, true);
+		// The site can switch it off (page-guided = off on the startpage's own
+		// page-object, loaded above for the favicon; on is the default and is
+		// stored by absence). Then the script is not loaded at all - a visitor
+		// downloads nothing for it - and ?guided=1 has nothing to force.
+		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
+			// nothing to add
 		} else {
-			html_add_js(base_url().'js/mobile-guided.js', 3, true);
-		}
-		// the site's chosen zoom for it, read from the startpage object
-		// loaded above for the favicon; the default is not written at all
-		$guided_zoom = $favicon_obj['#error'] ? 100 : intval(@$favicon_obj['#data']['page-guided-zoom']);
-		if ($guided_zoom != 100 && in_array($guided_zoom, guided_zoom_choices(), true)) {
-			$bdy = &body();
-			elem_attr($bdy, 'data-guided-zoom', (string)$guided_zoom);
+			if (USE_MIN_FILES) {
+				html_add_js(base_url().'js/mobile-guided.min.js', 3, true);
+			} else {
+				html_add_js(base_url().'js/mobile-guided.js', 3, true);
+			}
+			// the site's chosen zoom for it; the default is not written at all
+			$guided_zoom = $favicon_obj['#error'] ? 100 : intval(@$favicon_obj['#data']['page-guided-zoom']);
+			if ($guided_zoom != 100 && in_array($guided_zoom, guided_zoom_choices(), true)) {
+				$bdy = &body();
+				elem_attr($bdy, 'data-guided-zoom', (string)$guided_zoom);
+			}
 		}
 	}
 }

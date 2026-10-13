@@ -24,9 +24,18 @@
 	white-space: nowrap;
 }
 
+#site_settings_guided_on_label {
+	display: block;
+	margin-bottom: 10px;
+}
+
 #site_settings_guided_label {
 	display: block;
 	margin-bottom: 6px;
+}
+
+#site_settings_guided_zoom label:has(input:disabled) {
+	opacity: .5;
 }
 
 #site_settings_favicon,

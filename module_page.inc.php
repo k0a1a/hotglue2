@@ -716,6 +716,50 @@ register_service('page.set_guided_zoom', 'page_set_guided_zoom', ['auth'=>true])
 
 
 /**
+ *	switch the mobile guided view on or off for the whole site (site settings,
+ *	see /pages). On is the default and is stored by ABSENCE; only
+ *	page-guided = off is written, on the startpage's own page-object. While it
+ *	is off the front end does not load the script at all (common.inc.php), so
+ *	the page cache is dropped here too.
+ *
+ *	@param array $args arguments
+ *		key 'enabled' bool
+ *	@return array response
+ */
+function page_set_guided($args)
+{
+	if (!isset($args['enabled'])) {
+		return response('Required argument "enabled" missing', 400);
+	}
+	$enabled = filter_var($args['enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	if ($enabled === NULL) {
+		return response('Argument "enabled" must be a boolean', 400);
+	}
+	load_modules('glue');
+	$name = startpage().'.page';
+	if ($enabled) {
+		// the default: nothing to remove if it was never switched off
+		$obj = load_object(['name'=>$name]);
+		if (!$obj['#error'] && isset($obj['#data']['page-guided'])) {
+			$ret = object_remove_attr(['name'=>$name, 'attr'=>'page-guided']);
+			if ($ret['#error']) {
+				return $ret;
+			}
+		}
+	} else {
+		$ret = update_object(['name'=>$name, 'page-guided'=>'off']);
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_guided', 'page_set_guided', ['auth'=>true]);
+
+
+/**
  *	remember the last typeface picked via "change typeface", applied as
  *	the default for newly created text objects (see
  *	modules/text/text-edit.js) instead of the browser default - site-wide,
