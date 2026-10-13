@@ -1528,6 +1528,63 @@ function _upload_size_str($n)
 }
 
 
+/**
+ *	is this upload a HEIC/HEIF picture (iPhone photos)?
+ */
+function is_heic_upload($name, $type)
+{
+	return in_array(strtolower($type), ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'])
+		|| in_array(strtolower(filext($name)), ['heic', 'heif']);
+}
+
+
+/**
+ *	convert an uploaded HEIC/HEIF picture to a JPEG in place
+ *
+ *	Browsers other than Safari cannot draw HEIC, so it is turned into a JPEG
+ *	before it is stored; everything after this sees an ordinary .jpg. Needs
+ *	the imagick extension built with HEIC support. The first image of a
+ *	multi-image file is used, the camera's rotation is applied to the pixels
+ *	and the metadata (GPS position included) is not carried over.
+ *
+ *	@param string $tmp path of the uploaded file, overwritten with the JPEG
+ *	@return bool success
+ */
+function convert_heic_to_jpeg($tmp)
+{
+	if (!class_exists('Imagick')) {
+		return false;
+	}
+	try {
+		$im = new Imagick();
+		// a decompression bomb costs memory, not disk: cap what it may take
+		$im->setResourceLimit(Imagick::RESOURCETYPE_MEMORY, 256 * 1024 * 1024);
+		$im->setResourceLimit(Imagick::RESOURCETYPE_MAP, 512 * 1024 * 1024);
+		$im->readImageBlob(file_get_contents($tmp));
+		$im->setIteratorIndex(0);
+		$frame = $im->getImage();
+		switch ($frame->getImageOrientation()) {
+			case Imagick::ORIENTATION_BOTTOMRIGHT: $frame->rotateImage('#fff', 180); break;
+			case Imagick::ORIENTATION_RIGHTTOP: $frame->rotateImage('#fff', 90); break;
+			case Imagick::ORIENTATION_LEFTBOTTOM: $frame->rotateImage('#fff', 270); break;
+		}
+		$frame->setImageOrientation(Imagick::ORIENTATION_TOPLEFT);
+		$frame->stripImage();
+		$frame->setImageBackgroundColor('white');
+		$frame->setImageAlphaChannel(Imagick::ALPHACHANNEL_REMOVE);
+		$frame->setImageFormat('jpeg');
+		$frame->setImageCompressionQuality(90);
+		$jpeg = $frame->getImageBlob();
+		$frame->clear();
+		$im->clear();
+		return file_put_contents($tmp, $jpeg) !== false;
+	} catch (Exception $e) {
+		log_msg('warn', 'convert_heic_to_jpeg: '.$e->getMessage());
+		return false;
+	}
+}
+
+
 function upload_files($args)
 {
 	if (empty($args['page'])) {
@@ -1556,6 +1613,15 @@ function upload_files($args)
 		// nothing but the transfer
 		if (UPLOAD_MAX_SIZE && !empty($f['size']) && intval($f['size']) > UPLOAD_MAX_SIZE) {
 			return response('file too large (max '._upload_size_str(UPLOAD_MAX_SIZE).')', 413);
+		}
+		// HEIC (iPhone photos) is stored as a JPEG
+		if (is_heic_upload($f['name'], $f['type'])) {
+			if (!convert_heic_to_jpeg($f['tmp_name'])) {
+				return response('this server cannot read HEIC pictures - convert it to jpg first', 415);
+			}
+			$f['name'] = preg_replace('/\.[^.]*$/', '', $f['name']).'.jpg';
+			$f['type'] = 'image/jpeg';
+			$f['size'] = filesize($f['tmp_name']);
 		}
 		$existed = false;
 		$fn = upload_file($f['tmp_name'], $args['page'], $f['name'], $existed);

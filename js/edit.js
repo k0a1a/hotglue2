@@ -4668,7 +4668,7 @@ $.glue.upload = function()
 		elem.appendChild($.glue.icon('upload-asset'));
 		var upload = default_upload_handling();
 		upload.multiple = true;
-		upload.accept = 'image/*,video/*,audio/*,text/html,.html,.htm';
+		upload.accept = 'image/*,.heic,.heif,video/*,audio/*,text/html,.html,.htm';
 		upload.tooltip = 'upload asset - image, video, audio or html file';
 		$.glue.upload.button(elem, { method: 'glue.upload_files', page: $.glue.page }, upload);
 		elem.addEventListener('click', function(e) {
