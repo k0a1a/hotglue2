@@ -255,12 +255,12 @@ function image_alter_render_early($args)
 	}
 	elem_css($i, 'width', '100%');
 	elem_css($i, 'height', '100%');
-	// the picture keeps its proportions: it letterboxes inside the frame,
-	// and the bars show the object's background colour or image through -
-	// that is deliberate, danja's call 2026-09-23
-	// unless it was resized with shift held, which stretches it to fill the
-	// frame (image-stretch, round-tripped from this img by image_alter_save)
-	elem_css($i, 'object-fit', empty($obj['image-stretch']) ? 'contain' : 'fill');
+	// the picture fills the frame, stretching with it - object-fit is left at
+	// its default (fill) on purpose. That is what every page made before the
+	// child-img rewrite stores: the frame's shape IS the stretch, there is no
+	// flag, so a letterboxing default (object-fit: contain, 2026-09-23) drew
+	// every image whose frame was not the picture's own shape with bars -
+	// 2105 of 6019 images in the 2025 corpus (see image-resize-shift.spec.js)
 	// in the editor the picture must not swallow the clicks meant for the
 	// object (select, menus) - the img fills the frame, so it covers
 	// every pixel; a visitor's page never needs to click through it
@@ -310,11 +310,6 @@ function image_alter_save($args)
 	$stored_alt = '';
 	if (is_string(elem_val($elem)) && preg_match('#<img\b[^>]*>#i', elem_val($elem), $m)) {
 		$img = html_parse_elem($m[0]);
-		if (elem_css($img, 'object-fit') === 'fill') {
-			$obj['image-stretch'] = 'yes';
-		} else {
-			unset($obj['image-stretch']);
-		}
 		if (elem_attr($img, 'role') === 'presentation') {
 			$obj['image-decorative'] = 'yes';
 			unset($obj['image-alt']);	// decorative implies empty alt

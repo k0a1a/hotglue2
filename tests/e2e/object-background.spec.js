@@ -359,9 +359,9 @@ test('an image object renders and keeps its background colour',
 
 		await page.goto(`/?${hg.pageName}`);
 		await expect(byId(page, img).locator('img')).toHaveCount(1);
-		// the picture keeps its proportions (contain), so the bars show the
-		// background through - danja's call, 2026-09-23
-		await expect(byId(page, img).locator('img')).toHaveCSS('object-fit', 'contain');
+		// the picture fills its frame (the default object-fit): that is how
+		// every image made before the child-img rewrite is stored
+		await expect(byId(page, img).locator('img')).toHaveCSS('object-fit', 'fill');
 		await expect(byId(page, img)).toHaveCSS('background-color', 'rgb(255, 0, 0)');
 
 		// and the editor's save keeps it
@@ -375,8 +375,8 @@ test('an image object renders and keeps its background colour',
 	});
 
 test('an image object renders and keeps its padding', async ({ page, hg }) => {
-	// the picture letterboxes inside the padded content box, and the save
-	// round-trip keeps the attrs (danja's call, 2026-09-23)
+	// the picture fills the padded content box, and the save round-trip keeps
+	// the attrs
 	const img = hg.addObject('100000000005', {
 		type: 'image', module: 'image',
 		'image-file': 'sample.png', 'image-file-mime': 'image/png',

@@ -100,21 +100,11 @@ $.glue.image = function() {
 				// re-encode to the frame would replace it with one huge copy
 				return;
 			}
-			// the picture displays proportionally (object-fit: contain), so
-			// the re-encoded file targets the CONTAINED size - the frame
-			// intersected with the picture's own aspect - never the frame
-			// itself, which would bake the distortion of a
-			// disproportionate frame into the stored file
+			// the picture fills the frame, so the re-encoded file is the
+			// frame's own size (always cut from the original upload, so a
+			// stretch never compounds)
 			var target_w = width;
 			var target_h = height;
-			if (img && img.naturalWidth && img.naturalHeight) {
-				// a stretched picture (object-fit: fill) covers the whole
-				// frame, so the file has to be big enough for its longer side
-				var stretched = img.style.objectFit == 'fill';
-				var scale = (stretched ? Math.max : Math.min)(width/img.naturalWidth, height/img.naturalHeight);
-				target_w = Math.round(img.naturalWidth*scale);
-				target_h = Math.round(img.naturalHeight*scale);
-			}
 			// request the resize at device-pixel resolution (capped) rather
 			// than CSS-pixel resolution, so the image the browser gets stays
 			// sharp instead of being upscaled on HiDPI/Retina displays -

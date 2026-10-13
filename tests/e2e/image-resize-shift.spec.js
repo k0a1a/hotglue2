@@ -1,10 +1,13 @@
 // Resizing an image: its proportions are kept by default, and holding Shift
-// frees them - the picture then stretches to fill the frame.
+// frees them. The picture always fills its frame (object-fit stays at its
+// default, fill), so a frame of another shape IS a stretch - there is no flag,
+// which is how every image made before the child-img rewrite (2026-09-23) is
+// stored. A letterboxing default drew all of those with bars: 2105 of the
+// 6019 images in the 2025 corpus have a frame more than 1% off the picture's
+// own shape.
 //
 // This is the INVERSE of every other object, where shift locks the aspect
-// ratio (resize.spec.js). The stretch is stored as image-stretch=yes, read
-// back from the object-fit on the <img> child by image_alter_save(); without
-// it the picture letterboxes (object-fit: contain, danja's call 2026-09-23).
+// ratio (resize.spec.js).
 
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +17,7 @@ const SAMPLE_BYTES = fs.readFileSync(path.join(__dirname, 'fixtures', 'sample.pn
 const RATIO = 120 / 80;
 const byId = (page, id) => page.locator(`[id="${id}"]`);
 
-function seed(hg) {
+function seed(hg, w, h) {
 	const dir = path.join(CONTENT, hg.pageName.split('.')[0], 'shared');
 	fs.mkdirSync(dir, { recursive: true, mode: 0o777 });
 	fs.writeFileSync(path.join(dir, 'sample.png'), SAMPLE_BYTES);
@@ -23,7 +26,7 @@ function seed(hg) {
 		'image-file': 'sample.png', 'image-file-mime': 'image/png',
 		'image-file-width': '120', 'image-file-height': '80',
 		'object-left': '300px', 'object-top': '300px',
-		'object-width': '240px', 'object-height': '160px', 'object-zindex': '100',
+		'object-width': `${w}px`, 'object-height': `${h}px`, 'object-zindex': '100',
 	});
 }
 
@@ -31,8 +34,6 @@ const sizeOf = (page, id) => page.evaluate((i) => {
 	const el = document.getElementById(i);
 	return [parseFloat(el.style.width), parseFloat(el.style.height)];
 }, id);
-const fitOf = (page, id) => page.evaluate((i) =>
-	document.getElementById(i).querySelector(':scope > img').style.objectFit, id);
 
 async function dragHandle(page, direction, dx, dy, modifier) {
 	const handle = page.locator(`.moveable-control.moveable-${direction}`);
@@ -56,71 +57,68 @@ async function open(page, hg, id) {
 	await byId(page, id).click();
 }
 
+test('a stored image with a frame of another shape renders stretched, on the page and in the editor',
+	async ({ page, hg }) => {
+		// no flag anywhere: this is the shape every pre-2026-09-23 page has
+		const id = seed(hg, 300, 100);
+		for (const url of [`/?${hg.pageName}`, hg.editUrl()]) {
+			await page.goto(url);
+			const img = byId(page, id).locator('> img');
+			await expect(img).toHaveCSS('object-fit', 'fill');
+			const o = await byId(page, id).boundingBox();
+			const i = await img.boundingBox();
+			expect(Math.abs(i.width - o.width), 'the picture does not span the frame').toBeLessThan(1);
+			expect(Math.abs(i.height - o.height), 'the picture does not span the frame').toBeLessThan(1);
+		}
+	});
+
 test('an image keeps its proportions when resized without shift', async ({ page, hg }) => {
-	const id = seed(hg);
+	const id = seed(hg, 240, 160);
 	await open(page, hg, id);
 
 	await dragHandle(page, 'e', 120, 0);
 	const [w, h] = await sizeOf(page, id);
 	expect(w, 'the resize did not grow the image').toBeGreaterThan(300);
 	expect(Math.abs(w / h - RATIO), `proportions drifted: ${w}x${h}`).toBeLessThan(0.02);
-	expect(await fitOf(page, id)).toBe('contain');
 });
 
-test('shift frees the proportions and stretches the picture, and it is stored',
+test('shift frees the proportions, the picture stretches with the frame, and it is stored',
 	async ({ page, hg }) => {
-		const id = seed(hg);
+		const id = seed(hg, 240, 160);
 		await open(page, hg, id);
 
 		await dragHandle(page, 'e', 120, 0, 'Shift');
 		const [w, h] = await sizeOf(page, id);
 		expect(w, 'the resize did not grow the image').toBeGreaterThan(300);
 		expect(h, 'shift should leave the height alone').toBeCloseTo(160, 0);
-		expect(await fitOf(page, id)).toBe('fill');
-
-		await expect.poll(() => hg.readObject('100000000001').attrs['image-stretch']).toBe('yes');
-
-		// and it is what a visitor sees
-		await page.goto(`/?${hg.pageName}`);
 		await expect(byId(page, id).locator('> img')).toHaveCSS('object-fit', 'fill');
+
+		// the frame is the whole record: no stretch flag is written
+		await expect.poll(() => parseFloat(hg.readObject('100000000001').attrs['object-width']))
+			.toBeGreaterThan(300);
+		expect(hg.readObject('100000000001').attrs['image-stretch']).toBeUndefined();
+
+		// and a visitor sees the picture spanning the frame
+		await page.goto(`/?${hg.pageName}`);
+		const o = await byId(page, id).boundingBox();
+		const i = await byId(page, id).locator('> img').boundingBox();
+		expect(Math.abs(i.width - o.width)).toBeLessThan(1);
+		expect(Math.abs(i.height - o.height)).toBeLessThan(1);
 	});
 
-test('a stretched image keeps its stretched proportions on the next plain resize',
-	async ({ page, hg }) => {
-		const id = seed(hg);
-		await open(page, hg, id);
-		await dragHandle(page, 'e', 120, 0, 'Shift');
-		await expect.poll(() => hg.readObject('100000000001').attrs['image-stretch']).toBe('yes');
-		const [w0, h0] = await sizeOf(page, id);
+test('a plain resize of a stretched image keeps the frame\'s shape', async ({ page, hg }) => {
+	const id = seed(hg, 300, 100);
+	await open(page, hg, id);
 
-		await byId(page, id).click();
-		await dragHandle(page, 'e', 60, 0);
-		const [w, h] = await sizeOf(page, id);
-		expect(w).toBeGreaterThan(w0 + 20);
-		expect(Math.abs(w / h - w0 / h0), `${w}x${h} drifted from ${w0}x${h0}`).toBeLessThan(0.02);
-		expect(await fitOf(page, id)).toBe('fill');
-	});
-
-test('shift-resizing back to the picture\'s own proportions drops the stretch',
-	async ({ page, hg }) => {
-		const id = seed(hg);
-		await open(page, hg, id);
-		await dragHandle(page, 'e', 120, 0, 'Shift');
-		await expect.poll(() => hg.readObject('100000000001').attrs['image-stretch']).toBe('yes');
-
-		await byId(page, id).click();
-		// drag back by exactly the excess, so the frame has the picture's own shape again
-		const [w0, h0] = await sizeOf(page, id);
-		await dragHandle(page, 'e', -(w0 - h0 * RATIO), 0, 'Shift');
-		const [w, h] = await sizeOf(page, id);
-		expect(Math.abs(w / h - RATIO), `${w}x${h} is not the picture's shape`).toBeLessThan(0.01);
-		expect(await fitOf(page, id)).toBe('contain');
-		await expect.poll(() => hg.readObject('100000000001').attrs['image-stretch']).toBeUndefined();
-	});
+	await dragHandle(page, 'e', 90, 0);
+	const [w, h] = await sizeOf(page, id);
+	expect(w).toBeGreaterThan(350);
+	expect(Math.abs(w / h - 3), `${w}x${h} drifted from 3:1`).toBeLessThan(0.05);
+});
 
 test('a plain resize of a non-image object is still free', async ({ page, hg }) => {
-	// the inversion is for images only: resize.spec.js covers shift on text, this
-	// guards that the image branch did not leak
+	// the inversion is for images only: resize.spec.js covers shift on text,
+	// this guards that the image branch did not leak
 	const id = hg.addObject('100000000001', {
 		type: 'text', module: 'text',
 		'object-left': '300px', 'object-top': '300px',
