@@ -9,6 +9,15 @@
 	margin-top: 10px;
 }
 
+#pages h2 {
+	/* the sections under the page heading: 10% smaller than the h1 (which
+	   the reset leaves at 100%) */
+	font-size: 90%;
+	margin-bottom: 10px;
+	margin-left: 10px;
+	margin-top: 10px;
+}
+
 #site_settings_guided_zoom label {
 	margin-right: 14px;
 	white-space: nowrap;

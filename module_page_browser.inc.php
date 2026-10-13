@@ -47,7 +47,7 @@ function controller_pages($args)
 	// page-menu button uses to get here (page_browser-edit.js)
 	body_append('<h1>Site options</h1>'.nl());
 
-	body_append('<h1>Favicon</h1>'.nl());
+	body_append('<h2>Favicon</h2>'.nl());
 	body_append('<div id="site_settings_favicon">'.nl());
 	if (!empty($site_obj['page-favicon-file'])) {
 		body_append(tab().'<img id="site_settings_favicon_preview" src="'.base_path().'?favicon" alt="current favicon">'.nl());
@@ -58,7 +58,7 @@ function controller_pages($args)
 	body_append(tab().'<a href="#" id="site_settings_favicon_clear"'.(empty($site_obj['page-favicon-file']) ? ' style="display: none;"' : '').'>clear</a>'.nl());
 	body_append('</div>'.nl());
 
-	body_append('<h1>Mobile view</h1>'.nl());
+	body_append('<h2>Mobile view</h2>'.nl());
 	body_append('<div id="site_settings_guided">'.nl());
 	body_append(tab().'<span id="site_settings_guided_label">zoom of the guided view on phones</span>'.nl());
 	$current_zoom = intval(@$site_obj['page-guided-zoom']);
@@ -72,7 +72,7 @@ function controller_pages($args)
 	body_append(tab().'</span>'.nl());
 	body_append('</div>'.nl());
 
-	body_append('<h1>Custom fonts</h1>'.nl());
+	body_append('<h2>Custom fonts</h2>'.nl());
 	body_append('<div id="site_settings_fonts">'.nl());
 	body_append(tab().'<ul id="site_settings_fonts_list">'.nl());
 	foreach (site_custom_fonts() as $font) {
@@ -88,7 +88,7 @@ function controller_pages($args)
 	body_append(tab().' <a href="https://www.dafont.com/theme.php?cat=402&amp;l[]=10&amp;l[]=1&amp;l[]=6" target="_blank" rel="noopener">free fonts on <u>dafont.com</u> &#8605;</a>'.nl());
 	body_append('</div>'.nl());
 
-	body_append('<h1>All pages</h1>'.nl());
+	body_append('<h2>All pages</h2>'.nl());
 	$pns = pagenames([]);
 	$pns = $pns['#data'];
 	foreach ($pns as $pn) {
