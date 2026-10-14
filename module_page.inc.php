@@ -317,6 +317,51 @@ function _page_body_offset($set = NULL)
 
 
 /**
+ *	on a phone, the centered page's container IS what fits the screen: the
+ *	author's container width decides how the site looks there. The viewport
+ *	is laid out at the container's width, so the browser scales the whole
+ *	page (background included) to the screen - and nothing needs a script
+ *	running on the page, which is why the guided view is not loaded for it.
+ *	Three parts:
+ *	- a head script sets the viewport to `width=<container>` only while the
+ *	  device is NARROWER than the container. A wider device (a tablet, a
+ *	  landscape phone) keeps device-width, so the page never scales UP past
+ *	  1:1 - a viewport meta alone cannot cap that. screen.width is orientation
+ *	  dependent on Android only, so the orientation picks min or max of the
+ *	  two sides. No initial-scale: it would stop the fit-to-width.
+ *	- objects sticking out past the container are clipped (touch devices
+ *	  only), otherwise ONE of them makes the browser shrink the whole page to
+ *	  fit it and the container no longer fills the screen. Vertical overflow
+ *	  scrolls as before. The wrapper has no height, its children are absolute.
+ *	- the guided view is not loaded (the site's guided switch still rules: off
+ *	  means no fit either, plain device-width as before).
+ */
+function page_centered_fit($width)
+{
+	$opts = site_options_load();
+	if (!$opts['#error'] && @$opts['#data']['page-guided'] === 'off') {
+		return;
+	}
+	$w = intval($width);
+	html_remove_js('mobile-guided');
+	html_add_css_inline('@media (max-width: '.$w.'px) and (pointer: coarse) {'.nl().
+		"\t#hg-centered-wrapper { overflow-x: clip; }".nl().'}', 5);
+	html_add_js_inline(
+		"(function () {".nl().
+		"\tvar W = ".$w.", M = document.querySelector('meta[name=viewport]');".nl().
+		"\tif (!M || !window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;".nl().
+		"\tfunction fit() {".nl().
+		"\t\tvar land = matchMedia('(orientation: landscape)').matches,".nl().
+		"\t\t\td = Math[land ? 'max' : 'min'](screen.width, screen.height);".nl().
+		"\t\tM.setAttribute('content', d < W ? 'width=' + W : 'width=device-width, initial-scale=1');".nl().
+		"\t}".nl().
+		"\tfit();".nl().
+		"\taddEventListener('orientationchange', fit);".nl().
+		"})();", 1, 'centered page: the container width is what fits a phone');
+}
+
+
+/**
  *	wrap the page's objects in a centering container, in centered layout mode
  *
  *	The objects keep their exact stored coordinates: they stay
@@ -476,6 +521,10 @@ function page_render_page_late($args)
 	}
 	$before = substr($bdy['val'], 0, $offset);
 	$objects = substr($bdy['val'], $offset);
+
+	if (empty($args['edit'])) {
+		page_centered_fit($layout['width']);
+	}
 
 	// position:relative is load bearing - without it the absolutely positioned
 	// objects inside would resolve against the viewport instead of the container

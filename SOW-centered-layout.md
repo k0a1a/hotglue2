@@ -127,3 +127,7 @@ correct as they are. Adding an origin to those would break them.
   `PAGE_DEFAULT_CONTAINER_WIDTH`, so switching an existing page to centered will
   usually put most of its content outside the container until the width is dragged
   out. A default based on the content bounding box would be kinder.
+
+## Phones: the container is the fit (2026-10-14)
+
+On a touch device narrower than the container, a head script sets the viewport to `width=<container>` and the browser scales the page to the screen, so the container width a site's author sets decides how it looks on a phone. A device at least as wide as the container keeps `device-width` (no scaling up past 1:1 on tablets). Objects past the container are clipped on touch devices (`overflow-x: clip` on the wrapper) - one sticking out would otherwise make the browser shrink the whole page. The guided view is not loaded for centered pages; the site switch "guided view on phones" off turns this fit off too. Infinite pages are unchanged. `page_centered_fit()` in `module_page.inc.php`; tests in `tests/e2e/centered-fit.spec.js`.

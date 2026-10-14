@@ -533,6 +533,24 @@ function html_add_js($url, $prio = 5, $defer = false)
 
 
 /**
+ *	drop the scripts already queued whose url contains $needle (a page
+ *	decides late that it does not want one a site-wide default added)
+ */
+function html_remove_js($needle)
+{
+	global $html;
+	if (!isset($html['header']['js']) || !is_array($html['header']['js'])) {
+		return;
+	}
+	foreach ($html['header']['js'] as $k=>$e) {
+		if (strpos($e['url'], $needle) !== false) {
+			unset($html['header']['js'][$k]);
+		}
+	}
+}
+
+
+/**
  *	add javascript code to the html header
  *
  *	@param string $code javscript code
