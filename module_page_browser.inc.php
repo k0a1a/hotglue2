@@ -80,6 +80,7 @@ function controller_pages($args)
 		body_append(tab(2).'<label><input type="radio" name="guided_zoom" value="'.$z.'"'.($z == $current_zoom ? ' checked' : '').($guided_on ? '' : ' disabled').'> '.$z.'%'.($z == guided_zoom_default() ? ' (default)' : '').'</label>'.nl());
 	}
 	body_append(tab().'</span>'.nl());
+	body_append(tab().'<p id="site_settings_guided_note">Pages in centered layout are not guided: on a phone the container width fits the screen, so it sets how big the page looks. Turning the guided view off turns that off too.</p>'.nl());
 	body_append('</div>'.nl());
 
 	body_append('<h2>Custom fonts</h2>'.nl());

@@ -416,6 +416,45 @@ function _relativize_asset_url($url)
 
 
 /**
+ *	put a version on the url of one of this install's own css or js files
+ *
+ *	The web server lets browsers keep css and js for a day (Cache-Control
+ *	max-age=86400), and these urls never changed, so after an update a returning
+ *	visitor ran the OLD script against the NEW page for up to 24 hours - a
+ *	settings checkbox that did nothing, for one. The file's modification time
+ *	goes on as ?v=: it changes exactly when the file does, and costs one stat
+ *	(cached for the request). Only local .css/.js urls that map to a real file
+ *	under this install are touched; an external url, one that already has a
+ *	query, or a missing file is returned as it came.
+ *
+ *	@param string $url a domain-relative url (see _relativize_asset_url())
+ *	@return string
+ */
+function _asset_version_url($url)
+{
+	static $cache = [];
+	if (isset($cache[$url])) {
+		return $cache[$url];
+	}
+	$ret = $url;
+	if ($url !== '' && $url[0] == '/' && substr($url, 0, 2) != '//' && strpos($url, '?') === false &&
+			preg_match('#\.(css|js)$#i', $url)) {
+		$bp = base_path();
+		if (strpos($url, $bp) === 0) {
+			$rel = rawurldecode(substr($url, strlen($bp)));
+			if ($rel !== '' && strpos($rel, '..') === false && strpos($rel, '\\') === false) {
+				$fn = __DIR__.'/'.$rel;
+				if (is_file($fn) && ($m = @filemtime($fn))) {
+					$ret = $url.'?v='.$m;
+				}
+			}
+		}
+	}
+	return $cache[$url] = $ret;
+}
+
+
+/**
  *	add a reference to a css file to the html header
  *
  *	@param string $url url attribute (url-encoded if necessary)
@@ -428,7 +467,7 @@ function html_add_css($url, $prio = 5, $media = '')
 	if ((!isset($html['header']['css']) || !is_array($html['header']['css']))) {
 		$html['header']['css'] = [];
 	}
-	$html['header']['css'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'media'=>$media];
+	$html['header']['css'][] = ['url'=>_asset_version_url(_relativize_asset_url($url)), 'prio'=>$prio, 'media'=>$media];
 }
 
 
@@ -489,7 +528,25 @@ function html_add_js($url, $prio = 5, $defer = false)
 	if ((!isset($html['header']['js']) || !is_array($html['header']['js']))) {
 		$html['header']['js'] = [];
 	}
-	$html['header']['js'][] = ['url'=>_relativize_asset_url($url), 'prio'=>$prio, 'defer'=>$defer];
+	$html['header']['js'][] = ['url'=>_asset_version_url(_relativize_asset_url($url)), 'prio'=>$prio, 'defer'=>$defer];
+}
+
+
+/**
+ *	drop the scripts already queued whose url contains $needle (a page
+ *	decides late that it does not want one a site-wide default added)
+ */
+function html_remove_js($needle)
+{
+	global $html;
+	if (!isset($html['header']['js']) || !is_array($html['header']['js'])) {
+		return;
+	}
+	foreach ($html['header']['js'] as $k=>$e) {
+		if (strpos($e['url'], $needle) !== false) {
+			unset($html['header']['js'][$k]);
+		}
+	}
 }
 
 
@@ -588,6 +645,60 @@ function html_favicon()
 	} elseif (0 < func_num_args()) {
 		$html['header']['favicon'] = _relativize_asset_url(func_get_arg(0));
 	}
+}
+
+
+/**
+ *	set the site's own uploaded favicon: the ONLY icon the page declares
+ *
+ *	A favicon the owner uploaded for the whole site is the owner's deliberate
+ *	choice, so it has to win over an icon that only turned up in a page's
+ *	custom HEAD (a hard-coded <link rel="icon">, say, kept from before the site
+ *	had one). Order is not enough to make it win: a browser offered several
+ *	icons chooses mostly by size, and a 16x16 icon beats a large one however
+ *	late the large one is declared (measured: an inline, fully transparent
+ *	16x16 data: icon won, and the tab showed an empty icon). So the page's
+ *	other icon links - rel icon, shortcut icon, apple-touch-icon - are dropped
+ *	from the user HEAD definitions when the page is written (see
+ *	_strip_icon_links(); what is stored is not touched), and this one is
+ *	emitted after them. html_favicon() and html_add_icon() write the
+ *	installation's defaults (FAVICON, FAVICON_SET) early and are not used when
+ *	a site favicon is set, so an owner's own icon still beats those.
+ *
+ *	@param string $url (url-encoded if necessary)
+ *	@param string $type mime type, optional
+ */
+function html_site_favicon($url, $type = '')
+{
+	global $html;
+	$html['header']['site_favicon'] = ['url'=>_relativize_asset_url($url), 'type'=>$type];
+}
+
+
+/**
+ *	remove the icon links from a piece of user HEAD html
+ *
+ *	Drops <link> tags whose rel names an icon (icon, shortcut icon,
+ *	apple-touch-icon, apple-touch-icon-precomposed) and leaves everything else
+ *	in the string as it was. Quoted attribute values are skipped as a unit, so a
+ *	'>' inside one (an inline svg icon) does not end the tag early.
+ *
+ *	@param string $html
+ *	@return string
+ */
+function _strip_icon_links($html)
+{
+	return preg_replace_callback('#<link\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*>#i', function ($m) {
+		if (!preg_match('#\brel\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))#i', $m[0], $r)) {
+			return $m[0];
+		}
+		$rel = isset($r[3]) ? $r[3] : (isset($r[2]) && $r[2] !== '' ? $r[2] : $r[1]);
+		$tokens = preg_split('#\s+#', strtolower(trim($rel)));
+		if (array_intersect($tokens, ['icon', 'apple-touch-icon', 'apple-touch-icon-precomposed'])) {
+			return '';
+		}
+		return $m[0];
+	}, $html);
 }
 
 
@@ -752,8 +863,22 @@ function html_finalize(&$cache = false)
 				$def = substr($def, 0, -1);
 			}
 			// $rule = str_replace("\n", "\n\t", $def);
+			if (!empty($html['header']['site_favicon'])) {
+				// the site's own favicon is the only icon (see html_site_favicon())
+				$def = _strip_icon_links($def);
+			}
 			$ret .= $def.nl();
 		}
+	}
+	// the site's uploaded favicon goes after everything a page brought along,
+	// see html_site_favicon()
+	if (!empty($html['header']['site_favicon'])) {
+		$u = htmlspecialchars($html['header']['site_favicon']['url'], ENT_COMPAT, 'UTF-8');
+		$t = !empty($html['header']['site_favicon']['type']) ?
+			' type="'.htmlspecialchars($html['header']['site_favicon']['type'], ENT_COMPAT, 'UTF-8').'"' : '';
+		$ret .= '<link rel="shortcut icon" href="'.$u.'"'.$t.'>'.nl();
+		$ret .= '<link rel="icon" href="'.$u.'"'.$t.'>'.nl();
+		$ret .= '<link rel="apple-touch-icon" href="'.$u.'">'.nl();
 	}
 	$ret .= '</head>'.nl();
 	// load user body definitions

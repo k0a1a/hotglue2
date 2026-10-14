@@ -52,38 +52,117 @@ function webvideo_providers()
 
 
 /**
+ *	resolve a URL's host for an outgoing fetch (CWE-918): only plain http(s)
+ *	URLs whose host is a public address pass - no loopback, private,
+ *	link-local (cloud metadata) or reserved ranges, whatever the caller
+ *	validated before. The resolved address is returned so the fetch can be
+ *	pinned to it (a second lookup could answer differently - DNS rebinding).
+ *
+ *	@return string|false the IP to connect to
+ */
+function webvideo_public_ip($url)
+{
+	$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+	$host = parse_url($url, PHP_URL_HOST);
+	if (!in_array($scheme, ['http', 'https']) || empty($host)) {
+		return false;
+	}
+	$host = trim($host, '[]');
+	$ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : gethostbyname($host);
+	if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+		return false;
+	}
+	return $ip;
+}
+
+
+/**
  *	fetch a URL with a 5s timeout - curl when available, streams otherwise.
  *	Never called in the hermetic suite's normal runs (the stub resolves
  *	locally); a slow or down provider must not hang a page render.
+ *	Redirects (3 at most) are followed here, not by the transport, so every
+ *	hop passes webvideo_public_ip() too.
  *
  *	@return string|false the body, or false on failure
  */
 function webvideo_fetch($url)
 {
-	$ctx = stream_context_create(['http' => [
-		'timeout' => 5,
-		'follow_location' => 1,
-		'max_redirects' => 3,
-		'user_agent' => 'hotglue',
-	]]);
+	for ($hop = 0; $hop <= 3; $hop++) {
+		$ip = webvideo_public_ip($url);
+		if ($ip === false) {
+			return false;
+		}
+		$location = false;
+		$body = webvideo_fetch_once($url, $ip, $location);
+		if ($location === false) {
+			return $body;
+		}
+		// relative Location headers resolve against the current url
+		if (!parse_url($location, PHP_URL_SCHEME)) {
+			$u = parse_url($url);
+			$base = $u['scheme'].'://'.$u['host'].(isset($u['port']) ? ':'.$u['port'] : '');
+			$location = $base.($location[0] == '/' ? '' : '/').$location;
+		}
+		$url = $location;
+	}
+	return false;
+}
+
+
+/**
+ *	one request, no redirect following, connecting to $ip; sets $location
+ *	when the answer is a redirect
+ */
+function webvideo_fetch_once($url, $ip, &$location)
+{
 	if (function_exists('curl_init')) {
+		$host = parse_url($url, PHP_URL_HOST);
+		$port = parse_url($url, PHP_URL_PORT);
+		if (!$port) {
+			$port = strtolower(parse_url($url, PHP_URL_SCHEME)) == 'https' ? 443 : 80;
+		}
 		$ch = curl_init();
 		curl_setopt_array($ch, [
 			CURLOPT_URL => $url,
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_MAXREDIRS => 3,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_RESOLVE => [trim($host, '[]').':'.$port.':'.$ip],
 			CURLOPT_TIMEOUT => 5,
 			CURLOPT_USERAGENT => 'hotglue',
 		]);
 		$body = curl_exec($ch);
+		$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$redirect = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
 		curl_close($ch);
-		if ($body === false) {
-			return @file_get_contents($url, false, $ctx);
+		if ($body !== false) {
+			if ($code >= 300 && $code < 400 && $redirect) {
+				$location = $redirect;
+			}
+			return $body;
 		}
-		return $body;
 	}
-	return @file_get_contents($url, false, $ctx);
+	// no curl, or curl failed: streams (these resolve the host themselves,
+	// so the address was only checked, not pinned)
+	$ctx = stream_context_create(['http' => [
+		'timeout' => 5,
+		'follow_location' => 0,
+		'ignore_errors' => true,
+		'user_agent' => 'hotglue',
+	]]);
+	$body = @file_get_contents($url, false, $ctx);
+	if ($body !== false && !empty($http_response_header)) {
+		foreach ($http_response_header as $h) {
+			if (preg_match('#^HTTP/\S+\s+3\d\d#', $h)) {
+				foreach ($http_response_header as $l) {
+					if (preg_match('#^Location:\s*(\S+)#i', $l, $m)) {
+						$location = $m[1];
+					}
+				}
+			}
+		}
+	}
+	return $body;
 }
 
 

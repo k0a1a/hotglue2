@@ -85,11 +85,12 @@ function default_html($add_glue)
 	// FAVICON config constant if none has been uploaded
 	$favicon_obj = site_options_load();
 	if (!$favicon_obj['#error'] && !empty($favicon_obj['#data']['page-favicon-file'])) {
-		html_favicon('?favicon');
-		// the uploaded icon is also the best home-screen icon this site has -
-		// deliberately no fallback to the installation's own set here, that
-		// would put hotglue's mark on somebody else's site
-		html_add_icon('apple-touch-icon', '?favicon');
+		// written last in the head, so that it beats an icon a page brings in
+		// its own HEAD (see html_site_favicon()). It is also the best
+		// home-screen icon this site has - deliberately no fallback to the
+		// installation's own set here, that would put hotglue's mark on
+		// somebody else's site
+		html_site_favicon('?favicon', @$favicon_obj['#data']['page-favicon-mime']);
 	} else {
 		$favicon = FAVICON;
 		if (!empty($favicon)) {
