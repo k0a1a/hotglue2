@@ -17,14 +17,17 @@ const ATTRS = {
 };
 
 const byId = (page, id) => page.locator(`[id="${id}"]`);
-const headingBtn = (page) => page.locator('#glue-contextmenu-text-heading');
+const headingBtn = (page) => page.locator('.glue-properties-popover .glue-properties-heading');
 const pop = (page) => page.locator('.glue-heading-popover');
 const attrs = (hg) => hg.readObject('100000000001').attrs;
 
 async function openPopover(page, id) {
 	await byId(page, id).click();
-	await expect(headingBtn(page)).toBeVisible();
+	const props = page.locator('#glue-contextmenu-object-properties');
+	await expect(props).toBeVisible();
 	await page.waitForTimeout(400);		// the menu fades in
+	await props.click();
+	await expect(headingBtn(page)).toBeVisible();
 	await headingBtn(page).click();
 	await expect(pop(page)).toBeVisible();
 }
