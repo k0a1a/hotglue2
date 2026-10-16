@@ -1387,6 +1387,18 @@ function object_properties_popover(obj)
 		object_padding_section(body, obj, save);
 	}
 	object_flip_section(icons, obj, save);
+	// a text object's heading level (semantic h1-h6), the last of the row,
+	// set apart from the group the way the font panel sets its colour
+	// button (danja's call, 2026-10-16); the panel itself is text-edit.js's
+	if (obj.classList.contains('text') && typeof text_heading_popover == 'function') {
+		var heading_btn = $.glue.popover.icon_button('heading-22', 'heading level - h1 to h6');
+		heading_btn.classList.add('glue-properties-heading');
+		heading_btn.addEventListener('click', function(e) {
+			text_heading_popover(obj);
+			e.stopPropagation();
+		});
+		icons.appendChild(heading_btn);
+	}
 	object_transparency_section(body, obj, save);
 	// the row's icons - background image, tile and the two flips - wear
 	// danja's 22x22 redraws, shown 1:1: the boxes come down from the 32px

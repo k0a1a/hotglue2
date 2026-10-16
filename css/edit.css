@@ -1544,6 +1544,12 @@
 	mask-size: 22px 22px;
 }
 
+.glue-properties-popover .glue-properties-heading {
+	/* the heading level, set apart from the row's group by the same 12px
+	   the font panel's colour button keeps (.glue-font-color) */
+	margin-left: 12px;
+}
+
 .glue-popover-advanced {
 	/* set off from the rows above it, since it is a different mechanism
 	   rather than more of the same */

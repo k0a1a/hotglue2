@@ -3451,13 +3451,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// semantic heading level: screen readers navigate pages by headings, so
 	// a text object can render as h1/h2/h3 (appearance stays the author's).
-	// prio 11 puts it at the right end of the top row, past everything else
-	elem = $.glue.icon('heading', 'heading level - h1 to h6');
-	elem.addEventListener('click', function(e) {
-		text_heading_popover($.glue.owner(this));
-		e.stopPropagation();
-	});
-	$.glue.contextmenu.register('text', 'text-heading', elem, 11);
+	// Its button is no longer in this menu: it is the first row of the
+	// object properties panel's (object_properties_popover(), which opens
+	// text_heading_popover() below), set apart from the group like the
+	// font panel's colour (danja's call, 2026-10-16)
 
 	// make sure we don't send to much over the wire for every save
 	$.glue.object.register_alter_pre_save('text', function(obj, orig) {
