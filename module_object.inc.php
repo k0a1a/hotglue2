@@ -776,7 +776,7 @@ function object_upload($args)
 	load_modules('glue');
 	$obj = load_object(['name'=>$args['object']]);
 	if ($obj['#error']) {
-		log_msg('object_upload: no such object '.quot($args['object']));
+		log_msg('error', 'object_upload: no such object '.quot($args['object']));
 		return false;
 	}
 	$obj = $obj['#data'];
@@ -792,7 +792,7 @@ function object_upload($args)
 		'object-background-mime' => $args['mime']
 	]);
 	if ($ret['#error']) {
-		log_msg('object_upload: error updating object: '.quot($ret['#data']));
+		log_msg('error', 'object_upload: error updating object: '.quot($ret['#data']));
 		return false;
 	}
 	return true;
