@@ -1041,7 +1041,7 @@ function page_upload($args)
 		}
 	}
 	if ($ret['#error']) {
-		log_msg('page_upload: error updating page object: '.quot($ret['#data']));
+		log_msg('error', 'page_upload: error updating page object: '.quot($ret['#data']));
 		return false;
 	} else {
 		// we don't actually render the object here, but signal the
