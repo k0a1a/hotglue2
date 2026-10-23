@@ -63,6 +63,23 @@ test.describe('a phone', () => {
 			expect(h).toBeGreaterThan(1850);
 		});
 
+	test('a reload does not zoom in twice', async ({ page, hg }) => {
+		// Reloading is back/forward navigation to the browser: it restores this
+		// page's last zoom, which is the fit itself. The head script must not
+		// stack the fit-to-width on top of it, or the page ends up at fit^2.
+		centered(hg);
+		await page.goto(`/?${hg.pageName}`);
+		await page.waitForTimeout(500);
+		const first = await fitOf(page);
+		expect(first.scale * first.layoutW, 'the first load is fitted to the device')
+			.toBeCloseTo(393, 0);
+		await page.reload();
+		await page.waitForTimeout(500);
+		const second = await fitOf(page);
+		expect(second.scale * second.layoutW, 'the reload must not zoom in twice')
+			.toBeCloseTo(393, 0);
+	});
+
 	test('the site switch for the guided view off gives plain device-width', async ({ page, hg }) => {
 		centered(hg);
 		const dir = path.join(CONTENT, '_options', 'head');
