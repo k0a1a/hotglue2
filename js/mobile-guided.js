@@ -49,7 +49,6 @@
 	// so it softens the start and stop without re-introducing the lurch.
 	var TOGGLE_MS = 400;		// double-tap zoom between the two views
 	var LOAD_WAIT_MS = 2500;	// cap on waiting for images
-	var LANDING_MARGIN = 8;		// canvas px to leave left of the first content
 	var SMALL_SCREEN_PX = 768;
 	// a percentage background size is a share of the visitor's window, and a
 	// phone's window is not the one the page was designed in: it is resolved
@@ -218,8 +217,14 @@
 
 		// Coordinates go NEGATIVE on real pages (content/mort starts at y=-13),
 		// so the bounding box is min/max - never assume an origin at (0,0).
-		var minX = Math.min.apply(null, boxes.map(function (b) { return b.x; }));
-		var minY = Math.min.apply(null, boxes.map(function (b) { return b.y; }));
+		// But DO keep the page origin inside it: a left/top margin the author
+		// left between the page edge (0,0) and the first object is part of the
+		// composition, so the canvas includes it and mobile preserves it exactly
+		// as it reads on desktop, instead of snapping the content to the screen
+		// edge. Content placed left of / above the origin keeps its own,
+		// more-negative bound (min with 0 only ever adds the gutter, never trims).
+		var minX = Math.min(0, Math.min.apply(null, boxes.map(function (b) { return b.x; })));
+		var minY = Math.min(0, Math.min.apply(null, boxes.map(function (b) { return b.y; })));
 		var maxX = Math.max.apply(null, boxes.map(function (b) { return b.x + b.w; }));
 		var maxY = Math.max.apply(null, boxes.map(function (b) { return b.y + b.h; }));
 		var canvasW = maxX - minX, canvasH = maxY - minY;
@@ -507,64 +512,14 @@
 		// No cap needed: 1.0 IS natural size, so it cannot upscale anything.
 		var targetScale = READ * zoomComp;
 		DBG.fitHeight = fitHeight.toFixed(4);
-		// Where to LAND horizontally.
-		//
-		// The canvas origin is the leftmost object anywhere on the page, which
-		// is not necessarily anywhere near the top. On content/mort the
-		// leftmost object sits at x=28 but 2230px DOWN, while the content you
-		// actually land on starts at x=185 - so landing at the origin spends
-		// 157px, 41% of a 384px screen, on empty background.
-		//
-		// This is not the entry-point selection that was removed in 4809d62.
-		// That tried to choose which object was worth showing and guessed
-		// wrong; this only declines to land on blank canvas, and looks at no
-		// more than the objects already visible from where the reveal ends.
-		function landingPan(scale) {
-			var p = panFor(scale, true);
-			// a negative pan means the canvas is smaller than the viewport on
-			// that axis and is being centred - nothing to trim
-			var out = { x: p.x, y: p.y };
-
-			if (out.x <= 0) {
-				// leftmost content within the first screenful, not the leftmost
-				// on the whole canvas
-				var band_bottom = minY + vh/scale;
-				var leftmost = Infinity;
-				boxes.forEach(function (b) {
-					if (b.y < band_bottom && b.x < leftmost) {
-						leftmost = b.x;
-					}
-				});
-				if (isFinite(leftmost)) {
-					out.x = Math.min(
-						Math.max(0, (leftmost - minX - LANDING_MARGIN)*scale),
-						Math.max(0, canvasW*scale - vw));
-				}
-			}
-
-			if (out.y <= 0) {
-				// And the same vertically, but only once the horizontal shift is
-				// known, because it decides what is on screen to be topmost. On
-				// content/mort the topmost object of all sits at x=644..744,
-				// outside the window the shift above lands on, so measuring
-				// against it would leave 249px of empty background at the top.
-				var vx0 = minX + out.x/scale;
-				var vx1 = vx0 + vw/scale;
-				var topmost = Infinity;
-				boxes.forEach(function (b) {
-					if (b.x < vx1 && b.x + b.w > vx0 && b.y < topmost) {
-						topmost = b.y;
-					}
-				});
-				if (isFinite(topmost)) {
-					out.y = Math.min(
-						Math.max(0, (topmost - minY - LANDING_MARGIN)*scale),
-						Math.max(0, canvasH*scale - vh));
-				}
-			}
-			return out;
-		}
-		var end = landingPan(targetScale);
+		// Where to LAND: at the canvas origin, the same anchor the opening view
+		// uses. The origin now includes the page's (0,0) (see the bounds above),
+		// so a left/top margin the author left between the edge and the first
+		// object stays on screen - the view reads as it does on desktop and does
+		// not snap the content against the edge. An earlier version trimmed off
+		// the empty canvas here to land flush on the first object; a deliberate
+		// margin is composition, not waste, so that trim is gone.
+		var end = panFor(targetScale, true);
 		DBG.landingPan = Math.round(end.x) + ',' + Math.round(end.y);
 		sizeSizer(targetScale);
 		DBG.targetScale = targetScale.toFixed(4);

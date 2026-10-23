@@ -129,45 +129,45 @@ test('honours prefers-reduced-motion by landing directly', async ({ browser, hg 
 	await context.close();
 });
 
-test('lands on content rather than on empty canvas', async ({ page, hg }) => {
-	// The canvas origin is the leftmost/topmost object ANYWHERE on the page,
-	// which need not be anywhere near where the reveal ends. On content/mort
-	// the leftmost object is 2230px down and the topmost is off to the right,
-	// so landing at the origin spent 157px of a 384px screen on blank
-	// background horizontally and 249px vertically.
-	//
-	// This is not the entry-point selection removed in 4809d62 - it chooses no
-	// object to feature, it only declines to land on nothing.
-	hg.addObject('100000000001', OBJ(900, 800), 'what you should land on');
-	hg.addObject('100000000002', OBJ(20, 6000), 'leftmost, but far below');
-	hg.addObject('100000000003', OBJ(3000, 0), 'topmost, but far right');
-	await page.setViewportSize(PHONE);
-	await page.goto(`/?${hg.pageName}&debug=1`);
-	await expect.poll(async () => (await state(page)).active).toBe(true);
-	await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.5625);
+test('preserves the author top-left margin instead of snapping content to the edge',
+	async ({ page, hg }) => {
+		// A margin the author left between the page origin and the first object
+		// is part of the composition. Mobile keeps it - the view anchors at the
+		// page origin (0,0), so the content opens inset by that margin (scaled),
+		// exactly as it reads on desktop, rather than trimming the empty canvas
+		// to land flush on the content.
+		hg.addObject('100000000001', OBJ(300, 200, 400, 300), 'content, with a margin');
+		hg.addObject('100000000002', OBJ(3000, 200, 400, 300), 'far right: makes the canvas wide');
+		hg.addObject('100000000003', OBJ(300, 4000, 400, 300), 'far below: makes it tall');
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}&debug=1`);
+		await expect.poll(async () => (await state(page)).active).toBe(true);
+		await expect.poll(async () => (await state(page)).scale, { timeout: 8000 }).toBe(0.5625);
 
-	// measure the empty margin the visitor is left looking at
-	const gap = await page.evaluate(() => {
-		let left = 999, top = 999;
-		for (let y = 4; y < 640; y += 4) {
-			for (let x = 0; x < 356; x += 4) {
-				const el = document.elementFromPoint(x, y);
-				if (el && el.closest('.object')) {
-					if (x < left) left = x;
-					if (y < top) top = y;
-					break;
+		// the first object pixel on screen, from the top-left
+		const gap = await page.evaluate(() => {
+			let left = 999, top = 999;
+			for (let y = 4; y < 640; y += 4) {
+				for (let x = 0; x < 356; x += 4) {
+					const el = document.elementFromPoint(x, y);
+					if (el && el.closest('.object')) {
+						if (x < left) left = x;
+						if (y < top) top = y;
+						break;
+					}
 				}
 			}
-		}
-		return { left, top };
+			return { left, top };
+		});
+		// the margin is kept, scaled by 0.5625: ~169px left (300), ~112px top (200)
+		expect(gap.left, 'left margin preserved, not snapped to the edge').toBeGreaterThan(120);
+		expect(gap.left).toBeLessThan(220);
+		expect(gap.top, 'top margin preserved, not snapped to the edge').toBeGreaterThan(60);
+		expect(gap.top).toBeLessThan(160);
 	});
-	expect(gap.left, 'landed with empty canvas to the left of the content')
-		.toBeLessThan(24);
-	expect(gap.top, 'landed with empty canvas above the content').toBeLessThan(24);
-});
 
 test('a page whose content starts at the origin is not shifted', async ({ page, hg }) => {
-	// the trim must do nothing when there is nothing to trim
+	// the view anchors at the page origin, so the pan is zero
 	hg.addObject('100000000001', OBJ(40, 40), 'A');
 	hg.addObject('100000000002', OBJ(1500, 4000), 'B');
 	await page.setViewportSize(PHONE);
@@ -234,9 +234,9 @@ test('the canvas covers text that overflows its box, not just the drawn frame',
 	async ({ page, hg }) => {
 		// a 40px-tall box with far more than 40px of text: the list spills below
 		// the frame, visibly, and the canvas must reach the bottom of it.
-		const idA = hg.addObject('100000000001', OBJ(100, 100, 400, 40),
+		const idA = hg.addObject('100000000001', OBJ(100, 0, 400, 40),
 			'overflow '.repeat(400));
-		hg.addObject('100000000002', OBJ(1500, 100, 400, 40), 'forces width overflow');
+		hg.addObject('100000000002', OBJ(1500, 0, 400, 40), 'forces width overflow');
 		await page.setViewportSize(PHONE);
 		await page.goto(`/?${hg.pageName}&debug=1`);
 		await expect.poll(async () => (await state(page)).active).toBe(true);
@@ -251,7 +251,7 @@ test('the canvas covers text that overflows its box, not just the drawn frame',
 		expect(a.rendered, 'the fixture must actually overflow its box')
 			.toBeGreaterThan(a.declared + 100);
 
-		// both boxes start at top:100, so canvas height == the overflowing box's
+		// both boxes start at top:0, so canvas height == the overflowing box's
 		// rendered height. With the old style-only measure it would have been 40.
 		const h = +(await dbg(page, 'canvas')).split('x')[1];
 		expect(h, 'canvas height tracks the rendered content, not the 40px frame')
@@ -268,24 +268,29 @@ test('a small object stranded far outside the composition does not stretch the c
 		await page.goto(`/?${hg.pageName}&debug=1`);
 		await expect.poll(async () => (await state(page)).active).toBe(true);
 
+		// origin is the page's 0 (content is all positive, so the gutter is
+		// kept), NOT the -600 the stray dot would have forced if it counted.
 		expect(+(await dbg(page, 'origin')).split(',')[0],
-			'the stray dot must not define the left edge').toBe(200);
-		// content spans 200..1900 (the substantial far-right box still counts),
-		// so 1700 - not the 2500 the dot at -600 would have forced.
-		expect(+(await dbg(page, 'canvas')).split('x')[0]).toBe(1700);
+			'the stray dot at -600 must not define the left edge').toBe(0);
+		// canvas 0..1900 (the substantial far-right box still counts), so 1900 -
+		// not the 2500 a dot at -600 would have stretched it to.
+		expect(+(await dbg(page, 'canvas')).split('x')[0]).toBe(1900);
 	});
 
 test('a small object touching the content still counts - small alone is not dropped',
 	async ({ page, hg }) => {
 		// a header social icon is small too; the guard drops a box only when it
-		// is small AND detached, so one within reach of the content stays.
-		hg.addObject('100000000001', OBJ(200, 200, 400, 300), 'content');
-		hg.addObject('100000000002', OBJ(1500, 200, 400, 300), 'far-right content');
-		hg.addObject('100000000003', OBJ(150, 200, 30, 30), 'o');	// just left of the mass
+		// is small AND detached, so one within reach of the content stays and
+		// still extends the canvas. (Tested on the RIGHT edge, which the
+		// origin-at-0 clamp does not touch.)
+		hg.addObject('100000000001', OBJ(0, 0, 400, 300), 'content');
+		hg.addObject('100000000002', OBJ(1500, 0, 400, 300), 'far-right content');	// mass ends at 1900
+		hg.addObject('100000000003', OBJ(1910, 0, 30, 30), 'o');	// 10px past the mass: kept
 		await page.setViewportSize(PHONE);
 		await page.goto(`/?${hg.pageName}&debug=1`);
 		await expect.poll(async () => (await state(page)).active).toBe(true);
 
-		expect(+(await dbg(page, 'origin')).split(',')[0],
-			'a small object within reach of the content is kept').toBe(150);
+		// kept, so it extends the right edge to 1940; dropped it would be 1900
+		expect(+(await dbg(page, 'canvas')).split('x')[0],
+			'a small object within reach of the content is kept').toBe(1940);
 	});
