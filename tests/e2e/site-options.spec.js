@@ -167,3 +167,48 @@ test('the site options are not a page', async ({ page }) => {
 	await page.goto('/?pages');
 	await expect(page.locator('.page_browser_entry[id="_options"]')).toHaveCount(0);
 });
+
+// The "Mobile view" master switch (page-mobile): off adds NOTHING for phones -
+// no viewport meta, no guided script, no centered-fit (common.inc.php,
+// html_no_viewport(), module_page.inc.php). Users asked for it because the
+// forced viewport and detection broke their own mobile scripts. On is the
+// default, stored by absence; see page_set_mobile().
+test('mobile view off ships no viewport meta and no mobile script; on ships both',
+	async ({ page }) => {
+		makePage('zz-m');
+		setPointer('zz-m.head');
+		const head = () => page.request.get('/?zz-m.head').then((r) => r.text());
+
+		// default (on): both present
+		let html = await head();
+		expect(html, 'viewport present by default').toContain('name="viewport"');
+		expect(html, 'guided script present by default').toContain('mobile-guided');
+
+		// off: nothing for phones, and page-mobile:off is written
+		expect((await rpc(page, 'page.set_mobile', { enabled: false }))['#error']).toBeFalsy();
+		expect(fs.readFileSync(path.join(OPTIONS, 'head', 'page'), 'utf8')).toContain('page-mobile:off');
+		html = await head();
+		expect(html, 'no viewport meta when mobile view is off').not.toContain('name="viewport"');
+		expect(html, 'no mobile-guided script when mobile view is off').not.toContain('mobile-guided');
+
+		// back on: stored by absence, both return
+		expect((await rpc(page, 'page.set_mobile', { enabled: true }))['#error']).toBeFalsy();
+		const opt = path.join(OPTIONS, 'head', 'page');
+		if (fs.existsSync(opt)) {
+			expect(fs.readFileSync(opt, 'utf8'), 'on is stored by absence').not.toContain('page-mobile');
+		}
+		html = await head();
+		expect(html).toContain('name="viewport"');
+		expect(html).toContain('mobile-guided');
+	});
+
+test('the master switch disables the guided sub-controls in the settings UI',
+	async ({ page }) => {
+		makePage('zz-m');
+		setPointer('zz-m.head');
+		await rpc(page, 'page.set_mobile', { enabled: false });
+		await page.goto('/?pages');
+		await expect(page.locator('#site_settings_mobile_on')).not.toBeChecked();
+		await expect(page.locator('#site_settings_guided_on')).toBeDisabled();
+		await expect(page.locator('#site_settings_guided_zoom input').first()).toBeDisabled();
+	});

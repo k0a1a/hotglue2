@@ -339,7 +339,10 @@ function _page_body_offset($set = NULL)
 function page_centered_fit($width)
 {
 	$opts = site_options_load();
-	if (!$opts['#error'] && @$opts['#data']['page-guided'] === 'off') {
+	// the mobile view master switch (site settings) turns the fit off too, as
+	// does the guided sub-switch - both leave a centered page plain device-width
+	if (!$opts['#error'] && (@$opts['#data']['page-mobile'] === 'off'
+			|| @$opts['#data']['page-guided'] === 'off')) {
 		return;
 	}
 	$w = intval($width);
@@ -353,7 +356,19 @@ function page_centered_fit($width)
 		"\tfunction fit() {".nl().
 		"\t\tvar land = matchMedia('(orientation: landscape)').matches,".nl().
 		"\t\t\td = Math[land ? 'max' : 'min'](screen.width, screen.height);".nl().
-		"\t\tM.setAttribute('content', d < W ? 'width=' + W : 'width=device-width, initial-scale=1');".nl().
+		"\t\tif (d >= W) {".nl().
+		"\t\t\tM.setAttribute('content', 'width=device-width, initial-scale=1');".nl().
+		"\t\t\treturn;".nl().
+		"\t\t}".nl().
+		"\t\t// the device is narrower than the container: lay the page out at the".nl().
+		"\t\t// container's width so the browser fits it to the screen. But on".nl().
+		"\t\t// back/forward navigation the browser restores this page's last zoom,".nl().
+		"\t\t// which is the fit itself - and the fit-to-width would stack on top of".nl().
+		"\t\t// it, zooming the page in twice. So if the page is already at the fit".nl().
+		"\t\t// scale, leave the meta alone (the restored zoom is already the fit).".nl().
+		"\t\tif (window.visualViewport &&".nl().
+		"\t\t\tMath.abs(window.visualViewport.scale - d / W) < 0.02) return;".nl().
+		"\t\tM.setAttribute('content', 'width=' + W);".nl().
 		"\t}".nl().
 		"\tfit();".nl().
 		"\taddEventListener('orientationchange', fit);".nl().
@@ -853,6 +868,43 @@ function page_set_guided($args)
 }
 
 register_service('page.set_guided', 'page_set_guided', ['auth'=>true]);
+
+
+/**
+ *	switch mobile view on or off for the whole site (site settings master
+ *	switch, see /pages). On is the default and is stored by ABSENCE; only
+ *	page-mobile = off is written, on the startpage's own page-object. While it
+ *	is off the front end adds nothing for phones at all - no viewport meta, no
+ *	guided view, no centered-fit (common.inc.php and page_centered_fit()) - so
+ *	the page cache is dropped here too.
+ *
+ *	@param array $args arguments
+ *		key 'enabled' bool
+ *	@return array response
+ */
+function page_set_mobile($args)
+{
+	if (!isset($args['enabled'])) {
+		return response('Required argument "enabled" missing', 400);
+	}
+	$enabled = filter_var($args['enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	if ($enabled === NULL) {
+		return response('Argument "enabled" must be a boolean', 400);
+	}
+	if ($enabled) {
+		// the default: nothing to remove if it was never switched off
+		$ret = site_options_remove('page-mobile');
+	} else {
+		$ret = site_options_update(['page-mobile'=>'off']);
+	}
+	if ($ret['#error']) {
+		return $ret;
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_mobile', 'page_set_mobile', ['auth'=>true]);
 
 
 /**

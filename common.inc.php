@@ -156,7 +156,15 @@ function default_html($add_glue)
 		// loaded above for the favicon; on is the default and is
 		// stored by absence). Then the script is not loaded at all - a visitor
 		// downloads nothing for it - and ?guided=1 has nothing to force.
-		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
+		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-mobile'] === 'off') {
+			// Mobile view switched off entirely (site settings master switch):
+			// nothing for phones at all - no guided view below, no centered-fit
+			// (page_centered_fit() in module_page.inc.php checks the same
+			// option), and no viewport meta (html_no_viewport()). The page then
+			// ships exactly as authored, leaving the author's own viewport meta
+			// and scripts untouched - which is the whole point of the switch.
+			html_no_viewport();
+		} else if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
 			// nothing to add
 		} else {
 			if (USE_MIN_FILES) {
@@ -905,7 +913,7 @@ function site_options_keys()
 {
 	return ['page-favicon-file', 'page-favicon-mime', 'page-custom-fonts',
 		'page-last-text-font', 'page-last-text-font-size', 'page-last-text-line-height',
-		'page-guided', 'page-guided-zoom'];
+		'page-guided', 'page-guided-zoom', 'page-mobile'];
 }
 
 
