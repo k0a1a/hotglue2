@@ -148,13 +148,48 @@
 	}
 
 	// Geometry comes from the inline styles hotglue writes on every object, so
-	// it is correct before images finish loading.
+	// it is correct before images finish loading. But the stored height is the
+	// box the author DREW, and hotglue lets text overflow it: a 403x420 box can
+	// render a 2693px-tall list, visible on desktop and part of the mobile
+	// composition too. Take whichever is larger - the stored box or what the
+	// content actually fills (scrollHeight/scrollWidth) - so the canvas covers
+	// everything on screen, not just the drawn frame. Once images load the
+	// rendered figure is the trustworthy one; before that it falls back to the
+	// style, so this is never smaller than the old style-only measure.
 	function measure(el) {
 		return {
 			x: num(el.style.left), y: num(el.style.top),
-			w: num(el.style.width) || el.offsetWidth,
-			h: num(el.style.height) || el.offsetHeight
+			w: Math.max(num(el.style.width), el.offsetWidth, el.scrollWidth),
+			h: Math.max(num(el.style.height), el.offsetHeight, el.scrollHeight)
 		};
+	}
+
+	// w AND h both under this is "small" - a dot, a marker, a tiny icon.
+	var SMALL_OBJ_PX = 40;
+	// a small box this far clear of the content mass (in canvas px) is a stray.
+	var OUTLIER_GAP_PX = 150;
+
+	// Remove small, detached boxes from the set the canvas bounds are taken
+	// from. See the call site for why. Returns a new array; never empties it
+	// (if everything looks small the page is all tiny objects and they ARE the
+	// content, so nothing is trimmed).
+	function trim_outliers(boxes) {
+		function small(b) { return b.w < SMALL_OBJ_PX && b.h < SMALL_OBJ_PX; }
+		// the content mass: the bounds of the substantial objects. With none,
+		// fall back to every object so a genuinely tiny page is left alone.
+		var mass = boxes.filter(function (b) { return !small(b); });
+		if (!mass.length) return boxes;
+		var cx1 = Math.min.apply(null, mass.map(function (b) { return b.x; }));
+		var cy1 = Math.min.apply(null, mass.map(function (b) { return b.y; }));
+		var cx2 = Math.max.apply(null, mass.map(function (b) { return b.x + b.w; }));
+		var cy2 = Math.max.apply(null, mass.map(function (b) { return b.y + b.h; }));
+		// true when b lies entirely clear of the content mass, margin included
+		function detached(b) {
+			return b.x > cx2 + OUTLIER_GAP_PX || b.x + b.w < cx1 - OUTLIER_GAP_PX ||
+				b.y > cy2 + OUTLIER_GAP_PX || b.y + b.h < cy1 - OUTLIER_GAP_PX;
+		}
+		var kept = boxes.filter(function (b) { return !(small(b) && detached(b)); });
+		return kept.length ? kept : boxes;
 	}
 
 	function init() {
@@ -165,6 +200,22 @@
 		if (!objects.length) return;
 
 		var boxes = objects.map(measure);
+
+		// Drop stray leftovers from the bounds. Pages collect tiny objects
+		// parked far outside the composition - a 23x23 dot at left:-622, an
+		// off-top marker - that are invisible on desktop but, as the lone
+		// object at an extreme, used to DEFINE the canvas edge: aldobenitez's
+		// two of them stretched a ~1130px-wide page to 1775, so the guided view
+		// scaled everything down around dead space and opened off-centre.
+		// A box is dropped from the bounds only when it is BOTH small AND
+		// detached - sitting in empty space clear of the real content. Small
+		// alone is not enough: a 23px social icon in the header is small too,
+		// but it touches the content mass and stays. Substantial objects always
+		// count, however far out (a poster off to one side is composition, not
+		// noise). Dropped objects still RENDER where they sit; they just no
+		// longer vote on the canvas size.
+		boxes = trim_outliers(boxes);
+
 		// Coordinates go NEGATIVE on real pages (content/mort starts at y=-13),
 		// so the bounding box is min/max - never assume an origin at (0,0).
 		var minX = Math.min.apply(null, boxes.map(function (b) { return b.x; }));

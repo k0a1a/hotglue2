@@ -214,3 +214,78 @@ test('a short, wide page opens at the top, lands at the top and double-taps back
 		expect(await topOfContent(), 'the double-tap back to the opening view is at the top')
 			.toBeLessThan(8);
 	});
+
+// --- what the canvas bounds are measured FROM (guided-measure-outlier-fix) ---
+//
+// Two ways the old bounds misread a real page, both seen on aldobenitez.hotglue.me:
+//   - a text box's content overflows the height the author drew, so measuring
+//     the drawn box undersized the canvas (403x420 box, 2693px of list);
+//   - tiny leftover objects parked far outside the composition (a 23x23 dot at
+//     left:-622) defined the canvas edge, scaling everything down around dead
+//     space and opening off-centre.
+// DBG.canvas ("WxH") and DBG.origin ("minX,minY") are printed with &debug=1.
+
+const dbg = (page, key) => page.evaluate((k) => {
+	const t = document.getElementById('hg-mg-dbg').textContent;
+	return (new RegExp(k + ': ([^\\n]*)').exec(t) || [])[1];
+}, key);
+
+test('the canvas covers text that overflows its box, not just the drawn frame',
+	async ({ page, hg }) => {
+		// a 40px-tall box with far more than 40px of text: the list spills below
+		// the frame, visibly, and the canvas must reach the bottom of it.
+		const idA = hg.addObject('100000000001', OBJ(100, 100, 400, 40),
+			'overflow '.repeat(400));
+		hg.addObject('100000000002', OBJ(1500, 100, 400, 40), 'forces width overflow');
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}&debug=1`);
+		await expect.poll(async () => (await state(page)).active).toBe(true);
+
+		const a = await page.evaluate((id) => {
+			const el = document.getElementById(id);
+			return {
+				rendered: Math.max(el.offsetHeight, el.scrollHeight),
+				declared: parseFloat(el.style.height),
+			};
+		}, idA);
+		expect(a.rendered, 'the fixture must actually overflow its box')
+			.toBeGreaterThan(a.declared + 100);
+
+		// both boxes start at top:100, so canvas height == the overflowing box's
+		// rendered height. With the old style-only measure it would have been 40.
+		const h = +(await dbg(page, 'canvas')).split('x')[1];
+		expect(h, 'canvas height tracks the rendered content, not the 40px frame')
+			.toBeGreaterThan(a.rendered - 12);
+		expect(h).toBeLessThan(a.rendered + 12);
+	});
+
+test('a small object stranded far outside the composition does not stretch the canvas',
+	async ({ page, hg }) => {
+		hg.addObject('100000000001', OBJ(200, 200, 400, 300), 'content');
+		hg.addObject('100000000002', OBJ(1500, 200, 400, 300), 'far-right content, substantial');
+		hg.addObject('100000000003', OBJ(-600, 200, 30, 30), '.');	// a stray dot
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}&debug=1`);
+		await expect.poll(async () => (await state(page)).active).toBe(true);
+
+		expect(+(await dbg(page, 'origin')).split(',')[0],
+			'the stray dot must not define the left edge').toBe(200);
+		// content spans 200..1900 (the substantial far-right box still counts),
+		// so 1700 - not the 2500 the dot at -600 would have forced.
+		expect(+(await dbg(page, 'canvas')).split('x')[0]).toBe(1700);
+	});
+
+test('a small object touching the content still counts - small alone is not dropped',
+	async ({ page, hg }) => {
+		// a header social icon is small too; the guard drops a box only when it
+		// is small AND detached, so one within reach of the content stays.
+		hg.addObject('100000000001', OBJ(200, 200, 400, 300), 'content');
+		hg.addObject('100000000002', OBJ(1500, 200, 400, 300), 'far-right content');
+		hg.addObject('100000000003', OBJ(150, 200, 30, 30), 'o');	// just left of the mass
+		await page.setViewportSize(PHONE);
+		await page.goto(`/?${hg.pageName}&debug=1`);
+		await expect.poll(async () => (await state(page)).active).toBe(true);
+
+		expect(+(await dbg(page, 'origin')).split(',')[0],
+			'a small object within reach of the content is kept').toBe(150);
+	});
