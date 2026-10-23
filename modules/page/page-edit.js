@@ -76,10 +76,29 @@ function page_container_handle_make(edge) {
 
 function page_layout_toggle() {
 	var centered = !!$.glue.canvas.wrapper();
+	// Switching modes moves the origin the coordinates are measured from - the
+	// container's left edge in centered mode, the page's left edge in absolute
+	// - so without a rebase every object jumps by the container's offset, and
+	// anything that sat outside the container's left border lands off the page.
+	// Rebase by that offset so the switch is visually lossless.
+	var shift;
+	if (centered) {
+		// to absolute: the page origin sits the container's offset to the LEFT
+		// of the current origin, so the stored coordinates grow by it
+		shift = $.glue.canvas.origin().x;
+	} else {
+		// to centered: the container will center at (clientWidth - width)/2
+		// (margin:0 auto, against the layout width - the resize test asserts
+		// the wrapper sits at exactly this), so the stored coordinates shrink
+		// by that
+		shift = Math.round(($.glue.conf.page.container_width
+			- document.documentElement.clientWidth) / 2);
+	}
 	$.glue.backend({
 		method: 'page.set_layout',
 		page: $.glue.page,
-		mode: centered ? 'infinite' : 'centered'
+		mode: centered ? 'infinite' : 'centered',
+		shift: shift
 	}, function(resp) {
 		if (resp['#error']) {
 			$.glue.error(resp['#data'] || resp['#error']);

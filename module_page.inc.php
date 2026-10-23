@@ -670,6 +670,13 @@ register_service('page.set_grid', 'page_set_grid', ['auth'=>true]);
  *		key 'page' is the page (page.revision)
  *		key 'mode' is 'infinite' or 'centered' (optional)
  *		key 'width' is the container width in px (optional)
+ *		key 'shift' is a px offset added to every object's object-left (optional).
+ *		 Switching modes moves the origin the coordinates are measured from -
+ *		 the container's left edge in centered mode, the page's left edge in
+ *		 absolute - so without a rebase every object jumps by the container's
+ *		 offset and anything that sat outside the container's left border lands
+ *		 off the page. The editor measures that offset and passes it here so the
+ *		 switch is visually lossless.
  *	@return array response
  *		true if successful
  */
@@ -715,10 +722,68 @@ function page_set_layout($args)
 			return $ret;
 		}
 	}
+
+	// rebase the objects' coordinates so the switch keeps the page looking the
+	// same (see the 'shift' argument above)
+	if (isset($args['shift'])) {
+		$shift = intval($args['shift']);
+		if ($shift != 0) {
+			$ret = page_shift_objects($args['page'], $shift);
+			if ($ret['#error']) {
+				return $ret;
+			}
+		}
+	}
 	return response(true);
 }
 
 register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
+
+
+/**
+ *	add a px offset to every object's object-left on a page
+ *
+ *	Used when switching layout mode, to move the coordinates from one origin to
+ *	the other without moving the objects on screen. The page pseudo-object is
+ *	skipped - its background is positioned against the page, not the container.
+ *
+ *	@param string $page page name (page.revision)
+ *	@param int $shift px to add to each object-left
+ *	@return array response
+ *		true if successful
+ */
+function page_shift_objects($page, $shift)
+{
+	$dir = CONTENT_DIR.'/'.str_replace('.', '/', $page);
+	$files = @scandir($dir);
+	if ($files === false) {
+		return response('Error listing objects in '.quot($page), 500);
+	}
+	foreach ($files as $f) {
+		if ($f == '.' || $f == '..' || $f == 'page') {
+			continue;
+		}
+		$name = $page.'.'.$f;
+		$obj = load_object(['name'=>$name]);
+		if ($obj['#error']) {
+			// an unreadable entry is skipped, exactly as render_page does
+			continue;
+		}
+		$obj = $obj['#data'];
+		$left = !empty($obj['object-left']) ? intval($obj['object-left']) : 0;
+		$new_left = $left + $shift;
+		if ($new_left == 0) {
+			// absent means default: a zeroed left is removed, not stored
+			$ret = object_remove_attr(['name'=>$name, 'attr'=>'object-left']);
+		} else {
+			$ret = update_object(['name'=>$name, 'object-left'=>$new_left.'px']);
+		}
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	return response(true);
+}
 
 
 /**

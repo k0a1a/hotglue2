@@ -169,6 +169,42 @@ test('the toggle switches modes and stores infinite by absence', async ({ page, 
 		'infinite is the default and is stored by absence').toBeUndefined();
 });
 
+test('switching to absolute keeps out-of-container objects on the page',
+	async ({ page, hg }) => {
+		// An object that sits to the LEFT of the container (negative left) and one
+		// inside it. Switching modes moves the origin the coordinates are measured
+		// from, so without rebasing the left object jumps off the page and the two
+		// objects' relation to each other changes.
+		const left = hg.addObject('100000000001', OBJ(-100, 150), 'left');
+		const inC = hg.addObject('100000000002', OBJ(200, 150), 'in');
+		makeCentered(hg);
+		await page.setViewportSize({ width: 1280, height: 720 });
+		await page.goto(hg.editUrl());
+		await waitForEditor(page, 2);
+
+		const before = { left: (await rectOf(page, left)).x, in: (await rectOf(page, inC)).x };
+		expect(before.left, 'the out-of-container object is visible in centered mode')
+			.toBeGreaterThan(0);
+
+		await page.mouse.dblclick(900, 500);
+		await page.getByTitle(/switch to absolute layout/).click();
+		await page.waitForLoadState('load');
+		// the toggle reloads only AFTER its AJAX lands, so waitForLoadState
+		// resolves against the still-centered page; the wrapper leaving the DOM
+		// is what actually waits for the reload to finish
+		await expect(page.locator('#hg-centered-wrapper')).toHaveCount(0);
+		await waitForEditor(page, 2);
+
+		const after = { left: (await rectOf(page, left)).x, in: (await rectOf(page, inC)).x };
+		expect(after.left, 'the out-of-container object stays where it was')
+			.toBe(before.left);
+		expect(after.in, 'the inside object stays where it was')
+			.toBe(before.in);
+		expect(hg.readObject('100000000001').attrs['object-left'],
+			'object-left must be rebased to the new origin, not left to jump')
+			.not.toBe('-100px');
+	});
+
 test('the edge handles set the container width', async ({ page, hg }) => {
 	hg.addObject('100000000001', OBJ(200, 150), 'A');
 	makeCentered(hg);
