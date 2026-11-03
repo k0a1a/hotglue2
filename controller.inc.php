@@ -297,7 +297,7 @@ function controller_login($args)
 	if ($error !== '') {
 		body_append(tab(5).'<p id="login-error">'.$error.'</p>'.nl());
 	}
-	body_append(tab(5).'<style>form input[type=password],form input[type=submit]{display:block;width:256px;box-sizing:border-box;font-size:16px;padding:6px}form input[type=submit]{padding:6px 18px;margin-top:5px}#login-error{color:#b00}</style>'.nl());
+	body_append(tab(5).'<style>form input[type=password],form input[type=submit]{display:block;width:256px;box-sizing:border-box;font-size:16px;padding:6px}form input[type=submit]{padding:6px 18px;margin-top:5px;background:#fff;border:2px inset #767676}#login-error{color:#b00}</style>'.nl());
 	body_append(tab(5).'<form method="post" action="'.htmlspecialchars(base_path().'login'.($next !== '' ? '?next='.urlencode($next) : ''), ENT_COMPAT, 'UTF-8').'">'.nl());
 	body_append(tab(6).'<input type="password" name="password" id="password" placeholder="password" autofocus>'.nl());
 	body_append(tab(6).'<input type="submit" value="sign in">'.nl());
