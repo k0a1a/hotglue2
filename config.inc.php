@@ -29,6 +29,8 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE);			// matches production; avoids 
 @define('DB_AUTH_NAME', '');				// MySQL database name
 @define('DB_AUTH_TABLE', 'userCake_Users');	// table holding user accounts
 
+@define('FORGOT_PASSWORD_URL', '');			// password-reset page, linked from the 401 "Authorization required" page (e.g. https://hotglue.me/account/forgot-password.php); empty = no link
+
 // DON'T set username and password here!
 // instead rename file user-config.inc.php-dist to user-config.inc.php
 // and set you credentials there

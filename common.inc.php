@@ -325,6 +325,24 @@ function hotglue_error($code, $no_header = false)
 		body_append(tab(6).'Something is causing serious server errors!'.nl());
 	}
 	body_append(tab(5).'</p>'.nl());
+	// the browser's basic-auth dialog has no clickable links, so the
+	// password-reset link lives here, on the page the user lands on after
+	// cancelling the dialog (previously only "take me home", which
+	// re-triggered the dialog). The username is the subdomain prefix, so
+	// prefill it for user sites of the account app - but not for bound
+	// custom domains, where the host says nothing about the username.
+	if ($code == 401 && FORGOT_PASSWORD_URL !== '') {
+		$url = FORGOT_PASSWORD_URL;
+		$host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
+		$acc = strtolower((string)parse_url(FORGOT_PASSWORD_URL, PHP_URL_HOST));
+		if ($acc !== '' && substr($host, -(strlen($acc) + 1)) === '.' . $acc) {
+			$u = substr($host, 0, -(strlen($acc) + 1));
+			if ($u !== '' && strpos($u, '.') === false) {
+				$url .= (strpos($url, '?') === false ? '?' : '&') . 'username=' . urlencode($u);
+			}
+		}
+		body_append(tab(6).'<a href="'.htmlspecialchars($url, ENT_COMPAT, 'UTF-8').'" id="forgot">forgot your password?</a>'.nl());
+	}
 	body_append(tab(6).'<a href="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(3).'</div>'.nl());
