@@ -30,6 +30,7 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE);			// matches production; avoids 
 @define('DB_AUTH_TABLE', 'userCake_Users');	// table holding user accounts
 
 @define('FORGOT_PASSWORD_URL', '');			// password-reset page, linked from the 401 "Authorization required" page (e.g. https://hotglue.me/account/forgot-password.php); empty = no link
+@define('LOGIN_SECRET', '');			// custom login page: empty = off (the browser's basic-auth dialog, as before); when set it is the HMAC key for the stateless login cookie, and /login renders a password form instead of the dialog (common.inc.php's login_cookie_*, controller.inc.php's controller_login)
 
 // DON'T set username and password here!
 // instead rename file user-config.inc.php-dist to user-config.inc.php

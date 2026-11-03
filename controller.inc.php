@@ -230,9 +230,8 @@ register_controller('*', '*', 'controller_default');
  */
 function controller_login($args)
 {
-	if (!is_auth()) {
-		prompt_auth();
-	} else {
+	if (is_auth()) {
+		// already in - to the pages browser, same as before
 		// redirect - kept relative (not prefixed with base_url()) so it
 		// stays on whatever domain the request actually came in on, see
 		// module_object.inc.php's object_alter_render_late() for the full
@@ -244,9 +243,107 @@ function controller_login($args)
 		}
 		die();
 	}
+	if (LOGIN_SECRET === '') {
+		// feature off: the old browser basic-auth dialog
+		prompt_auth();
+	}
+
+	// custom login page (LOGIN_SECRET): the owner is this site's AUTH_USER
+	// (known from the subdomain), so only the password is asked. POST
+	// verifies it with the same check the Authorization header path uses,
+	// then sets the stateless login cookie (common.inc.php's
+	// login_cookie_*).
+	// where to go after a successful login (the page that bounced us here)
+	$next = $_GET['next'] ?? '';
+	if ($next === '' || $next[0] !== '/' || $next[1] === '/' || strpos($next, ':') !== false) {
+		// must be a same-site path: starts with /, not // (protocol
+		// relative), no : (no javascript: / http:)
+		$next = '';
+	}
+	$error = '';
+	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+		$pass = $_POST['password'] ?? '';
+		if (AUTH_METHOD == 'db') {
+			$ok = db_auth_check(AUTH_USER, $pass);
+		} else {
+			$ok = hash_equals(AUTH_PASSWORD, $pass);
+		}
+		if ($ok) {
+			login_cookie_set(AUTH_USER);
+			log_msg('info', 'login: success for '.quot(AUTH_USER));
+			header('Location: '.($next !== '' ? $next : base_path()));
+			die();
+		}
+		$error = 'password did not match';
+	}
+
+	// the form, on the same paper as the error pages
+	html_flush();
+	default_html(false);
+	html_add_css(base_url().'css/hotglue_error.css');
+	$bdy = &body();
+	elem_attr($bdy, 'id', 'hotglue_error');
+	body_append(tab(1).'<div id="paper">'.nl());
+	body_append(tab(2).'<div id="wrapper">'.nl());
+	body_append(tab(3).'<div id="content">'.nl());
+	body_append(tab(4).'<div id="left-nav">'.nl());
+	body_append(tab(5).'<img src="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(4).'<div id="main">'.nl());
+	body_append(tab(5).'<h1 id="error-title">sign in</h1>'.nl());
+	body_append(tab(5).'<p>'.nl());
+	body_append(tab(6).'Welcome back, '.htmlspecialchars(AUTH_USER, ENT_COMPAT, 'UTF-8').'.<br>'.nl());
+	body_append(tab(5).'</p>'.nl());
+	if ($error !== '') {
+		body_append(tab(5).'<p id="login-error">'.$error.'</p>'.nl());
+	}
+	body_append(tab(5).'<style>form input[type=password]{width:240px;font-size:16px;padding:6px}form input[type=submit]{font-size:16px;padding:6px 18px;margin-left:8px}#login-error{color:#b00}</style>'.nl());
+	body_append(tab(5).'<form method="post" action="'.htmlspecialchars(base_path().'login'.($next !== '' ? '?next='.urlencode($next) : ''), ENT_COMPAT, 'UTF-8').'">'.nl());
+	body_append(tab(6).'<input type="password" name="password" id="password" placeholder="password" autofocus>'.nl());
+	body_append(tab(6).'<input type="submit" value="sign in">'.nl());
+	body_append(tab(5).'</form>'.nl());
+	if (FORGOT_PASSWORD_URL !== '') {
+		// same subdomain-username prefill as the 401 page
+		$url = FORGOT_PASSWORD_URL;
+		$host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
+		$acc = strtolower((string)parse_url(FORGOT_PASSWORD_URL, PHP_URL_HOST));
+		if ($acc !== '' && substr($host, -(strlen($acc) + 1)) === '.' . $acc) {
+			$u = substr($host, 0, -(strlen($acc) + 1));
+			if ($u !== '' && strpos($u, '.') === false) {
+				$url .= (strpos($url, '?') === false ? '?' : '&') . 'username=' . urlencode($u);
+			}
+		}
+		body_append(tab(5).'<p><a href="'.htmlspecialchars($url, ENT_COMPAT, 'UTF-8').'" id="forgot">forgot your password?</a></p>'.nl());
+	}
+	body_append(tab(4).'</div>'.nl());
+	body_append(tab(3).'</div>'.nl());
+	body_append(tab(2).'</div>'.nl());
+	body_append(tab(1).'</div>'.nl());
+	$cache = false;
+	echo html_finalize($cache);
+	die();
 }
 
 register_controller('login', '', 'controller_login');
+
+
+/**
+ *	clear the custom login page's login cookie
+ *
+ *	there is no other way to log out today - the browser's basic-auth
+ *	credentials live in the browser's cache, not in a cookie
+ */
+function controller_logout($args)
+{
+	login_cookie_clear();
+	log_msg('info', 'logout: login cookie cleared');
+	header('Location: '.base_path());
+	die();
+}
+
+if (LOGIN_SECRET !== '') {
+	register_controller('logout', '', 'controller_logout');
+}
 
 
 /**
@@ -268,6 +365,9 @@ function controller_show($args)
 
 	// if viewing is restricted ask to authenticate
 	if (VIEW_NEEDS_AUTH && !is_auth()) {
+		if (LOGIN_SECRET !== '') {
+			login_bounce();
+		}
 		prompt_auth();
 	}
 
@@ -358,6 +458,11 @@ function invoke_controller($args)
 		// check authentication for those controllers that require it
 		if (isset($match['auth']) && $match['auth']) {
 			if (!is_auth()) {
+				// custom login page on: bounce to the form instead of the
+				// browser's basic-auth dialog
+				if (LOGIN_SECRET !== '') {
+					login_bounce();
+				}
 				prompt_auth();
 			}
 			
