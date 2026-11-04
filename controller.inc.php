@@ -290,14 +290,14 @@ function controller_login($args)
 	body_append(tab(5).'<img src="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'img/hotglue-logo.png" alt="logo">'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(4).'<div id="main">'.nl());
-	body_append(tab(5).'<h1 id="error-title">sign in</h1>'.nl());
-	body_append(tab(5).'<p>'.nl());
+	body_append(tab(5).'<h1 id="error-title">Sign in</h1>'.nl());
+	body_append(tab(5).'<p id="login-welcome">'.nl());
 	body_append(tab(6).'Welcome back, '.htmlspecialchars(AUTH_USER, ENT_COMPAT, 'UTF-8').'!<br>'.nl());
 	body_append(tab(5).'</p>'.nl());
 	if ($error !== '') {
 		body_append(tab(5).'<p id="login-error">'.$error.'</p>'.nl());
 	}
-	body_append(tab(5).'<style>form input[type=password],form input[type=submit]{display:block;width:256px;box-sizing:border-box;font-size:16px;padding:6px;border:1px solid #767676}form input[type=submit]{padding:6px 18px;margin-top:5px;background:#e8e8e8}form input[type=submit]:hover{background:#d4d4d4;border-color:#333}#login-error{color:#b00}</style>'.nl());
+	body_append(tab(5).'<style>form input[type=password],form input[type=submit]{display:block;width:256px;box-sizing:border-box;font-size:16px;padding:6px;border:1px solid #767676}form input[type=submit]{padding:6px 18px;margin-top:5px;background:#e8e8e8}form input[type=submit]:hover{background:#d4d4d4;border-color:#333}#login-error{color:#b00}#error-title{font-size:200%}#login-welcome{font-size:16px}#login-forgot{margin-top:10px}</style>'.nl());
 	body_append(tab(5).'<form method="post" action="'.htmlspecialchars(base_path().'login'.($next !== '' ? '?next='.urlencode($next) : ''), ENT_COMPAT, 'UTF-8').'">'.nl());
 	body_append(tab(6).'<input type="password" name="password" id="password" placeholder="password" autofocus>'.nl());
 	body_append(tab(6).'<input type="submit" value="sign in">'.nl());
@@ -313,7 +313,7 @@ function controller_login($args)
 				$url .= (strpos($url, '?') === false ? '?' : '&') . 'username=' . urlencode($u);
 			}
 		}
-		body_append(tab(5).'<p><a href="'.htmlspecialchars($url, ENT_COMPAT, 'UTF-8').'" id="forgot">forgot your password?</a></p>'.nl());
+		body_append(tab(5).'<p id="login-forgot"><a href="'.htmlspecialchars($url, ENT_COMPAT, 'UTF-8').'" id="forgot">forgot your password?</a></p>'.nl());
 	}
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(3).'</div>'.nl());
