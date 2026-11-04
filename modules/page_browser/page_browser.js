@@ -257,6 +257,29 @@ document.addEventListener('DOMContentLoaded', function() {
 	// page-object; see module_page.inc.php's page_set_guided_zoom())
 	var guided_zoom = document.getElementById('site_settings_guided_zoom');
 	var guided_on = document.getElementById('site_settings_guided_on');
+	// the mobile-view master switch (site-wide; see module_page.inc.php's
+	// page_set_mobile()). Off = nothing added for phones at all, and it gates
+	// the guided sub-controls below.
+	var mobile_on = document.getElementById('site_settings_mobile_on');
+	if (mobile_on && guided_on && guided_zoom) {
+		mobile_on.addEventListener('change', function() {
+			var want = mobile_on.checked;
+			$.glue.backend({ method: 'page.set_mobile', enabled: want }, function(data) {
+				if (!data || data['#error']) {
+					// not saved: put the box back to what is stored
+					mobile_on.checked = !want;
+					$.glue.error('There was a problem saving the setting');
+					return;
+				}
+				// the guided controls mean nothing while mobile view is off;
+				// the zoom stays off unless the guided view is on as well
+				guided_on.disabled = !want;
+				guided_zoom.querySelectorAll('input').forEach(function(r) {
+					r.disabled = !want || !guided_on.checked;
+				});
+			});
+		});
+	}
 	if (guided_on && guided_zoom) {
 		guided_on.addEventListener('change', function() {
 			var want = guided_on.checked;

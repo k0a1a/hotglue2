@@ -91,6 +91,14 @@ if (!($m = get_service($method))) {
 // check authentication
 if (isset($m['auth']) && $m['auth']) {
 	if (!is_auth()) {
+		// custom login page on: answer with JSON the editor can act on
+		// (redirect to /login) instead of a header-only 401 the XHR would
+		// surface as an opaque "status 401" error
+		if (LOGIN_SECRET !== '') {
+			header($_SERVER['SERVER_PROTOCOL'].' 401 Unauthorized');
+			echo json_encode(['auth' => 1]);
+			die();
+		}
 		prompt_auth(true);
 	}
 }

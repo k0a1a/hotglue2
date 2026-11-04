@@ -725,9 +725,23 @@ function html_add_icon($rel, $url, $type = '', $sizes = '')
 
 
 /**
+ *	do not emit the default viewport meta in html_finalize(). Used when the
+ *	site has switched mobile view off entirely (site settings; the flag is set
+ *	in common.inc.php's default_html()), so the published page ships with no
+ *	viewport meta at all - the browser's own default and the author's own
+ *	scripts and meta are left untouched, which is the whole point of the switch.
+ */
+function html_no_viewport()
+{
+	global $html;
+	$html['header']['no_viewport'] = true;
+}
+
+
+/**
  *	turn the page into a html string
  *
- *	@param bool &$cache is output cachable (will only modified if $cache is 
+ *	@param bool &$cache is output cachable (will only modified if $cache is
  *	true before)
  *	@return string html
  */
@@ -772,7 +786,14 @@ function html_finalize(&$cache = false)
 	// rather than trying to argue with it.
 	//
 	// Never add user-scalable=no or maximum-scale: zoom must stay free.
-	$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
+	//
+	// Suppressed when the site has switched mobile view off entirely (site
+	// settings; html_no_viewport() set the flag from common.inc.php). The page
+	// then carries no viewport meta at all, so nothing here detects or scales
+	// for a phone and the author's own viewport/scripts are left alone.
+	if (empty($html['header']['no_viewport'])) {
+		$ret .= '<meta name="viewport" content="width=device-width, initial-scale=1">'.nl();
+	}
 	if ((isset($html['header']['alternate']) && is_array($html['header']['alternate']))) {
 		foreach ($html['header']['alternate'] as $e) {
 			$ret .= '<link rel="alternate" type="'.htmlspecialchars($e['type'], ENT_COMPAT, 'UTF-8').'" href="'.htmlspecialchars($e['url'], ENT_COMPAT, 'UTF-8').'" title="'.htmlspecialchars($e['title'], ENT_COMPAT, 'UTF-8').'">'.nl();

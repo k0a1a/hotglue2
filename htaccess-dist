@@ -22,9 +22,12 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteRule ^json/?$ json.php [L]
 
 # redirect everything that is not a real file or directory towards index.php
+# [QSA] keeps the incoming query string (it used to be clobbered by the
+# rewritten ?$1), so pages can receive their own ?params and the multi-site
+# router's ?host=&loc= markers survive the rewrite
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?$1
+RewriteRule ^(.*)$ index.php?$1 [QSA]
 
 # disallow access to a bunch of static files
 # Apache 2.4, see below for Apache 2.2 section

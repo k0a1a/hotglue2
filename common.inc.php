@@ -156,7 +156,15 @@ function default_html($add_glue)
 		// loaded above for the favicon; on is the default and is
 		// stored by absence). Then the script is not loaded at all - a visitor
 		// downloads nothing for it - and ?guided=1 has nothing to force.
-		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
+		if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-mobile'] === 'off') {
+			// Mobile view switched off entirely (site settings master switch):
+			// nothing for phones at all - no guided view below, no centered-fit
+			// (page_centered_fit() in module_page.inc.php checks the same
+			// option), and no viewport meta (html_no_viewport()). The page then
+			// ships exactly as authored, leaving the author's own viewport meta
+			// and scripts untouched - which is the whole point of the switch.
+			html_no_viewport();
+		} else if (!$favicon_obj['#error'] && @$favicon_obj['#data']['page-guided'] === 'off') {
 			// nothing to add
 		} else {
 			if (USE_MIN_FILES) {
@@ -317,6 +325,27 @@ function hotglue_error($code, $no_header = false)
 		body_append(tab(6).'Something is causing serious server errors!'.nl());
 	}
 	body_append(tab(5).'</p>'.nl());
+	// the browser's basic-auth dialog has no clickable links, so the
+	// password-reset link lives here, on the page the user lands on after
+	// cancelling the dialog (previously only "take me home", which
+	// re-triggered the dialog). The username is the subdomain prefix, so
+	// prefill it for user sites of the account app - but not for bound
+	// custom domains, where the host says nothing about the username.
+	if ($code == 401 && LOGIN_SECRET !== '') {
+		body_append(tab(6).'<a href="'.htmlspecialchars(base_path().'login', ENT_COMPAT, 'UTF-8').'" id="login">sign in</a>'.nl());
+	}
+	if ($code == 401 && FORGOT_PASSWORD_URL !== '') {
+		$url = FORGOT_PASSWORD_URL;
+		$host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
+		$acc = strtolower((string)parse_url(FORGOT_PASSWORD_URL, PHP_URL_HOST));
+		if ($acc !== '' && substr($host, -(strlen($acc) + 1)) === '.' . $acc) {
+			$u = substr($host, 0, -(strlen($acc) + 1));
+			if ($u !== '' && strpos($u, '.') === false) {
+				$url .= (strpos($url, '?') === false ? '?' : '&') . 'username=' . urlencode($u);
+			}
+		}
+		body_append(tab(6).'<a href="'.htmlspecialchars($url, ENT_COMPAT, 'UTF-8').'" id="forgot">forgot your password?</a>'.nl());
+	}
 	body_append(tab(6).'<a href="'.htmlspecialchars(base_path(), ENT_COMPAT, 'UTF-8').'" id="home">take me home!</a>'.nl());
 	body_append(tab(4).'</div>'.nl());
 	body_append(tab(3).'</div>'.nl());
@@ -385,12 +414,8 @@ function db_auth_check($user, $pass)
 		return false;
 	}
 
-	static $db = null;
-	if ($db === null) {
-		$db = @new mysqli(DB_AUTH_HOST, DB_AUTH_USER, DB_AUTH_PASSWORD, DB_AUTH_NAME);
-	}
-	if ($db->connect_errno) {
-		log_msg('error', 'db_auth_check: database connection failed: '.$db->connect_error);
+	$db = db_auth_db();
+	if (!$db) {
 		return false;
 	}
 
@@ -414,12 +439,185 @@ function db_auth_check($user, $pass)
 
 
 /**
+ *	open (once) the DB_AUTH_* database connection
+ *
+ *	shared by db_auth_check() and db_auth_active()
+ *
+ *	@return mysqli|false false when the connection failed (already logged)
+ */
+function db_auth_db()
+{
+	static $db = null;
+	if ($db === null) {
+		$db = @new mysqli(DB_AUTH_HOST, DB_AUTH_USER, DB_AUTH_PASSWORD, DB_AUTH_NAME);
+		if ($db->connect_errno) {
+			log_msg('error', 'db_auth: database connection failed: '.$db->connect_error);
+			$db = false;
+		}
+	}
+	return $db;
+}
+
+
+/**
+ *	check if a user has an active account in the DB_AUTH_* database
+ *
+ *	the same account db_auth_check() would accept, without the password -
+ *	used by the login cookie (login_cookie_user()) so a suspended account
+ *	loses access without waiting for the cookie to expire
+ *
+ *	@param string $user
+ *	@return bool
+ */
+function db_auth_active($user)
+{
+	if (!class_exists('mysqli')) {
+		return false;
+	}
+	if (empty(DB_AUTH_HOST) || empty(DB_AUTH_NAME)) {
+		return false;
+	}
+	$user = strtolower($user);
+	if ($user !== strtolower(AUTH_USER)) {
+		return false;
+	}
+	$db = db_auth_db();
+	if (!$db) {
+		return false;
+	}
+	$stmt = $db->prepare('SELECT Username_Clean FROM '.DB_AUTH_TABLE.' WHERE Username_Clean = ? AND Active = 1 LIMIT 1');
+	if (!$stmt) {
+		log_msg('error', 'db_auth_active: query prepare failed: '.$db->error);
+		return false;
+	}
+	$stmt->bind_param('s', $user);
+	$stmt->execute();
+	$row = $stmt->get_result()->fetch_assoc();
+	$stmt->close();
+	return (bool)$row;
+}
+
+
+/**
+ *	custom login page (LOGIN_SECRET) cookie helpers
+ *
+ *	the cookie is stateless: username.expiry.HMAC-SHA256(username.expiry,
+ *	secret) - no server-side session store, the secret in user-config is
+ *	the whole server state. Empty LOGIN_SECRET = feature off and the
+ *	cookie is ignored (every other site keeps the browser's basic-auth
+ *	dialog).
+ */
+function login_cookie_name()
+{
+	return 'hg_login';
+}
+
+
+/**
+ *	set the login cookie for an authenticated user
+ *
+ *	@param string $user
+ */
+function login_cookie_set($user)
+{
+	$exp = time() + 30*86400;	// fixed 30 days, no sliding (trial)
+	$value = $user.'.'.$exp.'.'.hash_hmac('sha256', $user.'.'.$exp, LOGIN_SECRET);
+	setcookie(login_cookie_name(), $value, [
+		'expires' => $exp,
+		'path' => '/',
+		'secure' => is_base_url_secure(),
+		'httponly' => true,
+		'samesite' => 'Lax',
+	]);
+}
+
+
+/**
+ *	expire the login cookie (/logout)
+ */
+function login_cookie_clear()
+{
+	setcookie(login_cookie_name(), '', [
+		'expires' => time() - 3600,
+		'path' => '/',
+		'secure' => is_base_url_secure(),
+		'httponly' => true,
+		'samesite' => 'Lax',
+	]);
+}
+
+
+/**
+ *	verify the login cookie, returning the username on success
+ *
+ *	@return string username, or false
+ */
+function login_cookie_user()
+{
+	$cookie = $_COOKIE[login_cookie_name()] ?? '';
+	if ($cookie === '') {
+		return false;
+	}
+	// usernames are subdomain prefixes (letters/digits, no dots), so the
+	// three dot-separated parts cannot be ambiguous
+	$parts = explode('.', $cookie);
+	if (count($parts) != 3) {
+		return false;
+	}
+	list($user, $exp, $sig) = $parts;
+	$exp = (int)$exp;
+	if ($exp <= time()) {
+		return false;
+	}
+	if (!hash_equals(hash_hmac('sha256', $user.'.'.$exp, LOGIN_SECRET), $sig)) {
+		return false;
+	}
+	// the signature proves the owner issued it; keep checking the account
+	// so a suspended account loses access before the 30 days are up
+	if (AUTH_METHOD == 'db') {
+		if (!db_auth_active($user)) {
+			return false;
+		}
+	} else {
+		if (!hash_equals(AUTH_USER, $user)) {
+			return false;
+		}
+	}
+	return $user;
+}
+
+
+/**
+ *	redirect to the custom login page, remembering the current url for
+ *	the post-login redirect
+ *
+ *	this function does not return.
+ */
+function login_bounce()
+{
+	$here = $_SERVER['REQUEST_URI'] ?? base_path();
+	header('Location: '.base_path().'login?next='.urlencode($here));
+	die();
+}
+
+
+/**
  *	check if the user is authenticated or not
  *
  *	@return true if authenticated, false if not
  */
 function is_auth()
 {
+	// the custom login page's cookie (LOGIN_SECRET) is checked before the
+	// Authorization header: the cookie is what this site issues (and what
+	// /logout clears), the header stays as a fallback for curl -u and
+	// browsers that cached the basic-auth dialog
+	if (LOGIN_SECRET !== '') {
+		if (login_cookie_user() !== false) {
+			log_msg('debug', 'common: auth success (auth_method login cookie)');
+			return true;
+		}
+	}
 	if (AUTH_METHOD == 'none') {
 		log_msg('debug', 'common: auth success (auth_method none)');
 		return true;
@@ -905,7 +1103,7 @@ function site_options_keys()
 {
 	return ['page-favicon-file', 'page-favicon-mime', 'page-custom-fonts',
 		'page-last-text-font', 'page-last-text-font-size', 'page-last-text-line-height',
-		'page-guided', 'page-guided-zoom'];
+		'page-guided', 'page-guided-zoom', 'page-mobile'];
 }
 
 

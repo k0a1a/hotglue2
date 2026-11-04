@@ -66,10 +66,15 @@ function controller_pages($args)
 
 	body_append('<h2>Mobile view</h2>'.nl());
 	body_append('<div id="site_settings_guided">'.nl());
-	// on unless the site switched it off (stored by absence, see
-	// module_page.inc.php's page_set_guided())
+	// master switch: on unless the site switched it off (stored by absence, see
+	// module_page.inc.php's page_set_mobile()). Off adds NOTHING for phones -
+	// no viewport meta, no guided view, no centered-fit - so a page the author
+	// handles for mobile themselves is shipped untouched.
+	$mobile_on = @$site_obj['page-mobile'] !== 'off';
+	// the guided sub-switch, likewise on unless switched off (page_set_guided())
 	$guided_on = @$site_obj['page-guided'] !== 'off';
-	body_append(tab().'<label id="site_settings_guided_on_label"><input type="checkbox" id="site_settings_guided_on"'.($guided_on ? ' checked' : '').'> guided view on phones (pan and zoom between the objects)</label>'.nl());
+	body_append(tab().'<label id="site_settings_mobile_on_label"><input type="checkbox" id="site_settings_mobile_on"'.($mobile_on ? ' checked' : '').'> mobile view on (responsive viewport; the guided view is set below)</label>'.nl());
+	body_append(tab().'<label id="site_settings_guided_on_label"><input type="checkbox" id="site_settings_guided_on"'.($guided_on ? ' checked' : '').($mobile_on ? '' : ' disabled').'> guided view on phones (pan and zoom between the objects)</label>'.nl());
 	body_append(tab().'<span id="site_settings_guided_label">zoom of the guided view</span>'.nl());
 	$current_zoom = intval(@$site_obj['page-guided-zoom']);
 	if (!in_array($current_zoom, guided_zoom_choices(), true)) {
@@ -77,10 +82,10 @@ function controller_pages($args)
 	}
 	body_append(tab().'<span id="site_settings_guided_zoom" role="radiogroup" aria-labelledby="site_settings_guided_label">'.nl());
 	foreach (guided_zoom_choices() as $z) {
-		body_append(tab(2).'<label><input type="radio" name="guided_zoom" value="'.$z.'"'.($z == $current_zoom ? ' checked' : '').($guided_on ? '' : ' disabled').'> '.$z.'%'.($z == guided_zoom_default() ? ' (default)' : '').'</label>'.nl());
+		body_append(tab(2).'<label><input type="radio" name="guided_zoom" value="'.$z.'"'.($z == $current_zoom ? ' checked' : '').(($mobile_on && $guided_on) ? '' : ' disabled').'> '.$z.'%'.($z == guided_zoom_default() ? ' (default)' : '').'</label>'.nl());
 	}
 	body_append(tab().'</span>'.nl());
-	body_append(tab().'<p id="site_settings_guided_note">Pages in centered layout are not guided: on a phone the container width fits the screen, so it sets how big the page looks. Turning the guided view off turns that off too.</p>'.nl());
+	body_append(tab().'<p id="site_settings_guided_note">Mobile view off adds nothing for phones at all &ndash; no viewport scaling, no detection, no scripts &ndash; so a page you style for mobile yourself, or that runs its own scripts, is left untouched. With it on, free-layout pages get the guided view; centered-layout pages instead fit the screen by their container width, so the guided view and its zoom do not apply to them.</p>'.nl());
 	body_append('</div>'.nl());
 
 	body_append('<h2>Custom fonts</h2>'.nl());

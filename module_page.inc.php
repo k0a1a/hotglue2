@@ -339,7 +339,10 @@ function _page_body_offset($set = NULL)
 function page_centered_fit($width)
 {
 	$opts = site_options_load();
-	if (!$opts['#error'] && @$opts['#data']['page-guided'] === 'off') {
+	// the mobile view master switch (site settings) turns the fit off too, as
+	// does the guided sub-switch - both leave a centered page plain device-width
+	if (!$opts['#error'] && (@$opts['#data']['page-mobile'] === 'off'
+			|| @$opts['#data']['page-guided'] === 'off')) {
 		return;
 	}
 	$w = intval($width);
@@ -353,7 +356,19 @@ function page_centered_fit($width)
 		"\tfunction fit() {".nl().
 		"\t\tvar land = matchMedia('(orientation: landscape)').matches,".nl().
 		"\t\t\td = Math[land ? 'max' : 'min'](screen.width, screen.height);".nl().
-		"\t\tM.setAttribute('content', d < W ? 'width=' + W : 'width=device-width, initial-scale=1');".nl().
+		"\t\tif (d >= W) {".nl().
+		"\t\t\tM.setAttribute('content', 'width=device-width, initial-scale=1');".nl().
+		"\t\t\treturn;".nl().
+		"\t\t}".nl().
+		"\t\t// the device is narrower than the container: lay the page out at the".nl().
+		"\t\t// container's width so the browser fits it to the screen. But on".nl().
+		"\t\t// back/forward navigation the browser restores this page's last zoom,".nl().
+		"\t\t// which is the fit itself - and the fit-to-width would stack on top of".nl().
+		"\t\t// it, zooming the page in twice. So if the page is already at the fit".nl().
+		"\t\t// scale, leave the meta alone (the restored zoom is already the fit).".nl().
+		"\t\tif (window.visualViewport &&".nl().
+		"\t\t\tMath.abs(window.visualViewport.scale - d / W) < 0.02) return;".nl().
+		"\t\tM.setAttribute('content', 'width=' + W);".nl().
 		"\t}".nl().
 		"\tfit();".nl().
 		"\taddEventListener('orientationchange', fit);".nl().
@@ -670,6 +685,13 @@ register_service('page.set_grid', 'page_set_grid', ['auth'=>true]);
  *		key 'page' is the page (page.revision)
  *		key 'mode' is 'infinite' or 'centered' (optional)
  *		key 'width' is the container width in px (optional)
+ *		key 'shift' is a px offset added to every object's object-left (optional).
+ *		 Switching modes moves the origin the coordinates are measured from -
+ *		 the container's left edge in centered mode, the page's left edge in
+ *		 absolute - so without a rebase every object jumps by the container's
+ *		 offset and anything that sat outside the container's left border lands
+ *		 off the page. The editor measures that offset and passes it here so the
+ *		 switch is visually lossless.
  *	@return array response
  *		true if successful
  */
@@ -715,10 +737,68 @@ function page_set_layout($args)
 			return $ret;
 		}
 	}
+
+	// rebase the objects' coordinates so the switch keeps the page looking the
+	// same (see the 'shift' argument above)
+	if (isset($args['shift'])) {
+		$shift = intval($args['shift']);
+		if ($shift != 0) {
+			$ret = page_shift_objects($args['page'], $shift);
+			if ($ret['#error']) {
+				return $ret;
+			}
+		}
+	}
 	return response(true);
 }
 
 register_service('page.set_layout', 'page_set_layout', ['auth'=>true]);
+
+
+/**
+ *	add a px offset to every object's object-left on a page
+ *
+ *	Used when switching layout mode, to move the coordinates from one origin to
+ *	the other without moving the objects on screen. The page pseudo-object is
+ *	skipped - its background is positioned against the page, not the container.
+ *
+ *	@param string $page page name (page.revision)
+ *	@param int $shift px to add to each object-left
+ *	@return array response
+ *		true if successful
+ */
+function page_shift_objects($page, $shift)
+{
+	$dir = CONTENT_DIR.'/'.str_replace('.', '/', $page);
+	$files = @scandir($dir);
+	if ($files === false) {
+		return response('Error listing objects in '.quot($page), 500);
+	}
+	foreach ($files as $f) {
+		if ($f == '.' || $f == '..' || $f == 'page') {
+			continue;
+		}
+		$name = $page.'.'.$f;
+		$obj = load_object(['name'=>$name]);
+		if ($obj['#error']) {
+			// an unreadable entry is skipped, exactly as render_page does
+			continue;
+		}
+		$obj = $obj['#data'];
+		$left = !empty($obj['object-left']) ? intval($obj['object-left']) : 0;
+		$new_left = $left + $shift;
+		if ($new_left == 0) {
+			// absent means default: a zeroed left is removed, not stored
+			$ret = object_remove_attr(['name'=>$name, 'attr'=>'object-left']);
+		} else {
+			$ret = update_object(['name'=>$name, 'object-left'=>$new_left.'px']);
+		}
+		if ($ret['#error']) {
+			return $ret;
+		}
+	}
+	return response(true);
+}
 
 
 /**
@@ -788,6 +868,43 @@ function page_set_guided($args)
 }
 
 register_service('page.set_guided', 'page_set_guided', ['auth'=>true]);
+
+
+/**
+ *	switch mobile view on or off for the whole site (site settings master
+ *	switch, see /pages). On is the default and is stored by ABSENCE; only
+ *	page-mobile = off is written, on the startpage's own page-object. While it
+ *	is off the front end adds nothing for phones at all - no viewport meta, no
+ *	guided view, no centered-fit (common.inc.php and page_centered_fit()) - so
+ *	the page cache is dropped here too.
+ *
+ *	@param array $args arguments
+ *		key 'enabled' bool
+ *	@return array response
+ */
+function page_set_mobile($args)
+{
+	if (!isset($args['enabled'])) {
+		return response('Required argument "enabled" missing', 400);
+	}
+	$enabled = filter_var($args['enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	if ($enabled === NULL) {
+		return response('Argument "enabled" must be a boolean', 400);
+	}
+	if ($enabled) {
+		// the default: nothing to remove if it was never switched off
+		$ret = site_options_remove('page-mobile');
+	} else {
+		$ret = site_options_update(['page-mobile'=>'off']);
+	}
+	if ($ret['#error']) {
+		return $ret;
+	}
+	drop_cache('page');
+	return response(true);
+}
+
+register_service('page.set_mobile', 'page_set_mobile', ['auth'=>true]);
 
 
 /**
